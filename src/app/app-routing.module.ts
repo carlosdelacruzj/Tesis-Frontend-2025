@@ -19,6 +19,7 @@ import { AgregarPersonalComponent } from './control-panel/gestionar-personal/agr
 import { ListarportipoComponent } from './control-panel/administrar-equipos/listarportipo/listarportipo.component';
 import { ValidarTokenGuard } from './guards/validar-token.guard';
 import { VerCalendarioComponent } from './control-panel/ver-calendario/ver-calendario.component';
+import { LandingComponent } from './landing/landing.component';
 /* 
 const routes: Routes = [
   {
@@ -35,7 +36,8 @@ const routes: Routes = [
   }
 ]; */
 const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'auth' },   // 👈 añade esto
+  { path: '', component: LandingComponent },
+  { path: 'inicio', component: LandingComponent },
   {
     path: 'auth',
     loadChildren: () => import('./auth/auth.module').then(m => m.AuthModule)
@@ -46,7 +48,7 @@ const routes: Routes = [
     // canActivate: [ValidarTokenGuard],
     // canLoad: [ValidarTokenGuard],
   },
-  { path: '**', redirectTo: 'auth' }
+  { path: '**', redirectTo: '' }
 ];
 
 @NgModule({
