@@ -1,0 +1,101 @@
+<section class="hero">
+  <div class="hero__content">
+    <p class="hero__subtitle">Fotografía y video profesional</p>
+    <h1 class="hero__title">Capturamos tu historia con emoción y detalle</h1>
+    <p class="hero__description">
+      Somos un equipo creativo especializado en eventos sociales y corporativos. Creamos experiencias visuales
+      memorables para que revivas tus momentos más importantes.
+    </p>
+    <div class="hero__actions">
+      <a routerLink="/auth" class="btn btn--primary">Reserva tu sesión</a>
+      <a href="#portafolio" class="btn btn--outline">Ver portafolio</a>
+    </div>
+  </div>
+  <div class="hero__image" role="presentation" aria-hidden="true"></div>
+</section>
+
+<section class="features" id="servicios">
+  <h2 class="section-title">Soluciones para cada momento</h2>
+  <div class="features__grid">
+    <article class="card">
+      <h3>Bodas &amp; compromisos</h3>
+      <p>Planificación personalizada, cobertura completa y narrativas visuales llenas de emoción.</p>
+    </article>
+    <article class="card">
+      <h3>Eventos corporativos</h3>
+      <p>Contenido audiovisual estratégico para lanzar productos, documentar conferencias y humanizar tu marca.</p>
+    </article>
+    <article class="card">
+      <h3>Sesiones familiares</h3>
+      <p>Fotografía lifestyle, newborn y retratos que destacan la esencia de cada familia.</p>
+    </article>
+    <article class="card">
+      <h3>Producción para redes</h3>
+      <p>Videos verticales, reels y fotografías optimizadas para impactar en plataformas digitales.</p>
+    </article>
+  </div>
+</section>
+
+<section class="portfolio" id="portafolio">
+  <div class="portfolio__content">
+    <h2 class="section-title section-title--light">Historias que inspiran</h2>
+    <p>
+      Trabajamos con equipos de alta gama y una dirección creativa enfocada en contar historias auténticas.
+      Descubre algunos de nuestros proyectos favoritos:
+    </p>
+    <ul class="portfolio__list">
+      <li>Video documental de boda - Vanessa &amp; Diego</li>
+      <li>Cobertura audiovisual para congreso tecnológico 2023</li>
+      <li>Campaña fotográfica para marca de moda sostenible</li>
+      <li>Sesión lifestyle familiar - Los Mendoza</li>
+    </ul>
+  </div>
+</section>
+
+<section class="packages" id="paquetes">
+  <h2 class="section-title">Paquetes diseñados para ti</h2>
+  <div class="packages__grid">
+    <article class="package" *ngFor="let pkg of packages" [class.package--featured]="pkg.featured">
+      <h3>{{ pkg.name }}</h3>
+      <p class="package__description">{{ pkg.description }}</p>
+      <p class="package__price">{{ pkg.price }}</p>
+      <a routerLink="/auth" class="btn btn--primary btn--block">Solicitar cotización</a>
+    </article>
+  </div>
+</section>
+
+<section class="testimonials" id="testimonios">
+  <h2 class="section-title">Lo que dicen nuestros clientes</h2>
+  <div class="testimonials__grid">
+    <article class="testimonial" *ngFor="let testimonial of testimonials">
+      <p class="testimonial__quote">“{{ testimonial.quote }}”</p>
+      <p class="testimonial__author">{{ testimonial.name }}</p>
+      <p class="testimonial__role">{{ testimonial.role }}</p>
+    </article>
+  </div>
+</section>
+
+<section class="cta" id="contacto">
+  <div class="cta__content">
+    <h2>¿Listo para contar tu historia?</h2>
+    <p>
+      Agenda una videollamada gratuita y juntos diseñaremos la producción que necesitas. Atendemos en todo el Perú y
+      contamos con disponibilidad para proyectos internacionales.
+    </p>
+  </div>
+  <a routerLink="/auth" class="btn btn--light">Agendar ahora</a>
+</section>
+
+<footer class="footer">
+  <div>
+    <p class="footer__brand">© {{ currentYear }} Memoriza Films</p>
+    <p>Fotografía y video profesional para momentos inolvidables.</p>
+  </div>
+  <nav class="footer__nav" aria-label="Enlaces rápidos">
+    <a href="#servicios">Servicios</a>
+    <a href="#portafolio">Portafolio</a>
+    <a href="#paquetes">Paquetes</a>
+    <a href="#testimonios">Testimonios</a>
+    <a href="#contacto">Contacto</a>
+  </nav>
+</footer>

@@ -60,6 +60,7 @@ import { FullCalendarModule } from '@fullcalendar/angular'; // must go before pl
 import dayGridPlugin from '@fullcalendar/daygrid'; // a plugin!
 import interactionPlugin  from '@fullcalendar/interaction';
 import { DialogComponent } from './control-panel/ver-calendario/dialog/dialog.component'; // a plugin!
+import { LandingComponent } from './landing/landing.component';
 
 
 
@@ -99,6 +100,7 @@ import { DialogComponent } from './control-panel/ver-calendario/dialog/dialog.co
         DetallesAlquiladoComponent,
         VerCalendarioComponent,
         DialogComponent,
+        LandingComponent,
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         FormsModule,
