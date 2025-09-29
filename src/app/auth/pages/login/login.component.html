@@ -1,40 +1,54 @@
-<form class="login100-form" autocomplete="off" [formGroup]="miFormulario" (ngSubmit)="login()">
+<section class="login-layout">
+  <div class="login-layout__panel login-layout__panel--intro">
+    <h1 class="login-layout__title">Bienvenido de nuevo</h1>
+    <p class="login-layout__subtitle">
+      Ingresa con tu cuenta para continuar administrando tus proyectos y dar
+      seguimiento a tus iniciativas desde un mismo lugar.
+    </p>
+    <ul class="login-layout__highlights">
+      <li>Información centralizada y actualizada en tiempo real.</li>
+      <li>Herramientas inteligentes para tu equipo.</li>
+      <li>Soporte dedicado cuando lo necesites.</li>
+    </ul>
+  </div>
 
-    <span class="login100-form-title p-b-49">
-        Login
-    </span>
+  <div class="login-layout__panel login-layout__panel--form">
+    <form class="login-form" autocomplete="off" [formGroup]="miFormulario" (ngSubmit)="login()">
+      <h2 class="login-form__title">Inicia sesión</h2>
+      <p class="login-form__description">
+        Utiliza las credenciales proporcionadas para acceder a la plataforma.
+      </p>
 
-    <div class="wrap-input100 m-b-23">
-        <span class="label-input100">Email</span>
-        <input class="input100" type="email" formControlName="email" placeholder="Ingrese su email">
-        <span class="focus-input100"></span>
-    </div>
+      <div class="login-form__group">
+        <label class="login-form__label" for="email">Correo electrónico</label>
+        <input
+          id="email"
+          class="login-form__input"
+          type="email"
+          formControlName="email"
+          placeholder="nombre@empresa.com"
+        />
+      </div>
 
-    <div class="wrap-input100">
-        <span class="label-input100">Password</span>
-        <input class="input100" type="password" formControlName="password" placeholder="Ingrese su contraseña">
+      <div class="login-form__group">
+        <label class="login-form__label" for="password">Contraseña</label>
+        <input
+          id="password"
+          class="login-form__input"
+          type="password"
+          formControlName="password"
+          placeholder="Ingresa tu contraseña"
+        />
+      </div>
 
-        <span class="focus-input100"></span>
-    </div>
+      <button class="login-form__button" type="submit" [disabled]="miFormulario.invalid">
+        Acceder
+      </button>
 
-    <div class="text-right p-t-8 p-b-31"></div>
-
-    <div class="container-login100-form-btn">
-        <div class="wrap-login100-form-btn">
-            <div class="login100-form-bgbtn"></div>
-            <button class="login100-form-btn" type="submit" [disabled]="miFormulario.invalid">
-                Login
-            </button>
-        </div>
-    </div>
-
-    <div class="flex-col-c p-t-60">
-        <span class="txt1 p-b-17">
-            ¿Olvidaste tu contraseña?
-        </span>
-
-        <a routerLink="/auth/recuperar-contrasena" class="txt2">
-            Cambiala aqui
-        </a>
-    </div>
-</form>
+      <div class="login-form__footer">
+        <span>¿Olvidaste tu contraseña?</span>
+        <a routerLink="/auth/recuperar-contrasena">Recupérala aquí</a>
+      </div>
+    </form>
+  </div>
+</section>
