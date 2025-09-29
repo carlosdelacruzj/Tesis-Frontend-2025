@@ -1,16 +1,7 @@
-.table{
-    width: 100%;
-  }
-
-h1{
-    font-size: 40px;
+.table {
+  width: 100%;
 }
 
-.border-gray{
-  color:gray;
-}
-
-.button-margin{
-  margin-bottom: 20px;
-  float: right;
+.border-gray {
+  color: gray;
 }
