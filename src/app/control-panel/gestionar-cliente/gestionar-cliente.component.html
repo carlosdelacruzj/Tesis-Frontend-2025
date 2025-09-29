@@ -1,69 +1,76 @@
 <div class="dashboard-ecommerce">
-    <div class="container-fluid dashboard-content">
-        <h1 class="mb-4">Clientes</h1>
-        <div class="row">
-            <div class="col-6 input-group mb-4 ml-3 p-0 rounded bg-white border border-gray">
-                <input matInput type="search" placeholder="Buscar" (keyup)="applyFilter($event)"
-                    class="form-control bg-transparent pl-2 border-0 shadow-none">
-                <button class="bg-transparent border-0 fa fa-search"></button>
-            </div>
-        </div>
+  <div class="container-fluid dashboard-content">
+    <div class="container-fluid clientes-layout">
+      <div class="clientes-header d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <h1 class="mb-0">Clientes</h1>
+        <button class="btn btn-outline-dark btn-lg" [routerLink]="['/home/gestionar-cliente/registrar-cliente']">
+          Registrar cliente
+        </button>
+      </div>
 
-        <div class="row">
-            <div class="col-12">
-                <button class="button-margin" mat-raised-button color="primary"
-                    [routerLink]="['/home/gestionar-cliente/registrar-cliente']">Registrar Cliente</button>
-            </div>
+      <div class="row mb-4">
+        <div class="col-12 col-lg-6">
+          <mat-form-field appearance="fill" class="w-100">
+            <input matInput type="search" placeholder="Buscar" autocomplete="off" (keyup)="applyFilter($event)">
+          </mat-form-field>
         </div>
-        <div class="shadow">
-            <div class="table-responsive">
-                <table mat-table [dataSource]="dataSource" matSort class="table">
-                    <ng-container matColumnDef="codigoCliente">
-                        <div class="text-center">
-                            <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
-                        </div>
-                        <td mat-cell *matCellDef="let element"> {{element.codigoCliente}} </td>
-                    </ng-container>
-                    <ng-container matColumnDef="nombre">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre</th>
-                        <td mat-cell *matCellDef="let element"> {{element.nombre}} </td>
-                    </ng-container>
-                    <ng-container matColumnDef="apellido">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Apellido</th>
-                        <td mat-cell *matCellDef="let element"> {{element.apellido}} </td>
-                    </ng-container>
-                    <ng-container matColumnDef="correo">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Correo</th>
-                        <td mat-cell *matCellDef="let element">{{element.correo}}</td>
-                    </ng-container>
-                    <ng-container matColumnDef="celular">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Celular</th>
-                        <td mat-cell *matCellDef="let element">{{element.celular}}</td>
-                    </ng-container>
-                    <ng-container matColumnDef="doc">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Número de documento</th>
-                        <td mat-cell *matCellDef="let element">{{element.doc}}</td>
-                    </ng-container>
-                    <ng-container matColumnDef="direccion">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Direccion</th>
-                        <td mat-cell *matCellDef="let element">{{element.direccion}}</td>
-                    </ng-container>
-                    <ng-container matColumnDef="actions">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Acciones </th>
-                        <td mat-cell *matCellDef="let element">
-                            <button mat-raised-button color="primary" (click)="getByIdCliente(element.idCliente)" [routerLink]="['/home/gestionar-cliente/editar-cliente']">
+      </div>
 
-                                <span class="fas fa-edit"></span>
-                            </button>
-                        </td>
-                    </ng-container>
+      <div class="table-wrapper shadow-sm">
+        <div class="table-responsive">
+          <table mat-table [dataSource]="dataSource" matSort class="table">
+            <ng-container matColumnDef="codigoCliente">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="text-uppercase">ID</th>
+              <td mat-cell *matCellDef="let element">{{ element.codigoCliente }}</td>
+            </ng-container>
 
-                    <tr mat-header-row *matHeaderRowDef="displayedColumns2"></tr>
-                    <tr mat-row *matRowDef="let row; columns: displayedColumns2;"></tr>
-                </table>
-                <mat-paginator #paginator [pageSize]="25" [pageSizeOptions]="[10, 25, 100]">
-                </mat-paginator>
-            </div>
+            <ng-container matColumnDef="nombre">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre</th>
+              <td mat-cell *matCellDef="let element">{{ element.nombre }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="apellido">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Apellido</th>
+              <td mat-cell *matCellDef="let element">{{ element.apellido }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="correo">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Correo</th>
+              <td mat-cell *matCellDef="let element">{{ element.correo }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="celular">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Celular</th>
+              <td mat-cell *matCellDef="let element">{{ element.celular }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="doc">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Número de documento</th>
+              <td mat-cell *matCellDef="let element">{{ element.doc }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="direccion">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Dirección</th>
+              <td mat-cell *matCellDef="let element">{{ element.direccion }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Acciones</th>
+              <td mat-cell *matCellDef="let element" class="text-nowrap">
+                <button mat-button class="action-button"
+                        (click)="getByIdCliente(element.idCliente)"
+                        [routerLink]="['/home/gestionar-cliente/editar-cliente']">
+                  <i class="fas fa-edit fa-2x"></i>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns2"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns2;"></tr>
+          </table>
         </div>
+        <mat-paginator #paginator [pageSize]="25" [pageSizeOptions]="[10, 25, 100]"></mat-paginator>
+      </div>
     </div>
+  </div>
 </div>

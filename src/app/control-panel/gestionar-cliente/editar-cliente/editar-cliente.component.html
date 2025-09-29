@@ -1,69 +1,60 @@
-<div class="container-fluid dashboard-content ">
-    <div class="row">
-        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-            <div class="page-header">
-                <h2 class="pageheader-title">Form Validations </h2>
-                <p class="pageheader-text">Proin placerat ante duiullam scelerisque a velit ac porta, fusce sit amet vestibulum mi. Morbi lobortis pulvinar quam.</p>
-                <div class="page-breadcrumb">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="#" class="breadcrumb-link">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="#" class="breadcrumb-link">Forms</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Form Validations</li>
-                        </ol>
-                    </nav>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="dashboard-ecommerce">
+  <div class="container-fluid dashboard-content">
+    <h1>Editar cliente</h1>
 
     <form #clienteEditarForm="ngForm" (ngSubmit)="editCliente(clienteEditarForm)">
-        <!-- card numero 1 -->
-        <mat-card class="card">
-            <mat-card-header class="card-header">
-                <mat-card-title>Editar Cliente</mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="card-body">
-                <div class="form-row">
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 input-disabled" appearance="fill">
-                        <mat-label>codigoCliente</mat-label>
-                        <input matInput type="text" name="codigoCliente" #codigoCliente="ngModel" [(ngModel)]="service.selectCliente.codigoCliente" [readonly]="true">
-                    </mat-form-field>
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
-                        <mat-label>Nombre</mat-label>
-                        <input matInput type="text" name="nombre" #nombre="ngModel" [(ngModel)]="service.selectCliente.nombre" disabled required>
-                    </mat-form-field>
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
-                        <mat-label>Apellido</mat-label>
-                        <input matInput type="text" name="apellido" #apellido="ngModel" [(ngModel)]="service.selectCliente.apellido" disabled required>
-                    </mat-form-field>
+      <mat-card class="card">
+        <mat-card-header class="card-header">
+          <mat-card-title>Información del cliente</mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="card-body">
+          <div class="form-row">
+            <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 input-disabled" appearance="fill">
+              <mat-label>Código</mat-label>
+              <input matInput type="text" name="codigoCliente" #codigoCliente="ngModel"
+                [(ngModel)]="service.selectCliente.codigoCliente" [readonly]="true">
+            </mat-form-field>
+            <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2" appearance="fill">
+              <mat-label>Nombre</mat-label>
+              <input matInput type="text" name="nombre" #nombre="ngModel" [(ngModel)]="service.selectCliente.nombre" disabled required>
+            </mat-form-field>
+            <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2" appearance="fill">
+              <mat-label>Apellido</mat-label>
+              <input matInput type="text" name="apellido" #apellido="ngModel" [(ngModel)]="service.selectCliente.apellido" disabled required>
+            </mat-form-field>
 
-                    <mat-form-field appearance="fill" class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2">
-                        <mat-label>Correo</mat-label>
-                        <input matInput type="text" name="correo" #correo="ngModel" [(ngModel)]="service.selectCliente.correo" [pattern]="correoPattern" required>
-                    </mat-form-field>
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
-                        <mat-label>Número de documento</mat-label>
-                        <input matInput type="text" name="doc" #doc="ngModel" [(ngModel)]="service.selectCliente.doc" disabled required>
-                    </mat-form-field>
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
-                        <mat-label>Celular</mat-label>
-                        <input matInput type="text" name="celular" #celular="ngModel" [(ngModel)]="service.selectCliente.celular" [pattern]="celularPattern" required>
-                    </mat-form-field>
-                </div>
-                <div class="form-row">
-                    <mat-form-field class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 mb-12 " appearance="fill">
-                        <mat-label>Dirección</mat-label>
-                        <textarea matInput type="text" name="direccion" #direccion="ngModel" [(ngModel)]="service.selectCliente.direccion" required></textarea>
-                    </mat-form-field>
-                </div>
-            </mat-card-content>
-        </mat-card>
-        <button class="btn btn-primary mb-2 mr-1" type="submit" [disabled]="clienteEditarForm.invalid"> 
-            Actualizar
+            <mat-form-field appearance="fill" class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2">
+              <mat-label>Correo</mat-label>
+              <input matInput type="text" name="correo" #correo="ngModel" [(ngModel)]="service.selectCliente.correo"
+                [pattern]="correoPattern" required>
+            </mat-form-field>
+            <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2" appearance="fill">
+              <mat-label>Número de documento</mat-label>
+              <input matInput type="text" name="doc" #doc="ngModel" [(ngModel)]="service.selectCliente.doc" disabled required>
+            </mat-form-field>
+            <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2" appearance="fill">
+              <mat-label>Celular</mat-label>
+              <input matInput type="text" name="celular" #celular="ngModel" [(ngModel)]="service.selectCliente.celular"
+                [pattern]="celularPattern" required>
+            </mat-form-field>
+          </div>
+          <div class="form-row">
+            <mat-form-field class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 mb-2" appearance="fill">
+              <mat-label>Dirección</mat-label>
+              <textarea matInput type="text" name="direccion" #direccion="ngModel"
+                [(ngModel)]="service.selectCliente.direccion" required></textarea>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      <div class="form-actions">
+        <button class="btn btn-outline-dark" type="submit" [disabled]="clienteEditarForm.invalid">
+          Actualizar
         </button>
-        <button class="btn btn-primary mb-2 mr-1" type="button" [routerLink]="['/home/gestionar-cliente']"> 
-            atras
+        <button class="btn btn-outline-dark" type="button" [routerLink]="['/home/gestionar-cliente']">
+          Atrás
         </button>
+      </div>
     </form>
+  </div>
 </div>

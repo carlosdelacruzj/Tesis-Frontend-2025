@@ -1,16 +1,14 @@
-.table{
-    width: 100%;
-  }
-
-h1{
-    font-size: 40px;
+.table {
+  width: 100%;
 }
 
-.border-gray{
-  color:gray;
+.action-button {
+  min-width: auto;
+  padding: 0;
+  color: #343a40;
 }
 
-.button-margin{
-  margin-bottom: 20px;
-  float: right;
+.action-button:hover,
+.action-button:focus {
+  background-color: transparent;
 }

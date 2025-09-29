@@ -1,15 +1,12 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { NgForm } from '@angular/forms';
 import { ClienteService } from '../service/cliente.service';
-import { FormGroup, NgForm, NgModel } from '@angular/forms';
-import { MatTableDataSource } from '@angular/material/table';
-import { Cliente } from '../model/cliente.model';
-import { DateAdapter } from '@angular/material/core';
 import swal from 'sweetalert2';
 
 @Component({
   selector: 'app-editar-cliente',
   templateUrl: './editar-cliente.component.html',
-  styleUrls: ['./editar-cliente.component.css']
+  styleUrls: ['./editar-cliente.component.css', '../clientes-common.css']
 })
 export class EditarClienteComponent implements OnInit {
 
@@ -60,11 +57,5 @@ export class EditarClienteComponent implements OnInit {
         });
       }
     );
-  }
-
-
-
-  clear(ClienteForm: NgForm) {
-    ClienteForm.reset();
   }
 }
