@@ -28,8 +28,6 @@
     "@ng-bootstrap/ng-bootstrap": "^17.0.1",
     "@swimlane/ngx-charts": "^20.5.0",
     "bootstrap": "^5.3.8",
-    "echarts": "^5.2.2",
-    "ngx-echarts": "^8.0.1",
     "pdfmake": "^0.2.2",
     "rxjs": "~7.8",
     "sweetalert2": "^11.22.5",
