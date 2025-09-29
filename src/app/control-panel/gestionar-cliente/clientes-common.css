@@ -27,6 +27,7 @@
 
 .table-wrapper td {
   vertical-align: middle;
+
 }
 
 .dashboard-content .card {
@@ -34,6 +35,7 @@
 }
 
 .dashboard-content .btn {
+
   text-transform: none;
 }
 
@@ -42,4 +44,10 @@
   flex-wrap: wrap;
   gap: 1rem;
   justify-content: flex-end;
+  min-width: 120px;
+}
+
+.button-margin {
+  margin-bottom: 20px;
+  float: right;
 }
