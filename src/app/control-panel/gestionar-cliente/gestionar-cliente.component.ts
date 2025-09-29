@@ -26,11 +26,9 @@ export class GestionarClienteComponent implements OnInit {
     'actions',
   ];
   id2 = 0;
-  dataSource!: MatTableDataSource<any>;
-  dataSource2!: MatTableDataSource<any>;
+  dataSource = new MatTableDataSource<Cliente>([]);
 
   @ViewChild('paginator') paginator!: MatPaginator;
-  @ViewChild('paginator2') paginator2!: MatPaginator;
   @ViewChild(MatSort) matSort!: MatSort;
 
   constructor(
@@ -45,16 +43,17 @@ export class GestionarClienteComponent implements OnInit {
 
   async getAllClientes() {
     var data = await this.service.getAllClientes();
-    this.dataSource2 = new MatTableDataSource(data);
-    this.dataSource2.paginator = this.paginator;
-    this.dataSource2.sort = this.matSort;
+    this.dataSource.data = data;
+    this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.matSort;
   }
   // para hacer los filtros
-  filterData($event: any) {
-    this.dataSource.filter = $event.target.value;
-  }
-  filterData2($event: any) {
-    this.dataSource2.filter = $event.target.value;
+  applyFilter($event: Event) {
+    const filterValue = ($event.target as HTMLInputElement).value.trim().toLowerCase();
+    this.dataSource.filter = filterValue;
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
+    }
   }
   //DESDE AQUI BORRAS
   closeResult = '';
