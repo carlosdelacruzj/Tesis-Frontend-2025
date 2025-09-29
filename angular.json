@@ -34,7 +34,9 @@
               "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.css"
             ],
-            "scripts": [],
+            "scripts": [
+              "./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
+            ],
             "allowedCommonJsDependencies": [
               "pdfmake/build/pdfmake",
               "pdfmake/build/vfs_fonts"
