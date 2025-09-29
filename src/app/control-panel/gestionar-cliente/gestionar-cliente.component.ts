@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
@@ -7,7 +7,7 @@ import { ClienteService } from './service/cliente.service';
 @Component({
   selector: 'app-gestionar-cliente',
   templateUrl: './gestionar-cliente.component.html',
-  styleUrls: ['./gestionar-cliente.component.css']
+  styleUrls: ['./gestionar-cliente.component.css', './clientes-common.css']
 })
 export class GestionarClienteComponent implements OnInit {
 

@@ -1,0 +1,22 @@
+.dashboard-content {
+  padding: 2rem 0;
+}
+
+.dashboard-content h1 {
+  font-size: 40px;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-content .card {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-content .btn {
+  min-width: 120px;
+}
+
+.button-margin {
+  margin-bottom: 20px;
+  float: right;
+}

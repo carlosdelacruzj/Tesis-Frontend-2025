@@ -1,15 +1,12 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { NgForm } from '@angular/forms';
 import { ClienteService } from '../service/cliente.service';
-import { FormGroup, NgForm, NgModel } from '@angular/forms';
-import { MatTableDataSource } from '@angular/material/table';
-import { Cliente } from '../model/cliente.model';
-import { DateAdapter } from '@angular/material/core';
 import swal from 'sweetalert2';
 
 @Component({
   selector: 'app-registrar-cliente',
   templateUrl: './registrar-cliente.component.html',
-  styleUrls: ['./registrar-cliente.component.css']
+  styleUrls: ['./registrar-cliente.component.css', '../clientes-common.css']
 })
 export class RegistrarClienteComponent implements OnInit {
 
