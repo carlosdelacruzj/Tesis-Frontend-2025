@@ -3,7 +3,7 @@
         <h1 class="mb-4">Clientes</h1>
         <div class="row">
             <div class="col-6 input-group mb-4 ml-3 p-0 rounded bg-white border border-gray">
-                <input matInput type="search" placeholder="Buscar"
+                <input matInput type="search" placeholder="Buscar" (keyup)="applyFilter($event)"
                     class="form-control bg-transparent pl-2 border-0 shadow-none">
                 <button class="bg-transparent border-0 fa fa-search"></button>
             </div>
@@ -17,7 +17,7 @@
         </div>
         <div class="shadow">
             <div class="table-responsive">
-                <table mat-table [dataSource]="dataSource2" matSort class="table">
+                <table mat-table [dataSource]="dataSource" matSort class="table">
                     <ng-container matColumnDef="codigoCliente">
                         <div class="text-center">
                             <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
