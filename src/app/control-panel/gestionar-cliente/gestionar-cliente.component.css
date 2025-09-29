@@ -2,6 +2,14 @@
   width: 100%;
 }
 
-.border-gray {
-  color: gray;
+.action-button {
+  min-width: auto;
+  padding: 0;
+  color: #343a40;
 }
+
+.action-button:hover,
+.action-button:focus {
+  background-color: transparent;
+}
+

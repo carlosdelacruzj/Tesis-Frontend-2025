@@ -1,11 +1,15 @@
 <div class="dashboard-ecommerce">
   <div class="container-fluid dashboard-content">
-    <h1 class="mb-4">Clientes</h1>
+
+    <h1>Registrar cliente</h1>
+
 
     <form #clienteForm="ngForm" (ngSubmit)="addCliente(clienteForm)">
       <mat-card class="card">
         <mat-card-header class="card-header">
-          <mat-card-title>Registrar Cliente</mat-card-title>
+
+          <mat-card-title>Información del cliente</mat-card-title>
+
         </mat-card-header>
         <mat-card-content class="card-body">
           <div class="form-row">
@@ -62,7 +66,9 @@
             </mat-form-field>
           </div>
           <div class="form-row">
-            <mat-form-field class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 mb-12" appearance="fill">
+
+            <mat-form-field class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 mb-2" appearance="fill">
+
               <mat-label>Dirección</mat-label>
               <textarea matInput type="text" name="direccion" #direccion="ngModel" ngModel required></textarea>
               <div *ngIf="direccion.errors?.pattern">
@@ -75,12 +81,16 @@
           </div>
         </mat-card-content>
       </mat-card>
-      <button class="btn btn-primary mb-2 mr-1" type="submit" [disabled]="clienteForm.invalid">
-        Registrar
-      </button>
-      <button class="btn btn-primary mb-2 mr-1" type="button" [routerLink]="['/home/gestionar-cliente']">
-        atras
-      </button>
+
+      <div class="form-actions">
+        <button class="btn btn-outline-dark" type="submit" [disabled]="clienteForm.invalid">
+          Registrar
+        </button>
+        <button class="btn btn-outline-dark" type="button" [routerLink]="['/home/gestionar-cliente']">
+          Atrás
+        </button>
+      </div>
+
     </form>
   </div>
 </div>

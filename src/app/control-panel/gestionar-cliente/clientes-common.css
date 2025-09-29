@@ -3,9 +3,31 @@
 }
 
 .dashboard-content h1 {
-  font-size: 40px;
+  font-size: 2.5rem;
   font-weight: 600;
-  margin-bottom: 1.5rem;
+}
+
+.clientes-header .btn {
+  min-width: 180px;
+}
+
+.table-wrapper {
+  background-color: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.table-wrapper .table {
+  margin-bottom: 0;
+}
+
+.table-wrapper th {
+  font-weight: 600;
+}
+
+.table-wrapper td {
+  vertical-align: middle;
+
 }
 
 .dashboard-content .card {
@@ -13,6 +35,15 @@
 }
 
 .dashboard-content .btn {
+
+  text-transform: none;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: flex-end;
   min-width: 120px;
 }
 
