@@ -27,6 +27,7 @@
     "@fullcalendar/interaction": "^6.1.19",
     "@ng-bootstrap/ng-bootstrap": "^17.0.1",
     "@swimlane/ngx-charts": "^20.5.0",
+    "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.8",
     "pdfmake": "^0.2.2",
     "rxjs": "~7.8",
