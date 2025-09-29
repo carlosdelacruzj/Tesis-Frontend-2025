@@ -18,7 +18,6 @@ import { MatPaginatorIntl } from '@angular/material/paginator';
 import { getSpanishPaginatorIntl } from './shared/angular-material/spanish-paginator-intl';
 import { ReactiveFormsModule } from '@angular/forms';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
-import { NgxEchartsModule } from 'ngx-echarts';
 
 
 // import {
@@ -112,9 +111,7 @@ import { LandingComponent } from './landing/landing.component';
         // NgxMatNativeDateModule,
         ReactiveFormsModule,
         NgbModule,
-        NgxChartsModule, NgxEchartsModule.forRoot({
-            echarts: () => import('echarts')
-        }),
+        NgxChartsModule,
         FullCalendarModule], providers: [
         { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() },
         DatePipe,
