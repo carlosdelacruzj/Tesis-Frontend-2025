@@ -32,8 +32,6 @@
             "styles": [
               "./node_modules/bootstrap/dist/css/bootstrap.min.css",
               "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
-              "./node_modules/@fullcalendar/core/index.css",
-              "./node_modules/@fullcalendar/daygrid/index.css",
               "src/styles.css"
             ],
             "scripts": [

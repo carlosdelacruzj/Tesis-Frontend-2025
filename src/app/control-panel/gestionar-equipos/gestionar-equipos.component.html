@@ -12,7 +12,7 @@
                 <input matInput placeholder="Buscar" autocomplete="off" (keyup)="filterData($event)">
             </mat-form-field>
 
-            <table mat-table [dataSource]="dataSource" class="table">
+            <table mat-table [dataSource]="dataSource" class="table" matSort #projectsSort="matSort">
                 <!-- Nombre de Proyecto  prueba -->
                 <ng-container matColumnDef="nombre">
                     <th mat-header-cell *matHeaderCellDef class="text-center">
@@ -67,7 +67,7 @@
                 <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
                 <tr mat-row *matRowDef="let row; columns: columnsToDisplay"></tr>
             </table>
-            <mat-paginator #paginator [pageSize]="5" [pageSizeOptions]="[5,10, 25, 100]">
+            <mat-paginator #projectsPaginator [pageSize]="5" [pageSizeOptions]="[5,10, 25, 100]">
             </mat-paginator>
         </div>
 
@@ -113,7 +113,7 @@
                         <mat-form-field appearance="fill">
                             <input matInput placeholder="Buscar" autocomplete="off" (keyup)="filterData2($event)">
                         </mat-form-field>
-                        <table mat-table [dataSource]="dataSource2" class="table">
+                        <table mat-table [dataSource]="dataSource2" class="table" matSort #assignedSort="matSort">
                             <!-- Nombre de Proyecto  -->
                             <ng-container matColumnDef="empleado">
                                 <th mat-header-cell *matHeaderCellDef class="text-center">
@@ -159,7 +159,7 @@
                             <tr mat-header-row *matHeaderRowDef="columnsToDisplay3"></tr>
                             <tr mat-row *matRowDef="let row; columns: columnsToDisplay3"></tr>
                         </table>
-                        <mat-paginator #paginator2 [pageSize]="5" [pageSizeOptions]="[5,10, 25, 100]">
+                        <mat-paginator #assignedPaginator [pageSize]="5" [pageSizeOptions]="[5,10, 25, 100]">
                         </mat-paginator>
                     </div>
                 </mat-card-content>
@@ -193,7 +193,7 @@
                 <mat-form-field appearance="fill">
                     <input matInput placeholder="Buscar" autocomplete="off" (keyup)="filterData3($event)">
                 </mat-form-field>
-                <table mat-table [dataSource]="dataSource3" class="table">
+                <table mat-table [dataSource]="dataSource3" class="table" matSort #availableSort="matSort">
                     <ng-container matColumnDef="codigo">
                         <th mat-header-cell *matHeaderCellDef class="text-center">
                             Codigo
@@ -234,7 +234,7 @@
                     <tr mat-header-row *matHeaderRowDef="columnsToDisplay2"></tr>
                     <tr mat-row *matRowDef="let row; columns: columnsToDisplay2"></tr>
                 </table>
-                <mat-paginator #paginator3 [pageSize]="10" [pageSizeOptions]="[10, 25, 100]">
+                <mat-paginator #availablePaginator [pageSize]="10" [pageSizeOptions]="[10, 25, 100]">
                 </mat-paginator>
 
             </div>

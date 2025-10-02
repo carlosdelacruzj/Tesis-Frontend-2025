@@ -43,6 +43,10 @@ const routes: Routes = [
     loadChildren: () => import('./auth/auth.module').then(m => m.AuthModule)
   },
   {
+    path: 'cotizar',
+    loadChildren: () => import('./quote/quote.module').then(m => m.QuoteModule)
+  },
+  {
     path: 'home',
     loadChildren: () => import('./control-panel/control-panel.module').then(m => m.ControlPanelModule),
     // canActivate: [ValidarTokenGuard],

@@ -22,10 +22,11 @@ import {MatDividerModule} from '@angular/material/divider';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatGridListModule} from '@angular/material/grid-list';
 import {MatIconModule} from '@angular/material/icon';
+import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import {MatListModule} from '@angular/material/list';
 import {MatMenuModule} from '@angular/material/menu';
-import {MatNativeDateModule, MatRippleModule} from '@angular/material/core';
+import {MatNativeDateModule, MatOptionModule, MatRippleModule} from '@angular/material/core';
 import {MatPaginatorModule} from '@angular/material/paginator';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
@@ -66,6 +67,7 @@ import {OverlayModule} from '@angular/cdk/overlay';
     MatExpansionModule,
     MatGridListModule,
     MatIconModule,
+    MatFormFieldModule,
     MatInputModule,
     MatListModule,
     MatMenuModule,
@@ -86,10 +88,10 @@ import {OverlayModule} from '@angular/cdk/overlay';
     MatToolbarModule,
     MatTooltipModule,
     MatTreeModule,
+    MatOptionModule,
     OverlayModule,
     PortalModule,
-    ScrollingModule,
-    
+    ScrollingModule
   ]
 })
 export class AngularMaterialModule {}

@@ -1,101 +1,390 @@
-<section class="hero">
-  <div class="hero__content">
-    <p class="hero__subtitle">Fotografía y video profesional</p>
-    <h1 class="hero__title">Capturamos tu historia con emoción y detalle</h1>
-    <p class="hero__description">
-      Somos un equipo creativo especializado en eventos sociales y corporativos. Creamos experiencias visuales
-      memorables para que revivas tus momentos más importantes.
-    </p>
-    <div class="hero__actions">
-      <a routerLink="/auth" class="btn btn--primary">Reserva tu sesión</a>
-      <a href="#portafolio" class="btn btn--outline">Ver portafolio</a>
+<div class="schema" [innerHTML]="localBusinessSchema"></div>
+<div class="schema" [innerHTML]="faqSchema"></div>
+
+<section class="landing">
+  <nav class="site-header">
+    <div class="site-header__inner">
+      <!-- <a mat-button class="site-header__login" routerLink="/auth">Ingresar</a> -->
+      <a class="site-header__brand" href="#inicio" aria-label="D' La Cruz inicio">
+        <img src="assets/images/logo.png" alt="D' La Cruz video y fotografía" />
+      </a>
+      <ul class="site-header__nav" aria-label="Navegación principal">
+        <li><a href="#servicios">Servicios</a></li>
+        <li><a href="#portafolio">Portafolio</a></li>
+        <li><a href="#paquetes">Paquetes</a></li>
+        <li><a href="#nosotros">Nosotros</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li>
+          <button mat-stroked-button color="primary" (click)="scrollToSection('cotizacion')">
+            Cotización
+          </button>
+        </li>
+
+      </ul>
     </div>
-  </div>
-  <div class="hero__image" role="presentation" aria-hidden="true"></div>
-</section>
-
-<section class="features" id="servicios">
-  <h2 class="section-title">Soluciones para cada momento</h2>
-  <div class="features__grid">
-    <article class="card">
-      <h3>Bodas &amp; compromisos</h3>
-      <p>Planificación personalizada, cobertura completa y narrativas visuales llenas de emoción.</p>
-    </article>
-    <article class="card">
-      <h3>Eventos corporativos</h3>
-      <p>Contenido audiovisual estratégico para lanzar productos, documentar conferencias y humanizar tu marca.</p>
-    </article>
-    <article class="card">
-      <h3>Sesiones familiares</h3>
-      <p>Fotografía lifestyle, newborn y retratos que destacan la esencia de cada familia.</p>
-    </article>
-    <article class="card">
-      <h3>Producción para redes</h3>
-      <p>Videos verticales, reels y fotografías optimizadas para impactar en plataformas digitales.</p>
-    </article>
-  </div>
-</section>
-
-<section class="portfolio" id="portafolio">
-  <div class="portfolio__content">
-    <h2 class="section-title section-title--light">Historias que inspiran</h2>
-    <p>
-      Trabajamos con equipos de alta gama y una dirección creativa enfocada en contar historias auténticas.
-      Descubre algunos de nuestros proyectos favoritos:
-    </p>
-    <ul class="portfolio__list">
-      <li>Video documental de boda - Vanessa &amp; Diego</li>
-      <li>Cobertura audiovisual para congreso tecnológico 2023</li>
-      <li>Campaña fotográfica para marca de moda sostenible</li>
-      <li>Sesión lifestyle familiar - Los Mendoza</li>
-    </ul>
-  </div>
-</section>
-
-<section class="packages" id="paquetes">
-  <h2 class="section-title">Paquetes diseñados para ti</h2>
-  <div class="packages__grid">
-    <article class="package" *ngFor="let pkg of packages" [class.package--featured]="pkg.featured">
-      <h3>{{ pkg.name }}</h3>
-      <p class="package__description">{{ pkg.description }}</p>
-      <p class="package__price">{{ pkg.price }}</p>
-      <a routerLink="/auth" class="btn btn--primary btn--block">Solicitar cotización</a>
-    </article>
-  </div>
-</section>
-
-<section class="testimonials" id="testimonios">
-  <h2 class="section-title">Lo que dicen nuestros clientes</h2>
-  <div class="testimonials__grid">
-    <article class="testimonial" *ngFor="let testimonial of testimonials">
-      <p class="testimonial__quote">“{{ testimonial.quote }}”</p>
-      <p class="testimonial__author">{{ testimonial.name }}</p>
-      <p class="testimonial__role">{{ testimonial.role }}</p>
-    </article>
-  </div>
-</section>
-
-<section class="cta" id="contacto">
-  <div class="cta__content">
-    <h2>¿Listo para contar tu historia?</h2>
-    <p>
-      Agenda una videollamada gratuita y juntos diseñaremos la producción que necesitas. Atendemos en todo el Perú y
-      contamos con disponibilidad para proyectos internacionales.
-    </p>
-  </div>
-  <a routerLink="/auth" class="btn btn--light">Agendar ahora</a>
-</section>
-
-<footer class="footer">
-  <div>
-    <p class="footer__brand">© {{ currentYear }} Memoriza Films</p>
-    <p>Fotografía y video profesional para momentos inolvidables.</p>
-  </div>
-  <nav class="footer__nav" aria-label="Enlaces rápidos">
-    <a href="#servicios">Servicios</a>
-    <a href="#portafolio">Portafolio</a>
-    <a href="#paquetes">Paquetes</a>
-    <a href="#testimonios">Testimonios</a>
-    <a href="#contacto">Contacto</a>
   </nav>
-</footer>
+
+  <header class="hero" id="inicio">
+    <div class="hero__content">
+      <p class="hero__eyebrow">Fotografía y video en Lima</p>
+      <h1>Contamos tu historia con luz, sonido y emoción</h1>
+      <p class="hero__subtitle">
+        Producciones profesionales para bodas, eventos y marcas. Equipo senior especializado en storytelling visual.
+      </p>
+      <div class="hero__cta">
+        <button mat-raised-button color="primary" (click)="scrollToSection('cotizacion'); trackEvent('cta_click', { source: 'hero-primary' });">
+          Pedir cotización
+        </button>
+        <a
+          mat-stroked-button
+          color="primary"
+          href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
+          target="_blank"
+          rel="noopener"
+          (click)="clickWhatsApp('hero')"
+        >
+          WhatsApp inmediato
+        </a>
+      </div>
+      <ul class="hero__badges">
+        <li *ngFor="let badge of heroBadges">
+          <strong>{{ badge.label }}</strong>
+          <span>{{ badge.caption }}</span>
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <section class="services" id="servicios">
+    <div class="section__header">
+      <h2>Servicios de fotografía y video</h2>
+      <p>Paquetes flexibles para cubrir desde sesiones familiares hasta producciones corporativas complejas.</p>
+    </div>
+    <div class="services__grid">
+      <article class="service-card" *ngFor="let service of services">
+        <div class="service-card__body">
+          <h3>{{ service.title }}</h3>
+          <p>{{ service.description }}</p>
+          <ul>
+            <li *ngFor="let bullet of service.bullets">{{ bullet }}</li>
+          </ul>
+        </div>
+        <button mat-stroked-button color="primary" (click)="prefillService(service)">Cotizar</button>
+      </article>
+    </div>
+  </section>
+
+  <section class="portfolio" id="portafolio">
+    <div class="section__header">
+      <h2>Portafolio reciente</h2>
+      <p>Selecciona una categoría y revisa sesiones reales en Lima y provincias.</p>
+    </div>
+    <div class="portfolio__filters">
+      <button
+        *ngFor="let filter of portfolioFilters"
+        mat-button
+        [color]="activePortfolioFilter === filter ? 'primary' : undefined"
+        (click)="setPortfolioFilter(filter)"
+      >
+        {{ filter }}
+      </button>
+    </div>
+    <div class="portfolio__grid">
+      <article
+        class="portfolio__item"
+        *ngFor="let item of filteredPortfolio"
+        (click)="openLightbox(item)"
+        tabindex="0"
+        (keydown.enter)="openLightbox(item)"
+      >
+        <img [src]="item.thumbnail" [alt]="item.title" loading="lazy" />
+        <div class="portfolio__overlay">
+          <span class="portfolio__type">{{ item.type }}</span>
+          <h3>{{ item.title }}</h3>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="packages" id="paquetes">
+    <div class="section__header">
+      <h2>Paquetes pensados para tu producción</h2>
+      <p>Selecciona una base y agrega los complementos que necesites.</p>
+    </div>
+    <div class="packages__grid">
+      <article class="package" [class.package--highlight]="tier.highlight" *ngFor="let tier of packages">
+        <h3>{{ tier.name }}</h3>
+        <p class="package__price" aria-hidden="true"></p>
+        <ul class="package__specs">
+          <li>{{ tier.hours }}</li>
+          <li>{{ tier.photos }}</li>
+          <li>{{ tier.video }}</li>
+          <li>{{ tier.delivery }}</li>
+        </ul>
+        <div class="package__addons">
+          <h4>Add-ons disponibles</h4>
+          <ul>
+            <li *ngFor="let addon of tier.addons">{{ addon }}</li>
+          </ul>
+        </div>
+        <p class="package__note">{{ tier.recommendedFor }}</p>
+        <button mat-raised-button color="primary" (click)="prefillPackage(tier)">Cotizar este paquete</button>
+      </article>
+    </div>
+  </section>
+
+  <section class="about" id="nosotros">
+    <div class="about__media">
+      <img src="assets/images/delacruz-owner.jpeg" alt="Edwin de la Cruz en cobertura audiovisual" loading="lazy" />
+    </div>
+    <div class="about__content">
+      <h2>Sobre D' La Cruz</h2>
+      <p>
+        Somos un colectivo audiovisual con base en Lima. Producimos historias memorables combinando dirección
+        cinematográfica, iluminación creativa y sonido profesional. Cada proyecto cuenta con un project manager dedicado
+        para asegurar tiempos y calidad.
+      </p>
+      <ul>
+        <li>Especialistas en bodas destino, campañas corporativas y experiencias inmersivas.</li>
+        <li>Pipeline optimizado para entrega rápida en múltiples formatos (vertical, widescreen, reels).</li>
+        <li>Equipo de post-producción in-house con estándar broadcast.</li>
+      </ul>
+      <button mat-stroked-button  (click)="scrollToSection('cotizacion')">¿Listo para cotizar?</button>
+    </div>
+  </section>
+
+  <section class="cta-band" id="cta-final">
+    <div class="cta-band__content">
+      <h2>¿Listo para cotizar?</h2>
+      <p>Conversemos hoy y recibe una propuesta personalizada con disponibilidad real de fechas.</p>
+      <div class="cta-band__actions">
+        <button mat-raised-button color="primary" (click)="scrollToSection('cotizacion')">Pedir cotización</button>
+        <a
+          mat-stroked-button
+          color="primary"
+          href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
+          target="_blank"
+          rel="noopener"
+          (click)="clickWhatsApp('cta-band')"
+        >
+          WhatsApp
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="quote" id="cotizacion">
+    <div class="section__header">
+      <h2>Solicita tu propuesta</h2>
+      <p>Completa los datos esenciales y te contactamos por WhatsApp en menos de 2 horas.</p>
+    </div>
+
+    <div class="quote__card">
+      <form class="quote__form" [formGroup]="quoteForm" (ngSubmit)="submitQuote()" novalidate>
+        <div class="quote__grid" (focusin)="handleQuoteStart()">
+          <mat-form-field appearance="outline">
+            <mat-label>Nombre completo</mat-label>
+            <input matInput formControlName="nombreCompleto" autocomplete="name" required />
+            <mat-error *ngIf="quoteForm.get('nombreCompleto')?.hasError('required')">El nombre es obligatorio.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>WhatsApp (+51)</mat-label>
+          <input matInput formControlName="whatsapp" autocomplete="tel" placeholder="+51 999999999" required />
+          <mat-error *ngIf="quoteForm.get('whatsapp')?.hasError('required')">Ingresa tu WhatsApp.</mat-error>
+          <mat-error *ngIf="quoteForm.get('whatsapp')?.hasError('pattern')">Formato +51 999999999.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" autocomplete="email" required />
+          <mat-error *ngIf="quoteForm.get('email')?.hasError('required')">El correo es obligatorio.</mat-error>
+          <mat-error *ngIf="quoteForm.get('email')?.hasError('email')">Correo inválido.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de servicio</mat-label>
+          <mat-select formControlName="tipoServicio" required>
+            <mat-option value="">Selecciona un servicio</mat-option>
+            <mat-option *ngFor="let service of services" [value]="service.title">{{ service.title }}</mat-option>
+            <mat-option value="Paquete Signature">Paquete Signature</mat-option>
+            <mat-option value="Paquete Premium">Paquete Premium</mat-option>
+            <mat-option value="Paquete Esencial">Paquete Esencial</mat-option>
+            <mat-option value="Otro">Otro</mat-option>
+          </mat-select>
+          <mat-error *ngIf="quoteForm.get('tipoServicio')?.hasError('required')">Selecciona un servicio.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha del evento</mat-label>
+          <input matInput type="date" formControlName="fechaEvento" required />
+          <mat-error *ngIf="quoteForm.get('fechaEvento')?.hasError('required')">Selecciona la fecha.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Distrito o lugar</mat-label>
+          <input matInput formControlName="distrito" placeholder="Ej. Miraflores, Pachacámac" required />
+          <mat-error *ngIf="quoteForm.get('distrito')?.hasError('required')">Indica el lugar.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="quote__span">
+          <mat-label>Mensaje (opcional)</mat-label>
+          <textarea matInput rows="3" formControlName="mensaje" placeholder="¿Qué idea tienes en mente?"></textarea>
+        </mat-form-field>
+      </div>
+
+      <mat-expansion-panel class="quote__panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Información opcional</mat-panel-title>
+          <mat-panel-description>Ayuda a personalizar tu propuesta (1 minuto extra)</mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="quote__grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Horas estimadas</mat-label>
+            <input matInput formControlName="horas" placeholder="Ej. 6 horas" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>N° aproximado de invitados</mat-label>
+            <input matInput formControlName="invitados" placeholder="Ej. 120" />
+          </mat-form-field>
+
+          <div class="quote__slider">
+            <label for="presupuesto">Presupuesto estimado</label>
+            <input
+              id="presupuesto"
+              type="range"
+              min="0"
+              max="100"
+              step="25"
+              formControlName="presupuesto"
+            />
+            <span>{{ formatBudget(quoteForm.get('presupuesto')?.value) }}</span>
+          </div>
+        </div>
+
+        <div class="quote__extras">
+          <p>Extras populares</p>
+          <div class="quote__extras-grid" formGroupName="extras">
+            <mat-checkbox
+              *ngFor="let extra of extrasCatalog"
+              [formControlName]="extra.control"
+            >
+              <span class="extra-text">
+                <strong>{{ extra.label }}</strong>
+                <span>{{ extra.description }}</span>
+              </span>
+            </mat-checkbox>
+          </div>
+        </div>
+
+        <mat-form-field appearance="outline" class="quote__select">
+          <mat-label>¿Cómo nos encontraste?</mat-label>
+          <mat-select formControlName="comoNosConociste">
+            <mat-option value="">Selecciona una opción</mat-option>
+            <mat-option *ngFor="let option of sourceOptions" [value]="option">{{ option }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </mat-expansion-panel>
+
+      <mat-checkbox formControlName="consentimiento" class="quote__consent">
+        Acepto el uso de mis datos para recibir propuestas de D' La Cruz y confirmo haber leído la política de privacidad.
+      </mat-checkbox>
+
+      <div class="quote__actions">
+        <button mat-raised-button color="primary" type="submit" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Enviando…' : 'Enviar solicitud' }}
+        </button>
+        <a
+          mat-stroked-button
+          color="primary"
+          *ngIf="whatsAppLink"
+          [href]="whatsAppLink"
+          target="_blank"
+          rel="noopener"
+          (click)="clickWhatsApp('form-success')"
+        >
+          Continuar en WhatsApp
+        </a>
+      </div>
+
+      <div class="quote__feedback" *ngIf="submissionSuccess">
+        <p>¡Gracias! Tu solicitud fue enviada. También puedes continuar la conversación por WhatsApp.</p>
+      </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="faq" id="faq">
+    <div class="section__header">
+      <h2>Preguntas frecuentes</h2>
+      <p>Todo lo que necesitas saber antes de reservar.</p>
+    </div>
+    <mat-accordion class="faq__accordion">
+      <mat-expansion-panel *ngFor="let faq of faqs">
+        <mat-expansion-panel-header>
+          <mat-panel-title>{{ faq.question }}</mat-panel-title>
+        </mat-expansion-panel-header>
+        <p>{{ faq.answer }}</p>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </section>
+
+  <footer class="landing__footer">
+    <div>
+      <strong>D' La Cruz video y fotografía © {{ currentYear }}</strong>
+      <p>Producciones audiovisuales en Lima y todo el Perú.</p>
+    </div>
+    <div class="landing__footer-links">
+      <a href="mailto:hola&#64;dlacruz.com">hola&#64;dlacruz.com</a>
+      <a href="tel:+51999999999">+51 999 999 999</a>
+      <a href="#cotizacion">Política de privacidad</a>
+    </div>
+  </footer>
+</section>
+
+<div class="floating-cta">
+  <button mat-raised-button color="primary" (click)="scrollToSection('cotizacion'); trackEvent('cta_click', { source: 'floating' });">
+    Pedir cotización
+  </button>
+  <a
+    mat-mini-fab
+    color="primary"
+    href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
+    target="_blank"
+    rel="noopener"
+    aria-label="WhatsApp"
+    (click)="clickWhatsApp('floating')"
+  >
+    <mat-icon>chat</mat-icon>
+  </a>
+</div>
+
+<div class="lightbox" *ngIf="selectedLightboxItem" (click)="closeLightbox()">
+  <div class="lightbox__content" (click)="$event.stopPropagation()">
+    <button class="lightbox__close" type="button" (click)="closeLightbox()" aria-label="Cerrar">
+      <mat-icon>close</mat-icon>
+    </button>
+    <ng-container [ngSwitch]="selectedLightboxItem.mediaType">
+      <img
+        *ngSwitchCase="'image'"
+        [src]="selectedLightboxItem.source"
+        [alt]="selectedLightboxItem.title"
+        loading="lazy"
+      />
+      <video
+        *ngSwitchCase="'video'"
+        controls
+        autoplay
+        playsinline
+        [poster]="selectedLightboxItem.poster"
+        muted
+      >
+        <source [src]="selectedLightboxItem.source" type="video/mp4" />
+      </video>
+    </ng-container>
+    <h3>{{ selectedLightboxItem?.title }}</h3>
+    <p>{{ selectedLightboxItem?.type }}</p>
+  </div>
+</div>

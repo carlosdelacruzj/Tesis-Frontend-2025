@@ -1,6 +1,5 @@
-import { NgModule, Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { GestionarEquipos } from './service/gestionar-equipos.service';
-import { AsignarEquipos } from './model/gestionar-equipos.model';
 import { MatSort } from '@angular/material/sort';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
@@ -10,11 +9,14 @@ import { MatTableDataSource } from '@angular/material/table';
   templateUrl: './gestionar-equipos.component.html',
   styleUrls: ['./gestionar-equipos.component.css'],
 })
-export class GestionarEquiposComponent implements OnInit {
-  @ViewChild(MatSort) matSort!: MatSort;
-  @ViewChild('paginator') paginator!: MatPaginator;
-  @ViewChild('paginator2') paginator2!: MatPaginator;
-  @ViewChild('paginator2') paginator3!: MatPaginator;
+export class GestionarEquiposComponent implements OnInit, AfterViewInit {
+  @ViewChild('projectsSort') projectsSort?: MatSort;
+  @ViewChild('assignedSort') assignedSort?: MatSort;
+  @ViewChild('availableSort') availableSort?: MatSort;
+
+  @ViewChild('projectsPaginator') projectsPaginator?: MatPaginator;
+  @ViewChild('assignedPaginator') assignedPaginator?: MatPaginator;
+  @ViewChild('availablePaginator') availablePaginator?: MatPaginator;
   dataSource!: MatTableDataSource<any>;
   dataSource2!: MatTableDataSource<any>;
   dataSource3!: MatTableDataSource<any>;
@@ -66,6 +68,12 @@ export class GestionarEquiposComponent implements OnInit {
     this.getEquiposId(1);
   }
 
+  ngAfterViewInit(): void {
+    this.bindMainTable();
+    this.bindAssignedTable();
+    this.bindAvailableTable();
+  }
+
   // GET DATA
 
   // GET TODOS LOS PROYECTOS
@@ -78,8 +86,7 @@ export class GestionarEquiposComponent implements OnInit {
   getProyectos() {
     this.service.getAll().subscribe((response: any) => {
       this.dataSource = new MatTableDataSource(response);
-      this.dataSource.paginator = this.paginator;
-      this.dataSource.sort = this.matSort;
+      this.bindMainTable();
     });
   }
 
@@ -116,8 +123,7 @@ export class GestionarEquiposComponent implements OnInit {
 
       this.service.getEquiposByProyecto(id).subscribe((response: any) => {
         this.dataSource2 = new MatTableDataSource(response);
-        this.dataSource2.paginator = this.paginator2;
-        this.dataSource2.sort = this.matSort;
+        this.bindAssignedTable();
         this.equipos_proyecto = response;
         this.cantidad_asigacion = this.equipos_proyecto.length;
       });
@@ -149,10 +155,9 @@ export class GestionarEquiposComponent implements OnInit {
       .getEquipoId(this.fechaok, this.id_proyecto, id)
       .subscribe((response: any) => {
         this.dataSource3 = new MatTableDataSource(response);
-        this.dataSource3.paginator = this.paginator3;
-        this.dataSource3.sort = this.matSort;
+        this.bindAvailableTable();
         this.equipos = response;
-    
+
       });
   }
 
@@ -218,6 +223,39 @@ export class GestionarEquiposComponent implements OnInit {
       error: (error) => {
         console.error(error);
       },
-    });
+      });
+  }
+
+  private bindMainTable(): void {
+    if (this.dataSource) {
+      if (this.projectsPaginator) {
+        this.dataSource.paginator = this.projectsPaginator;
+      }
+      if (this.projectsSort) {
+        this.dataSource.sort = this.projectsSort;
+      }
+    }
+  }
+
+  private bindAssignedTable(): void {
+    if (this.dataSource2) {
+      if (this.assignedPaginator) {
+        this.dataSource2.paginator = this.assignedPaginator;
+      }
+      if (this.assignedSort) {
+        this.dataSource2.sort = this.assignedSort;
+      }
+    }
+  }
+
+  private bindAvailableTable(): void {
+    if (this.dataSource3) {
+      if (this.availablePaginator) {
+        this.dataSource3.paginator = this.availablePaginator;
+      }
+      if (this.availableSort) {
+        this.dataSource3.sort = this.availableSort;
+      }
+    }
   }
 }

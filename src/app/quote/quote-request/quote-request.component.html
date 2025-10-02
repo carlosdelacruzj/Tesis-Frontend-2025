@@ -1,0 +1,83 @@
+<section class="quote-container" [formGroup]="quoteForm">
+  <div class="quote-header">
+    <h1>Solicita tu cotización</h1>
+    <p>
+      Completa los datos esenciales de tu evento. Nuestro equipo de
+      <span class="brand">Memoriza</span> te contactará con una propuesta personalizada.
+    </p>
+  </div>
+
+  <form class="quote-form" (ngSubmit)="submit()" novalidate>
+    <mat-card class="section">
+      <mat-card-header>
+        <mat-card-title>Datos de contacto</mat-card-title>
+        <mat-card-subtitle>Solo necesitamos un nombre y un número para escribirte.</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="grid grid--two">
+        <mat-form-field appearance="outline" class="field--spaced">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="nombre" autocomplete="name" />
+          <mat-error *ngIf="hasError('nombre', 'required')">Ingresa tu nombre.</mat-error>
+          <mat-error *ngIf="hasError('nombre', 'minlength')">Debe tener al menos 2 caracteres.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field--spaced">
+          <mat-label>Número de contacto</mat-label>
+          <input matInput formControlName="contacto" autocomplete="tel" />
+          <mat-error *ngIf="hasError('contacto', 'required')">El número es obligatorio.</mat-error>
+          <mat-error *ngIf="hasError('contacto', 'pattern')">Ingresa un número válido.</mat-error>
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="section">
+      <mat-card-header>
+        <mat-card-title>Información del evento</mat-card-title>
+        <mat-card-subtitle>Cuéntanos qué estás planeando y dónde se realizará.</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="grid grid--two">
+        <mat-form-field appearance="outline" class="field--spaced">
+          <mat-label>Tipo de evento</mat-label>
+          <mat-select formControlName="eventoId" placeholder="Selecciona un evento">
+            <mat-option [value]="null" disabled>Selecciona un evento</mat-option>
+            <mat-option *ngFor="let ev of eventos" [value]="ev.id">{{ ev.nombre }}</mat-option>
+          </mat-select>
+          <mat-error *ngIf="hasError('eventoId', 'required')">Selecciona el tipo de evento.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="outline"
+          class="grid__span field--spaced"
+          *ngIf="quoteForm.get('eventoId')?.value === OTROS_EVENTO_ID"
+        >
+          <mat-label>Describe tu evento</mat-label>
+          <input matInput formControlName="eventoOtro" placeholder="Cuéntanos de qué trata" />
+          <mat-error *ngIf="hasError('eventoOtro', 'required')">Cuéntanos qué evento estás planificando.</mat-error>
+          <mat-error *ngIf="hasError('eventoOtro', 'minlength')">Describe tu evento con más detalle.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field--spaced">
+          <mat-label>Lugar</mat-label>
+          <input matInput formControlName="lugar" placeholder="Distrito, local o dirección" />
+          <mat-error *ngIf="hasError('lugar', 'required')">Indica dónde será el evento.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field--spaced">
+          <mat-label>Duración del evento</mat-label>
+          <input matInput formControlName="duracion" placeholder="Ej. 4 horas" />
+          <mat-error *ngIf="hasError('duracion', 'required')">Especifica cuánto durará.</mat-error>
+        </mat-form-field>
+      </mat-card-content>
+
+      <mat-card-actions class="actions">
+        <button mat-raised-button color="primary" type="submit" [disabled]="sending">
+          {{ sending ? 'Enviando…' : 'Enviar solicitud' }}
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </form>
+
+  <div class="feedback" *ngIf="success">
+    <p>¡Gracias! Recibimos tu solicitud de cotización. Un asesor te escribirá dentro de las próximas 24 horas.</p>
+  </div>
+</section>
