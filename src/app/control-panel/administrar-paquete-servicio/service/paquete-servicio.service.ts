@@ -1,24 +1,23 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Paquete } from '../model/paquete-servicio.model';
+import { environment } from '../../../../environments/environment';
 
-@Injectable({
-  providedIn: 'root'
-})
+export interface Paquete {
+  PK_E_Cod: number;
+  E_Nombre: string;
+  E_Enlace: string;
+}
+
+@Injectable({ providedIn: 'root' })
 export class PaqueteServicioService {
+  private base = environment.baseUrl;
 
-  selectProyecto: Paquete = {
-    PK_E_Cod: 0,
-    E_Nombre: '',
-    E_Enlace: ''
-  };
+  selectProyecto: Paquete = { PK_E_Cod: 0, E_Nombre: '', E_Enlace: '' };
 
-  private API_PRUEBA = 
-  'https://tp2021database.herokuapp.com/eventos/consulta/getAllEventos';
   constructor(private http: HttpClient) {}
 
-  public getAllNombres(): Observable<any> {
-    return this.http.get(this.API_PRUEBA);
+  getAllNombres(): Observable<any> {
+    return this.http.get(`${this.base}/eventos`);
   }
 }

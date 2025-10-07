@@ -1,14 +1,23 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Servicio } from '../model/evento-servicio.model';
+import { environment } from '../../../../environments/environment';
 
-@Injectable({
-  providedIn: 'root'
-})
+export interface RelEventoServicio {
+  ID: number;
+  Evento?: number | string;
+  Servicio?: number | string;
+  Precio?: number | string;
+  Descripcion?: string;
+  Titulo?: string;
+}
+
+@Injectable({ providedIn: 'root' })
 export class EventoServicioService {
+  private base = environment.baseUrl;
 
-  selectProyecto: Servicio = {
+  // Tu comp asigna aquí un objeto 'servicio' que a veces trae Servicio:number
+  selectProyecto: RelEventoServicio = {
     ID: 0,
     Evento: '',
     Servicio: '',
@@ -17,19 +26,15 @@ export class EventoServicioService {
     Titulo: ''
   };
 
-  private API_PRUEBA = 
-  'https://tp2021database.herokuapp.com/eventos_servicios/consulta/getAllServiciosByEvento';
   constructor(private http: HttpClient) {}
 
-  
-  public api(id: number): Observable<any> {
-      const url = `${this.API_PRUEBA}/${id}`
-    return this.http.get(url);
+  getAllNombres2(): Observable<any> {
+    return this.http.get(`${this.base}/eventos_servicios`);
   }
 
-  public getAllNombres2(): Observable<any> {
-    return this.http.get(this.API_PRUEBA);
+  api(eventoId: number): Observable<any> {
+    return this.http.get(`${this.base}/eventos_servicios`, {
+      params: { evento: String(eventoId) }
+    });
   }
-
 }
-

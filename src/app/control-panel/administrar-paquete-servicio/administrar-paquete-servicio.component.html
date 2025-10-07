@@ -1,29 +1,29 @@
 <div class="dashboard-ecommerce">
-    <div class="container-fluid dashboard-content">
-        <div *ngIf="base">
-            <h1>Listado de Eventos</h1>
-            <br>
-            <div class="ecommerce-widget">
-                <div *ngFor="let evento of paquete">
-                    <app-event-card [id]="evento.PK_E_Cod" [titulo]="evento.E_Nombre" [imagen]="evento.E_Enlace" (emitAccion)="prueba($event)"></app-event-card>
-                </div> 
-            
-            </div>
+  <div class="container-fluid dashboard-content">
+    <div *ngIf="base">
+      <h1>Listado de Eventos</h1>
+      <br>
+      <div class="ecommerce-widget">
+        <div *ngFor="let evento of paquete">
+          <app-event-card
+            [id]="evento.PK_E_Cod"
+            [titulo]="evento.E_Nombre"
+            [imagen]="imagenDe(evento.E_Nombre)"
+            (emitAccion)="prueba($event)">
+          </app-event-card>
         </div>
-
-            <div *ngIf="!base">
-                <div class="dashboard-ecommerce">
-                    <div class="container-fluid dashboard-content ">
-                        <div>
-                            <button (click)="base = true" class="btn-danger">Atras</button>
-                            <!-- <button mat-raised-button color="primary" class="registrarPaquete" (click)="openDialog()">Registrar Paquete</button> -->
-                            </div>
-                    </div>  
-                    <app-event-service [id]="servicioId" ></app-event-service>  
-                </div>
-                     
-            </div>
-        
-        
+      </div>
     </div>
+
+    <div *ngIf="!base">
+      <div class="dashboard-ecommerce">
+        <div class="container-fluid dashboard-content">
+          <div>
+            <button (click)="base = true" class="btn-danger">Atras</button>
+          </div>
+        </div>
+        <app-event-service [id]="servicioId"></app-event-service>
+      </div>
+    </div>
+  </div>
 </div>
