@@ -32,17 +32,13 @@
         Producciones profesionales para bodas, eventos y marcas. Equipo senior especializado en storytelling visual.
       </p>
       <div class="hero__cta">
-        <button mat-raised-button color="primary" (click)="scrollToSection('cotizacion'); trackEvent('cta_click', { source: 'hero-primary' });">
+        <button mat-raised-button color="primary"
+          (click)="scrollToSection('cotizacion'); trackEvent('cta_click', { source: 'hero-primary' });">
           Pedir cotización
         </button>
-        <a
-          mat-stroked-button
-          color="primary"
-          href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
-          target="_blank"
-          rel="noopener"
-          (click)="clickWhatsApp('hero')"
-        >
+        <a mat-stroked-button color="primary"
+          href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n" target="_blank" rel="noopener"
+          (click)="clickWhatsApp('hero')">
           WhatsApp inmediato
         </a>
       </div>
@@ -80,23 +76,14 @@
       <p>Selecciona una categoría y revisa sesiones reales en Lima y provincias.</p>
     </div>
     <div class="portfolio__filters">
-      <button
-        *ngFor="let filter of portfolioFilters"
-        mat-button
-        [color]="activePortfolioFilter === filter ? 'primary' : undefined"
-        (click)="setPortfolioFilter(filter)"
-      >
+      <button *ngFor="let filter of portfolioFilters" mat-button
+        [color]="activePortfolioFilter === filter ? 'primary' : undefined" (click)="setPortfolioFilter(filter)">
         {{ filter }}
       </button>
     </div>
     <div class="portfolio__grid">
-      <article
-        class="portfolio__item"
-        *ngFor="let item of filteredPortfolio"
-        (click)="openLightbox(item)"
-        tabindex="0"
-        (keydown.enter)="openLightbox(item)"
-      >
+      <article class="portfolio__item" *ngFor="let item of filteredPortfolio" (click)="openLightbox(item)" tabindex="0"
+        (keydown.enter)="openLightbox(item)">
         <img [src]="item.thumbnail" [alt]="item.title" loading="lazy" />
         <div class="portfolio__overlay">
           <span class="portfolio__type">{{ item.type }}</span>
@@ -149,7 +136,7 @@
         <li>Pipeline optimizado para entrega rápida en múltiples formatos (vertical, widescreen, reels).</li>
         <li>Equipo de post-producción in-house con estándar broadcast.</li>
       </ul>
-      <button mat-stroked-button  (click)="scrollToSection('cotizacion')">¿Listo para cotizar?</button>
+      <button mat-stroked-button (click)="scrollToSection('cotizacion')">¿Listo para cotizar?</button>
     </div>
   </section>
 
@@ -159,14 +146,9 @@
       <p>Conversemos hoy y recibe una propuesta personalizada con disponibilidad real de fechas.</p>
       <div class="cta-band__actions">
         <button mat-raised-button color="primary" (click)="scrollToSection('cotizacion')">Pedir cotización</button>
-        <a
-          mat-stroked-button
-          color="primary"
-          href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
-          target="_blank"
-          rel="noopener"
-          (click)="clickWhatsApp('cta-band')"
-        >
+        <a mat-stroked-button color="primary"
+          href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n" target="_blank" rel="noopener"
+          (click)="clickWhatsApp('cta-band')">
           WhatsApp
         </a>
       </div>
@@ -185,133 +167,113 @@
           <mat-form-field appearance="outline">
             <mat-label>Nombre completo</mat-label>
             <input matInput formControlName="nombreCompleto" autocomplete="name" required />
-            <mat-error *ngIf="quoteForm.get('nombreCompleto')?.hasError('required')">El nombre es obligatorio.</mat-error>
-        </mat-form-field>
+            <mat-error *ngIf="quoteForm.get('nombreCompleto')?.hasError('required')">El nombre es
+              obligatorio.</mat-error>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>WhatsApp (+51)</mat-label>
-          <input matInput formControlName="whatsapp" autocomplete="tel" placeholder="+51 999999999" required />
-          <mat-error *ngIf="quoteForm.get('whatsapp')?.hasError('required')">Ingresa tu WhatsApp.</mat-error>
-          <mat-error *ngIf="quoteForm.get('whatsapp')?.hasError('pattern')">Formato +51 999999999.</mat-error>
-        </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>WhatsApp (+51)</mat-label>
+            <input matInput formControlName="whatsapp" autocomplete="tel" placeholder="+51 999999999" required />
+            <mat-error *ngIf="quoteForm.get('whatsapp')?.hasError('required')">Ingresa tu WhatsApp.</mat-error>
+            <mat-error *ngIf="quoteForm.get('whatsapp')?.hasError('pattern')">Formato +51 999999999.</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Tipo de servicio</mat-label>
+            <mat-select formControlName="tipoServicio" required>
+              <mat-option value="">Selecciona un servicio</mat-option>
+              <mat-option *ngFor="let service of services" [value]="service.title">{{ service.title }}</mat-option>
+              <mat-option value="Paquete Signature">Paquete Signature</mat-option>
+              <mat-option value="Paquete Premium">Paquete Premium</mat-option>
+              <mat-option value="Paquete Esencial">Paquete Esencial</mat-option>
+              <mat-option value="Otro">Otro</mat-option>
+            </mat-select>
+            <mat-error *ngIf="quoteForm.get('tipoServicio')?.hasError('required')">Selecciona un servicio.</mat-error>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Email</mat-label>
-          <input matInput formControlName="email" autocomplete="email" required />
-          <mat-error *ngIf="quoteForm.get('email')?.hasError('required')">El correo es obligatorio.</mat-error>
-          <mat-error *ngIf="quoteForm.get('email')?.hasError('email')">Correo inválido.</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Tipo de servicio</mat-label>
-          <mat-select formControlName="tipoServicio" required>
-            <mat-option value="">Selecciona un servicio</mat-option>
-            <mat-option *ngFor="let service of services" [value]="service.title">{{ service.title }}</mat-option>
-            <mat-option value="Paquete Signature">Paquete Signature</mat-option>
-            <mat-option value="Paquete Premium">Paquete Premium</mat-option>
-            <mat-option value="Paquete Esencial">Paquete Esencial</mat-option>
-            <mat-option value="Otro">Otro</mat-option>
-          </mat-select>
-          <mat-error *ngIf="quoteForm.get('tipoServicio')?.hasError('required')">Selecciona un servicio.</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Fecha del evento</mat-label>
-          <input matInput type="date" formControlName="fechaEvento" required />
-          <mat-error *ngIf="quoteForm.get('fechaEvento')?.hasError('required')">Selecciona la fecha.</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Distrito o lugar</mat-label>
-          <input matInput formControlName="distrito" placeholder="Ej. Miraflores, Pachacámac" required />
-          <mat-error *ngIf="quoteForm.get('distrito')?.hasError('required')">Indica el lugar.</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="quote__span">
-          <mat-label>Mensaje (opcional)</mat-label>
-          <textarea matInput rows="3" formControlName="mensaje" placeholder="¿Qué idea tienes en mente?"></textarea>
-        </mat-form-field>
-      </div>
-
-      <mat-expansion-panel class="quote__panel">
-        <mat-expansion-panel-header>
-          <mat-panel-title>Información opcional</mat-panel-title>
-          <mat-panel-description>Ayuda a personalizar tu propuesta (1 minuto extra)</mat-panel-description>
-        </mat-expansion-panel-header>
-
-        <div class="quote__grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Fecha del evento</mat-label>
+            <input matInput [matDatepicker]="quoteEventPicker" formControlName="fechaEvento" [min]="minQuoteDate"
+              required (keydown)="$event.preventDefault()" (focus)="quoteEventPicker.open()" readonly />
+            <mat-datepicker-toggle matSuffix [for]="quoteEventPicker"></mat-datepicker-toggle>
+            <mat-datepicker #quoteEventPicker></mat-datepicker>
+            <mat-error *ngIf="quoteForm.get('fechaEvento')?.hasError('required')">Selecciona la fecha.</mat-error>
+            <mat-error *ngIf="quoteForm.get('fechaEvento')?.hasError('matDatepickerMin')">No podemos usar una fecha
+              pasada.</mat-error>
+          </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Horas estimadas</mat-label>
-            <input matInput formControlName="horas" placeholder="Ej. 6 horas" />
+            <input matInput formControlName="horas" placeholder="Ej. 6" />
+            <mat-hint>Opcional — ingresa solo números.</mat-hint>
           </mat-form-field>
+
+
 
           <mat-form-field appearance="outline">
-            <mat-label>N° aproximado de invitados</mat-label>
-            <input matInput formControlName="invitados" placeholder="Ej. 120" />
+            <mat-label>Distrito o lugar</mat-label>
+            <input matInput formControlName="distrito" placeholder="Ej. Miraflores, Pachacámac" required />
+            <mat-error *ngIf="quoteForm.get('distrito')?.hasError('required')">Indica el lugar.</mat-error>
           </mat-form-field>
 
-          <div class="quote__slider">
-            <label for="presupuesto">Presupuesto estimado</label>
-            <input
-              id="presupuesto"
-              type="range"
-              min="0"
-              max="100"
-              step="25"
-              formControlName="presupuesto"
-            />
-            <span>{{ formatBudget(quoteForm.get('presupuesto')?.value) }}</span>
-          </div>
+          <mat-form-field appearance="outline" class="quote__span">
+            <mat-label>Mensaje (opcional)</mat-label>
+            <textarea matInput rows="3" formControlName="mensaje" placeholder="¿Qué idea tienes en mente?"></textarea>
+          </mat-form-field>
         </div>
 
-        <div class="quote__extras">
-          <p>Extras populares</p>
-          <div class="quote__extras-grid" formGroupName="extras">
-            <mat-checkbox
-              *ngFor="let extra of extrasCatalog"
-              [formControlName]="extra.control"
-            >
-              <span class="extra-text">
-                <strong>{{ extra.label }}</strong>
-                <span>{{ extra.description }}</span>
-              </span>
-            </mat-checkbox>
+        <mat-expansion-panel class="quote__panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Información opcional</mat-panel-title>
+            <mat-panel-description>Ayuda a personalizar tu propuesta (1 minuto extra)</mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <div class="quote__grid">
+            <mat-form-field appearance="outline">
+              <mat-label>N° aproximado de invitados</mat-label>
+              <input matInput formControlName="invitados" placeholder="Ej. 120" />
+            </mat-form-field>
+
+
           </div>
+
+          <div class="quote__extras">
+            <p>Extras populares</p>
+            <div class="quote__extras-grid" formGroupName="extras">
+              <mat-checkbox *ngFor="let extra of extrasCatalog" [formControlName]="extra.control">
+                <span class="extra-text">
+                  <strong>{{ extra.label }}</strong>
+                  <span>{{ extra.description }}</span>
+                </span>
+              </mat-checkbox>
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="quote__select">
+            <mat-label>¿Cómo nos encontraste?</mat-label>
+            <mat-select formControlName="comoNosConociste">
+              <mat-option value="">Selecciona una opción</mat-option>
+              <mat-option *ngFor="let option of sourceOptions" [value]="option">{{ option }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </mat-expansion-panel>
+
+        <mat-checkbox formControlName="consentimiento" class="quote__consent">
+          Acepto el uso de mis datos para recibir propuestas de D' La Cruz y confirmo haber leído la política de
+          privacidad.
+        </mat-checkbox>
+
+        <div class="quote__actions">
+          <button mat-raised-button color="primary" type="submit" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Enviando…' : 'Enviar solicitud' }}
+          </button>
+          <a mat-stroked-button color="primary" *ngIf="whatsAppLink" [href]="whatsAppLink" target="_blank"
+            rel="noopener" (click)="clickWhatsApp('form-success')">
+            Continuar en WhatsApp
+          </a>
         </div>
 
-        <mat-form-field appearance="outline" class="quote__select">
-          <mat-label>¿Cómo nos encontraste?</mat-label>
-          <mat-select formControlName="comoNosConociste">
-            <mat-option value="">Selecciona una opción</mat-option>
-            <mat-option *ngFor="let option of sourceOptions" [value]="option">{{ option }}</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </mat-expansion-panel>
-
-      <mat-checkbox formControlName="consentimiento" class="quote__consent">
-        Acepto el uso de mis datos para recibir propuestas de D' La Cruz y confirmo haber leído la política de privacidad.
-      </mat-checkbox>
-
-      <div class="quote__actions">
-        <button mat-raised-button color="primary" type="submit" [disabled]="isSubmitting">
-          {{ isSubmitting ? 'Enviando…' : 'Enviar solicitud' }}
-        </button>
-        <a
-          mat-stroked-button
-          color="primary"
-          *ngIf="whatsAppLink"
-          [href]="whatsAppLink"
-          target="_blank"
-          rel="noopener"
-          (click)="clickWhatsApp('form-success')"
-        >
-          Continuar en WhatsApp
-        </a>
-      </div>
-
-      <div class="quote__feedback" *ngIf="submissionSuccess">
-        <p>¡Gracias! Tu solicitud fue enviada. También puedes continuar la conversación por WhatsApp.</p>
-      </div>
+        <div class="quote__feedback" *ngIf="submissionSuccess">
+          <p>¡Gracias! Tu solicitud fue enviada. También puedes continuar la conversación por WhatsApp.</p>
+        </div>
       </form>
     </div>
   </section>
@@ -345,18 +307,12 @@
 </section>
 
 <div class="floating-cta">
-  <button mat-raised-button color="primary" (click)="scrollToSection('cotizacion'); trackEvent('cta_click', { source: 'floating' });">
+  <button mat-raised-button color="primary"
+    (click)="scrollToSection('cotizacion'); trackEvent('cta_click', { source: 'floating' });">
     Pedir cotización
   </button>
-  <a
-    mat-mini-fab
-    color="primary"
-    href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
-    target="_blank"
-    rel="noopener"
-    aria-label="WhatsApp"
-    (click)="clickWhatsApp('floating')"
-  >
+  <a mat-mini-fab color="primary" href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
+    target="_blank" rel="noopener" aria-label="WhatsApp" (click)="clickWhatsApp('floating')">
     <mat-icon>chat</mat-icon>
   </a>
 </div>
@@ -367,20 +323,9 @@
       <mat-icon>close</mat-icon>
     </button>
     <ng-container [ngSwitch]="selectedLightboxItem.mediaType">
-      <img
-        *ngSwitchCase="'image'"
-        [src]="selectedLightboxItem.source"
-        [alt]="selectedLightboxItem.title"
-        loading="lazy"
-      />
-      <video
-        *ngSwitchCase="'video'"
-        controls
-        autoplay
-        playsinline
-        [poster]="selectedLightboxItem.poster"
-        muted
-      >
+      <img *ngSwitchCase="'image'" [src]="selectedLightboxItem.source" [alt]="selectedLightboxItem.title"
+        loading="lazy" />
+      <video *ngSwitchCase="'video'" controls autoplay playsinline [poster]="selectedLightboxItem.poster" muted>
         <source [src]="selectedLightboxItem.source" type="video/mp4" />
       </video>
     </ng-container>

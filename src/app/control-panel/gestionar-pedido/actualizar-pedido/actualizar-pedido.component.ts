@@ -20,7 +20,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   saving = false;
   // ====== Columnas ======
   columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas', 'Editar', 'Quitar'];
-  columnsToDisplay1 = ['Descripcion', 'Precio', 'Seleccionar'];
+  columnsToDisplay1 = ['Descripcion', 'Precio', 'Staff', 'Horas', 'Seleccionar'];
 
   // ====== Data y catálogos ======
   servicios: any[] = [];

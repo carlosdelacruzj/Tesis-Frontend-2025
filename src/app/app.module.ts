@@ -60,6 +60,9 @@ import dayGridPlugin from '@fullcalendar/daygrid'; // a plugin!
 import interactionPlugin  from '@fullcalendar/interaction';
 import { DialogComponent } from './control-panel/ver-calendario/dialog/dialog.component'; // a plugin!
 import { LandingComponent } from './landing/landing.component';
+import { GestionarCotizacionesComponent } from './control-panel/gestionar-cotizaciones/gestionar-cotizaciones.component';
+import { RegistrarCotizacionComponent } from './control-panel/gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
+import { EditarCotizacionComponent } from './control-panel/gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
 
 
 
@@ -100,6 +103,9 @@ import { LandingComponent } from './landing/landing.component';
         VerCalendarioComponent,
         DialogComponent,
         LandingComponent,
+        GestionarCotizacionesComponent,
+        RegistrarCotizacionComponent,
+        EditarCotizacionComponent,
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         FormsModule,

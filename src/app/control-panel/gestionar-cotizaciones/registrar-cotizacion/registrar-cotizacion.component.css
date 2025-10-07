@@ -1,0 +1,21 @@
+.cotizacion-form mat-card {
+  border-radius: 0.75rem;
+  box-shadow: 0 0.75rem 1.5rem -1rem rgba(31, 45, 61, 0.35);
+}
+
+.cotizacion-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.cotizacion-form textarea {
+  resize: none;
+}
+
+.cotizacion-form .table-responsive {
+  overflow-x: auto;
+}
+
+.cotizacion-form .spinner-border {
+  width: 1.4rem;
+  height: 1.4rem;
+}

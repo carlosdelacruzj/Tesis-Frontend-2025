@@ -3,12 +3,10 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subject, of } from 'rxjs';
-import { catchError, switchMap, take, takeUntil, tap } from 'rxjs/operators';
+import { catchError, take, takeUntil } from 'rxjs/operators';
+import { MAT_DATE_FORMATS, MAT_DATE_LOCALE, DateAdapter, MatDateFormats, NativeDateAdapter } from '@angular/material/core';
 
-import { Cliente } from 'src/app/control-panel/gestionar-cliente/model/cliente.model';
-import { ClienteService } from 'src/app/control-panel/gestionar-cliente/service/cliente.service';
-import { VisualizarService } from 'src/app/control-panel/gestionar-pedido/service/visualizar.service';
-
+import { LandingCotizacionService, LandingCreateCotizacionDto } from './services/landing-cotizacion.service';
 interface LandingServiceCard {
   id: string;
   title: string;
@@ -44,10 +42,43 @@ interface FaqItem {
   answer: string;
 }
 
+class LandingDateAdapter extends NativeDateAdapter {
+  override format(date: Date, displayFormat: any): string {
+    if (displayFormat === 'input') {
+      const day = this._to2Digit(date.getDate());
+      const month = this._to2Digit(date.getMonth() + 1);
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+    return super.format(date, displayFormat);
+  }
+
+  private _to2Digit(value: number): string {
+    return value < 10 ? `0${value}` : `${value}`;
+  }
+}
+
+const LANDING_DATE_FORMATS: MatDateFormats = {
+  parse: {
+    dateInput: 'dd/MM/yyyy'
+  },
+  display: {
+    dateInput: 'input',
+    monthYearLabel: 'MMM yyyy',
+    dateA11yLabel: 'dd/MM/yyyy',
+    monthYearA11yLabel: 'MMMM yyyy'
+  }
+};
+
 @Component({
   selector: 'app-landing',
   templateUrl: './landing.component.html',
-  styleUrls: ['./landing.component.css']
+  styleUrls: ['./landing.component.css'],
+  providers: [
+    { provide: MAT_DATE_LOCALE, useValue: 'es-PE' },
+    { provide: DateAdapter, useClass: LandingDateAdapter, deps: [MAT_DATE_LOCALE] },
+    { provide: MAT_DATE_FORMATS, useValue: LANDING_DATE_FORMATS }
+  ]
 })
 export class LandingComponent implements OnDestroy {
 
@@ -287,26 +318,26 @@ export class LandingComponent implements OnDestroy {
   selectedLightboxItem: PortfolioItem | null = null;
   activePortfolioFilter: PortfolioItem['type'] | 'Todos' = 'Todos';
   selectedPackageId: string | null = null;
+  readonly minQuoteDate: Date;
 
   readonly localBusinessSchema: SafeHtml;
   readonly faqSchema: SafeHtml;
 
-  private clienteRegistrado: Cliente | null = null;
   private readonly destroy$ = new Subject<void>();
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly visualizarService: VisualizarService,
-    private readonly clienteService: ClienteService,
     private readonly snackBar: MatSnackBar,
-    private readonly sanitizer: DomSanitizer
+    private readonly sanitizer: DomSanitizer,
+    private readonly cotizacionService: LandingCotizacionService
   ) {
+    this.minQuoteDate = this.startOfToday();
     this.quoteForm = this.fb.group({
       nombreCompleto: ['', [Validators.required, Validators.minLength(3)]],
       whatsapp: ['+51', [Validators.required, Validators.pattern(/^\+51\s?[0-9]{9}$/)]],
       email: ['', [Validators.required, Validators.email]],
       tipoServicio: ['', Validators.required],
-      fechaEvento: ['', Validators.required],
+      fechaEvento: [null, Validators.required],
       distrito: ['', Validators.required],
       mensaje: [''],
       horas: [''],
@@ -409,6 +440,8 @@ export class LandingComponent implements OnDestroy {
   submitQuote(): void {
     this.handleQuoteStart();
     this.whatsAppLink = null;
+    console.log('[landing] submitQuote', this.quoteForm.value);
+    
     if (this.quoteForm.invalid) {
       this.quoteForm.markAllAsTouched();
       this.snackBar.open('Por favor completa los campos obligatorios.', 'Cerrar', { duration: 4000 });
@@ -418,10 +451,10 @@ export class LandingComponent implements OnDestroy {
     this.isSubmitting = true;
     this.submissionSuccess = false;
     const formValue = this.quoteForm.getRawValue();
+    const payload = this.buildCotizacionPayload(formValue);
 
-    this.ensureCliente(formValue.nombreCompleto, formValue.email, formValue.whatsapp)
+    this.cotizacionService.create(payload)
       .pipe(
-        switchMap(clienteId => this.enviarCotizacion(clienteId)),
         take(1),
         catchError(err => {
           console.error('[landing] submitQuote', err);
@@ -435,6 +468,7 @@ export class LandingComponent implements OnDestroy {
         if (!res) {
           return;
         }
+        console.log('[LandingComponent] cotización registrada correctamente', res);
         this.submissionSuccess = true;
         this.trackEvent('quote_submit', { package: this.selectedPackageId });
         this.createWhatsAppLink();
@@ -444,7 +478,6 @@ export class LandingComponent implements OnDestroy {
           presupuesto: 50,
           consentimiento: false
         });
-        this.clienteRegistrado = null;
         this.selectedPackageId = null;
       });
   }
@@ -464,99 +497,14 @@ export class LandingComponent implements OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
-
-  private ensureCliente(nombre: string, correo: string, telefono: string) {
-    if (this.clienteRegistrado?.idCliente) {
-      return of(this.clienteRegistrado.idCliente);
-    }
-
-    const payload = {
-      nombre,
-      apellido: '',
-      correo,
-      numDoc: '',
-      celular: telefono,
-      direccion: ''
-    };
-
-    return this.clienteService.addCliente(payload).pipe(
-      take(1),
-      tap(res => {
-        const id = res?.id || res?.idCliente || res?.ID;
-        this.clienteRegistrado = {
-          idCliente: id ?? 0,
-          codigoCliente: res?.codigoCliente ?? '',
-          nombre: payload.nombre,
-          apellido: payload.apellido,
-          correo: payload.correo,
-          celular: payload.celular,
-          doc: '',
-          direccion: payload.direccion,
-          estado: 'Lead',
-          ECli_Nombre: ''
-        } as Cliente;
-      }),
-      switchMap(res => {
-        const id = res?.id || res?.idCliente || res?.ID || this.clienteRegistrado?.idCliente;
-        if (!id) {
-          throw new Error('No se pudo registrar el cliente.');
-        }
-        return of(id);
-      })
-    );
-  }
-
-  private enviarCotizacion(clienteId: number) {
-    const value = this.quoteForm.getRawValue();
-    const extrasSeleccionados = this.extrasCatalog
-      .filter(item => value.extras[item.control])
-      .map(item => item.label)
-      .join(', ');
-
-    const observaciones = [
-      `Servicio: ${value.tipoServicio}`,
-      `Fecha: ${value.fechaEvento}`,
-      `Distrito: ${value.distrito}`,
-      value.horas ? `Horas estimadas: ${value.horas}` : null,
-      value.invitados ? `Invitados aprox.: ${value.invitados}` : null,
-      `Presupuesto: ${this.formatBudget(value.presupuesto)}`,
-      extrasSeleccionados ? `Extras: ${extrasSeleccionados}` : null,
-      value.comoNosConociste ? `Origen: ${value.comoNosConociste}` : null,
-      value.mensaje ? `Mensaje: ${value.mensaje}` : null
-    ].filter(Boolean).join(' | ');
-
-    const eventos = [{
-      fecha: value.fechaEvento,
-      hora: '00:00:00',
-      ubicacion: value.distrito,
-      direccion: value.distrito,
-      notas: `Horas estimadas: ${value.horas || 'no indicado'}`
-    }];
-
-    const payload = {
-      pedido: {
-        clienteId,
-        empleadoId: 1,
-        fechaCreacion: new Date().toISOString().slice(0, 10),
-        observaciones,
-        estadoPedidoId: 1,
-        estadoPagoId: 1,
-        nombrePedido: `Lead landing - ${value.tipoServicio}`
-      },
-      eventos,
-      items: []
-    };
-
-    return this.visualizarService.postPedidos(payload);
-  }
-
   private createWhatsAppLink(): void {
     const value = this.quoteForm.getRawValue();
     const service = value.tipoServicio || 'servicio de foto y video';
-    const date = value.fechaEvento || 'fecha por definir';
+    const date = this.formatDateDisplay(value.fechaEvento) || 'fecha por definir';
     const district = value.distrito || 'Lima';
-    const phone = value.whatsapp.replace(/\s+/g, '');
-    const base = `https://wa.me/${phone.replace('+', '')}`;
+    const phoneDigits = (value.whatsapp ?? '').toString().replace(/\D+/g, '');
+    const baseNumber = phoneDigits || '51999999999';
+    const base = `https://wa.me/${baseNumber}`;
     const message = encodeURIComponent(`Hola quiero una cotización para ${service} el ${date} en ${district}`);
     this.whatsAppLink = `${base}?text=${message}`;
   }
@@ -576,5 +524,65 @@ export class LandingComponent implements OnDestroy {
     return this.sanitizer.bypassSecurityTrustHtml(
       `<script type="application/ld+json">${JSON.stringify(schema)}</script>`
     );
+  }
+
+  private formatDate(value: unknown): string | null {
+    const date = this.toDate(value);
+    return date ? date.toISOString().slice(0, 10) : null;
+  }
+
+  private formatDateDisplay(value: unknown): string | null {
+    const date = this.toDate(value);
+    if (!date) {
+      return null;
+    }
+    return new Intl.DateTimeFormat('es-PE').format(date);
+  }
+
+  private startOfToday(): Date {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+
+  private toDate(value: unknown): Date | null {
+    if (!value) {
+      return null;
+    }
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+    const date = new Date(value as string);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  private buildCotizacionPayload(value: any): LandingCreateCotizacionDto {
+    const nombre = (value.nombreCompleto ?? '').toString().trim();
+    const celular = (value.whatsapp ?? '').toString().replace(/\D+/g, '');
+    const fechaEvento = this.formatDate(value.fechaEvento) ?? new Date().toISOString().slice(0, 10);
+
+    const horasTexto = (value.horas ?? '').toString().trim();
+    const horasNormalizadas = horasTexto.replace(/[^0-9.,]/g, '').replace(',', '.');
+    const horasNumber = horasNormalizadas ? Number(horasNormalizadas) : null;
+    const horasEstimadas = Number.isFinite(horasNumber) ? horasNumber : null;
+
+    const payload: LandingCreateCotizacionDto = {
+      lead: {
+        nombre,
+        celular,
+        origen: value.comoNosConociste || 'Web'
+      },
+      cotizacion: {
+        tipoServicio: value.tipoServicio,
+        fechaEvento,
+        lugar: value.distrito,
+        horasEstimadas,
+        mensaje: (value.mensaje ?? '').toString().trim(),
+        estado: 'Borrador'
+      }
+    };
+
+    console.log('[LandingComponent] payload cotizacion listo', payload);
+    return payload;
   }
 }

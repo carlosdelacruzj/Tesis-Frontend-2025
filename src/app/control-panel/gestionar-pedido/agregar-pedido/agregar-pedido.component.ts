@@ -18,7 +18,7 @@ type Tag = { nombre: string; direccion: string; usedAt?: number };
 export class AgregarPedidoComponent implements OnInit, AfterViewInit {
   // ====== Columnas ======
   columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas', 'Editar', 'Quitar'];
-  columnsToDisplay1 = ['Descripcion', 'Precio', 'Seleccionar'];
+  columnsToDisplay1 = ['Descripcion', 'Precio', 'Staff', 'Horas', 'Seleccionar'];
 
   // ====== Data y catálogos ======
   servicios: any[] = [];
