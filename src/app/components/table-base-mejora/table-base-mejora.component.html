@@ -1,0 +1,131 @@
+<!-- TOP BAR -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <!-- Buscador (izquierda) -->
+  <div class="input-group search-group">
+    <span class="input-group-text">
+      icon search
+    </span>
+    <input
+      [ngModel]="searchTerm()"
+      (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
+      type="text"
+      class="form-control"
+      [placeholder]="searchPlaceholder" />
+    <button *ngIf="searchTerm()" class="btn btn-outline-secondary" type="button" (click)="clearSearch()">
+      Limpiar
+    </button>
+  </div>
+
+  <!-- Botón Crear/Registrar (derecha) -->
+  <div *ngIf="showCreateButton" class="create-btn-wrapper">
+    <button class="btn btn-outline-dark btn-md"
+            type="button"
+            [disabled]="createButtonDisabled"
+            (click)="createClick.emit()">
+      {{ createButtonLabel }}
+    </button>
+  </div>
+</div>
+
+<!-- TABLA -->
+<div class="table-responsive">
+  <table class="table table-hover align-middle table-sm">
+    <thead class="table-light">
+      <tr>
+        <th *ngFor="let col of columns"
+            scope="col"
+            class="text-center"
+            [style.width]="col.width || null"
+            [ngClass]="col.class"
+            (click)="toggleSort(col)"
+            [class.cursor-pointer]="col.sortable"
+            [attr.aria-sort]="sortKey() === col.key ? (sortDirection() || 'none') : 'none'">
+          <div class="d-flex justify-content-center align-items-center gap-2">
+            <span>{{ col.header }}</span>
+            <span *ngIf="col.sortable" class="text-muted small">
+              <i *ngIf="sortKey() !== col.key || !sortDirection()" class="bi bi-arrow-down-up"></i>
+              <i *ngIf="sortKey() === col.key && sortDirection() === 'asc'" class="bi bi-arrow-down"></i>
+              <i *ngIf="sortKey() === col.key && sortDirection() === 'desc'" class="bi bi-arrow-up"></i>
+            </span>
+          </div>
+        </th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let row of paged(); trackBy: trackByIndex"
+          (click)="onRowClick(row)"
+          class="table-row-clickable">
+        <td *ngFor="let col of columns" [ngClass]="col.class">
+          <ng-container *ngIf="hasTemplateFor(col.key); else plainCell"
+                        [ngTemplateOutlet]="getTemplate(col.key)"
+                        [ngTemplateOutletContext]="{ $implicit: row, row: row, key: col.key }">
+          </ng-container>
+          <ng-template #plainCell>
+            {{ getValue(row, col.key) }}
+          </ng-template>
+        </td>
+      </tr>
+
+      <tr *ngIf="paged().length === 0">
+        <td [attr.colspan]="columns.length" class="text-center text-muted py-4">
+          {{ emptyText }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FOOTER centrado: info + filas por página + paginación -->
+<div class="table-footer d-flex flex-column gap-2 mt-2">
+
+  <!-- Fila principal -->
+  <div class="d-flex flex-column flex-md-row align-items-center w-100 gap-2">
+
+    <!-- Izquierda: Mostrando -->
+    <div class="flex-grow-1 order-1 order-md-1 w-100 w-md-auto text-center text-md-start text-muted small">
+      Mostrando
+      <strong>{{ pageStart | number }}</strong> –
+      <strong>{{ pageEnd   | number }}</strong>
+      de <strong>{{ totalItems() | number }}</strong>
+    </div>
+
+    <!-- Centro: Paginación (números) -->
+    <nav class="order-2 mx-auto" aria-label="Paginación">
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item" [class.disabled]="currentPage() === 1">
+          <button class="page-link" (click)="changePage(1)" aria-label="Primera">&laquo;</button>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage() === 1">
+          <button class="page-link" (click)="changePage(currentPage()-1)" aria-label="Anterior">&lsaquo;</button>
+        </li>
+
+        <li *ngFor="let p of [].constructor(totalPages()); let i = index"
+            class="page-item" [class.active]="(i+1) === currentPage()">
+          <button class="page-link" (click)="changePage(i+1)">{{ i+1 }}</button>
+        </li>
+
+        <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+          <button class="page-link" (click)="changePage(currentPage()+1)" aria-label="Siguiente">&rsaquo;</button>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+          <button class="page-link" (click)="changePage(totalPages())" aria-label="Última">&raquo;</button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Derecha: Filas por página -->
+    <div class="flex-grow-1 order-3 w-100 w-md-auto d-flex justify-content-md-end justify-content-center">
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label m-0 small">Filas por página</label>
+        <select class="form-select form-select-sm"
+                style="width: auto"
+                [ngModel]="currentPageSize()"
+                (ngModelChange)="changePageSize($event)">
+          <option *ngFor="let s of pageSizeOptions" [ngValue]="s">{{ s }}</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -10,6 +10,7 @@ import { HeaderComponent } from '../shared/header/header.component';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { TableBaseComponent } from '../components/table/table-base.component';
+import { TableBaseMejoraComponent } from '../components/table-base-mejora/table-base-mejora.component';
 
 @NgModule({
   declarations: [
@@ -20,6 +21,7 @@ import { TableBaseComponent } from '../components/table/table-base.component';
   ],
   imports: [
     TableBaseComponent,
+    TableBaseMejoraComponent,
     CommonModule,
     ControlPanelRoutingModule,
     NgxChartsModule,

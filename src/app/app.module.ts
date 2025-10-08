@@ -64,6 +64,7 @@ import { GestionarCotizacionesComponent } from './control-panel/gestionar-cotiza
 import { RegistrarCotizacionComponent } from './control-panel/gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
 import { EditarCotizacionComponent } from './control-panel/gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
 import { CellTemplateDirective, TableBaseComponent } from './components/table/table-base.component';
+import { TableBaseMejoraComponent } from './components/table-base-mejora/table-base-mejora.component';
 
 
 
@@ -122,6 +123,7 @@ import { CellTemplateDirective, TableBaseComponent } from './components/table/ta
         NgxChartsModule,
         CellTemplateDirective,
         TableBaseComponent,
+        TableBaseMejoraComponent,
         FullCalendarModule], providers: [
             { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() },
             DatePipe,

@@ -1,60 +1,102 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort } from '@angular/material/sort';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { from, Subject, takeUntil } from 'rxjs';
+
+import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
 import { Cliente } from './model/cliente.model';
 import { ClienteService } from './service/cliente.service';
+
+export interface ClienteRow extends Cliente {}
+
 @Component({
   selector: 'app-gestionar-cliente',
   templateUrl: './gestionar-cliente.component.html',
-  styleUrls: ['./gestionar-cliente.component.css', './clientes-common.css']
+  styleUrls: ['./gestionar-cliente.component.css']
 })
-export class GestionarClienteComponent implements OnInit {
+export class GestionarClienteComponent implements OnInit, OnDestroy {
 
-  clientes: Cliente[]
-  displayedColumns2 = [
-    'codigoCliente',
-    'nombre',
-    'apellido',
-    'correo',
-    'celular',
-    'doc',
-    'direccion',
-    'actions',
+  columns: TableColumn<ClienteRow>[] = [
+    { key: 'codigoCliente', header: 'ID', sortable: true, width: '100px', class: 'text-center text-nowrap text-uppercase' },
+    { key: 'nombre', header: 'Nombre', sortable: true },
+    { key: 'apellido', header: 'Apellido', sortable: true },
+    { key: 'correo', header: 'Correo', sortable: true },
+    { key: 'celular', header: 'Celular', sortable: true, class: 'text-nowrap' },
+    { key: 'doc', header: 'Documento', sortable: true, width: '160px', class: 'text-nowrap' },
+    { key: 'direccion', header: 'Dirección', sortable: true },
+    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '120px', class: 'text-center text-nowrap' }
   ];
-  id2 = 0;
-  dataSource = new MatTableDataSource<Cliente>([]);
 
-  @ViewChild('paginator') paginator!: MatPaginator;
-  @ViewChild(MatSort) matSort!: MatSort;
+  rows: ClienteRow[] = [];
+  loadingList = false;
+  error: string | null = null;
+  readonly initialSort = { key: 'nombre', direction: 'asc' as const };
+
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
-    public service: ClienteService
+    private readonly clienteService: ClienteService,
+    private readonly router: Router
   ) { }
-  fechaActual = '';
-  async ngOnInit() {
-    await this.getAllClientes();
-  }
-  trackById(index: number, row: any) { return row.idCliente; }
 
-  async getAllClientes() {
-    var data = await this.service.getAllClientes();
-    this.dataSource.data = data;
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.matSort;
+  ngOnInit(): void {
+    this.loadClientes();
   }
-  // para hacer los filtros
-  applyFilter($event: Event) {
-    const filterValue = ($event.target as HTMLInputElement).value.trim().toLowerCase();
-    this.dataSource.filter = filterValue;
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  navigateToCreate(): void {
+    this.router.navigate(['/home/gestionar-cliente/registrar-cliente']);
+  }
+
+  editarCliente(row: ClienteRow): void {
+    if (!row?.idCliente) {
+      return;
     }
+    this.clienteService.getByIdCliente(row.idCliente)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.clienteService.selectCliente = Array.isArray(response) ? response[0] ?? row : response;
+          this.router.navigate(['/home/gestionar-cliente/editar-cliente']);
+        },
+        error: (err) => {
+          console.error('[clientes] detalle', err);
+        }
+      });
   }
-  public getByIdCliente(id: number) {
-    this.service.getByIdCliente(id).subscribe((responde) => {
-      this.service.selectCliente = responde[0];
-      console.log(this.service.selectCliente);
-    });
+
+  onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {
+    // Reservado para telemetría futura
+  }
+
+  onPageChange(_: { page: number; pageSize: number }): void {
+    // Reservado para telemetría futura
+  }
+
+  reload(): void {
+    this.loadClientes();
+  }
+
+  private loadClientes(): void {
+    this.loadingList = true;
+    this.error = null;
+
+    from(this.clienteService.getAllClientes())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (clientes) => {
+          this.rows = (clientes ?? []) as ClienteRow[];
+          this.loadingList = false;
+        },
+        error: (err) => {
+          console.error('[clientes] list', err);
+          this.error = 'No pudimos cargar los clientes.';
+          this.rows = [];
+          this.loadingList = false;
+        }
+      });
   }
 }

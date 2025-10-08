@@ -6,7 +6,7 @@ import swal from 'sweetalert2';
 @Component({
   selector: 'app-registrar-cliente',
   templateUrl: './registrar-cliente.component.html',
-  styleUrls: ['./registrar-cliente.component.css', '../clientes-common.css']
+  styleUrls: ['./registrar-cliente.component.css']
 })
 export class RegistrarClienteComponent implements OnInit {
 
