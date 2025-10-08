@@ -1,77 +1,68 @@
-<div class="container-fluid dashboard-content ">
-  <div class="container-fluid">
-    <div>
-      <h1>Personal</h1>
-    </div>
-    <div class="row">
-      <div class="col-8">
-        <mat-form-field appearance="fill">
-          <input matInput placeholder="Buscar" autocomplete="off" (keyup)="filterData($event)">
-        </mat-form-field>
-      </div>
-      <div class="col-4">
-        <div style="text-align:right">
-          <button class="btn btn-primary btn-lg" [routerLink]="['/home/gestionar-personal/agregar']">
-            Registrar Empleado
+<div class="dashboard-content">
+
+  <div class="py-4">
+    <h1>Personal</h1>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
+
+  <ng-container *ngIf="!loadingList; else loadingState">
+    <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
+      [initialSort]="initialSort" searchPlaceholder="Buscar: código, nombre, documento…"
+      emptyText="Sin personal registrado" (rowClick)="verEmpleado($event)" (sortChange)="onSortChange($event)"
+      (pageChange)="onPageChange($event)" [showCreateButton]="true" createButtonLabel="Registrar empleado"
+      (createClick)="navigateToCreate()">
+
+      <ng-template appCell="codigoEmpleado" let-row>
+        {{ row.codigoEmpleado || ('EMP-' + row.idEmpleado) }}
+      </ng-template>
+
+      <ng-template appCell="nombreCompleto" let-row>
+        <div class="d-flex flex-column">
+          <span>{{ row.nombre }} {{ row.apellido }}</span>
+          <small class="text-muted" *ngIf="row.autonomo === 'SI'">Autónomo</small>
+          <small class="text-muted" *ngIf="row.autonomo === 'NO'">Dependiente</small>
+        </div>
+      </ng-template>
+
+      <ng-template appCell="documento" let-row>
+        {{ row.documento || '—' }}
+      </ng-template>
+
+      <ng-template appCell="cargo" let-row>
+        {{ row.cargo || '—' }}
+      </ng-template>
+
+      <ng-template appCell="estado" let-row>
+        <span class="badge" [class.bg-success]="row.estado === 'DISPONIBLE'"
+          [class.bg-danger]="row.estado === 'NO_DISPONIBLE'" [class.bg-secondary]="!row.estado">
+          {{ row.estado || (row.autonomo === 'SI' ? 'Autónomo' : 'Dependiente') }}
+        </span>
+      </ng-template>
+
+      <ng-template appCell="acciones" let-row>
+        <div class="d-flex justify-content-center gap-1">
+          <button mat-icon-button color="primary" type="button" (click)="$event.stopPropagation(); editarEmpleado(row)"
+            matTooltip="Editar">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); verEmpleado(row)"
+            matTooltip="Ver detalle">
+            <mat-icon>visibility</mat-icon>
           </button>
         </div>
-      </div>
-    </div>
+      </ng-template>
 
-    <!-- Tabla/Listado -->
-    <table mat-table [dataSource]="dataSource" class="table">
-      <!-- ID -->
-      <ng-container matColumnDef="ID">
-        <th mat-header-cell *matHeaderCellDef> ID </th>
-        <td mat-cell *matCellDef="let element"> {{ element.codigoEmpleado }} </td>
-      </ng-container>
-
-      <!-- Nombre y apellido -->
-      <ng-container matColumnDef="Nombres y apellidos">
-        <th mat-header-cell *matHeaderCellDef> Nombre </th>
-        <td mat-cell *matCellDef="let element"> {{ element.nombre }} {{ element.apellido }}</td>
-      </ng-container>
-
-      <!-- DNI -->
-      <ng-container matColumnDef="DNI">
-        <th mat-header-cell *matHeaderCellDef> DNI </th>
-        <td mat-cell *matCellDef="let element"> {{ element.documento }} </td>
-      </ng-container>
-
-      <!-- Cargo -->
-      <ng-container matColumnDef="Cargo">
-        <th mat-header-cell *matHeaderCellDef> Cargo </th>
-        <td mat-cell *matCellDef="let element"> {{ element.cargo }} </td>
-      </ng-container>
-
-      <!-- Estado -->
-      <ng-container matColumnDef="Estado">
-        <th mat-header-cell *matHeaderCellDef> Estado </th>
-        <td mat-cell *matCellDef="let element">
-          {{ element.estado || (element.autonomo === 'SI' ? 'Autónomo' : 'Dependiente') }}
-        </td>
-      </ng-container>
-
-      <!-- Boton Visualizar -->
-      <ng-container matColumnDef="Acciones">
-        <th mat-header-cell *matHeaderCellDef>Acciones</th>
-        <td mat-cell *matCellDef="let element">
-          <button mat-button style="background-color:transparent" (click)="open(contentUpdate, element.idEmpleado)">
-            <i class="fas fa-edit fa-2x"></i>
-          </button>
-          <button mat-button style="background-color:transparent" (click)="open(contentView, element.idEmpleado)">
-            <i class="fas fa-eye fa-2x"></i>
-          </button>
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
-      <tr mat-row *matRowDef="let row; columns: columnsToDisplay;"></tr>
-    </table>
-    <mat-paginator #paginator [pageSize]="5" [pageSizeOptions]="[5, 10, 20, 50 ]">
-    </mat-paginator>
-  </div>
+    </app-table-base-mejora>
+  </ng-container>
 </div>
+
+<ng-template #loadingState>
+  <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p class="mt-3 mb-0">Cargando personal…</p>
+  </div>
+</ng-template>
 
 <!-- ========== MODAL: UPDATE ========== -->
 <ng-template #contentUpdate let-c="close" let-d="dismiss">
@@ -93,32 +84,32 @@
         <mat-card-content class="card-body" style="padding-top: 10px;">
           <div class="form-group">
             <!-- ID oculto para el NgForm -->
-            <input type="text" name="ID" [(ngModel)]="selected.idEmpleado"
-                   class="form-control text-input" style="display: none;">
+            <input type="text" name="ID" [(ngModel)]="selected.idEmpleado" class="form-control text-input"
+              style="display: none;">
           </div>
 
           <div class="form-group">
             <label class='col-form-label1'>Nombres</label>
-            <input type="text" class="form-control form-control-sm" name="Nombres"
-                   [(ngModel)]="selected.nombre" disabled>
+            <input type="text" class="form-control form-control-sm" name="Nombres" [(ngModel)]="selected.nombre"
+              disabled>
           </div>
 
           <div class="form-group">
             <label class='col-form-label1'>Apellidos</label>
-            <input type="text" class="form-control form-control-sm" name="Apellidos"
-                   [(ngModel)]="selected.apellido" disabled>
+            <input type="text" class="form-control form-control-sm" name="Apellidos" [(ngModel)]="selected.apellido"
+              disabled>
           </div>
 
           <div class="form-group">
             <label class='col-form-label1'>N° documento de identidad</label>
-            <input type="text" class="form-control form-control-sm" name="DNI"
-                   [(ngModel)]="selected.documento" disabled>
+            <input type="text" class="form-control form-control-sm" name="DNI" [(ngModel)]="selected.documento"
+              disabled>
           </div>
 
           <div class="form-group">
             <label class='col-form-label1'>Direccion</label>
             <input type="text" class="form-control form-control-sm" name="Direccion" #Direccion="ngModel"
-                   [(ngModel)]="selected.direccion" required>
+              [(ngModel)]="selected.direccion" required>
             <div *ngIf="Direccion.errors?.pattern">
               <p>*Ingrese una Dirección correcta</p>
             </div>
@@ -130,7 +121,7 @@
           <div class="form-group">
             <label class='col-form-label1'>Celular</label>
             <input type="text" class="form-control form-control-sm" name="Celular" #Celular="ngModel"
-                   [(ngModel)]="selected.celular" [pattern]="celularPattern" required>
+              [(ngModel)]="selected.celular" [pattern]="celularPattern" required>
             <div *ngIf="Celular.errors?.pattern">
               <p>*Sólo números</p>
             </div>
@@ -142,7 +133,7 @@
           <div class="form-group">
             <label class='col-form-label1'>Email</label>
             <input type="text" class="form-control form-control-sm" name="Correo" #Correo="ngModel"
-                   [(ngModel)]="selected.correo" [pattern]="correoPattern" required>
+              [(ngModel)]="selected.correo" [pattern]="correoPattern" required>
             <div *ngIf="Correo.errors?.pattern">
               <p>*Ingrese un email correcto</p>
             </div>
@@ -160,8 +151,8 @@
         <mat-card-content class="card-body" style="padding-top: 10px;">
           <div class="form-group">
             <label class='col-form-label1'>Estado</label>
-            <select type="text" class="form-control form-control-sm"
-                    name="Estado" #Estado="ngModel" [(ngModel)]="selected.idEstado" required>
+            <select type="text" class="form-control form-control-sm" name="Estado" #Estado="ngModel"
+              [(ngModel)]="selected.idEstado" required>
               <option matInput [ngValue]="1">Disponible</option>
               <option matInput [ngValue]="2">No Disponible</option>
             </select>
@@ -172,16 +163,15 @@
 
           <div class="form-group">
             <label class='col-form-label1'>Autonomo</label>
-            <input type="text" class="form-control form-control-sm"
-                   *ngIf="selected.autonomo === 'SI'" name="Autonomo" ngModel="Si" disabled>
-            <input type="text" class="form-control form-control-sm"
-                   *ngIf="selected.autonomo === 'NO'" name="Autonomo" ngModel="No" disabled>
+            <input type="text" class="form-control form-control-sm" *ngIf="selected.autonomo === 'SI'" name="Autonomo"
+              ngModel="Si" disabled>
+            <input type="text" class="form-control form-control-sm" *ngIf="selected.autonomo === 'NO'" name="Autonomo"
+              ngModel="No" disabled>
           </div>
 
           <div class="form-group">
             <label class='col-form-label1'>Cargo</label>
-            <input type="text" class="form-control form-control-sm" name="Cargo"
-                   [ngModel]="selected.cargo" disabled>
+            <input type="text" class="form-control form-control-sm" name="Cargo" [ngModel]="selected.cargo" disabled>
           </div>
         </mat-card-content>
       </mat-card>
@@ -189,8 +179,8 @@
   </div>
 
   <div class="modal-footer">
-    <button type="button" class="btn btn-outline-dark"
-            (click)="UpdateEmpleado(EmpleadoUpdateForm)" [disabled]="EmpleadoUpdateForm.invalid">
+    <button type="button" class="btn btn-outline-dark" (click)="UpdateEmpleado(EmpleadoUpdateForm)"
+      [disabled]="EmpleadoUpdateForm.invalid">
       Actualizar
     </button>
     <button type="button" class="btn btn-outline-dark" (click)="d('Cross click')">Cancelar</button>
@@ -217,33 +207,33 @@
         <mat-card-content class="card-body" style="padding-top: 10px;">
           <div class="form-group">
             <label class='col-form-label1'>Nombres</label>
-            <input type="text" class="form-control form-control-sm" name="Nombres"
-                   [(ngModel)]="selected.nombre" disabled>
+            <input type="text" class="form-control form-control-sm" name="Nombres" [(ngModel)]="selected.nombre"
+              disabled>
           </div>
           <div class="form-group">
             <label class='col-form-label1'>Apellidos</label>
-            <input type="text" class="form-control form-control-sm" name="Apellidos"
-                   [(ngModel)]="selected.apellido" disabled>
+            <input type="text" class="form-control form-control-sm" name="Apellidos" [(ngModel)]="selected.apellido"
+              disabled>
           </div>
           <div class="form-group">
             <label class='col-form-label1'>N° documento de identidad</label>
-            <input type="text" class="form-control form-control-sm" name="DNI"
-                   [(ngModel)]="selected.documento" disabled>
+            <input type="text" class="form-control form-control-sm" name="DNI" [(ngModel)]="selected.documento"
+              disabled>
           </div>
           <div class="form-group">
             <label class='col-form-label1'>Celular</label>
-            <input type="text" class="form-control form-control-sm" name="Celular"
-                   [(ngModel)]="selected.celular" disabled>
+            <input type="text" class="form-control form-control-sm" name="Celular" [(ngModel)]="selected.celular"
+              disabled>
           </div>
           <div class="form-group">
             <label class='col-form-label1'>Email</label>
-            <input type="text" class="form-control form-control-sm" name="Correo"
-                   [(ngModel)]="selected.correo" disabled>
+            <input type="text" class="form-control form-control-sm" name="Correo" [(ngModel)]="selected.correo"
+              disabled>
           </div>
           <div class="form-group">
             <label class='col-form-label1'>Direccion</label>
-            <input type="text" class="form-control form-control-sm" name="Direccion"
-                   [(ngModel)]="selected.direccion" disabled>
+            <input type="text" class="form-control form-control-sm" name="Direccion" [(ngModel)]="selected.direccion"
+              disabled>
           </div>
         </mat-card-content>
       </mat-card>
@@ -256,19 +246,18 @@
           <div class="form-group">
             <label class='col-form-label1'>Estado</label>
             <input type="text" class="form-control form-control-sm" name="Estado"
-                   [ngModel]="selected.estado || (selected.autonomo === 'SI' ? 'Autónomo' : 'Dependiente')" disabled>
+              [ngModel]="selected.estado || (selected.autonomo === 'SI' ? 'Autónomo' : 'Dependiente')" disabled>
           </div>
           <div class="form-group">
             <label class='col-form-label1'>Autonomo</label>
-            <input type="text" class="form-control form-control-sm"
-                   *ngIf="selected.autonomo === 'SI'" name="Autonomo" ngModel="Si" disabled>
-            <input type="text" class="form-control form-control-sm"
-                   *ngIf="selected.autonomo === 'NO'" name="Autonomo" ngModel="No" disabled>
+            <input type="text" class="form-control form-control-sm" *ngIf="selected.autonomo === 'SI'" name="Autonomo"
+              ngModel="Si" disabled>
+            <input type="text" class="form-control form-control-sm" *ngIf="selected.autonomo === 'NO'" name="Autonomo"
+              ngModel="No" disabled>
           </div>
           <div class="form-group">
             <label class='col-form-label1'>Cargo</label>
-            <input type="text" class="form-control form-control-sm" name="Cargo"
-                   [ngModel]="selected.cargo" disabled>
+            <input type="text" class="form-control form-control-sm" name="Cargo" [ngModel]="selected.cargo" disabled>
           </div>
         </mat-card-content>
       </mat-card>

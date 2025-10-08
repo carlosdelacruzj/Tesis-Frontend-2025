@@ -1,15 +1,20 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort } from '@angular/material/sort';
-import { NgbModalConfig, NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { NgForm, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
+import { Component, OnDestroy, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Router } from '@angular/router';
+import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
+import { NgForm } from '@angular/forms';
 import swal from 'sweetalert2';
+import { Subject, takeUntil } from 'rxjs';
 
-import { PersonalService } from './service/personal.service';
+import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
+import { PersonalService, Cargo } from './service/personal.service';
 import { Empleado, EmpleadoUpdateDto } from './model/personal.model';
 
-type Cargo = { idCargo: number; cargo: string };
+type EmpleadoRow = Empleado & { nombreCompleto: string };
+
+type SortPayload = { key: string; direction: 'asc' | 'desc' | '' };
+type PagePayload = { page: number; pageSize: number };
+
+type ModalMode = 'view' | 'edit';
 
 @Component({
   selector: 'app-gestionar-personal',
@@ -17,119 +22,171 @@ type Cargo = { idCargo: number; cargo: string };
   providers: [NgbModalConfig, NgbModal],
   styleUrls: ['./gestionar-personal.component.css']
 })
-export class GestionarPersonalComponent implements OnInit {
+export class GestionarPersonalComponent implements OnInit, OnDestroy {
+  columns: TableColumn<EmpleadoRow>[] = [
+    { key: 'codigoEmpleado', header: 'ID', sortable: true, width: '90px', class: 'text-center text-nowrap' },
+    { key: 'nombreCompleto', header: 'Nombre', sortable: true },
+    { key: 'documento', header: 'DNI', sortable: true, width: '130px', class: 'text-nowrap text-center' },
+    { key: 'cargo', header: 'Cargo', sortable: true },
+    { key: 'estado', header: 'Estado', sortable: true, width: '140px', class: 'text-center text-nowrap' },
+    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '140px', class: 'text-center text-nowrap' }
+  ];
 
-  // OJO: estos IDs de columna tienen espacios porque tu template actual los usa así.
-  // Cuando actualices el HTML, cámbialos a ids sin espacios (p.ej. 'codigo', 'fullName'...).
-  columnsToDisplay = ['ID', 'Nombres y apellidos', 'Cargo', 'DNI', 'Estado', 'Acciones'];
-
-  dataSource = new MatTableDataSource<Empleado>([]);
+  rows: EmpleadoRow[] = [];
   cargos: Cargo[] = [];
-  selected: Empleado | null = null;
+  selected: EmpleadoRow | null = null;
 
-  form = new UntypedFormGroup({
-    cargoF: new UntypedFormControl(null, Validators.required)
-  });
+  loadingList = false;
+  error: string | null = null;
+  readonly initialSort = { key: 'nombreCompleto', direction: 'asc' as const };
 
   celularPattern = '^[1-9]{1}[0-9]{6,8}$';
   correoPattern = '^[\\w.+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$';
 
-  @ViewChild('paginator') paginator!: MatPaginator;
-  @ViewChild(MatSort) matSort!: MatSort;
+  private readonly destroy$ = new Subject<void>();
+
+  @ViewChild('contentUpdate', { static: true }) contentUpdate!: TemplateRef<any>;
+  @ViewChild('contentView', { static: true }) contentView!: TemplateRef<any>;
 
   constructor(
-    public service: PersonalService,
+    private readonly personalService: PersonalService,
+    private readonly modalService: NgbModal,
     config: NgbModalConfig,
-    private modalService: NgbModal
+    private readonly router: Router
   ) {
     config.backdrop = 'static';
     config.keyboard = false;
   }
 
   ngOnInit(): void {
-    this.getEmpleados();
+    this.loadEmpleados();
   }
 
-  getEmpleados(): void {
-    this.service.getEmpleados().subscribe((list) => {
-      this.dataSource = new MatTableDataSource(list);
-      this.dataSource.paginator = this.paginator;
-      this.dataSource.sort = this.matSort;
-
-      // Filtro simple por varias columnas
-      this.dataSource.filterPredicate = (data, filter) => {
-        const f = (filter || '').trim().toLowerCase();
-        return (
-          data.codigoEmpleado.toLowerCase().includes(f) ||
-          `${data.nombre} ${data.apellido}`.toLowerCase().includes(f) ||
-          data.documento.toLowerCase().includes(f) ||
-          data.cargo.toLowerCase().includes(f) ||
-          (data.autonomo === 'SI' ? 'autonomo' : 'dependiente').includes(f)
-        );
-      };
-    });
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  getCargos(): void {
-    this.service.getCargos().subscribe((res) => (this.cargos = res));
+  navigateToCreate(): void {
+    this.router.navigate(['/home/gestionar-personal/agregar']);
   }
 
-  filterData($event: any): void {
-    const value = ($event?.target?.value ?? '').toString().toLowerCase();
-    this.dataSource.filter = value;
-    if (this.dataSource.paginator) this.dataSource.paginator.firstPage();
+  onSortChange(_: SortPayload): void {
+    // Hook disponible para telemetría futura
   }
 
-  open(content: any, id: number): void {
-    this.modalService.open(content);
-    this.getEmpleadoView(id);
-    this.getCargos();
+  onPageChange(_: PagePayload): void {
+    // Hook disponible para telemetría futura
   }
 
-  getEmpleadoView(id: number): void {
-    this.service.getEmpleadoById(id).subscribe((emp) => {
-      this.selected = emp;               // ← guarda el objeto seleccionado
-      console.log('Empleado seleccionado', this.selected);
-    });
+  reload(): void {
+    this.loadEmpleados();
   }
 
-  UpdateEmpleado(EmpleadoForm: NgForm): void {
-    if (!this.selected) return;
+  verEmpleado(row: EmpleadoRow): void {
+    this.openModal('view', row);
+  }
 
-    // Tu template actual usa nombres tipo "Correo", "Celular", "Direccion", "Estado" e "ID".
-    // Mapeamos esos nombres a nuestro DTO.
-    const v = EmpleadoForm.value || {};
+  editarEmpleado(row: EmpleadoRow): void {
+    this.openModal('edit', row);
+  }
+
+  UpdateEmpleado(empleadoForm: NgForm): void {
+    if (!this.selected) {
+      return;
+    }
+
+    const v = empleadoForm.value || {};
     const dto: EmpleadoUpdateDto = {
       idEmpleado: Number(v.ID ?? this.selected.idEmpleado),
       correo: v.Correo ?? this.selected.correo,
       celular: v.Celular ?? this.selected.celular,
       direccion: v.Direccion ?? this.selected.direccion,
-      // Si ya tienes idEstado en el form (select), conviértelo a número; de lo contrario, omítelo.
-      idEstado: v.Estado !== undefined && v.Estado !== null ? Number(v.Estado) : undefined
+      idEstado: v.Estado !== undefined && v.Estado !== null ? Number(v.Estado) : this.selected.idEstado
     };
 
-    this.service.updateEmpleado(dto).subscribe({
-      next: () => {
-        this.getEmpleados();
-        this.getEmpleadoView(dto.idEmpleado);
-        swal.fire({
-          text: 'Se actualizó al empleado exitosamente',
-          icon: 'success',
-          showCancelButton: false,
-          customClass: { confirmButton: 'btn btn-success' },
-          buttonsStyling: false
-        });
-      },
-      error: (err) => {
-        console.error(err);
-        swal.fire({
-          text: 'Ocurrió un error, volver a intentar.',
-          icon: 'warning',
-          showCancelButton: false,
-          customClass: { confirmButton: 'btn btn-warning' },
-          buttonsStyling: false
-        });
-      }
-    });
+    this.personalService.updateEmpleado(dto)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loadEmpleados();
+          this.loadEmpleado(dto.idEmpleado);
+          swal.fire({
+            text: 'Se actualizó al empleado exitosamente',
+            icon: 'success',
+            showCancelButton: false,
+            customClass: { confirmButton: 'btn btn-success' },
+            buttonsStyling: false
+          });
+        },
+        error: (err) => {
+          console.error('[personal] update', err);
+          swal.fire({
+            text: 'Ocurrió un error, volver a intentar.',
+            icon: 'warning',
+            showCancelButton: false,
+            customClass: { confirmButton: 'btn btn-warning' },
+            buttonsStyling: false
+          });
+        }
+      });
+  }
+
+  private loadEmpleados(): void {
+    this.loadingList = true;
+    this.error = null;
+
+    this.personalService.getEmpleados()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (empleados) => {
+          this.rows = (empleados ?? []).map((empleado) => ({
+            ...empleado,
+            nombreCompleto: `${empleado.nombre ?? ''} ${empleado.apellido ?? ''}`.trim()
+          }));
+          this.loadingList = false;
+        },
+        error: (err) => {
+          console.error('[personal] list', err);
+          this.error = 'No pudimos cargar el personal.';
+          this.rows = [];
+          this.loadingList = false;
+        }
+      });
+  }
+
+  private openModal(mode: ModalMode, row: EmpleadoRow): void {
+    this.selected = row;
+    this.loadEmpleado(row.idEmpleado, mode);
+    const template = mode === 'edit' ? this.contentUpdate : this.contentView;
+    this.modalService.open(template);
+    if (mode === 'edit') {
+      this.loadCargos();
+    }
+  }
+
+  private loadEmpleado(id: number, mode: ModalMode = 'view'): void {
+    this.personalService.getEmpleadoById(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (empleado) => {
+          this.selected = {
+            ...empleado,
+            nombreCompleto: `${empleado.nombre ?? ''} ${empleado.apellido ?? ''}`.trim()
+          };
+        },
+        error: (err) => {
+          console.error(`[personal] detalle ${mode}`, err);
+        }
+      });
+  }
+
+  private loadCargos(): void {
+    this.personalService.getCargos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (cargos) => { this.cargos = cargos ?? []; },
+        error: (err) => { console.error('[personal] cargos', err); }
+      });
   }
 }
