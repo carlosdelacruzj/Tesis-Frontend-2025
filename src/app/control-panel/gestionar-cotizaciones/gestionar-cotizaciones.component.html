@@ -1,88 +1,61 @@
-<div class="container-fluid dashboard-content">
-  <div class="container-fluid">
-    <div>
+<div class="dashboard-content">
+    <div class="py-4">
       <h1>Cotizaciones</h1>
-    </div>
-
-    <div class="row align-items-center mb-3">
-      <div class="col-12 col-md-8">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Buscar</mat-label>
-          <input matInput placeholder="Cliente, código, evento…" autocomplete="off" (keyup)="filterData($event)" [disabled]="loadingList">
-        </mat-form-field>
-      </div>
-      <div class="col-12 col-md-4 text-md-end text-start mt-2 mt-md-0">
-        <button class="btn btn-outline-dark btn-lg" type="button" (click)="navigateToCreate()" [disabled]="loadingList">
-          Registrar cotización
-        </button>
-      </div>
     </div>
 
     <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
     <ng-container *ngIf="!loadingList; else loadingState">
-      <table mat-table [dataSource]="dataSource" matSort class="table" [trackBy]="trackById">
+      <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10,25,50]" [pageSize]="10"
+        [initialSort]="{ key: 'fecha', direction: 'desc' }" searchPlaceholder="Buscar: cliente, código, evento…"
+        emptyText="Sin resultados" (rowClick)="ver($event)" (sortChange)="onSortChange($event)"
+        createButtonLabel="Registrar cotización" [showCreateButton]="true" (createClick)="navigateToCreate()"
+        (pageChange)="onPageChange($event)">
+        <!-- código: muestra codigo o fallback COT-{id} -->
+        <ng-template appCell="codigo" let-row>
+          {{ row.codigo || ('COT-' + row.id) }}
+        </ng-template>
 
-        <ng-container matColumnDef="codigo">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header> Código </th>
-          <td mat-cell *matCellDef="let element">{{ element.codigo || ('COT-' + element.id) }}</td>
-        </ng-container>
+        <!-- cliente + contacto: cliente — contacto -->
+        <ng-template appCell="cliente" let-row>
+          <span>{{ row.cliente || '—' }}</span>
+          <small class="text-muted" *ngIf="row.contacto"> — {{ row.contacto }}</small>
+        </ng-template>
 
-        <ng-container matColumnDef="cliente">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header> Cliente </th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.cliente || '—' }}
-            <small class="text-muted" *ngIf="element.contacto"> — {{ element.contacto }}</small>
-          </td>
-        </ng-container>
+        <!-- fecha / horas -->
+        <ng-template appCell="fecha" let-row>
+          {{ row.fecha | date:'dd-MM-yyyy' }}
+          <small class="text-muted" *ngIf="row.horasEstimadas"> — {{ row.horasEstimadas }}</small>
+        </ng-template>
 
-        <ng-container matColumnDef="evento">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header> Evento </th>
-          <td mat-cell *matCellDef="let element">{{ element.evento || '—' }}</td>
-        </ng-container>
+        <!-- estado como badge simple -->
+        <ng-template appCell="estado" let-row>
+          <span class="badge" [class.bg-secondary]="!row.borrador" [class.bg-warning]="row.estado==='Pendiente'"
+            [class.bg-success]="row.estado==='Aceptada'" [class.bg-danger]="row.estado==='Rechazada'">
+            {{ row.estado || 'Pendiente' }}
+          </span>
+        </ng-template>
 
-        <ng-container matColumnDef="fecha">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header> Fecha / horas </th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.fecha | date:'dd-MM-yyyy' }}
-            <small class="text-muted" *ngIf="element.horasEstimadas"> — {{ element.horasEstimadas }}</small>
-          </td>
-        </ng-container>
+        <!-- total en PEN -->
+        <ng-template appCell="total" let-row>
+          {{ row.total | currency:'PEN':'symbol-narrow':'1.2-2' }}
+        </ng-template>
 
-        <ng-container matColumnDef="estado">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header> Estado </th>
-          <td mat-cell *matCellDef="let element">{{ element.estado || 'Pendiente' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="total">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header> Total </th>
-          <td mat-cell *matCellDef="let element">{{ element.total | currency:'PEN':'symbol-narrow':'1.2-2' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="acciones">
-          <th mat-header-cell *matHeaderCellDef class="text-center"> Acciones </th>
-          <td mat-cell *matCellDef="let element" class="text-center">
-            <button mat-icon-button color="primary" type="button" (click)="editCotizacion(element)" matTooltip="Editar">
+        <!-- acciones: puedes mantener Angular Material si prefieres -->
+        <ng-template appCell="acciones" let-row>
+          <div class="d-flex justify-content-center gap-1">
+            <button mat-icon-button color="primary" type="button" (click)="editCotizacion(row)" matTooltip="Editar">
               <mat-icon>edit</mat-icon>
             </button>
-            <button mat-icon-button color="accent" type="button" (click)="downloadPdf(element)" [disabled]="downloadingId === element.id" matTooltip="Descargar PDF">
-              <mat-icon *ngIf="downloadingId !== element.id">picture_as_pdf</mat-icon>
-              <mat-icon *ngIf="downloadingId === element.id" class="spin">hourglass_top</mat-icon>
+            <button mat-icon-button color="accent" type="button" (click)="downloadPdf(row)"
+              [disabled]="downloadingId === row.id" matTooltip="Descargar PDF">
+              <mat-icon *ngIf="downloadingId !== row.id">picture_as_pdf</mat-icon>
+              <mat-icon *ngIf="downloadingId === row.id" class="spin">hourglass_top</mat-icon>
             </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
-        <tr mat-row *matRowDef="let row; columns: columnsToDisplay;"></tr>
-      </table>
-
-      <div class="text-center text-muted" *ngIf="dataSource && dataSource.data?.length === 0">
-        Sin resultados
-      </div>
-
-      <mat-paginator [pageSize]="10" [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+          </div>
+        </ng-template>
+      </app-table-base>
     </ng-container>
-  </div>
 </div>
 
 <ng-template #loadingState>

@@ -8,6 +8,7 @@ import { PedidoService } from './service/pedido.service';
 import { Pedido, Pedido2 } from './model/pedido.model';
 import { NgbModal, ModalDismissReasons } from '@ng-bootstrap/ng-bootstrap';
 import { NgForm } from '@angular/forms';
+import { formatDisplayDate } from '../../shared/utils/date-utils';
 
 @Component({
   selector: 'app-generar-contrato',
@@ -91,7 +92,12 @@ export class GenerarContratoComponent implements OnInit {
 
   getPedidoID(valor: number) {
     this.service2.getAllNombresID(valor).subscribe((responde) => {
-      this.service2.selectPedido2 = responde[0];
+      const pedido = responde?.[0] ?? {};
+      this.service2.selectPedido2 = {
+        ...pedido,
+        F_Registro: formatDisplayDate(pedido?.F_Registro, ''),
+        F_Evento: formatDisplayDate(pedido?.F_Evento, ''),
+      } as Pedido2;
       console.log(this.service2.selectPedido2);
     });
   }

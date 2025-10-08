@@ -156,9 +156,13 @@
 
 /* 0.1. Body / Typography
    ========================================================================== */
+*{
+       font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
 
 body {
-    font-family: 'Circular Std Book';
+    /* font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important; */
+     /* 'Circular Std Book'; */
     font-style: normal;
     font-weight: normal;
     font-size: 14px;
@@ -175,7 +179,7 @@ h5,
 h6 {
     color: #3d405c !important;
     margin: 0px 0px 15px 0px;
-    font-family: 'Circular Std Medium';
+    /* font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; */
 }
 
 h1 {
@@ -2001,7 +2005,7 @@ Container / Wrapper
 }
 
 .dashboard-content {
-    padding: 40px 40px 40px 40px;
+    padding: 2rem 4rem;
 }
 .col-f{
     text-align: center; 

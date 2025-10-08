@@ -5,6 +5,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subject, of } from 'rxjs';
 import { catchError, take, takeUntil } from 'rxjs/operators';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE, DateAdapter, MatDateFormats, NativeDateAdapter } from '@angular/material/core';
+import { formatDisplayDate, formatIsoDate } from '../shared/utils/date-utils';
 
 import { LandingCotizacionService, LandingCreateCotizacionDto, LandingCountryCodeDto, LandingEventDto } from './services/landing-cotizacion.service';
 // Landing copy decks for cards and sections
@@ -43,31 +44,24 @@ interface FaqItem {
   answer: string;
 }
 
-// Formats calendar input as dd/MM/yyyy for the form
+// Formats calendar input as dd-MM-yyyy for the form
 class LandingDateAdapter extends NativeDateAdapter {
   override format(date: Date, displayFormat: any): string {
     if (displayFormat === 'input') {
-      const day = this._to2Digit(date.getDate());
-      const month = this._to2Digit(date.getMonth() + 1);
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
+      return formatDisplayDate(date, '');
     }
     return super.format(date, displayFormat);
-  }
-
-  private _to2Digit(value: number): string {
-    return value < 10 ? `0${value}` : `${value}`;
   }
 }
 
 const LANDING_DATE_FORMATS: MatDateFormats = {
   parse: {
-    dateInput: 'dd/MM/yyyy'
+    dateInput: 'dd-MM-yyyy'
   },
   display: {
     dateInput: 'input',
     monthYearLabel: 'MMM yyyy',
-    dateA11yLabel: 'dd/MM/yyyy',
+    dateA11yLabel: 'dd-MM-yyyy',
     monthYearA11yLabel: 'MMMM yyyy'
   }
 };
@@ -627,33 +621,18 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   // Normalizes Date inputs coming from the Angular Material picker
   private formatDate(value: unknown): string | null {
-    const date = this.toDate(value);
-    return date ? date.toISOString().slice(0, 10) : null;
+    return formatIsoDate(value as any);
   }
 
   private formatDateDisplay(value: unknown): string | null {
-    const date = this.toDate(value);
-    if (!date) {
-      return null;
-    }
-    return new Intl.DateTimeFormat('es-PE').format(date);
+    const formatted = formatDisplayDate(value as any, '');
+    return formatted || null;
   }
 
   private startOfToday(): Date {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
-  }
-
-  private toDate(value: unknown): Date | null {
-    if (!value) {
-      return null;
-    }
-    if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value;
-    }
-    const date = new Date(value as string);
-    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   // Shapes the final DTO that the landing service expects

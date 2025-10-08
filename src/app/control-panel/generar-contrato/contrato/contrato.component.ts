@@ -4,6 +4,7 @@ import { DateAdapter } from '@angular/material/core';
 import { HttpClient } from '@angular/common/http';
 
 import { PedidoService } from '../service/pedido.service';
+import { formatDisplayDate } from '../../../shared/utils/date-utils';
 
 @Component({
   selector: 'app-contrato',
@@ -26,25 +27,15 @@ export class ContratoComponent implements OnInit {
 
   /**
    * Formatea una fecha (string o Date) al estilo del texto original.
-   * Si viene en "dd/MM/yyyy" lo respeta, si no, intenta convertir desde Date.
+   * Usa dd-MM-yyyy como formato de salida.
    */
   private formatearFechaContrato(fecha: string | Date): string {
-    if (typeof fecha === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(fecha)) {
-      // "dd/MM/yyyy"
-      const dd = fecha.substring(0, 2);
-      const mm = fecha.substring(3, 5);
-      const yyyy = fecha.substring(6, 10);
-      return `.....${dd}.....de.....${mm}.....del.....${yyyy}.....`;
-    }
-    try {
-      const d = typeof fecha === 'string' ? new Date(fecha) : fecha;
-      const dd = String(d.getDate()).padStart(2, '0');
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const yyyy = d.getFullYear();
-      return `.....${dd}.....de.....${mm}.....del.....${yyyy}.....`;
-    } catch {
+    const display = formatDisplayDate(fecha, '');
+    if (!display) {
       return '.....__.....de.....__.....del.....____.....';
     }
+    const [dd, mm, yyyy] = display.split('-');
+    return `.....${dd}.....de.....${mm}.....del.....${yyyy}.....`;
   }
 
   /**

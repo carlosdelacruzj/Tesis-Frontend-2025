@@ -8,6 +8,7 @@ import { Subject, finalize, switchMap, takeUntil } from 'rxjs';
 
 import { Cotizacion, CotizacionItemPayload, CotizacionPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
+import { formatDisplayDate, formatIsoDate } from '../../../shared/utils/date-utils';
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -55,6 +56,7 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
   private cotizacion: Cotizacion | null = null;
   private pendingServicioId: number | null = null;
   private pendingEventoId: number | null = null;
+  private fechaEventoOriginal: string | null = null;
 
   private readonly destroy$ = new Subject<void>();
 
@@ -159,13 +161,19 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
     }
 
     const raw = this.form.getRawValue();
+    console.log('Raw form data:', raw);
     const clienteNombre = (raw.clienteNombre ?? '').toString().trim();
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotización de ${clienteNombre}` : 'Solicitud de cotización');
     const clienteContacto = (raw.clienteContacto ?? '').toString().trim();
     const clienteId = (this.cotizacion.raw as CotizacionPayload)?.clienteId;
-    const fechaEvento = raw.fechaEvento;
+    const fechaEvento = this.normalizeDateForPayload(raw.fechaEvento) ??
+      this.normalizeDateForPayload(this.fechaEventoOriginal);
+    if (!fechaEvento) {
+      this.snackBar.open('No pudimos interpretar la fecha del evento.', 'Cerrar', { duration: 4000 });
+      return;
+    }
     const ubicacion = (raw.ubicacion ?? '').toString().trim();
 
     const items: CotizacionItemPayload[] = this.selectedPaquetes.map(item => ({
@@ -290,11 +298,13 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
 
     const nombre = (raw?.clienteNombre ?? cotizacion.cliente ?? '').toString().trim();
     const contacto = (raw?.clienteContacto ?? cotizacion.contacto ?? '').toString().trim();
+    this.fechaEventoOriginal = raw?.fechaEvento ?? cotizacion.fecha ?? null;
+    const fechaEventoDisplay = this.formatDateDisplay(this.fechaEventoOriginal);
 
     this.form.patchValue({
       clienteNombre: nombre,
       clienteContacto: contacto,
-      fechaEvento: raw?.fechaEvento ?? cotizacion.fecha ?? null,
+      fechaEvento: fechaEventoDisplay,
       eventoSolicitado: cotizacion.eventoSolicitado ?? raw?.eventoNombre ?? cotizacion.evento ?? '',
       ubicacion: raw?.ubicacion ?? '',
       horasEstimadas: raw?.horasEstimadas ?? '',
@@ -371,6 +381,14 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
           this.loadingPaquetes = false;
         }
       });
+  }
+
+  private formatDateDisplay(value: string | Date | null | undefined): string {
+    return formatDisplayDate(value, '');
+  }
+
+  private normalizeDateForPayload(value: string | Date | null | undefined): string | null {
+    return formatIsoDate(value);
   }
 
   private syncTotalEstimado(): void {

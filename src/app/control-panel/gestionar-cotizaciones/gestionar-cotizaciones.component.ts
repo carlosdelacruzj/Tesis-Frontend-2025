@@ -1,31 +1,37 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort } from '@angular/material/sort';
-import { MatTableDataSource } from '@angular/material/table';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
 import { Cotizacion } from './model/cotizacion.model';
 import { CotizacionService } from './service/cotizacion.service';
 
+// Importa la interfaz de columnas desde TableBase
+import { TableColumn } from 'src/app/components/table/table-base.component';
+
 @Component({
   selector: 'app-gestionar-cotizaciones',
   templateUrl: './gestionar-cotizaciones.component.html',
   styleUrls: ['./gestionar-cotizaciones.component.css']
 })
-export class GestionarCotizacionesComponent implements OnInit, AfterViewInit, OnDestroy {
-  columnsToDisplay = ['codigo', 'cliente', 'evento', 'fecha', 'estado', 'total', 'acciones'];
-  dataSource = new MatTableDataSource<Cotizacion>([]);
+export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
+  // columnas que verá TableBase
+  columns: TableColumn<Cotizacion>[] = [
+    { key: 'codigo', header: 'Código', sortable: true, width: '120px', class: 'text-nowrap' },
+    { key: 'cliente', header: 'Cliente', sortable: true },
+    { key: 'evento',  header: 'Evento',  sortable: true },
+    { key: 'fecha',   header: 'Fecha / horas', sortable: true, width: '160px' },
+    { key: 'estado',  header: 'Estado',  sortable: true, width: '120px' },
+    { key: 'total',   header: 'Total',   sortable: true, width: '120px', class: 'text-center' },
+    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '140px', class: 'text-center' }
+  ];
+
+  rows: Cotizacion[] = [];
 
   loadingList = false;
   downloadingId: number | null = null;
   error: string | null = null;
-  private filterValue = '';
 
   private readonly destroy$ = new Subject<void>();
-
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
 
   constructor(
     private readonly cotizacionService: CotizacionService,
@@ -36,34 +42,19 @@ export class GestionarCotizacionesComponent implements OnInit, AfterViewInit, On
     this.loadCotizaciones();
   }
 
-  ngAfterViewInit(): void {
-    this.assignTableHelpers();
-  }
-
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  trackById(_index: number, item: Cotizacion): number {
-    return item.id;
-  }
-
-  filterData(event: Event): void {
-    const value = (event.target as HTMLInputElement)?.value ?? '';
-    this.filterValue = value.trim().toLowerCase();
-    this.dataSource.filter = this.filterValue;
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
-    }
-  }
-
-  reload(): void {
-    this.loadCotizaciones();
-  }
-
+  // Navegación y acciones (igual que antes)
   navigateToCreate(): void {
     this.router.navigate(['/home/gestionar-cotizaciones/registrar']);
+  }
+
+  ver(row: Cotizacion) {
+    // si quieres abrir detalle al click en fila, o ignóralo
+    // this.router.navigate([...])
   }
 
   editCotizacion(cotizacion: Cotizacion): void {
@@ -92,43 +83,29 @@ export class GestionarCotizacionesComponent implements OnInit, AfterViewInit, On
       });
   }
 
+  // Hooks opcionales del TableBase (por si quieres loguear/usar server-side luego)
+  onSortChange(evt: { key: string; direction: 'asc' | 'desc' | '' }) {
+    // console.log('sortChange', evt);
+  }
+  onPageChange(evt: { page: number; pageSize: number }) {
+    // console.log('pageChange', evt);
+  }
+
+  // Carga de datos (mismo servicio que ya tenías)
+  reload(): void {
+    this.loadCotizaciones();
+  }
+
   private loadCotizaciones(): void {
     this.loadingList = true;
     this.error = null;
+
     this.cotizacionService.listCotizaciones()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (cotizaciones) => {
-          this.dataSource = new MatTableDataSource<Cotizacion>(cotizaciones);
-          this.assignTableHelpers();
-          this.dataSource.filterPredicate = (data, filter) => {
-            const raw: any = data.raw ?? {};
-            const lead = data.lead ?? (raw?.lead as any);
-            const values = [
-              data.codigo,
-              data.cliente,
-              data.contacto,
-              data.evento,
-              data.estado,
-              data.horasEstimadas,
-              data.total?.toString(),
-              data.fecha,
-              data.notas,
-              data.lugar,
-              data.eventoSolicitado,
-              lead?.nombre,
-              lead?.celular,
-              lead?.origen,
-              raw?.descripcion,
-              raw?.mensaje
-            ]
-              .filter(Boolean)
-              .map((v) => String(v).toLowerCase());
-            return values.some((value) => value.includes(filter));
-          };
-          if (this.filterValue) {
-            this.dataSource.filter = this.filterValue;
-          }
+          // Puedes normalizar aquí si lo necesitas
+          this.rows = cotizaciones ?? [];
           this.loadingList = false;
         },
         error: (err) => {
@@ -137,14 +114,5 @@ export class GestionarCotizacionesComponent implements OnInit, AfterViewInit, On
           this.loadingList = false;
         }
       });
-  }
-
-  private assignTableHelpers(): void {
-    if (this.paginator) {
-      this.dataSource.paginator = this.paginator;
-    }
-    if (this.sort) {
-      this.dataSource.sort = this.sort;
-    }
   }
 }

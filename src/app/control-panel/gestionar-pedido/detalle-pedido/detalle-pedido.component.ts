@@ -7,6 +7,7 @@ import { MatSort } from '@angular/material/sort';
 import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
+import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
 
 @Component({
   selector: 'app-detalle-pedido',
@@ -93,7 +94,7 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
     this.getEventoxServicio();
 
     // Inicializa cabecera visible
-    this.visualizarService.selectAgregarPedido.fechaCreate = this.fechaCreate.toLocaleDateString();
+    this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(this.fechaCreate, '');
     this.fechaValidate(this.fechaCreate);
 
     // Cargar el pedido existente (solo para ver)
@@ -124,11 +125,17 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
   }
 
   weekdayPeru(fechaISO: string): string {
-    if (!fechaISO) return '';
-    const [y, m, d] = fechaISO.split('-').map(Number);
-    const dtUTC = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+    const parsed = parseDateInput(fechaISO);
+    if (!parsed) {
+      return '';
+    }
+    const midDay = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0);
     const fmt = new Intl.DateTimeFormat('es-PE', { weekday: 'short', timeZone: 'America/Lima' });
-    return fmt.format(dtUTC);
+    return fmt.format(midDay);
+  }
+
+  formatProgramDate(value: string | Date): string {
+    return formatDisplayDate(value, '');
   }
 
   // ====== Catálogos (solo carga) ======
@@ -178,7 +185,7 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
       this.visualizarService.selectAgregarPedido.Observacion = cab?.observaciones ?? '';
       this.CodigoEmpleado = cab?.empleadoId ?? this.CodigoEmpleado;
       this.fechaCreate = new Date(cab?.fechaCreacion ?? new Date());
-      this.visualizarService.selectAgregarPedido.fechaCreate = this.fechaCreate.toLocaleDateString();
+      this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(this.fechaCreate, '');
 
       // Cliente
       this.infoCliente = {

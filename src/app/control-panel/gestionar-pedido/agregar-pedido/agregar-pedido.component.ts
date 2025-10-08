@@ -7,6 +7,7 @@ import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatSort } from '@angular/material/sort';
 import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
 
 type Tag = { nombre: string; direccion: string; usedAt?: number };
 
@@ -84,7 +85,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
     this.getServicio();
     this.getEventoxServicio();
 
-    this.visualizarService.selectAgregarPedido.fechaCreate = this.fechaCreate.toLocaleDateString();
+    this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(this.fechaCreate, '');
     this.fechaValidate(this.fechaCreate);
 
     if (this.dniCliente) this.loadTagsCliente();
@@ -207,11 +208,17 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   weekdayPeru(fechaISO: string): string {
-    if (!fechaISO) return '';
-    const [y, m, d] = fechaISO.split('-').map(Number);
-    const dtUTC = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+    const parsed = parseDateInput(fechaISO);
+    if (!parsed) {
+      return '';
+    }
+    const midDay = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0);
     const fmt = new Intl.DateTimeFormat('es-PE', { weekday: 'short', timeZone: 'America/Lima' });
-    return fmt.format(dtUTC);
+    return fmt.format(midDay);
+  }
+
+  formatProgramDate(value: string | Date): string {
+    return formatDisplayDate(value, '');
   }
 
   rowInvalid(row: any): boolean {

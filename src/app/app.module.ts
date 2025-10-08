@@ -17,7 +17,7 @@ import { AngularMaterialModule } from './shared/angular-material/angular-materia
 import { MatPaginatorIntl } from '@angular/material/paginator';
 import { getSpanishPaginatorIntl } from './shared/angular-material/spanish-paginator-intl';
 import { ReactiveFormsModule } from '@angular/forms';
-import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 
 // import {
@@ -57,19 +57,21 @@ import { EditarPerfilComponent } from './control-panel/gestionar-perfiles/editar
 import { VerCalendarioComponent } from './control-panel/ver-calendario/ver-calendario.component';
 import { FullCalendarModule } from '@fullcalendar/angular'; // must go before plugins
 import dayGridPlugin from '@fullcalendar/daygrid'; // a plugin!
-import interactionPlugin  from '@fullcalendar/interaction';
+import interactionPlugin from '@fullcalendar/interaction';
 import { DialogComponent } from './control-panel/ver-calendario/dialog/dialog.component'; // a plugin!
 import { LandingComponent } from './landing/landing.component';
 import { GestionarCotizacionesComponent } from './control-panel/gestionar-cotizaciones/gestionar-cotizaciones.component';
 import { RegistrarCotizacionComponent } from './control-panel/gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
 import { EditarCotizacionComponent } from './control-panel/gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
+import { CellTemplateDirective, TableBaseComponent } from './components/table/table-base.component';
 
 
 
-    // HeaderComponent,
-    // FooterComponent,
-    // SidebarComponent,
-@NgModule({ declarations: [
+// HeaderComponent,
+// FooterComponent,
+// SidebarComponent,
+@NgModule({
+    declarations: [
         AppComponent,
         GestionarProyectoComponent,
         GestionarEquiposComponent,
@@ -118,9 +120,12 @@ import { EditarCotizacionComponent } from './control-panel/gestionar-cotizacione
         ReactiveFormsModule,
         NgbModule,
         NgxChartsModule,
+        CellTemplateDirective,
+        TableBaseComponent,
         FullCalendarModule], providers: [
-        { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() },
-        DatePipe,
-        provideHttpClient(withInterceptorsFromDi())
-    ] })
-export class AppModule {}
+            { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() },
+            DatePipe,
+            provideHttpClient(withInterceptorsFromDi())
+        ]
+})
+export class AppModule { }

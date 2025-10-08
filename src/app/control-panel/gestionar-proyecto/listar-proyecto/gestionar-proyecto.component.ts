@@ -5,10 +5,11 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { Proyecto } from '../model/proyecto.model';
 import { PedidoService } from '../service/pedido.service';
-import { Pedido } from '../model/pedido.model';
+import { Pedido, Pedido2 } from '../model/pedido.model';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { NgForm } from '@angular/forms';
 import swal from 'sweetalert2';
+import { formatDisplayDate } from '../../../shared/utils/date-utils';
 
 @Component({
   selector: 'app-gestionar-proyecto',
@@ -117,17 +118,18 @@ export class GestionarProyectoComponent implements OnInit {
 
   getPedidoID(valor: number) {
     this.service2.getAllNombresID(valor).subscribe((responde) => {
-      this.service2.selectPedido2 = responde[0];
-
-      // console.log(valor);
-      // console.log(responde);
-      // console.log(this.service2.selectPedido2);
+      const pedido = responde?.[0] ?? {};
+      this.service2.selectPedido2 = {
+        ...pedido,
+        F_Registro: formatDisplayDate(pedido?.F_Registro, ''),
+        F_Evento: formatDisplayDate(pedido?.F_Evento, ''),
+      } as Pedido2;
     });
   }
   getProyectoID(valor: number) {
     this.service.getProyectoID(valor).subscribe((responde) => {
       this.service.selectProyecto = responde[0];
-      this.service.selectProyecto.Pro_Fecha_Fin_Edicion = (responde[0].Pro_Fecha_Fin_Edicion).split("-").reverse().join("-");
+      this.service.selectProyecto.Pro_Fecha_Fin_Edicion = formatDisplayDate(responde?.[0]?.Pro_Fecha_Fin_Edicion, '');
       console.log(this.service.selectProyecto)
 
     })

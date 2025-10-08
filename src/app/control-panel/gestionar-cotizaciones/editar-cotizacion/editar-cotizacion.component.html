@@ -42,7 +42,7 @@
                 <div class="col-sm-6">
                   <div class="form-group">
                     <label class="col-form-label">Fecha del evento</label>
-                    <input type="date" class="form-control" formControlName="fechaEvento">
+                    <input type="text" class="form-control" formControlName="fechaEvento" placeholder="dd-mm-aaaa">
                     <small class="text-danger"
                       *ngIf="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
                       Selecciona una fecha válida.
