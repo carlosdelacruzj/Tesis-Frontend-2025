@@ -1,82 +1,107 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort } from '@angular/material/sort';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { from, Subject, takeUntil } from 'rxjs';
+
+import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
 import { Perfil } from './model/perfil.model';
 import { PerfilService } from './service/perfil.service';
-import { NgbModal, ModalDismissReasons } from '@ng-bootstrap/ng-bootstrap';
-import { NgForm } from '@angular/forms';
 
+export interface PerfilRow extends Perfil {
+  nombreCompleto: string;
+}
 
 @Component({
   selector: 'app-gestionar-perfiles',
   templateUrl: './gestionar-perfiles.component.html',
   styleUrls: ['./gestionar-perfiles.component.css']
 })
-export class GestionarPerfilesComponent implements OnInit {
+export class GestionarPerfilesComponent implements OnInit, OnDestroy {
 
-
-  perfiles: Perfil[]
-
-  displayedColumns2 = [
-    'ID',
-    'ROL',
-    'nombre',
-    'apellido',
-    'correo',
-    'celular',
-    'doc',
-    'direccion',
-    'actions',
+  columns: TableColumn<PerfilRow>[] = [
+    { key: 'ID', header: 'ID', sortable: true, width: '90px', class: 'text-center text-nowrap' },
+    { key: 'ROL', header: 'Rol', sortable: true },
+    { key: 'nombreCompleto', header: 'Nombre', sortable: true },
+    { key: 'correo', header: 'Correo', sortable: true },
+    { key: 'celular', header: 'Celular', sortable: true, class: 'text-nowrap' },
+    { key: 'doc', header: 'Documento', sortable: true, width: '160px', class: 'text-nowrap' },
+    { key: 'direccion', header: 'Dirección', sortable: true },
+    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '120px', class: 'text-center text-nowrap' }
   ];
-  id2 =0;
-  dataSource!: MatTableDataSource<any>;
-  dataSource2!: MatTableDataSource<any>;
 
-  @ViewChild('paginator') paginator!: MatPaginator;
-  @ViewChild('paginator2') paginator2!: MatPaginator;
-  @ViewChild(MatSort) matSort!: MatSort;
+  rows: PerfilRow[] = [];
+  loadingList = false;
+  error: string | null = null;
+  readonly initialSort = { key: 'nombreCompleto', direction: 'asc' as const };
+
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
-    public service: PerfilService,
+    private readonly perfilService: PerfilService,
+    private readonly router: Router
   ) {}
-  fechaActual = '';
-  async ngOnInit(){
-    await this.getAllPerfiles();
-  }
- 
 
-  async getAllPerfiles(){
-    var data = await this.service.getAllPerfiles();
-    this.dataSource2 = new MatTableDataSource(data);
-    this.dataSource2.paginator = this.paginator;
-    this.dataSource2.sort = this.matSort;
+  ngOnInit(): void {
+    this.loadPerfiles();
   }
-  // para hacer los filtros
-  filterData($event: any) {
-    this.dataSource.filter = $event.target.value;
-  }
-  filterData2($event: any) {
-    this.dataSource2.filter = $event.target.value;
-  }
-  //DESDE AQUI BORRAS
-  closeResult = '';
 
-  private getDismissReason(reason: any): string {
-    if (reason === ModalDismissReasons.ESC) {
-      return 'by pressing ESC';
-    } else if (reason === ModalDismissReasons.BACKDROP_CLICK) {
-      return 'by clicking on a backdrop';
-    } else {
-      return `with: ${reason}`;
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  navigateToCreate(): void {
+    this.router.navigate(['/home/gestionar-perfiles/registrar-perfil']);
+  }
+
+  editarPerfil(row: PerfilRow): void {
+    if (!row?.ID) {
+      return;
     }
+    this.perfilService.getByIdPerfil(row.ID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.perfilService.selectPerfil = Array.isArray(response) ? response[0] ?? row : response;
+          this.router.navigate(['/home/gestionar-perfiles/editar-perfil']);
+        },
+        error: (err) => {
+          console.error('[perfiles] detalle', err);
+        }
+      });
   }
 
-  public getByIdPerfil(id : number){
-    this.service.getByIdPerfil(id).subscribe((responde) => {
-      this.service.selectPerfil = responde[0];
-      console.log(this.service.selectPerfil);
-    });
+  onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {
+    // Hook disponible para telemetría futura
   }
 
+  onPageChange(_: { page: number; pageSize: number }): void {
+    // Hook disponible para telemetría futura
+  }
+
+  reload(): void {
+    this.loadPerfiles();
+  }
+
+  private loadPerfiles(): void {
+    this.loadingList = true;
+    this.error = null;
+
+    from(this.perfilService.getAllPerfiles())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (perfiles) => {
+          this.rows = (perfiles ?? []).map((perfil: Perfil) => ({
+            ...perfil,
+            nombreCompleto: `${perfil.nombre ?? ''} ${perfil.apellido ?? ''}`.trim()
+          }));
+          this.loadingList = false;
+        },
+        error: (err) => {
+          console.error('[perfiles] list', err);
+          this.error = 'No pudimos cargar los perfiles.';
+          this.rows = [];
+          this.loadingList = false;
+        }
+      });
+  }
 }
