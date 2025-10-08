@@ -8,7 +8,7 @@
       <div class="col-12 col-md-8">
         <mat-form-field appearance="fill" class="w-100">
           <mat-label>Buscar</mat-label>
-          <input matInput placeholder="Cliente, código, servicio…" autocomplete="off" (keyup)="filterData($event)" [disabled]="loadingList">
+          <input matInput placeholder="Cliente, código, evento…" autocomplete="off" (keyup)="filterData($event)" [disabled]="loadingList">
         </mat-form-field>
       </div>
       <div class="col-12 col-md-4 text-md-end text-start mt-2 mt-md-0">
@@ -34,11 +34,6 @@
             {{ element.cliente || '—' }}
             <small class="text-muted" *ngIf="element.contacto"> — {{ element.contacto }}</small>
           </td>
-        </ng-container>
-
-        <ng-container matColumnDef="servicio">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header> Servicio </th>
-          <td mat-cell *matCellDef="let element">{{ element.servicio || '—' }}</td>
         </ng-container>
 
         <ng-container matColumnDef="evento">

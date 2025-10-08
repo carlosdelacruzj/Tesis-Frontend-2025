@@ -14,7 +14,7 @@ import { CotizacionService } from './service/cotizacion.service';
   styleUrls: ['./gestionar-cotizaciones.component.css']
 })
 export class GestionarCotizacionesComponent implements OnInit, AfterViewInit, OnDestroy {
-  columnsToDisplay = ['codigo', 'cliente', 'servicio', 'evento', 'fecha', 'estado', 'total', 'acciones'];
+  columnsToDisplay = ['codigo', 'cliente', 'evento', 'fecha', 'estado', 'total', 'acciones'];
   dataSource = new MatTableDataSource<Cotizacion>([]);
 
   loadingList = false;
@@ -102,17 +102,25 @@ export class GestionarCotizacionesComponent implements OnInit, AfterViewInit, On
           this.dataSource = new MatTableDataSource<Cotizacion>(cotizaciones);
           this.assignTableHelpers();
           this.dataSource.filterPredicate = (data, filter) => {
+            const raw: any = data.raw ?? {};
+            const lead = data.lead ?? (raw?.lead as any);
             const values = [
               data.codigo,
               data.cliente,
               data.contacto,
-              data.servicio,
               data.evento,
               data.estado,
               data.horasEstimadas,
               data.total?.toString(),
               data.fecha,
-              data.notas
+              data.notas,
+              data.lugar,
+              data.eventoSolicitado,
+              lead?.nombre,
+              lead?.celular,
+              lead?.origen,
+              raw?.descripcion,
+              raw?.mensaje
             ]
               .filter(Boolean)
               .map((v) => String(v).toLowerCase());

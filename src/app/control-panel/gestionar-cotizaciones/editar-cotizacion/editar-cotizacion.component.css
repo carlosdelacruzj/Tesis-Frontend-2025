@@ -3,6 +3,31 @@
   box-shadow: 0 0.75rem 1.5rem -1rem rgba(31, 45, 61, 0.35);
 }
 
+.cotizacion-form .card-grid {
+  align-items: stretch;
+}
+
+.cotizacion-form .card-grid > [class*='col-'] {
+  display: flex;
+}
+
+.cotizacion-form .card-grid mat-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+.cotizacion-form .card-grid mat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1 1 auto;
+}
+
+.cotizacion-form .card-grid .form-group {
+  margin-bottom: 0;
+}
+
 .cotizacion-form .form-group {
   margin-bottom: 1rem;
 }

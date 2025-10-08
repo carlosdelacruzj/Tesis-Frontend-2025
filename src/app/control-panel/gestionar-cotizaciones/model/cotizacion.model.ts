@@ -1,3 +1,11 @@
+export interface CotizacionLead {
+  id?: number;
+  nombre?: string;
+  celular?: string;
+  origen?: string;
+  fechaCreacion?: string;
+}
+
 export interface Cotizacion {
   id: number;
   codigo?: string;
@@ -14,6 +22,10 @@ export interface Cotizacion {
   pdfUrl?: string;
   items?: CotizacionItemPayload[];
   raw?: unknown;
+  lugar?: string;
+  createdAt?: string;
+  lead?: CotizacionLead;
+  eventoSolicitado?: string;
 }
 
 export interface CotizacionPayload {

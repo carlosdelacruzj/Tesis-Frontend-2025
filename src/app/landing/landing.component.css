@@ -565,6 +565,26 @@
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
+.quote__phone-group {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(110px, 140px) 1fr;
+  align-items: end;
+  width: 100%;
+  grid-column: span 2;
+}
+
+.quote__phone-code .mat-form-field-flex,
+.quote__phone-number .mat-form-field-flex {
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .quote__phone-group {
+    grid-template-columns: 1fr;
+  }
+}
+
 .quote__span {
   grid-column: 1 / -1;
 }

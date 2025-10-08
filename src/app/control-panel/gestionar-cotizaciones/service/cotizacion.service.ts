@@ -1,10 +1,12 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, delay } from 'rxjs/operators';
+import { catchError, delay, map, tap } from 'rxjs/operators';
 
-import { Cotizacion, CotizacionItemPayload, CotizacionPayload, CotizacionUpdatePayload } from '../model/cotizacion.model';
+import { Cotizacion, CotizacionItemPayload, CotizacionPayload, CotizacionUpdatePayload, CotizacionLead } from '../model/cotizacion.model';
 import { PedidoService } from '../../gestionar-pedido/service/pedido.service';
 import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
+import { environment } from '../../../../environments/environment';
 
 interface MockCatalogo {
   id: number;
@@ -22,136 +24,25 @@ interface MockEventoServicio {
   horas: number;
 }
 
+interface CotizacionApiResponse {
+  id: number;
+  estado?: string | null;
+  fechaCreacion?: string | null;
+  tipoEvento?: string | null;
+  fechaEvento?: string | null;
+  lugar?: string | null;
+  horasEstimadas?: string | null;
+  mensaje?: string | null;
+  lead?: CotizacionLead | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CotizacionService {
   private readonly latency = 250;
-  private sequence = 3;
+  private readonly baseUrl = `${environment.baseUrl}/cotizaciones`;
+  private sequence = 0;
 
-  private cotizaciones: Array<Cotizacion & { raw?: CotizacionPayload }> = [
-    {
-      id: 1,
-      codigo: 'COT-001',
-      cliente: 'Eventos Aurora SAC',
-      contacto: 'Lucía Pérez',
-      servicio: 'Cobertura audiovisual',
-      evento: 'Gala corporativa',
-      fecha: '2025-02-12',
-      hora: '19:30',
-      horasEstimadas: '6 horas',
-      estado: 'Pendiente',
-      total: 1850,
-      notas: 'Cobertura audiovisual para gala anual.',
-      pdfUrl: undefined,
-      items: [
-        { descripcion: 'Cobertura fotográfica', cantidad: 1, precioUnitario: 950 },
-        { descripcion: 'Video highlight', cantidad: 1, precioUnitario: 900 }
-      ],
-      raw: {
-        clienteId: 101,
-        clienteNombre: 'Eventos Aurora SAC',
-        clienteContacto: 'Lucía Pérez',
-        servicioId: 1,
-        servicioNombre: 'Cobertura audiovisual',
-        eventoId: 1,
-        eventoNombre: 'Gala corporativa',
-        fechaEvento: '2025-02-12',
-        horaEvento: '19:30',
-        horasEstimadas: '6 horas',
-        ubicacion: 'Hotel Belmond',
-        direccionExacta: 'Av. Malecón 100, Miraflores',
-        descripcion: 'Cobertura audiovisual para gala anual.',
-        estado: 'Pendiente',
-        observaciones: 'Se requiere armado previo de escenario.',
-        items: [
-          { descripcion: 'Cobertura fotográfica', cantidad: 1, precioUnitario: 950 },
-          { descripcion: 'Video highlight', cantidad: 1, precioUnitario: 900 }
-        ],
-        totalEstimado: 1850
-      }
-    },
-    {
-      id: 2,
-      codigo: 'COT-002',
-      cliente: 'Colegio Santa María',
-      contacto: 'Dirección Académica',
-      servicio: 'Producción de eventos',
-      evento: 'Fiesta de promoción',
-      fecha: '2025-03-01',
-      hora: '20:00',
-      horasEstimadas: '5 horas',
-      estado: 'Enviada',
-      total: 1250,
-      notas: 'Fiesta de promoción (turno noche).',
-      pdfUrl: undefined,
-      items: [
-        { descripcion: 'DJ + sonido profesional', cantidad: 1, precioUnitario: 750 },
-        { descripcion: 'Iluminación ambiental', cantidad: 1, precioUnitario: 500 }
-      ],
-      raw: {
-        clienteId: 102,
-        clienteNombre: 'Colegio Santa María',
-        clienteContacto: 'Dirección Académica',
-        servicioId: 2,
-        servicioNombre: 'Producción de eventos',
-        eventoId: 2,
-        eventoNombre: 'Fiesta de promoción',
-        fechaEvento: '2025-03-01',
-        horaEvento: '20:00',
-        horasEstimadas: '5 horas',
-        ubicacion: 'Auditorio principal',
-        direccionExacta: 'Av. Arequipa 920, Lima',
-        descripcion: 'Fiesta de promoción (turno noche).',
-        estado: 'Enviada',
-        observaciones: 'Se adjunta plano del auditorio.',
-        items: [
-          { descripcion: 'DJ + sonido profesional', cantidad: 1, precioUnitario: 750 },
-          { descripcion: 'Iluminación ambiental', cantidad: 1, precioUnitario: 500 }
-        ],
-        totalEstimado: 1250
-      }
-    },
-    {
-      id: 3,
-      codigo: 'COT-003',
-      cliente: 'Bodas Nube Rosa',
-      contacto: 'Vanessa Ríos',
-      servicio: 'Cobertura integral',
-      evento: 'Boda destino',
-      fecha: '2025-04-20',
-      hora: '16:00',
-      horasEstimadas: '8 horas',
-      estado: 'Aceptada',
-      total: 2640,
-      notas: 'Boda destino con dos ceremonias.',
-      pdfUrl: undefined,
-      items: [
-        { descripcion: 'Cobertura foto + video', cantidad: 1, precioUnitario: 1800 },
-        { descripcion: 'Drone y tomas aéreas', cantidad: 1, precioUnitario: 840 }
-      ],
-      raw: {
-        clienteId: 103,
-        clienteNombre: 'Bodas Nube Rosa',
-        clienteContacto: 'Vanessa Ríos',
-        servicioId: 1,
-        servicioNombre: 'Cobertura integral',
-        eventoId: 3,
-        eventoNombre: 'Boda destino',
-        fechaEvento: '2025-04-20',
-        horaEvento: '16:00',
-        horasEstimadas: '8 horas',
-        ubicacion: 'Hacienda Los Álamos',
-        direccionExacta: 'Km 58 Panamericana Sur',
-        descripcion: 'Boda destino con dos ceremonias.',
-        estado: 'Aceptada',
-        observaciones: 'Incluye viáticos para el staff.',
-        items: [
-          { descripcion: 'Cobertura foto + video', cantidad: 1, precioUnitario: 1800 },
-          { descripcion: 'Drone y tomas aéreas', cantidad: 1, precioUnitario: 840 }
-        ],
-        totalEstimado: 2640
-      }
-    }
-  ];
+  private cotizaciones: Array<Cotizacion & { raw?: CotizacionPayload }> = [];
 
   private readonly mockServicios: MockCatalogo[] = [
     { id: 1, nombre: 'Cobertura audiovisual', descripcion: 'Foto y video profesional' },
@@ -178,47 +69,66 @@ export class CotizacionService {
   ];
 
   constructor(
+    private readonly http: HttpClient,
     private readonly pedidoService: PedidoService,
     private readonly visualizarService: VisualizarService
   ) {}
 
   listCotizaciones(filters?: Record<string, string | number | null | undefined>): Observable<Cotizacion[]> {
-    const data = this.applyFilters(this.cotizaciones, filters);
-    return of(data.map(c => ({ ...c }))).pipe(delay(this.latency));
+    return this.http.get<CotizacionApiResponse[]>(this.baseUrl).pipe(
+      map(items => items.map(item => this.normalizeApiCotizacion(item))),
+      tap(list => {
+        if (list.length) {
+          const maxId = Math.max(...list.map(item => item.id));
+          this.sequence = Math.max(this.sequence, maxId);
+        }
+        this.cotizaciones = list.map(item => this.cloneCotizacion(item));
+      }),
+      map(list => this.applyFilters(list, filters)),
+      map(list => list.map(item => this.cloneCotizacion(item))),
+      catchError(err => throwError(() => err))
+    );
   }
 
   getCotizacion(id: number | string): Observable<Cotizacion> {
     const numericId = Number(id);
-    const found = this.cotizaciones.find(c => c.id === numericId);
-    if (!found) {
-      return throwError(() => new Error('Cotización no encontrada'));
+    if (!Number.isFinite(numericId)) {
+      return throwError(() => new Error('Identificador de cotización inválido'));
     }
-    return of({ ...found }).pipe(delay(this.latency));
+
+    const cached = this.cotizaciones.find(c => c.id === numericId);
+    if (cached) {
+      return of(this.cloneCotizacion(cached));
+    }
+
+    return this.http.get<CotizacionApiResponse>(`${this.baseUrl}/${numericId}`).pipe(
+      map(item => this.normalizeApiCotizacion(item)),
+      tap(cotizacion => this.upsertCotizacion(cotizacion)),
+      map(cotizacion => this.cloneCotizacion(cotizacion)),
+      catchError(err => throwError(() => err))
+    );
   }
 
   createCotizacion(payload: CotizacionPayload): Observable<Cotizacion> {
     this.sequence += 1;
     const newCotizacion = this.buildCotizacion(this.sequence, payload);
-    this.cotizaciones = [newCotizacion, ...this.cotizaciones];
-    return of({ ...newCotizacion }).pipe(delay(this.latency));
+    this.upsertCotizacion(newCotizacion, true);
+    return of(this.cloneCotizacion(newCotizacion)).pipe(delay(this.latency));
   }
 
   updateCotizacion(id: number | string, payload: CotizacionUpdatePayload): Observable<Cotizacion> {
     const numericId = Number(id);
-    let updated: (Cotizacion & { raw?: CotizacionPayload }) | undefined;
-
-    this.cotizaciones = this.cotizaciones.map(cot => {
-      if (cot.id !== numericId) return cot;
-      const mergedPayload: CotizacionPayload = { ...cot.raw, ...payload } as CotizacionPayload;
-      updated = this.buildCotizacion(cot.id, mergedPayload, cot.codigo);
-      return updated;
-    });
-
-    if (!updated) {
+    const index = this.cotizaciones.findIndex(cot => cot.id === numericId);
+    if (index === -1) {
       return throwError(() => new Error('Cotización no encontrada'));
     }
 
-    return of({ ...updated }).pipe(delay(this.latency));
+    const base = this.cotizaciones[index];
+    const mergedPayload: CotizacionPayload = { ...base.raw, ...payload } as CotizacionPayload;
+    const updated = this.buildCotizacion(base.id, mergedPayload, base.codigo);
+    this.cotizaciones[index] = this.cloneCotizacion(updated);
+    this.sequence = Math.max(this.sequence, updated.id);
+    return of(this.cloneCotizacion(updated)).pipe(delay(this.latency));
   }
 
   downloadPdf(id: number | string): Observable<Blob> {
@@ -266,12 +176,86 @@ export class CotizacionService {
     return of(this.getMockEventosServicio(eventoId, servicioId)).pipe(delay(this.latency));
   }
 
+  private normalizeApiCotizacion(api: CotizacionApiResponse): Cotizacion & { raw?: CotizacionPayload } {
+    const fechaEvento = api.fechaEvento ?? api.fechaCreacion ?? new Date().toISOString();
+    const rawHoras = api.horasEstimadas != null ? String(api.horasEstimadas).trim() : '';
+    const horas = rawHoras
+      ? /\b(h|horas?)$/i.test(rawHoras)
+        ? rawHoras
+        : `${rawHoras} h`
+      : undefined;
+
+    const tipoEvento = api.tipoEvento ?? (api as any).tipoServicio ?? undefined;
+
+    const payload: CotizacionPayload = {
+      clienteNombre: api.lead?.nombre ?? '',
+      clienteContacto: api.lead?.celular ?? '',
+      fechaEvento,
+      horasEstimadas: horas,
+      ubicacion: api.lugar ?? '',
+      descripcion: api.mensaje ?? '',
+      servicioNombre: tipoEvento,
+      eventoNombre: tipoEvento,
+      estado: api.estado ?? undefined,
+      items: []
+    };
+
+    const normalized = this.buildCotizacion(api.id, payload);
+    normalized.estado = api.estado ?? normalized.estado;
+    normalized.notas = api.mensaje ?? normalized.notas;
+    normalized.lugar = api.lugar ?? normalized.lugar;
+    normalized.createdAt = api.fechaCreacion ?? normalized.createdAt;
+    normalized.lead = api.lead ? { ...api.lead } : normalized.lead;
+    normalized.evento = normalized.evento || tipoEvento;
+    normalized.eventoSolicitado = tipoEvento ?? normalized.eventoSolicitado;
+
+    const rawPayload = (normalized.raw ?? payload) as CotizacionPayload;
+    normalized.raw = {
+      ...(rawPayload as any),
+      estado: api.estado ?? rawPayload.estado,
+      lead: api.lead ? { ...api.lead } : undefined,
+      fechaCreacion: api.fechaCreacion ?? undefined,
+      tipoEvento
+    } as CotizacionPayload & { lead?: CotizacionLead; fechaCreacion?: string | null; tipoEvento?: string | null };
+
+    return normalized;
+  }
+
+  private cloneCotizacion<T extends Cotizacion>(c: T): T {
+    return {
+      ...c,
+      lead: c.lead ? { ...c.lead } : undefined,
+      items: Array.isArray(c.items) ? c.items.map(item => ({ ...item })) : undefined,
+      raw: c.raw ? { ...(c.raw as any) } : undefined
+    } as T;
+  }
+
+  private upsertCotizacion(cotizacion: Cotizacion & { raw?: CotizacionPayload }, prepend = false): void {
+    const clone = this.cloneCotizacion(cotizacion);
+    const index = this.cotizaciones.findIndex(item => item.id === clone.id);
+    if (index >= 0) {
+      this.cotizaciones[index] = clone;
+    } else if (prepend) {
+      this.cotizaciones = [clone, ...this.cotizaciones];
+    } else {
+      this.cotizaciones = [...this.cotizaciones, clone];
+    }
+    this.sequence = Math.max(this.sequence, clone.id);
+  }
+
   private buildCotizacion(id: number, payload: CotizacionPayload, codigo?: string): Cotizacion & { raw?: CotizacionPayload } {
     const items = Array.isArray(payload.items) ? payload.items.filter(Boolean) : [];
     const totalFromItems = items.reduce((acc, item) => acc + (Number(item?.cantidad ?? 0) * Number(item?.precioUnitario ?? 0)), 0);
     const total = payload.totalEstimado ?? (totalFromItems || undefined) ?? 0;
 
     const contacto = payload.clienteContacto ? String(payload.clienteContacto).trim() : undefined;
+    const lead: CotizacionLead | undefined = payload.clienteNombre || contacto
+      ? {
+          nombre: payload.clienteNombre,
+          celular: contacto
+        }
+      : undefined;
+    const eventoSolicitado = payload.eventoNombre || payload.servicioNombre || undefined;
 
     const normalized: Cotizacion & { raw?: CotizacionPayload } = {
       id,
@@ -288,7 +272,11 @@ export class CotizacionService {
       notas: payload.descripcion,
       pdfUrl: undefined,
       items,
-      raw: { ...payload, totalEstimado: total, clienteContacto: contacto }
+      raw: { ...payload, totalEstimado: total, clienteContacto: contacto },
+      lugar: payload.ubicacion,
+      createdAt: undefined,
+      lead,
+      eventoSolicitado
     };
 
     return normalized;
@@ -304,11 +292,11 @@ export class CotizacionService {
 
   private applyFilters(data: Array<Cotizacion & { raw?: CotizacionPayload }>, filters?: Record<string, string | number | null | undefined>): Cotizacion[] {
     if (!filters) {
-      return data.map(c => ({ ...c }));
+      return data.map(c => this.cloneCotizacion(c));
     }
     const entries = Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined && value !== '');
     if (!entries.length) {
-      return data.map(c => ({ ...c }));
+      return data.map(c => this.cloneCotizacion(c));
     }
     return data
       .filter(cot => entries.every(([key, value]) => {
@@ -319,6 +307,6 @@ export class CotizacionService {
         ).toLowerCase();
         return haystack.includes(String(value).toLowerCase());
       }))
-      .map(c => ({ ...c }));
+      .map(c => this.cloneCotizacion(c));
   }
 }

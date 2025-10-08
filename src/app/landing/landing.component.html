@@ -171,23 +171,35 @@
               obligatorio.</mat-error>
           </mat-form-field>
 
+          <div class="quote__phone-group">
+            <mat-form-field appearance="outline" class="quote__phone-code">
+              <mat-label>Código país</mat-label>
+              <mat-select formControlName="whatsappCodigo" required>
+                <mat-option *ngFor="let option of countryCodes" [value]="option.dialCode">
+                  {{ option.label }} ({{ option.dialCode }})
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="quoteForm.get('whatsappCodigo')?.hasError('required')">Elige un código.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="quote__phone-number">
+              <mat-label>Número WhatsApp</mat-label>
+              <input matInput formControlName="whatsappNumero" autocomplete="tel" placeholder="999999999" required
+                inputmode="tel" />
+              <mat-error *ngIf="quoteForm.get('whatsappNumero')?.hasError('required')">Ingresa tu número.</mat-error>
+              <mat-error *ngIf="quoteForm.get('whatsappNumero')?.hasError('pattern')">Usa solo dígitos (6-15).
+              </mat-error>
+              <mat-hint>Ingresa solo números, sin el signo + ni prefijos.</mat-hint>
+            </mat-form-field>
+          </div>
           <mat-form-field appearance="outline">
-            <mat-label>WhatsApp (+51)</mat-label>
-            <input matInput formControlName="whatsapp" autocomplete="tel" placeholder="+51 999999999" required />
-            <mat-error *ngIf="quoteForm.get('whatsapp')?.hasError('required')">Ingresa tu WhatsApp.</mat-error>
-            <mat-error *ngIf="quoteForm.get('whatsapp')?.hasError('pattern')">Formato +51 999999999.</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Tipo de servicio</mat-label>
+            <mat-label>Tipo de evento</mat-label>
             <mat-select formControlName="tipoServicio" required>
-              <mat-option value="">Selecciona un servicio</mat-option>
-              <mat-option *ngFor="let service of services" [value]="service.title">{{ service.title }}</mat-option>
-              <mat-option value="Paquete Signature">Paquete Signature</mat-option>
-              <mat-option value="Paquete Premium">Paquete Premium</mat-option>
-              <mat-option value="Paquete Esencial">Paquete Esencial</mat-option>
+              <mat-option value="">Selecciona un evento</mat-option>
+              <mat-option *ngFor="let event of eventOptions" [value]="event.name">{{ event.name }}</mat-option>
               <mat-option value="Otro">Otro</mat-option>
             </mat-select>
-            <mat-error *ngIf="quoteForm.get('tipoServicio')?.hasError('required')">Selecciona un servicio.</mat-error>
+            <mat-error *ngIf="quoteForm.get('tipoServicio')?.hasError('required')">Selecciona un evento.</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -202,8 +214,11 @@
           </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Horas estimadas</mat-label>
-            <input matInput formControlName="horas" placeholder="Ej. 6" />
-            <mat-hint>Opcional — ingresa solo números.</mat-hint>
+            <input matInput formControlName="horas" placeholder="Ej. 6" required inputmode="decimal" />
+            <mat-error *ngIf="quoteForm.get('horas')?.hasError('required')">Indica cuántas horas necesitas.</mat-error>
+            <mat-error *ngIf="quoteForm.get('horas')?.hasError('pattern')">Ingresa un número válido (ej. 6 o
+              6.5).</mat-error>
+            <mat-hint>Ingresa solo números (puedes usar decimales).</mat-hint>
           </mat-form-field>
 
 

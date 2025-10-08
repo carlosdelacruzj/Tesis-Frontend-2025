@@ -3,8 +3,8 @@
     <h1>Editar cotización</h1>
 
     <form class="cotizacion-form" [formGroup]="form" (ngSubmit)="update()">
-      <div class="row">
-        <div class="col-md-6 mb-3">
+      <div class="row g-3 card-grid">
+        <div class="col-md-6">
           <mat-card class="card">
             <mat-card-header>
               <mat-card-title>Datos del solicitante</mat-card-title>
@@ -12,16 +12,19 @@
             <mat-card-content>
               <div class="form-group">
                 <label class="col-form-label">Nombre completo</label>
-                <input type="text" class="form-control" formControlName="clienteNombre">
-                <small class="text-danger" *ngIf="form.get('clienteNombre')?.invalid && form.get('clienteNombre')?.touched">
+                <input type="text" class="form-control" formControlName="clienteNombre"
+                  placeholder="Nombre y apellidos">
+                <small class="text-danger"
+                  *ngIf="form.get('clienteNombre')?.invalid && form.get('clienteNombre')?.touched">
                   Ingresa al menos 2 caracteres.
                 </small>
               </div>
 
               <div class="form-group">
                 <label class="col-form-label">WhatsApp / contacto</label>
-                <input type="tel" class="form-control" formControlName="clienteContacto">
-                <small class="text-danger" *ngIf="form.get('clienteContacto')?.invalid && form.get('clienteContacto')?.touched">
+                <input type="tel" class="form-control" formControlName="clienteContacto" placeholder="Ej. 999 999 999">
+                <small class="text-danger"
+                  *ngIf="form.get('clienteContacto')?.invalid && form.get('clienteContacto')?.touched">
                   Ingresa un medio de contacto válido.
                 </small>
               </div>
@@ -29,7 +32,7 @@
           </mat-card>
         </div>
 
-        <div class="col-md-6 mb-3">
+        <div class="col-md-6">
           <mat-card class="card">
             <mat-card-header>
               <mat-card-title>Detalles del evento</mat-card-title>
@@ -37,48 +40,36 @@
             <mat-card-content>
               <div class="row g-3">
                 <div class="col-sm-6">
-                  <mat-form-field appearance="outline" class="w-100">
-                    <mat-label>Tipo de servicio</mat-label>
-                    <mat-select [value]="selectedServicioId" (selectionChange)="onServicioChange($event.value)" [disabled]="!servicios.length">
-                      <mat-option *ngFor="let servicio of servicios" [value]="servicio.id ?? servicio.ID">
-                        {{ servicio.nombre ?? servicio.Servicio ?? 'Servicio' }}
-                      </mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                </div>
-                <div class="col-sm-6">
-                  <mat-form-field appearance="outline" class="w-100">
-                    <mat-label>Tipo de evento</mat-label>
-                    <mat-select [value]="selectedEventoId" (selectionChange)="onEventoChange($event.value)" [disabled]="!eventos.length">
-                      <mat-option *ngFor="let evento of eventos" [value]="evento.id ?? evento.ID ?? evento.PK_E_Cod">
-                        {{ evento.nombre ?? evento.Evento ?? evento.E_Nombre ?? 'Evento' }}
-                      </mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                </div>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-sm-6">
                   <div class="form-group">
                     <label class="col-form-label">Fecha del evento</label>
                     <input type="date" class="form-control" formControlName="fechaEvento">
+                    <small class="text-danger"
+                      *ngIf="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
+                      Selecciona una fecha válida.
+                    </small>
                   </div>
                 </div>
                 <div class="col-sm-6">
                   <div class="form-group">
-                    <label class="col-form-label">Horas estimadas (opcional)</label>
-                    <input type="text" class="form-control" formControlName="horasEstimadas">
+                    <label class="col-form-label">Horas estimadas</label>
+                    <input type="text" class="form-control" formControlName="horasEstimadas" placeholder="Ej. 6 horas">
                   </div>
                 </div>
               </div>
+              <div class="row g-3">
+                <div class="col-sm-6">
+                  <label class="col-form-label">Evento solicitado</label>
+                  <input type="text" class="form-control" formControlName="eventoSolicitado"
+                    placeholder="Evento solicitado por el cliente">
+                </div>
 
-              <div class="form-group">
-                <label class="col-form-label">Lugar del evento</label>
-                <input type="text" class="form-control" formControlName="ubicacion">
-                <small class="text-danger" *ngIf="form.get('ubicacion')?.invalid && form.get('ubicacion')?.touched">
-                  Ingresa el lugar del evento.
-                </small>
+                <div class="col-sm-6">
+                  <label class="col-form-label">Lugar del evento</label>
+                  <input type="text" class="form-control" formControlName="ubicacion" placeholder="Ej. Hotel Belmond">
+                  <small class="text-danger" *ngIf="form.get('ubicacion')?.invalid && form.get('ubicacion')?.touched">
+                    Ingresa el lugar del evento.
+                  </small>
+                </div>
               </div>
             </mat-card-content>
           </mat-card>
@@ -87,10 +78,11 @@
 
       <mat-card class="card mb-3">
         <mat-card-header>
-          <mat-card-title>Mensaje del solicitante (opcional)</mat-card-title>
+          <mat-card-title>Mensaje del solicitante</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <textarea class="form-control" rows="3" formControlName="descripcion" placeholder="Mensaje proporcionado en la solicitud"></textarea>
+          <textarea class="form-control" rows="3" formControlName="descripcion"
+            placeholder="Mensaje proporcionado en la solicitud"></textarea>
         </mat-card-content>
       </mat-card>
 
@@ -100,30 +92,36 @@
         </mat-card-header>
         <mat-card-content>
           <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <mat-form-field appearance="outline" class="w-100">
+                <mat-label>Tipo de evento</mat-label>
+                <mat-select [value]="selectedEventoId" (selectionChange)="onEventoChange($event.value)"
+                  [disabled]="!eventos.length">
+
+                  <mat-option *ngFor="let evento of eventos" [value]="evento.id ?? evento.ID ?? evento.PK_E_Cod">
+                    {{ evento.nombre ?? evento.Evento ?? evento.E_Nombre ?? 'Evento' }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
             <div class="col-md-6">
               <mat-form-field appearance="outline" class="w-100">
                 <mat-label>Servicio</mat-label>
-                <mat-select [value]="selectedServicioId" (selectionChange)="onServicioChange($event.value)" [disabled]="!servicios.length">
+                <mat-select [value]="selectedServicioId" (selectionChange)="onServicioChange($event.value)"
+                  [disabled]="!servicios.length">
                   <mat-option *ngFor="let servicio of servicios" [value]="servicio.id ?? servicio.ID">
                     {{ servicio.nombre ?? servicio.Servicio ?? 'Servicio' }}
                   </mat-option>
                 </mat-select>
               </mat-form-field>
             </div>
-            <div class="col-md-6">
-              <mat-form-field appearance="outline" class="w-100">
-                <mat-label>Evento</mat-label>
-                <mat-select [value]="selectedEventoId" disabled>
-                  <mat-option *ngFor="let evento of eventos" [value]="evento.id ?? evento.ID ?? evento.PK_E_Cod">
-                    {{ evento.E_Nombre ?? evento.Evento ?? evento.nombre ?? 'Evento' }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
+
+
           </div>
 
           <div class="table-responsive" *ngIf="!loadingPaquetes; else paquetesLoading">
             <table mat-table [dataSource]="paquetesDataSource" matSort #paquetesSort="matSort" class="table">
+
               <ng-container matColumnDef="Descripcion">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header>Descripción</th>
                 <td mat-cell *matCellDef="let element">{{ element.descripcion || element.Descripcion }}</td>
@@ -148,13 +146,12 @@
                 <th mat-header-cell *matHeaderCellDef class="text-center">Seleccionar</th>
                 <td mat-cell *matCellDef="let element" class="text-center">
                   <button type="button" class="btn btn-outline-primary btn-sm"
-                          *ngIf="!isInSeleccion(element); else quitarBtn"
-                          (click)="addPaquete(element)">
+                    *ngIf="!isInSeleccion(element); else quitarBtn" (click)="addPaquete(element)">
                     Agregar
                   </button>
                   <ng-template #quitarBtn>
                     <button type="button" class="btn btn-outline-danger btn-sm"
-                            (click)="removePaquete(pkgKey(element))">
+                      (click)="removePaquete(pkgKey(element))">
                       Quitar
                     </button>
                   </ng-template>
@@ -194,10 +191,12 @@
                   <td class="text-center">{{ item.staff || '—' }}</td>
                   <td class="text-end">{{ item.precio | number:'1.2-2' }}</td>
                   <td>
-                    <input type="text" class="form-control form-control-sm" [(ngModel)]="item.notas" [ngModelOptions]="{standalone:true}" maxlength="200">
+                    <input type="text" class="form-control form-control-sm" [(ngModel)]="item.notas"
+                      [ngModelOptions]="{standalone:true}" maxlength="200" placeholder="Notas opcionales">
                   </td>
                   <td class="text-center">
-                    <button type="button" class="btn btn-link text-danger p-0" (click)="removePaquete(item.key)">✖</button>
+                    <button type="button" class="btn btn-link text-danger p-0"
+                      (click)="removePaquete(item.key)">✖</button>
                   </td>
                 </tr>
               </tbody>
@@ -212,6 +211,7 @@
           </div>
         </mat-card-content>
       </mat-card>
+
       <div class="row mb-3">
         <div class="col-md-4 ms-auto">
           <label class="col-form-label">Total estimado</label>
@@ -219,12 +219,14 @@
             <span class="input-group-text">S/</span>
             <input type="number" class="form-control" formControlName="totalEstimado" min="0" step="0.01">
           </div>
-          <small class="text-muted">Ajusta el monto si necesitas redondear la propuesta.</small>
+          <small class="text-muted">Se calcula automáticamente con los paquetes seleccionados, pero puedes ajustarlo
+            manualmente.</small>
         </div>
       </div>
 
       <div class="text-end">
-        <button type="button" class="btn btn-outline-secondary me-2" (click)="cancel()" [disabled]="saving">Cancelar</button>
+        <button type="button" class="btn btn-outline-secondary me-2" (click)="cancel()"
+          [disabled]="saving">Cancelar</button>
         <button type="submit" class="btn btn-primary" [disabled]="saving">
           <span *ngIf="!saving">Guardar cambios</span>
           <span *ngIf="saving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
