@@ -20,4 +20,10 @@ export class PaqueteServicioService {
   getAllNombres(): Observable<any> {
     return this.http.get(`${this.base}/eventos`);
   }
+
+    // 🔹 NUEVO: crear evento
+  createEvento(nombre: string): Observable<any> {
+    return this.http.post<any>(this.base, { nombre });
+  }
+
 }

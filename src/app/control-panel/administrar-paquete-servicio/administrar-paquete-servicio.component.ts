@@ -4,6 +4,8 @@ import { EventoServicioService } from 'src/app/control-panel/administrar-paquete
 import { EventoAllServiciosService } from 'src/app/control-panel/administrar-paquete-servicio/service/detalle-servicios.service';
 import { DetalleServiciosComponent } from './components/detalle-servicios/detalle-servicios.component';
 import { MatDialog } from '@angular/material/dialog';
+import { AddEventoComponent } from 'src/app/components/add-evento/add-evento.component';
+//C:\tesis\frontend-backup\src\app\components\add-evento\add-evento.component.ts
 
 @Component({
   selector: 'app-administrar-paquete-servicio',
@@ -68,6 +70,18 @@ export class AdministrarPaqueteServicioComponent implements OnInit {
     this.servicioNombre = event.toString();
   }
 
+  // ⬇️ agrega este import (ajusta la ruta si tu carpeta cambia)\
+  // ...dentro de la clase
+  openCreateDialog(): void {
+    const dlg = this.dialog.open(AddEventoComponent, { width: '420px' });
+    dlg.afterClosed().subscribe((ok) => {
+      if (ok) {
+        this.getPaquete();        // refresca la lista
+      }
+    });
+  }
+
+
   // 🔹 NUEVO: función para asignar imagen según el nombre del evento
   imagenDe(nombre: string): string {
     const slug = (nombre || '')
@@ -77,4 +91,6 @@ export class AdministrarPaqueteServicioComponent implements OnInit {
       .replace(/[^a-z0-9\-]/g, '');                     // limpia caracteres raros
     return `assets/images/${slug}.jpg`;                 // ✅ usa /images/
   }
+
+
 }

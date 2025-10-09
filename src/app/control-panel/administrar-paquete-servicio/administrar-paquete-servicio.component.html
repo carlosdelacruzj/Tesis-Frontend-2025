@@ -1,7 +1,12 @@
 <div class="dashboard-ecommerce">
   <div class="container-fluid dashboard-content">
     <div *ngIf="base">
-      <h1>Listado de Eventos</h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Listado de Eventos</h1>
+    <button type="button" class="btn btn-outline-dark btn-md" (click)="openCreateDialog()">
+      Agregar evento
+    </button>
+  </div>
       <br>
       <div class="ecommerce-widget">
         <div *ngFor="let evento of paquete">

@@ -1,0 +1,39 @@
+<h2 mat-dialog-title>Nuevo evento</h2>
+
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="fill" class="w-full" style="width:100%;">
+    <mat-label>Nombre del evento</mat-label>
+    <input
+      matInput
+      formControlName="nombre"
+      autocomplete="off"
+      (keyup.enter)="save()"
+      placeholder="Ej: Boda, Cumpleaños, Corporativo" />
+
+    <mat-hint>
+      El ícono se asignará por nombre
+      (<code>{{ hintPath }}</code>). Si no existe, usaremos uno por defecto.
+    </mat-hint>
+
+    <mat-error *ngIf="form.get('nombre')?.hasError('required')">
+      Requerido
+    </mat-error>
+    <mat-error *ngIf="form.get('nombre')?.hasError('minlength')">
+      Mínimo 3 caracteres
+    </mat-error>
+    <mat-error *ngIf="form.get('nombre')?.hasError('duplicado')">
+      Ya existe un evento con ese nombre
+    </mat-error>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()" [disabled]="loading">Cancelar</button>
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="save()"
+    [disabled]="loading || form.invalid">
+    {{ loading ? 'Guardando…' : 'Guardar' }}
+  </button>
+</mat-dialog-actions>
