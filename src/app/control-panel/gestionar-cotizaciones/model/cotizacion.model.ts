@@ -3,6 +3,7 @@ export interface CotizacionLead {
   nombre?: string;
   celular?: string;
   origen?: string;
+  correo?: string;
   fechaCreacion?: string;
 }
 
@@ -26,33 +27,64 @@ export interface Cotizacion {
   createdAt?: string;
   lead?: CotizacionLead;
   eventoSolicitado?: string;
+  servicioId?: number;
+  eventoId?: number;
 }
 
-export interface CotizacionPayload {
-  clienteId?: number;
-  clienteNombre?: string;
-  clienteContacto?: string;
-  fechaEvento: string;
-  horaEvento?: string;
-  horasEstimadas?: string;
-  ubicacion?: string;
-  direccionExacta?: string;
-  descripcion: string;
-  servicioId?: number;
-  servicioNombre?: string;
+export interface CotizacionLeadPayload {
+  id?: number;
+  nombre?: string;
+  celular?: string;
+  origen?: string;
+  correo?: string;
+}
+
+export interface CotizacionDetallePayload {
+  idCotizacion?: number;
   eventoId?: number;
-  eventoNombre?: string;
-  totalEstimado?: number;
+  idTipoEvento?: number;
+  tipoEvento?: string;
+  fechaEvento: string;
+  lugar?: string;
+  horasEstimadas?: number;
+  mensaje?: string;
   estado?: string;
-  observaciones?: string;
-  items?: CotizacionItemPayload[];
+  totalEstimado?: number;
 }
 
 export interface CotizacionItemPayload {
-  descripcion: string;
-  cantidad: number;
+  idEventoServicio?: number;
+  grupo?: string | null;
+  opcion?: number | null;
+  titulo: string;
+  descripcion?: string;
+  moneda?: string;
   precioUnitario: number;
+  cantidad: number;
+  descuento?: number;
+  recargo?: number;
   notas?: string;
+  horas?: number | null;
+  personal?: number | null;
+  fotosImpresas?: number | null;
+  trailerMin?: number | null;
+  filmMin?: number | null;
+}
+
+export interface CotizacionContextoPayload {
+  clienteId?: number;
+  servicioId?: number;
+  servicioNombre?: string;
+  eventoNombre?: string;
+  horaEvento?: string;
+  horasEstimadasTexto?: string;
+}
+
+export interface CotizacionPayload {
+  lead: CotizacionLeadPayload;
+  cotizacion: CotizacionDetallePayload;
+  items: CotizacionItemPayload[];
+  contexto?: CotizacionContextoPayload;
 }
 
 export interface CotizacionUpdatePayload extends Partial<CotizacionPayload> {}

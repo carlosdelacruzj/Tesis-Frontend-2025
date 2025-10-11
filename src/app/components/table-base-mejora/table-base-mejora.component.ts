@@ -15,10 +15,17 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { Subscription } from 'rxjs';
 import { CellTemplateDirective, SortDirection, TableColumn } from '../table/table-base.component';
 
 export { SortDirection, TableColumn } from '../table/table-base.component';
+
+/** Extiende la definición de columna sin romper imports originales */
+export type UiTableColumn<T> = TableColumn<T> & {
+    minWidth?: string;
+    maxWidth?: string;
+};
 
 /** Utilidad: obtener valor por path 'a.b.c' desde un objeto */
 function getByPath(obj: any, path: string): any {
@@ -28,15 +35,15 @@ function getByPath(obj: any, path: string): any {
 @Component({
     selector: 'app-table-base-mejora',
     standalone: true,
-    imports: [CommonModule, FormsModule, CellTemplateDirective],
+    imports: [CommonModule, FormsModule, MatIconModule, CellTemplateDirective],
     templateUrl: './table-base-mejora.component.html',
     styleUrls: ['./table-base-mejora.component.css']
 })
 export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnChanges, OnDestroy {
     /** Datos completos (cliente-side pagination/filter/sort) */
     @Input({ required: true }) data: T[] = [];
-    /** Columnas a mostrar */
-    @Input({ required: true }) columns: TableColumn<T>[] = [];
+    /** Columnas a mostrar (extendidas con min/max opcionales) */
+    @Input({ required: true }) columns: UiTableColumn<T>[] = [];
     /** Tamaños de página disponibles */
     @Input() pageSizeOptions: number[] = [5, 10, 20, 50];
     /** Tamaño de página inicial */
@@ -112,7 +119,7 @@ export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnCh
         const term = this.searchTerm().trim().toLowerCase();
         if (!term) return this.data ?? [];
         const keys = this.columns
-            .filter(c => c.filterable !== false)
+            .filter(c => (c as any).filterable !== false)
             .map(c => c.key);
         return (this.data ?? []).filter(row =>
             keys.some(k => {
@@ -168,7 +175,7 @@ export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnCh
     totalPages = computed(() => Math.max(1, Math.ceil(this.totalItems() / this.currentPageSize())));
 
     /** UI handlers */
-    toggleSort(col: TableColumn) {
+    toggleSort(col: UiTableColumn<T>) {
         if (!col.sortable) return;
         const currentKey = this.sortKey();
         const currentDir = this.sortDirection();

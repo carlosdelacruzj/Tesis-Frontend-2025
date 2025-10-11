@@ -36,9 +36,9 @@
         </span>
       </ng-template>
 
-      <!-- total en PEN -->
+      <!-- total en USD -->
       <ng-template appCell="total" let-row>
-        {{ row.total | currency:'PEN':'symbol-narrow':'1.2-2' }}
+        {{ row.total | currency:'USD':'symbol':'1.2-2' }}
       </ng-template>
 
       <!-- acciones: puedes mantener Angular Material si prefieres -->

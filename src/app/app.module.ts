@@ -28,7 +28,6 @@ import { DatePipe } from '@angular/common';
 import { EditarServicioComponent } from './control-panel/administrar-paquete-servicio/components/editar-servicio/editar-servicio.component';
 import { AdministrarEquiposComponent } from './control-panel/administrar-equipos/administrar-equipos.component';
 import { GestionarPersonalComponent } from './control-panel/gestionar-personal/gestionar-personal.component';
-import { AgregarPersonalComponent } from './control-panel/gestionar-personal/agregar-personal/agregar-personal.component';
 import { ListarportipoComponent } from './control-panel/administrar-equipos/listarportipo/listarportipo.component';
 import { DetallesAlquiladoComponent } from './control-panel/administrar-equipos/detalles-alquilado/detalles-alquilado.component';
 import { RegistrarPagoComponent } from './control-panel/registrar-pago/registrar-pago.component';
@@ -38,8 +37,6 @@ import { DetallePedidoComponent } from './control-panel/gestionar-pedido/detalle
 import { ActualizarPedidoComponent } from './control-panel/gestionar-pedido/actualizar-pedido/actualizar-pedido.component';
 import { ReportesEstadisticosComponent } from './control-panel/reportes-estadisticos/reportes-estadisticos.component';
 import { GestionarClienteComponent } from './control-panel/gestionar-cliente/gestionar-cliente.component';
-import { RegistrarClienteComponent } from './control-panel/gestionar-cliente/registrar-cliente/registrar-cliente.component';
-import { EditarClienteComponent } from './control-panel/gestionar-cliente/editar-cliente/editar-cliente.component';
 import { GestionarPerfilesComponent } from './control-panel/gestionar-perfiles/gestionar-perfiles.component';
 import { RegistrarPerfilComponent } from './control-panel/gestionar-perfiles/registrar-perfil/registrar-perfil.component';
 import { EditarPerfilComponent } from './control-panel/gestionar-perfiles/editar-perfil/editar-perfil.component';
@@ -54,71 +51,67 @@ import { RegistrarCotizacionComponent } from './control-panel/gestionar-cotizaci
 import { EditarCotizacionComponent } from './control-panel/gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
 import { CellTemplateDirective, TableBaseComponent } from './components/table/table-base.component';
 import { TableBaseMejoraComponent } from './components/table-base-mejora/table-base-mejora.component';
+import { ModalBaseComponent } from './components/modal-base/modal-base.component';
 
 // ⬇️ IMPORTA TU DIALOG AQUÍ
 import { AddEventoComponent } from 'src/app/components/add-evento/add-evento.component';
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    GestionarProyectoComponent,
-    GestionarEquiposComponent,
-    DashboardComponent,
-    AgregarProyectoComponent,
-    GestionarPedidoComponent,
-    AdministrarPaqueteServicioComponent,
-    EventCardComponent,
-    EventServiceComponent,
-    DetalleServiciosComponent,
-    ActualizarProyectoComponent,
-    EditarServicioComponent,
-    AdministrarEquiposComponent,
-    GestionarPersonalComponent,
-    AgregarPersonalComponent,
-    ListarportipoComponent,
-    RegistrarPagoComponent,
-    GenerarContratoComponent,
-    ContratoComponent,
-    AgregarPedidoComponent,
-    DetallePedidoComponent,
-    ActualizarPedidoComponent,
-    ReportesEstadisticosComponent,
-    GestionarClienteComponent,
-    RegistrarClienteComponent,
-    EditarClienteComponent,
-    GestionarPerfilesComponent,
-    RegistrarPerfilComponent,
-    EditarPerfilComponent,
-    DetallesAlquiladoComponent,
-    VerCalendarioComponent,
-    DialogComponent,
-    LandingComponent,
-    GestionarCotizacionesComponent,
-    RegistrarCotizacionComponent,
-    EditarCotizacionComponent,
-
-    // ⬇️ DECLARAR EL DIALOG AQUÍ
-    AddEventoComponent,
-  ],
-  bootstrap: [AppComponent],
-  imports: [
-    BrowserModule,
-    FormsModule,
-    AppRoutingModule,
-    BrowserAnimationsModule,
-    AngularMaterialModule,  // exporta MatDialog, MatFormField, MatInput, MatButton, etc.
-    ReactiveFormsModule,    // para formGroup
-    NgbModule,
-    NgxChartsModule,
-    CellTemplateDirective,
-    TableBaseComponent,
-    TableBaseMejoraComponent,
-    FullCalendarModule
-  ],
-  providers: [
-    { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() },
-    DatePipe,
-    provideHttpClient(withInterceptorsFromDi())
-  ]
+    declarations: [
+        AppComponent,
+        GestionarProyectoComponent,
+        GestionarEquiposComponent,
+        DashboardComponent,
+        AgregarProyectoComponent,
+        GestionarPedidoComponent,
+        AdministrarPaqueteServicioComponent,
+        EventCardComponent,
+        EventServiceComponent,
+        DetalleServiciosComponent,
+        ActualizarProyectoComponent,
+        EditarServicioComponent,
+        AdministrarEquiposComponent,
+        GestionarPersonalComponent,
+        ListarportipoComponent,
+        RegistrarPagoComponent,
+        GenerarContratoComponent,
+        ContratoComponent,
+        AgregarPedidoComponent,
+        DetallePedidoComponent,
+        ActualizarPedidoComponent,
+        ReportesEstadisticosComponent,
+        GestionarClienteComponent,
+        GestionarPerfilesComponent,
+        RegistrarPerfilComponent,
+        EditarPerfilComponent,
+        DetallesAlquiladoComponent,
+        VerCalendarioComponent,
+        DialogComponent,
+        LandingComponent,
+        GestionarCotizacionesComponent,
+        RegistrarCotizacionComponent,
+        EditarCotizacionComponent,
+        AddEventoComponent,
+    ],
+    bootstrap: [AppComponent], imports: [BrowserModule,
+        FormsModule,
+        AppRoutingModule,
+        BrowserAnimationsModule,
+        AngularMaterialModule,
+        // NgxMatDatetimePickerModule,
+        // NgxMatTimepickerModule,
+        // NgxMatNativeDateModule,
+        ReactiveFormsModule,
+        NgbModule,
+        NgxChartsModule,
+        CellTemplateDirective,
+        TableBaseComponent,
+        TableBaseMejoraComponent,
+        ModalBaseComponent,
+        FullCalendarModule], providers: [
+            { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() },
+            DatePipe,
+            provideHttpClient(withInterceptorsFromDi())
+        ]
 })
 export class AppModule {}

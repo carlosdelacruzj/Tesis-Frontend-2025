@@ -7,7 +7,7 @@ import { catchError, take, takeUntil } from 'rxjs/operators';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE, DateAdapter, MatDateFormats, NativeDateAdapter } from '@angular/material/core';
 import { formatDisplayDate, formatIsoDate } from '../shared/utils/date-utils';
 
-import { LandingCotizacionService, LandingCreateCotizacionDto, LandingCountryCodeDto, LandingEventDto } from './services/landing-cotizacion.service';
+import { LandingCotizacionService, LandingCountryCodeDto, LandingEventDto, LandingPublicCotizacionPayload } from './services/landing-cotizacion.service';
 // Landing copy decks for cards and sections
 interface LandingServiceCard {
   id: string;
@@ -265,7 +265,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     {
       id: 'esencial',
       name: 'Esencial',
-      priceFrom: 'Desde S/ 890',
+      priceFrom: 'Desde US$ 890',
       hours: 'Cobertura 3 horas',
       photos: '120 fotos editadas',
       video: 'Video highlight 60s',
@@ -276,7 +276,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     {
       id: 'signature',
       name: 'Signature',
-      priceFrom: 'Desde S/ 1,650',
+      priceFrom: 'Desde US$ 1,650',
       hours: 'Cobertura 6 horas',
       photos: '220 fotos editadas',
       video: 'Video highlight 3 min',
@@ -288,7 +288,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     {
       id: 'premium',
       name: 'Premium',
-      priceFrom: 'Desde S/ 2,400',
+      priceFrom: 'Desde US$ 2,400',
       hours: 'Cobertura full day',
       photos: '350 fotos editadas',
       video: 'Documental 8 min + highlight',
@@ -373,7 +373,8 @@ export class LandingComponent implements OnInit, OnDestroy {
       nombreCompleto: ['', [Validators.required, Validators.minLength(3)]],
       whatsappCodigo: [this.defaultDialCode, Validators.required],
       whatsappNumero: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
-      tipoServicio: ['', Validators.required],
+      tipoEvento: ['', Validators.required],
+      eventoId: [null],
       fechaEvento: [null, Validators.required],
       distrito: ['', Validators.required],
       mensaje: [''],
@@ -471,7 +472,8 @@ export class LandingComponent implements OnInit, OnDestroy {
   // Prefills the form when a service card CTA is clicked
   prefillService(service: LandingServiceCard): void {
     const matchedValue = this.pickEventValue(service.title);
-    this.quoteForm.patchValue({ tipoServicio: matchedValue });
+    this.quoteForm.patchValue({ tipoEvento: matchedValue });
+    this.syncSelectedEventByName(matchedValue);
     this.selectedPackageId = null;
     this.trackEvent('cta_click', { source: 'service-card', service: service.id });
     this.scrollToSection('cotizacion');
@@ -481,9 +483,14 @@ export class LandingComponent implements OnInit, OnDestroy {
   prefillPackage(tier: PackageTier): void {
     this.selectedPackageId = tier.id;
     const matchedValue = this.pickEventValue(`Paquete ${tier.name}`);
-    this.quoteForm.patchValue({ tipoServicio: matchedValue });
+    this.quoteForm.patchValue({ tipoEvento: matchedValue });
+    this.syncSelectedEventByName(matchedValue);
     this.trackEvent('package_select', { package: tier.id });
     this.scrollToSection('cotizacion');
+  }
+
+  onEventSelectionChange(value: string): void {
+    this.syncSelectedEventByName(value);
   }
 
   // Validates and sends the quote request to the API
@@ -500,10 +507,12 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     this.isSubmitting = true;
     this.submissionSuccess = false;
+    const currentEventSelection = this.quoteForm.get('tipoEvento')?.value ?? '';
+    this.syncSelectedEventByName(currentEventSelection);
     const formValue = this.quoteForm.getRawValue();
     const payload = this.buildCotizacionPayload(formValue);
 
-    this.cotizacionService.create(payload)
+    this.cotizacionService.createPublic(payload)
       .pipe(
         take(1),
         catchError(err => {
@@ -526,10 +535,13 @@ export class LandingComponent implements OnInit, OnDestroy {
         this.quoteForm.reset({
           whatsappCodigo: this.countryCodes[0]?.dialCode ?? this.defaultDialCode,
           whatsappNumero: '',
+          tipoEvento: '',
+          eventoId: null,
           horas: null,
           presupuesto: 50,
           consentimiento: false
         });
+        this.syncSelectedEventByName('');
         this.selectedPackageId = null;
       });
   }
@@ -586,12 +598,14 @@ export class LandingComponent implements OnInit, OnDestroy {
       .subscribe(events => {
         const normalized = this.normalizeEventOptions(events);
         this.eventOptions = normalized.length ? normalized : FALLBACK_EVENT_OPTIONS;
+        const currentEventName = this.quoteForm.get('tipoEvento')?.value ?? '';
+        this.syncSelectedEventByName(currentEventName);
       });
   }
   // Builds the WhatsApp deeplink with the sanitized destination number
   private createWhatsAppLink(): void {
     const value = this.quoteForm.getRawValue();
-    const service = value.tipoServicio || 'servicio de foto y video';
+    const service = value.tipoEvento || 'servicio de foto y video';
     const date = this.formatDateDisplay(value.fechaEvento) || 'fecha por definir';
     const district = value.distrito || 'Lima';
     const composedPhone = this.composePhoneNumber(value.whatsappCodigo, value.whatsappNumero);
@@ -605,10 +619,10 @@ export class LandingComponent implements OnInit, OnDestroy {
   formatBudget(value?: number | null): string {
     const safeValue = typeof value === 'number' ? value : 50;
     const ranges = [
-      { max: 25, label: 'Hasta S/ 1,500' },
-      { max: 50, label: 'S/ 1,500 - S/ 3,000' },
-      { max: 75, label: 'S/ 3,000 - S/ 5,000' },
-      { max: 100, label: 'Más de S/ 5,000' }
+      { max: 25, label: 'Hasta US$ 1,500' },
+      { max: 50, label: 'US$ 1,500 - US$ 3,000' },
+      { max: 75, label: 'US$ 3,000 - US$ 5,000' },
+      { max: 100, label: 'Más de US$ 5,000' }
     ];
     return ranges.find(range => safeValue <= range.max)?.label ?? 'A definir';
   }
@@ -636,7 +650,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   // Shapes the final DTO that the landing service expects
-  private buildCotizacionPayload(value: any): LandingCreateCotizacionDto {
+  private buildCotizacionPayload(value: any): LandingPublicCotizacionPayload {
     const nombre = (value.nombreCompleto ?? '').toString().trim();
     const celular = this.composePhoneNumber(value.whatsappCodigo, value.whatsappNumero);
     const fechaEvento = this.formatDate(value.fechaEvento) ?? new Date().toISOString().slice(0, 10);
@@ -646,19 +660,37 @@ export class LandingComponent implements OnInit, OnDestroy {
     const horasNumber = horasNormalizadas ? Number(horasNormalizadas) : null;
     const horasEstimadas = Number.isFinite(horasNumber) ? horasNumber : null;
 
-    const payload: LandingCreateCotizacionDto = {
+    const selectedName = (value.tipoEvento ?? '').toString().trim();
+    const rawEventoId = value.eventoId;
+    const parsedEventoId = rawEventoId !== undefined && rawEventoId !== null && rawEventoId !== ''
+      ? Number(rawEventoId)
+      : null;
+    const eventoIdFromControl = Number.isFinite(parsedEventoId) ? Number(parsedEventoId) : null;
+    const matchById = eventoIdFromControl != null
+      ? this.eventOptions.find(option => option.id === eventoIdFromControl)
+      : null;
+    const normalizedSelectedName = this.normalizeEventLabel(selectedName);
+    const matchByName = this.eventOptions.find(option => this.normalizeEventLabel(option.name) === normalizedSelectedName);
+    const eventoId = matchById?.id ?? matchByName?.id ?? eventoIdFromControl;
+    const tipoEvento = selectedName || matchById?.name || matchByName?.name || 'Evento';
+
+    const lugar = (value.distrito ?? '').toString().trim();
+
+    const origen = (value.comoNosConociste ?? '').toString().trim() || 'Web';
+
+    const payload: LandingPublicCotizacionPayload = {
       lead: {
         nombre,
         celular,
-        origen: value.comoNosConociste || 'Web'
+        origen
       },
       cotizacion: {
-        tipoServicio: value.tipoServicio,
+        idTipoEvento: eventoId ?? null,
+        tipoEvento,
         fechaEvento,
-        lugar: value.distrito,
+        lugar,
         horasEstimadas,
-        mensaje: (value.mensaje ?? '').toString().trim(),
-        estado: 'Borrador'
+        mensaje: (value.mensaje ?? '').toString().trim() || undefined
       }
     };
 
@@ -725,6 +757,16 @@ export class LandingComponent implements OnInit, OnDestroy {
       return '';
     }
     return 'Otro';
+  }
+
+  private syncSelectedEventByName(name: string): void {
+    if (!this.quoteForm) {
+      return;
+    }
+    const normalizedName = this.normalizeEventLabel(name);
+    const match = this.eventOptions.find(option => this.normalizeEventLabel(option.name) === normalizedName);
+    const eventoId = match ? match.id : null;
+    this.quoteForm.patchValue({ eventoId }, { emitEvent: false });
   }
 
   private normalizeEventLabel(value: string): string {

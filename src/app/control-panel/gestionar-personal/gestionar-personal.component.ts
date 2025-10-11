@@ -1,5 +1,4 @@
 import { Component, OnDestroy, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
 import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
 import { NgForm } from '@angular/forms';
 import swal from 'sweetalert2';
@@ -42,17 +41,37 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
 
   celularPattern = '^[1-9]{1}[0-9]{6,8}$';
   correoPattern = '^[\\w.+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$';
+  nombresPattern = '^[a-zA-Z ]{2,20}$';
+  apellidoPattern = '^[a-zA-Z ]{2,30}$';
+  docPattern = '^[0-9]{1}[0-9]{7}$';
 
   private readonly destroy$ = new Subject<void>();
 
   @ViewChild('contentUpdate', { static: true }) contentUpdate!: TemplateRef<any>;
   @ViewChild('contentView', { static: true }) contentView!: TemplateRef<any>;
+  @ViewChild('createForm') createForm?: NgForm;
+
+  modalCrearOpen = false;
+  modalCrearLoading = false;
+  modalCrearSaving = false;
+  modalCrearError: string | null = null;
+
+  nuevoEmpleado = {
+    nombre: '',
+    apellido: '',
+    correo: '',
+    celular: '',
+    documento: '',
+    direccion: '',
+    autonomo: 'NO' as 'SI' | 'NO',
+    idCargo: 0,
+    idEstado: 1
+  };
 
   constructor(
     private readonly personalService: PersonalService,
     private readonly modalService: NgbModal,
-    config: NgbModalConfig,
-    private readonly router: Router
+    config: NgbModalConfig
   ) {
     config.backdrop = 'static';
     config.keyboard = false;
@@ -68,7 +87,22 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
   }
 
   navigateToCreate(): void {
-    this.router.navigate(['/home/gestionar-personal/agregar']);
+    this.modalCrearError = null;
+    this.modalCrearOpen = true;
+    this.modalCrearLoading = true;
+    this.modalCrearSaving = false;
+    this.nuevoEmpleado = {
+      nombre: '',
+      apellido: '',
+      correo: '',
+      celular: '',
+      documento: '',
+      direccion: '',
+      autonomo: 'NO',
+      idCargo: 0,
+      idEstado: 1
+    };
+    this.loadCargosForCreate();
   }
 
   onSortChange(_: SortPayload): void {
@@ -187,6 +221,91 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (cargos) => { this.cargos = cargos ?? []; },
         error: (err) => { console.error('[personal] cargos', err); }
+      });
+  }
+
+  private loadCargosForCreate(): void {
+    this.personalService.getCargos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (cargos) => {
+          this.cargos = cargos ?? [];
+          this.modalCrearLoading = false;
+        },
+        error: (err) => {
+          console.error('[personal] cargos create', err);
+          this.modalCrearLoading = false;
+          this.modalCrearError = 'No pudimos cargar la lista de cargos.';
+        }
+      });
+  }
+
+  onCreateModalClosed(): void {
+    this.modalCrearOpen = false;
+    this.modalCrearLoading = false;
+    this.modalCrearSaving = false;
+    this.modalCrearError = null;
+    this.createForm?.resetForm();
+  }
+
+  closeCreateModal(): void {
+    if (this.modalCrearLoading || this.modalCrearSaving) {
+      return;
+    }
+    this.modalCrearOpen = false;
+  }
+
+  submitCreate(form: NgForm): void {
+    if (!form || this.modalCrearSaving) {
+      return;
+    }
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
+    this.modalCrearSaving = true;
+    this.modalCrearError = null;
+
+    const payload: Partial<Empleado> = {
+      ...this.nuevoEmpleado,
+      idCargo: Number(this.nuevoEmpleado.idCargo),
+      idEstado: this.nuevoEmpleado.idEstado !== undefined ? Number(this.nuevoEmpleado.idEstado) : undefined,
+      autonomo: this.nuevoEmpleado.autonomo === 'SI' ? 'SI' : 'NO'
+    };
+
+    this.personalService.createEmpleado(payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.modalCrearSaving = false;
+          swal.fire({
+            text: 'Registro exitoso',
+            icon: 'success',
+            showCancelButton: false,
+            customClass: { confirmButton: 'btn btn-success' },
+            buttonsStyling: false
+          });
+          this.createForm?.resetForm({
+            nombre: '',
+            apellido: '',
+            correo: '',
+            celular: '',
+            documento: '',
+            direccion: '',
+            autonomo: 'NO',
+            idCargo: 0,
+            idEstado: 1
+          });
+          this.modalCrearOpen = false;
+          this.loadEmpleados();
+        },
+        error: (err) => {
+          console.error('[personal] create', err);
+          this.modalCrearSaving = false;
+          const msg = err?.error?.message || 'Ocurrió un error, volver a intentar.';
+          this.modalCrearError = msg;
+        }
       });
   }
 }

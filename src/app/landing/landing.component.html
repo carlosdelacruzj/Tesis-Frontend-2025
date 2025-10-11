@@ -194,12 +194,12 @@
           </div>
           <mat-form-field appearance="outline">
             <mat-label>Tipo de evento</mat-label>
-            <mat-select formControlName="tipoServicio" required>
+            <mat-select formControlName="tipoEvento" required (selectionChange)="onEventSelectionChange($event.value)">
               <mat-option value="">Selecciona un evento</mat-option>
               <mat-option *ngFor="let event of eventOptions" [value]="event.name">{{ event.name }}</mat-option>
               <mat-option value="Otro">Otro</mat-option>
             </mat-select>
-            <mat-error *ngIf="quoteForm.get('tipoServicio')?.hasError('required')">Selecciona un evento.</mat-error>
+            <mat-error *ngIf="quoteForm.get('tipoEvento')?.hasError('required')">Selecciona un evento.</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">

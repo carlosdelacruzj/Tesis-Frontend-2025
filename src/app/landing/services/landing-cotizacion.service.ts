@@ -10,18 +10,16 @@ export interface LandingLeadDto {
   origen: string;
 }
 
-export interface LandingCotizacionDto {
-  tipoServicio: string;
-  fechaEvento: string;
-  lugar: string;
-  horasEstimadas: number | null;
-  mensaje: string;
-  estado: string;
-}
-
-export interface LandingCreateCotizacionDto {
+export interface LandingPublicCotizacionPayload {
   lead: LandingLeadDto;
-  cotizacion: LandingCotizacionDto;
+  cotizacion: {
+    idTipoEvento?: number | null;
+    tipoEvento: string;
+    fechaEvento: string;
+    lugar?: string;
+    horasEstimadas?: number | null;
+    mensaje?: string;
+  };
 }
 
 export interface LandingCountryCodeDto {
@@ -51,9 +49,9 @@ export class LandingCotizacionService {
     return this.http.get(`${this.baseUrl}/${id}`);
   }
 
-  create(payload: LandingCreateCotizacionDto): Observable<any> {
-    console.log('[LandingCotizacionService] POST /cotizaciones', payload);
-    return this.http.post(this.baseUrl, payload);
+  createPublic(payload: LandingPublicCotizacionPayload): Observable<any> {
+    console.log('[LandingCotizacionService] POST /cotizaciones/public', payload);
+    return this.http.post(`${this.baseUrl}/public`, payload);
   }
 
   update(id: number | string, payload: any): Observable<any> {

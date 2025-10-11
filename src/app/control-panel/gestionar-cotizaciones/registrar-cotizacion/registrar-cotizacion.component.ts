@@ -11,12 +11,25 @@ import { CotizacionService } from '../service/cotizacion.service';
 
 interface PaqueteSeleccionado {
   key: string | number;
+  titulo: string;
   descripcion: string;
   precio: number;
-  staff?: number;
-  horas?: number;
+  cantidad: number;
+  moneda?: string;
+  grupo?: string | null;
+  opcion?: number | null;
+  personal?: number | null;
+  horas?: number | null;
+  fotosImpresas?: number | null;
+  trailerMin?: number | null;
+  filmMin?: number | null;
+  descuento?: number | null;
+  recargo?: number | null;
   notas?: string;
+  eventoServicioId?: number;
   origen?: any;
+  precioOriginal: number;
+  editandoPrecio?: boolean;
 }
 
 @Component({
@@ -26,12 +39,12 @@ interface PaqueteSeleccionado {
 })
 export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDestroy {
   form: UntypedFormGroup = this.fb.group({
-    clienteNombre: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(2)]],
-    clienteContacto: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(6)]],
-    fechaEvento: [{ value: null, disabled: true }, Validators.required],
-    ubicacion: [{ value: '', disabled: true }, Validators.required],
-    horasEstimadas: [{ value: '', disabled: true }],
-    descripcion: [{ value: '', disabled: true }],
+    clienteNombre: ['Cliente Demo', [Validators.required, Validators.minLength(2)]],
+    clienteContacto: ['999999999', [Validators.required, Validators.minLength(6)]],
+    fechaEvento: [RegistrarCotizacionComponent.getTodayIsoDate(), Validators.required],
+    ubicacion: ['Hotel Belmond', Validators.required],
+    horasEstimadas: ['6 horas'],
+    descripcion: ['Cobertura completa para evento demo'],
     totalEstimado: [0, Validators.min(0)]
   });
 
@@ -77,7 +90,11 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
   }
 
   get totalSeleccion(): number {
-    return this.selectedPaquetes.reduce((acc, item) => acc + (Number(item.precio) || 0), 0);
+    return this.selectedPaquetes.reduce((acc, item) => {
+      const precio = Number(item.precio) || 0;
+      const cantidad = Number(item.cantidad ?? 1) || 1;
+      return acc + (precio * cantidad);
+    }, 0);
   }
 
   onServicioChange(servicioId: number): void {
@@ -86,7 +103,7 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
       this.selectedServicioNombre = '';
     } else {
       const selected = this.servicios.find(s => this.getId(s) === this.selectedServicioId);
-      this.selectedServicioNombre = selected?.nombre ?? selected?.Servicio ?? selected?.descripcion ?? '';
+      this.selectedServicioNombre = this.getServicioNombre(selected);
     }
     this.loadEventosServicio();
   }
@@ -97,7 +114,7 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
       this.selectedEventoNombre = '';
     } else {
       const selected = this.eventos.find(e => this.getId(e) === this.selectedEventoId);
-      this.selectedEventoNombre = selected?.nombre ?? selected?.Evento ?? selected?.descripcion ?? '';
+      this.selectedEventoNombre = this.getEventoNombre(selected);
     }
     this.loadEventosServicio();
   }
@@ -107,16 +124,43 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
     if (this.selectedPaquetes.some(p => p.key === key)) {
       return;
     }
+    const eventoServicioId = this.getEventoServicioId(element);
+    const horas = this.getHoras(element);
+    const personal = this.getPersonal(element);
+    const fotosImpresas = this.getFotosImpresas(element);
+    const trailerMin = this.getTrailerMin(element);
+    const filmMin = this.getFilmMin(element);
+    const titulo = this.getTitulo(element);
+    const descripcion = this.getDescripcion(element);
+    const moneda = this.getMoneda(element);
+    const grupo = this.getGrupo(element);
+    const opcion = this.getOpcion(element);
+    const descuento = this.getDescuento(element);
+    const recargo = this.getRecargo(element);
+    const precioBase = Number(element?.precio ?? element?.Precio ?? 0) || 0;
     this.selectedPaquetes = [
       ...this.selectedPaquetes,
       {
         key,
-        descripcion: element?.descripcion ?? element?.Descripcion ?? 'Paquete',
-        precio: Number(element?.precio ?? element?.Precio ?? 0),
-        staff: Number(element?.staff ?? element?.Staff ?? 0) || undefined,
-        horas: Number(element?.horas ?? element?.Horas ?? 0) || undefined,
+        titulo,
+        descripcion,
+        precio: precioBase,
+        cantidad: 1,
+        moneda: moneda ?? undefined,
+        grupo: grupo,
+        opcion: opcion,
+        personal: personal ?? undefined,
+        horas: horas ?? undefined,
+        fotosImpresas: fotosImpresas ?? undefined,
+        trailerMin: trailerMin ?? undefined,
+        filmMin: filmMin ?? undefined,
+        descuento: descuento,
+        recargo: recargo,
         notas: '',
-        origen: element
+        eventoServicioId: eventoServicioId ?? undefined,
+        origen: element,
+        precioOriginal: precioBase,
+        editandoPrecio: false
       }
     ];
     this.syncTotalEstimado();
@@ -132,6 +176,87 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
   isInSeleccion(element: any): boolean {
     const key = this.getPkgKey(element);
     return this.selectedPaquetes.some(p => p.key === key);
+  }
+
+  shouldShowPrecioOriginal(): boolean {
+    return this.selectedPaquetes.some(item => this.isPrecioModificado(item));
+  }
+
+  isPrecioModificado(paquete: PaqueteSeleccionado): boolean {
+    const actual = Number(paquete.precio ?? 0);
+    const original = Number(paquete.precioOriginal ?? actual);
+    if (!Number.isFinite(actual) || !Number.isFinite(original)) {
+      return false;
+    }
+    return Math.abs(actual - original) > 0.009;
+  }
+
+  getDescuentoPorcentaje(paquete: PaqueteSeleccionado): number | null {
+    const original = Number(paquete.precioOriginal ?? 0);
+    const actual = Number(paquete.precio ?? 0);
+    if (!Number.isFinite(original) || original <= 0 || !Number.isFinite(actual)) {
+      return null;
+    }
+    if (actual >= original) {
+      return null;
+    }
+    const diff = ((original - actual) / original) * 100;
+    return Number(diff.toFixed(1));
+  }
+
+  enablePrecioEdit(paquete: PaqueteSeleccionado): void {
+    const key = paquete.key;
+    this.selectedPaquetes = this.selectedPaquetes.map(item =>
+      item.key === key ? { ...item, editandoPrecio: true } : item
+    );
+    this.focusPrecioInput(key);
+  }
+
+  confirmPrecioEdit(paquete: PaqueteSeleccionado, rawValue: string | number | null | undefined): void {
+    const key = paquete.key;
+    const current = this.selectedPaquetes.find(item => item.key === key);
+    if (!current) {
+      return;
+    }
+
+    let value = Number(rawValue);
+    if (!Number.isFinite(value) || value <= 0) {
+      value = current.precio;
+    }
+
+    const minimo = this.getPrecioMinimo(current);
+    if (value < minimo) {
+      value = minimo;
+      this.snackBar.open('Solo puedes reducir el precio hasta un 5% respecto al valor base.', 'Cerrar', {
+        duration: 3000
+      });
+    }
+
+    this.selectedPaquetes = this.selectedPaquetes.map(item =>
+      item.key === key
+        ? { ...item, precio: value, editandoPrecio: false }
+        : item
+    );
+    this.syncTotalEstimado();
+  }
+
+  cancelPrecioEdit(paquete: PaqueteSeleccionado): void {
+    const key = paquete.key;
+    this.selectedPaquetes = this.selectedPaquetes.map(item =>
+      item.key === key ? { ...item, editandoPrecio: false } : item
+    );
+  }
+
+  getPrecioInputId(paquete: PaqueteSeleccionado): string {
+    return this.getPrecioInputIdFromKey(paquete.key);
+  }
+
+  getPrecioMinimo(paquete: PaqueteSeleccionado): number {
+    const base = Number(paquete.precioOriginal ?? paquete.precio ?? 0);
+    if (!Number.isFinite(base) || base <= 0) {
+      return 0;
+    }
+    return Number((base * 0.95).toFixed(2));
   }
 
   submit(): void {
@@ -154,27 +279,47 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotización de ${clienteNombre}` : 'Solicitud de cotización');
-    const items: CotizacionItemPayload[] = this.selectedPaquetes.map(item => ({
+    const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas);
+    const totalEstimado = Number(raw.totalEstimado ?? this.totalSeleccion) || this.totalSeleccion;
+
+    const items: CotizacionItemPayload[] = this.selectedPaquetes.map((item, index) => ({
+      idEventoServicio: item.eventoServicioId ?? this.getEventoServicioId(item.origen) ?? undefined,
+      titulo: item.titulo,
       descripcion: item.descripcion,
-      cantidad: 1,
-      precioUnitario: item.precio,
-      notas: item.notas
+      moneda: item.moneda ?? this.getMoneda(item.origen) ?? 'USD',
+      precioUnitario: Number(item.precio) || 0,
+      cantidad: Number(item.cantidad ?? 1) || 1,
+      descuento: item.descuento ?? this.getDescuento(item.origen) ?? undefined,
+      recargo: item.recargo ?? this.getRecargo(item.origen) ?? undefined,
+      notas: item.notas,
+      horas: item.horas ?? this.getHoras(item.origen),
+      personal: item.personal ?? this.getPersonal(item.origen),
+      fotosImpresas: item.fotosImpresas ?? this.getFotosImpresas(item.origen),
+      trailerMin: item.trailerMin ?? this.getTrailerMin(item.origen),
+      filmMin: item.filmMin ?? this.getFilmMin(item.origen)
     }));
 
     const payload: CotizacionPayload = {
-      clienteNombre,
-      clienteContacto,
-      fechaEvento,
-      ubicacion,
-      horasEstimadas: horasEstimadas || undefined,
-      descripcion,
-      servicioId: this.selectedServicioId ?? undefined,
-      servicioNombre: this.selectedServicioNombre || undefined,
-      eventoId: this.selectedEventoId ?? undefined,
-      eventoNombre: this.selectedEventoNombre || undefined,
-      totalEstimado: Number(raw.totalEstimado ?? this.totalSeleccion) || this.totalSeleccion,
+      lead: {
+        nombre: clienteNombre,
+        celular: clienteContacto,
+        origen: 'Backoffice',
+        correo: undefined
+      },
+      cotizacion: {
+        eventoId: this.selectedEventoId ?? undefined,
+        tipoEvento: this.selectedEventoNombre || this.selectedServicioNombre || 'Evento',
+        fechaEvento,
+        lugar: ubicacion || undefined,
+        horasEstimadas: horasEstimadasNumero,
+        mensaje: descripcion,
+        estado: 'Borrador',
+        totalEstimado
+      },
       items
     };
+
+    console.log('[cotizacion] payload listo para enviar', payload);
 
     this.loading = true;
     this.cotizacionService.createCotizacion(payload)
@@ -189,7 +334,7 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
         },
         error: (err) => {
           console.error('[cotizacion] create', err);
-          this.snackBar.open('No pudimos registrar la cotización.', 'Cerrar', { duration: 5000 });
+          this.snackBar.open('No pudimos registrar la cotización. Inténtalo nuevamente.', 'Cerrar', { duration: 5000 });
         }
       });
   }
@@ -214,7 +359,7 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
             if (firstValido) {
               const id = this.getId(firstValido)!;
               this.selectedServicioId = id;
-              this.selectedServicioNombre = firstValido?.nombre ?? firstValido?.Servicio ?? firstValido?.descripcion ?? '';
+              this.selectedServicioNombre = this.getServicioNombre(firstValido);
             }
           }
           this.loadingCatalogos = false;
@@ -238,6 +383,18 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
           if (!this.eventos.length) {
             this.selectedEventoId = null;
             this.selectedEventoNombre = '';
+          } else {
+            if (this.selectedEventoId == null) {
+              const firstValido = this.eventos.find(item => this.getId(item) != null) || null;
+              if (firstValido) {
+                const id = this.getId(firstValido)!;
+                this.selectedEventoId = id;
+                this.selectedEventoNombre = this.getEventoNombre(firstValido);
+              }
+            } else {
+              const selected = this.eventos.find(e => this.getId(e) === this.selectedEventoId);
+              this.selectedEventoNombre = this.getEventoNombre(selected);
+            }
           }
           this.loadEventosServicio();
         },
@@ -277,11 +434,32 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
       });
   }
 
-  private syncTotalEstimado(): void {
+  syncTotalEstimado(): void {
     const control = this.form.get('totalEstimado');
     if (!control?.dirty) {
       control?.setValue(this.totalSeleccion, { emitEvent: false });
     }
+  }
+
+  private getServicioNombre(item: any): string {
+    if (!item) {
+      return '';
+    }
+    return item?.nombre ?? item?.Servicio ?? item?.descripcion ?? item?.Nombre ?? '';
+  }
+
+  private getEventoNombre(item: any): string {
+    if (!item) {
+      return '';
+    }
+    return item?.nombre ?? item?.Evento ?? item?.E_Nombre ?? item?.descripcion ?? item?.Nombre ?? '';
+  }
+
+  private static getTodayIsoDate(): string {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${today.getFullYear()}-${month}-${day}`;
   }
 
   private getId(item: any): number | null {
@@ -293,6 +471,128 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
   }
 
   private getPkgKey(el: any): string {
-    return String(el?.idEventoServicio ?? el?.ID ?? el?.PK_ExS_Cod ?? `${el?.descripcion}|${el?.precio}`);
+    const eventoServicioId = this.getEventoServicioId(el);
+    if (eventoServicioId != null) {
+      return String(eventoServicioId);
+    }
+    return String(el?.ID ?? el?.PK_ExS_Cod ?? `${el?.descripcion}|${el?.precio}`);
+  }
+
+  private getEventoServicioId(item: any): number | null {
+    if (!item) {
+      return null;
+    }
+    const raw = item?.eventoServicioId ?? item?.idEventoServicio ?? item?.ID_EventoServicio ?? item?.ID ?? item?.PK_ExS_Cod ?? item?.pkEventoServicio;
+    if (raw == null || (typeof raw === 'string' && raw.trim() === '')) {
+      return null;
+    }
+    const num = Number(raw);
+    return Number.isFinite(num) && num > 0 ? num : null;
+  }
+
+  private getHoras(item: any): number | null {
+    return this.parseNumber(item?.horas ?? item?.Horas ?? item?.duration ?? item?.Duracion);
+  }
+
+  private getPersonal(item: any): number | null {
+    return this.parseNumber(item?.personal ?? item?.Personal ?? item?.staff ?? item?.Staff);
+  }
+
+  private getFotosImpresas(item: any): number | null {
+    return this.parseNumber(item?.fotosImpresas ?? item?.FotosImpresas ?? item?.fotos_impresas);
+  }
+
+  private getTrailerMin(item: any): number | null {
+    return this.parseNumber(item?.trailerMin ?? item?.TrailerMin ?? item?.minTrailer ?? item?.Trailer);
+  }
+
+  private getFilmMin(item: any): number | null {
+    return this.parseNumber(item?.filmMin ?? item?.FilmMin ?? item?.minFilm ?? item?.Film);
+  }
+
+  private getTitulo(item: any): string {
+    return item?.titulo ?? item?.Titulo ?? item?.nombre ?? item?.Nombre ?? item?.descripcion ?? item?.Descripcion ?? 'Paquete';
+  }
+
+  private getDescripcion(item: any): string {
+    return item?.descripcion ?? item?.Descripcion ?? item?.detalle ?? item?.Detalle ?? this.getTitulo(item);
+  }
+
+  private getMoneda(item: any): string | undefined {
+    const raw = item?.moneda ?? item?.Moneda ?? item?.currency ?? item?.Currency;
+    return raw ? String(raw).toUpperCase() : undefined;
+  }
+
+  private getGrupo(item: any): string | null {
+    const raw = item?.grupo ?? item?.Grupo ?? item?.categoria ?? item?.Categoria ?? null;
+    return raw != null ? String(raw) : null;
+  }
+
+  private deriveGrupo(): string | null {
+    if (this.selectedServicioNombre) {
+      return this.selectedServicioNombre.toUpperCase();
+    }
+    if (this.selectedEventoNombre) {
+      return this.selectedEventoNombre.toUpperCase();
+    }
+    return null;
+  }
+
+  private getOpcion(item: any): number | null {
+    return this.parseNumber(item?.opcion ?? item?.Opcion ?? item?.Option ?? item?.option);
+  }
+
+  private getDescuento(item: any): number | null {
+    return this.parseNumber(item?.descuento ?? item?.Descuento ?? item?.discount ?? item?.Discount ?? null);
+  }
+
+  private getRecargo(item: any): number | null {
+    return this.parseNumber(item?.recargo ?? item?.Recargo ?? item?.surcharge ?? item?.Surcharge ?? null);
+  }
+
+  private parseHorasToNumber(value: string | null | undefined): number | undefined {
+    if (value == null) {
+      return undefined;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const match = trimmed.match(/([\d.,]+)/);
+    if (!match?.[1]) {
+      return undefined;
+    }
+    const parsed = Number(match[1].replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  private parseNumber(raw: any): number | null {
+    if (raw == null) {
+      return null;
+    }
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (trimmed === '') {
+        return null;
+      }
+      const num = Number(trimmed);
+      return Number.isFinite(num) ? num : null;
+    }
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : null;
+  }
+
+  private focusPrecioInput(key: string | number): void {
+    setTimeout(() => {
+      const element = document.getElementById(this.getPrecioInputIdFromKey(key)) as HTMLInputElement | null;
+      if (element) {
+        element.focus();
+        element.select();
+      }
+    });
+  }
+
+  private getPrecioInputIdFromKey(key: string | number): string {
+    return `precio-input-${key}`;
   }
 }

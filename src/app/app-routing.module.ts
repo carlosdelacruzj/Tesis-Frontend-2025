@@ -15,7 +15,6 @@ import { DetalleServiciosComponent } from './control-panel/administrar-paquete-s
 import { EditarServicioComponent } from './control-panel/administrar-paquete-servicio/components/editar-servicio/editar-servicio.component';
 import { AdministrarEquiposComponent } from './control-panel/administrar-equipos/administrar-equipos.component';
 import { GestionarPersonalComponent } from './control-panel/gestionar-personal/gestionar-personal.component';
-import { AgregarPersonalComponent } from './control-panel/gestionar-personal/agregar-personal/agregar-personal.component';
 import { ListarportipoComponent } from './control-panel/administrar-equipos/listarportipo/listarportipo.component';
 import { ValidarTokenGuard } from './guards/validar-token.guard';
 import { VerCalendarioComponent } from './control-panel/ver-calendario/ver-calendario.component';

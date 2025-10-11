@@ -1,0 +1,65 @@
+<!-- Backdrop -->
+<div *ngIf="open" class="modal-backdrop fade show" (click)="onClickBackdrop($event)"></div>
+
+<!-- Contenedor del diálogo -->
+<div *ngIf="open"
+     class="modal d-block fade show"
+     role="dialog"
+     aria-modal="true"
+     [attr.aria-labelledby]="title ? 'modal-title' : null"
+     [attr.aria-describedby]="ariaDescribedBy || null">
+
+  <div class="modal-dialog {{ sizeClass }}">
+    <div class="modal-content" #dialog tabindex="-1">
+      <!-- Header -->
+      <div class="modal-header">
+        <!-- Slot opcional -->
+        <ng-content select="[modal-header]"></ng-content>
+
+        <!-- Título por defecto si no inyectas header -->
+        <h5 *ngIf="title" id="modal-title" class="modal-title">{{ title }}</h5>
+
+        <button *ngIf="showCloseButton"
+                #closeBtn
+                type="button"
+                class="btn-close"
+                aria-label="Cerrar"
+                (click)="close('close')">
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <ng-content select="[modal-body]"></ng-content>
+        <!-- También permitimos contenido libre si no se usa [modal-body] -->
+        <ng-content></ng-content>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <ng-content select="[modal-footer]"></ng-content>
+
+        <!-- Botones por defecto -->
+        <ng-container *ngIf="useDefaultFooter">
+          <button *ngIf="showSecondary"
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  [disabled]="loading"
+                  (click)="onCancel()">
+            {{ secondaryLabel }}
+          </button>
+
+          <button *ngIf="showPrimary"
+                  type="button"
+                  class="btn"
+                  [ngClass]="'btn-' + primaryVariant"
+                  [disabled]="loading"
+                  (click)="onConfirm()">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            {{ primaryLabel }}
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>

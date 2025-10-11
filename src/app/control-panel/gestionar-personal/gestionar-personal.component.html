@@ -64,6 +64,136 @@
   </div>
 </ng-template>
 
+<app-modal-base
+  [open]="modalCrearOpen"
+  title="Registrar empleado"
+  [disableClose]="modalCrearLoading || modalCrearSaving"
+  [loading]="modalCrearSaving"
+  [useDefaultFooter]="false"
+  (closed)="onCreateModalClosed()">
+
+  <div modal-body class="formulario-registro">
+    <div *ngIf="modalCrearError && !modalCrearLoading" class="alert alert-danger" role="alert">{{ modalCrearError }}</div>
+
+    <div *ngIf="modalCrearLoading" class="d-flex flex-column align-items-center justify-content-center py-4 text-muted">
+      <mat-spinner diameter="32"></mat-spinner>
+      <p class="mt-3 mb-0">Preparando formulario…</p>
+    </div>
+
+    <form
+      *ngIf="!modalCrearLoading"
+      #createForm="ngForm"
+      id="createEmpleadoForm"
+      novalidate
+      (ngSubmit)="submitCreate(createForm)">
+
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Nombres</label>
+          <input type="text" class="form-control" name="nombre" required [pattern]="nombresPattern"
+                 [(ngModel)]="nuevoEmpleado.nombre" #nombreCtrl="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="nombreCtrl.invalid && (nombreCtrl.dirty || nombreCtrl.touched)">
+            <span *ngIf="nombreCtrl.errors?.required">Campo requerido</span>
+            <span *ngIf="nombreCtrl.errors?.pattern">Sólo letras (2-20)</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Apellidos</label>
+          <input type="text" class="form-control" name="apellido" required [pattern]="apellidoPattern"
+                 [(ngModel)]="nuevoEmpleado.apellido" #apellidoCtrl="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="apellidoCtrl.invalid && (apellidoCtrl.dirty || apellidoCtrl.touched)">
+            <span *ngIf="apellidoCtrl.errors?.required">Campo requerido</span>
+            <span *ngIf="apellidoCtrl.errors?.pattern">Sólo letras (2-30)</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Correo</label>
+          <input type="email" class="form-control" name="correo" required [pattern]="correoPattern"
+                 [(ngModel)]="nuevoEmpleado.correo" #correoCtrl="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="correoCtrl.invalid && (correoCtrl.dirty || correoCtrl.touched)">
+            <span *ngIf="correoCtrl.errors?.required">Campo requerido</span>
+            <span *ngIf="correoCtrl.errors?.pattern">Ingrese un correo válido</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Celular</label>
+          <input type="text" class="form-control" name="celular" required [pattern]="celularPattern"
+                 [(ngModel)]="nuevoEmpleado.celular" #celularCtrl="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="celularCtrl.invalid && (celularCtrl.dirty || celularCtrl.touched)">
+            <span *ngIf="celularCtrl.errors?.required">Campo requerido</span>
+            <span *ngIf="celularCtrl.errors?.pattern">Sólo números (7-9 dígitos)</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Documento</label>
+          <input type="text" class="form-control" name="documento" required [pattern]="docPattern"
+                 [(ngModel)]="nuevoEmpleado.documento" #documentoCtrl="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="documentoCtrl.invalid && (documentoCtrl.dirty || documentoCtrl.touched)">
+            <span *ngIf="documentoCtrl.errors?.required">Campo requerido</span>
+            <span *ngIf="documentoCtrl.errors?.pattern">Sólo números (8 dígitos)</span>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Dirección</label>
+          <input type="text" class="form-control" name="direccion" required
+                 [(ngModel)]="nuevoEmpleado.direccion" #direccionCtrl="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="direccionCtrl.invalid && (direccionCtrl.dirty || direccionCtrl.touched)">
+            <span>Campo requerido</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Autónomo</label>
+          <select class="form-select" name="autonomo" [(ngModel)]="nuevoEmpleado.autonomo" required>
+            <option value="NO">No</option>
+            <option value="SI">Sí</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Estado</label>
+          <select class="form-select" name="idEstado" [(ngModel)]="nuevoEmpleado.idEstado" required>
+            <option [ngValue]="1">Disponible</option>
+            <option [ngValue]="2">No disponible</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Cargo</label>
+          <select class="form-select" name="idCargo" required [(ngModel)]="nuevoEmpleado.idCargo" #cargoCtrl="ngModel">
+            <option [ngValue]="0" disabled>Seleccione un cargo</option>
+            <option *ngFor="let cargo of cargos" [ngValue]="cargo.idCargo">{{ cargo.cargo }}</option>
+          </select>
+          <div class="invalid-feedback d-block" *ngIf="cargoCtrl.invalid && (cargoCtrl.dirty || cargoCtrl.touched)">
+            <span>Seleccione un cargo</span>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div modal-footer class="d-flex justify-content-end gap-2">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeCreateModal()"
+            [disabled]="modalCrearLoading || modalCrearSaving">
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      class="btn btn-primary"
+      form="createEmpleadoForm"
+      [disabled]="modalCrearSaving || modalCrearLoading || createForm?.invalid">
+      <span *ngIf="modalCrearSaving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+      Registrar
+    </button>
+  </div>
+
+</app-modal-base>
+
 <!-- ========== MODAL: UPDATE ========== -->
 <ng-template #contentUpdate let-c="close" let-d="dismiss">
   <div class="modal-header">

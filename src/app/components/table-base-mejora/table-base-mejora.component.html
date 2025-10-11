@@ -2,15 +2,12 @@
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
   <!-- Buscador (izquierda) -->
   <div class="input-group search-group">
-    <span class="input-group-text">
-      icon search
+    <span class="input-group-text gap-1">
+      <mat-icon fontIcon="search" aria-hidden="true"></mat-icon>
+      <span class="visually-hidden">Buscar</span>
     </span>
-    <input
-      [ngModel]="searchTerm()"
-      (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
-      type="text"
-      class="form-control"
-      [placeholder]="searchPlaceholder" />
+    <input [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); currentPage.set(1)" type="text"
+      class="form-control" [placeholder]="searchPlaceholder" />
     <button *ngIf="searchTerm()" class="btn btn-outline-secondary" type="button" (click)="clearSearch()">
       Limpiar
     </button>
@@ -18,10 +15,8 @@
 
   <!-- Botón Crear/Registrar (derecha) -->
   <div *ngIf="showCreateButton" class="create-btn-wrapper">
-    <button class="btn btn-outline-dark btn-md"
-            type="button"
-            [disabled]="createButtonDisabled"
-            (click)="createClick.emit()">
+    <button class="btn btn-outline-dark btn-md" type="button" [disabled]="createButtonDisabled"
+      (click)="createClick.emit()">
       {{ createButtonLabel }}
     </button>
   </div>
@@ -30,16 +25,18 @@
 <!-- TABLA -->
 <div class="table-responsive">
   <table class="table table-hover align-middle table-sm">
+    <!-- Colgroup opcional para estabilidad extra -->
+    <colgroup>
+      <col *ngFor="let col of columns" [style.width]="col.width || null" [style.minWidth]="col.minWidth || '8rem'"
+        [style.maxWidth]="col.maxWidth || null" />
+    </colgroup>
+
     <thead class="table-light">
       <tr>
-        <th *ngFor="let col of columns"
-            scope="col"
-            class="text-center"
-            [style.width]="col.width || null"
-            [ngClass]="col.class"
-            (click)="toggleSort(col)"
-            [class.cursor-pointer]="col.sortable"
-            [attr.aria-sort]="sortKey() === col.key ? (sortDirection() || 'none') : 'none'">
+        <th *ngFor="let col of columns" scope="col" class="text-center" [style.width]="col.width || null"
+          [style.minWidth]="col.minWidth || '8rem'" [style.maxWidth]="col.maxWidth || null" [ngClass]="col.class"
+          (click)="toggleSort(col)" [class.cursor-pointer]="col.sortable"
+          [attr.aria-sort]="sortKey() === col.key ? (sortDirection() || 'none') : 'none'">
           <div class="d-flex justify-content-center align-items-center gap-2">
             <span>{{ col.header }}</span>
             <span *ngIf="col.sortable" class="text-muted small">
@@ -53,16 +50,14 @@
     </thead>
 
     <tbody>
-      <tr *ngFor="let row of paged(); trackBy: trackByIndex"
-          (click)="onRowClick(row)"
-          class="table-row-clickable">
-        <td *ngFor="let col of columns" [ngClass]="col.class">
-          <ng-container *ngIf="hasTemplateFor(col.key); else plainCell"
-                        [ngTemplateOutlet]="getTemplate(col.key)"
-                        [ngTemplateOutletContext]="{ $implicit: row, row: row, key: col.key }">
+      <tr *ngFor="let row of paged(); trackBy: trackByIndex" (click)="onRowClick(row)" class="table-row-clickable">
+        <td *ngFor="let col of columns" [ngClass]="col.class" [style.width]="col.width || null"
+          [style.minWidth]="col.minWidth || '8rem'" [style.maxWidth]="col.maxWidth || null">
+          <ng-container *ngIf="hasTemplateFor(col.key); else plainCell" [ngTemplateOutlet]="getTemplate(col.key)"
+            [ngTemplateOutletContext]="{ $implicit: row, row: row, key: col.key }">
           </ng-container>
           <ng-template #plainCell>
-            {{ getValue(row, col.key) }}
+            <span [title]="getValue(row, col.key)">{{ getValue(row, col.key) }}</span>
           </ng-template>
         </td>
       </tr>
@@ -86,7 +81,7 @@
     <div class="flex-grow-1 order-1 order-md-1 w-100 w-md-auto text-center text-md-start text-muted small">
       Mostrando
       <strong>{{ pageStart | number }}</strong> –
-      <strong>{{ pageEnd   | number }}</strong>
+      <strong>{{ pageEnd | number }}</strong>
       de <strong>{{ totalItems() | number }}</strong>
     </div>
 
@@ -100,8 +95,8 @@
           <button class="page-link" (click)="changePage(currentPage()-1)" aria-label="Anterior">&lsaquo;</button>
         </li>
 
-        <li *ngFor="let p of [].constructor(totalPages()); let i = index"
-            class="page-item" [class.active]="(i+1) === currentPage()">
+        <li *ngFor="let p of [].constructor(totalPages()); let i = index" class="page-item"
+          [class.active]="(i+1) === currentPage()">
           <button class="page-link" (click)="changePage(i+1)">{{ i+1 }}</button>
         </li>
 
@@ -118,10 +113,8 @@
     <div class="flex-grow-1 order-3 w-100 w-md-auto d-flex justify-content-md-end justify-content-center">
       <div class="d-flex align-items-center gap-2">
         <label class="form-label m-0 small">Filas por página</label>
-        <select class="form-select form-select-sm"
-                style="width: auto"
-                [ngModel]="currentPageSize()"
-                (ngModelChange)="changePageSize($event)">
+        <select class="form-select form-select-sm" style="width: auto" [ngModel]="currentPageSize()"
+          (ngModelChange)="changePageSize($event)">
           <option *ngFor="let s of pageSizeOptions" [ngValue]="s">{{ s }}</option>
         </select>
       </div>

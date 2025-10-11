@@ -9,7 +9,6 @@ import { ContratoComponent } from './generar-contrato/contrato/contrato.componen
 import { GenerarContratoComponent } from './generar-contrato/generar-contrato.component';
 import { GestionarEquiposComponent } from './gestionar-equipos/gestionar-equipos.component';
 import { GestionarPedidoComponent } from './gestionar-pedido/gestionar-pedido.component';
-import { AgregarPersonalComponent } from './gestionar-personal/agregar-personal/agregar-personal.component';
 import { GestionarPersonalComponent } from './gestionar-personal/gestionar-personal.component';
 import { AgregarProyectoComponent } from './gestionar-proyecto/agregar-proyecto/agregar-proyecto.component';
 import { GestionarProyectoComponent } from './gestionar-proyecto/listar-proyecto/gestionar-proyecto.component';
@@ -20,8 +19,6 @@ import { ActualizarPedidoComponent } from './gestionar-pedido/actualizar-pedido/
 import { AgregarPedidoComponent } from './gestionar-pedido/agregar-pedido/agregar-pedido.component';
 import { ReportesEstadisticosComponent } from './reportes-estadisticos/reportes-estadisticos.component';
 import { GestionarClienteComponent } from './gestionar-cliente/gestionar-cliente.component';
-import { RegistrarClienteComponent } from './gestionar-cliente/registrar-cliente/registrar-cliente.component';
-import { EditarClienteComponent } from './gestionar-cliente/editar-cliente/editar-cliente.component';
 import { GestionarPerfilesComponent } from './gestionar-perfiles/gestionar-perfiles.component';
 import { RegistrarPerfilComponent } from './gestionar-perfiles/registrar-perfil/registrar-perfil.component';
 import { EditarPerfilComponent } from './gestionar-perfiles/editar-perfil/editar-perfil.component';
@@ -65,7 +62,6 @@ const routes: Routes = [
     
       //PERSONAL RUTAS
       { path: 'gestionar-personal', component: GestionarPersonalComponent },
-      { path: 'gestionar-personal/agregar', component: AgregarPersonalComponent },
 
       //LISTAR EQUIPO
       { path: 'administrar-equipos/listarportipo', component: ListarportipoComponent },
@@ -79,8 +75,6 @@ const routes: Routes = [
       //Clientes y perfiles
 
       { path: 'gestionar-cliente', component: GestionarClienteComponent },
-      { path: 'gestionar-cliente/registrar-cliente', component: RegistrarClienteComponent },
-       { path: 'gestionar-cliente/editar-cliente', component: EditarClienteComponent},
       { path: 'gestionar-perfiles', component: GestionarPerfilesComponent},
        { path: 'gestionar-perfiles/registrar-perfil', component: RegistrarPerfilComponent},
        { path: 'gestionar-perfiles/editar-perfil', component: EditarPerfilComponent},

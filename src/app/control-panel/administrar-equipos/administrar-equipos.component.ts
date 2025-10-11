@@ -1,13 +1,10 @@
 import { formatDate } from '@angular/common';
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort } from '@angular/material/sort';
-import { MatTableDataSource } from '@angular/material/table';
 import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
-import { EquipoAll, EquipoAllGroup } from './models/modeloprueba.model';
 import { AdministrarEquiposService } from './service/service.service';
 import swal from 'sweetalert2';
+import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
 
 interface TEquipo {
   PK_TE_Cod: number;
@@ -41,19 +38,58 @@ interface Empleado {
   Estado: string;
 }
 
+interface EquipoGrupoRow {
+  tipoEquipo?: string;
+  marca?: string;
+  modelo?: string;
+  cantidad?: number;
+  idTipoEquipo?: number;
+  idMarca?: number;
+  idModelo?: number;
+  IdEquipo?: number;
+  IdMarca?: number;
+  IdModelo?: number;
+  Modelo?: string;
+}
+
+interface EquipoAlquiladoRow {
+  tipoEquipo?: string;
+  serie?: string;
+  proyectoAsig?: string;
+  empleadoAsig?: string;
+  estado?: string;
+  id?: number;
+  ID?: number;
+  Serie?: string;
+}
+
 @Component({
   selector: 'app-administrar-equipos',
   templateUrl: './administrar-equipos.component.html',
   styleUrls: ['./administrar-equipos.component.css'],
 })
 export class AdministrarEquiposComponent implements OnInit {
-  //Equipos Adquiridos
-  @ViewChild(MatSort) matSort!: MatSort;
-  @ViewChild(MatSort) matSortA!: MatSort;
-  @ViewChild('paginator') paginator!: MatPaginator;
-  @ViewChild('paginatorA') paginatorA!: MatPaginator;
-  dataSource!: MatTableDataSource<any>;
-  dataSourceA!: MatTableDataSource<any>;
+  /** Datos para las tablas reutilizables */
+  equiposAdquiridos: EquipoGrupoRow[] = [];
+  equiposAlquilados: EquipoAlquiladoRow[] = [];
+
+  /** Definición de columnas para tabla base */
+  readonly columnasAdquiridos: TableColumn<EquipoGrupoRow>[] = [
+    { key: 'tipoEquipo', header: 'Equipo', sortable: true, class: 'text-center text-capitalize' },
+    { key: 'marca', header: 'Marca', sortable: true, class: 'text-center text-capitalize' },
+    { key: 'modelo', header: 'Modelo', sortable: true, class: 'text-center text-capitalize' },
+    { key: 'cantidad', header: 'Cantidad', sortable: true, class: 'text-center', width: '120px' },
+    { key: 'acciones', header: 'Ver', sortable: false, filterable: false, class: 'text-center', width: '110px' }
+  ];
+
+  readonly columnasAlquilados: TableColumn<EquipoAlquiladoRow>[] = [
+    { key: 'tipoEquipo', header: 'Equipo', sortable: true, class: 'text-center text-capitalize' },
+    { key: 'serie', header: 'N° Serie', sortable: true, class: 'text-center text-capitalize' },
+    { key: 'proyectoAsig', header: 'Proyecto Asignado', sortable: true, class: 'text-center text-capitalize' },
+    { key: 'empleadoAsig', header: 'Empleado Asignado', sortable: true, class: 'text-center text-capitalize' },
+    { key: 'estado', header: 'Estado', sortable: true, class: 'text-center text-capitalize', width: '140px' },
+    { key: 'acciones', header: 'Detalle', sortable: false, filterable: false, class: 'text-center', width: '110px' }
+  ];
 
   //VALIDACION DE FECHA
   minimo: string = '';
@@ -82,17 +118,6 @@ export class AdministrarEquiposComponent implements OnInit {
   existe: number = 0;
 
   idProyecto: number = 0;
-
-  columnsToDisplay = ['equipo', 'marca', 'modelo', 'cEquipo', 'ver'];
-
-  columnsToDisplayA = [
-    'equipo',
-    'serie',
-    'proyectoAsig',
-    'empleadoAsig',
-    'estado',
-    'detalle',
-  ];
 
   constructor(
     public service: AdministrarEquiposService,
@@ -136,10 +161,7 @@ export class AdministrarEquiposComponent implements OnInit {
   getEquipos() {
     this.service.getAllGroup().subscribe((response: any) => {
       console.log(response);
-      
-      this.dataSource = new MatTableDataSource(response);
-      this.dataSource.paginator = this.paginator;
-      this.dataSource.sort = this.matSort;
+      this.equiposAdquiridos = response || [];
     });
   }
   getEmpleados() {
@@ -156,9 +178,7 @@ export class AdministrarEquiposComponent implements OnInit {
   //Muestra la tabla de equipos alquilados
   getEquiposAlquilados() {
     this.service.getEquiposAlquilados().subscribe((response: any) => {
-      this.dataSourceA = new MatTableDataSource(response);
-      this.dataSourceA.paginator = this.paginatorA;
-      this.dataSourceA.sort = this.matSortA;
+      this.equiposAlquilados = response || [];
     });
   }
   //
@@ -172,13 +192,6 @@ export class AdministrarEquiposComponent implements OnInit {
       this.marcas = response;
     });
   }
-  //BUSCADOR GENERAL
-  filterData($event: any) {
-    this.dataSource.filter = $event.target.value;
-  }
-  filterData2($event: any) {
-    this.dataSourceA.filter = $event.target.value;
-  }
   //Segunda vista
   verDetalle(
     idEquipo: number,
@@ -191,6 +204,24 @@ export class AdministrarEquiposComponent implements OnInit {
     this.idMarca = idMarca;
     this.idModelo = idModelo;
     this.Modelo = Modelo;
+  }
+  seleccionarGrupo(row: EquipoGrupoRow) {
+    if (!row) { return; }
+    const idEquipo = row.idTipoEquipo ?? row.IdEquipo;
+    const idMarca = row.idMarca ?? row.IdMarca;
+    const idModelo = row.idModelo ?? row.IdModelo;
+    const modelo = row.modelo ?? row.Modelo ?? '';
+    if (idEquipo != null && idMarca != null && idModelo != null) {
+      this.verDetalle(idEquipo, idMarca, idModelo, modelo);
+    }
+  }
+  seleccionarAlquilado(row: EquipoAlquiladoRow) {
+    if (!row) { return; }
+    const id = row.id ?? row.ID;
+    const serie = row.serie ?? row.Serie ?? '';
+    if (id != null) {
+      this.verDetalleAlquilado(id, serie);
+    }
   }
   //vISTA ALQUILDO
   verDetalleAlquilado(id: number, serie: string) {

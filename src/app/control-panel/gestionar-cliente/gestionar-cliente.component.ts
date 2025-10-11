@@ -1,12 +1,14 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { from, Subject, takeUntil } from 'rxjs';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { NgForm } from '@angular/forms';
+import swal from 'sweetalert2';
 
 import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
 import { Cliente } from './model/cliente.model';
 import { ClienteService } from './service/cliente.service';
 
-export interface ClienteRow extends Cliente {}
+import { from, Subject, takeUntil } from 'rxjs';
+
+export interface ClienteRow extends Cliente { }
 
 @Component({
   selector: 'app-gestionar-cliente',
@@ -29,13 +31,32 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   rows: ClienteRow[] = [];
   loadingList = false;
   error: string | null = null;
-  readonly initialSort = { key: 'nombre', direction: 'asc' as const };
+  readonly initialSort = { key: 'codigoCliente', direction: 'desc' as const };
+
+  modalRegistroOpen = false;
+  modalRegistroLoading = false;
+  modalRegistroError: string | null = null;
+
+  modalEditarOpen = false;
+  modalEditarLoading = false;
+  modalEditarSaving = false;
+  modalEditarError: string | null = null;
+  selectedCliente: ClienteRow | null = null;
+  editFormModel = this.createEmptyEditModel();
+  editUiReady = false;
+  nombrePattern = '^[a-zA-Z ]{2,20}$';
+  apellidoPattern = '^[a-zA-Z ]{2,30}$';
+  docPattern = '^[0-9]{1}[0-9]{7}$';
+  celularPattern = '^[1-9]{1}[0-9]{6,8}$';
+  correoPattern = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
+
+  @ViewChild('createForm') createForm?: NgForm;
+  @ViewChild('editForm') editForm?: NgForm;
 
   private readonly destroy$ = new Subject<void>();
 
   constructor(
-    private readonly clienteService: ClienteService,
-    private readonly router: Router
+    private readonly clienteService: ClienteService
   ) { }
 
   ngOnInit(): void {
@@ -48,24 +69,184 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   }
 
   navigateToCreate(): void {
-    this.router.navigate(['/home/gestionar-cliente/registrar-cliente']);
+    this.modalRegistroError = null;
+    this.modalRegistroOpen = true;
   }
 
   editarCliente(row: ClienteRow): void {
     if (!row?.idCliente) {
       return;
     }
+
+    this.modalEditarError = null;
+    this.modalEditarOpen = true;
+    this.modalEditarLoading = true;
+    this.modalEditarSaving = false;
+    this.selectedCliente = null;
+    this.editFormModel = this.createEmptyEditModel();
+    this.editUiReady = false; // <--- NUEVO
+
     this.clienteService.getByIdCliente(row.idCliente)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          this.clienteService.selectCliente = Array.isArray(response) ? response[0] ?? row : response;
-          this.router.navigate(['/home/gestionar-cliente/editar-cliente']);
+          const cliente = (Array.isArray(response) ? response[0] : response) || row;
+          this.selectedCliente = cliente as ClienteRow;
+          this.editFormModel = this.createEmptyEditModel(this.selectedCliente);
+          this.modalEditarLoading = false;
+
+          // Espera a que se pinte el form y recién habilita la UI
+          setTimeout(() => {
+            this.editForm?.form.markAsPristine();
+            this.editForm?.form.markAsUntouched();
+            this.editUiReady = true;  // <--- NUEVO (se habilita en otro tick)
+          }, 0);
         },
         error: (err) => {
           console.error('[clientes] detalle', err);
+          this.modalEditarLoading = false;
+          this.modalEditarError = 'No pudimos obtener los datos del cliente.';
         }
       });
+  }
+
+
+  onModalClosed(): void {
+    this.modalRegistroOpen = false;
+    this.modalRegistroLoading = false;
+    this.modalRegistroError = null;
+    this.createForm?.resetForm();
+  }
+
+  closeCreateModal(): void {
+    if (this.modalRegistroLoading) {
+      return;
+    }
+    this.modalRegistroOpen = false;
+  }
+
+  submitCreate(form: NgForm): void {
+    if (!form || this.modalRegistroLoading) {
+      return;
+    }
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
+    this.modalRegistroLoading = true;
+    this.modalRegistroError = null;
+
+    const payload = {
+      nombre: form.value.nombre,
+      apellido: form.value.apellido,
+      correo: form.value.correo,
+      numDoc: form.value.doc,
+      celular: form.value.celular,
+      direccion: form.value.direccion
+    };
+
+    this.clienteService.addCliente(payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.modalRegistroLoading = false;
+          swal.fire({
+            text: 'Registro exitoso',
+            icon: 'success',
+            showCancelButton: false,
+            customClass: { confirmButton: 'btn btn-success' },
+            buttonsStyling: false
+          });
+          this.createForm?.resetForm();
+          this.modalRegistroOpen = false;
+          this.loadClientes();
+        },
+        error: (err) => {
+          this.modalRegistroLoading = false;
+          const msg = err?.error?.message || 'Ocurrió un error, volver a intentar.';
+          this.modalRegistroError = msg;
+        }
+      });
+  }
+
+  onEditModalClosed(): void {
+    this.modalEditarOpen = false;
+    this.modalEditarLoading = false;
+    this.modalEditarSaving = false;
+    this.modalEditarError = null;
+    this.selectedCliente = null;
+    this.editFormModel = this.createEmptyEditModel();
+    this.editForm?.resetForm();
+    this.editUiReady = false; // <--- NUEVO
+  }
+
+
+  closeEditModal(): void {
+    if (this.modalEditarLoading || this.modalEditarSaving) {
+      return;
+    }
+    this.modalEditarOpen = false;
+  }
+
+  submitEdit(form: NgForm): void {
+    if (!form || this.modalEditarSaving || !this.selectedCliente) {
+      return;
+    }
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
+    this.modalEditarSaving = true;
+    this.modalEditarError = null;
+
+    const payload = {
+      correo: form.value.correo,
+      celular: form.value.celular,
+      idCliente: this.selectedCliente.idCliente,
+      direccion: form.value.direccion
+    };
+
+    this.clienteService.putClienteById(payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.modalEditarSaving = false;
+          const isBackendError = res && res.ok === false;
+          const msg = isBackendError
+            ? (res.message || 'Ocurrió un error, volver a intentar.')
+            : 'Actualización exitosa';
+
+          swal.fire({
+            text: msg,
+            icon: isBackendError ? 'warning' : 'success',
+            showCancelButton: false,
+            customClass: {
+              confirmButton: `btn btn-${isBackendError ? 'warning' : 'success'}`
+            },
+            buttonsStyling: false
+          });
+
+          if (!isBackendError) {
+            this.modalEditarOpen = false;
+            this.loadClientes();
+          }
+        },
+        error: (err) => {
+          this.modalEditarSaving = false;
+          const msg = err?.error?.message || 'Ocurrió un error, volver a intentar.';
+          this.modalEditarError = msg;
+        }
+      });
+  }
+
+  private createEmptyEditModel(cliente?: ClienteRow) {
+    return {
+      correo: cliente?.correo || '',
+      celular: cliente?.celular || '',
+      direccion: cliente?.direccion || ''
+    };
   }
 
   onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {

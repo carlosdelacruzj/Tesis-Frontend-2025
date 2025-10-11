@@ -20,8 +20,39 @@
 /* Asegura centrado en header content (ícono sort + texto) */
 .table thead th > div { justify-content: center; }
 
+/* ---- Tabla estable y truncado ---- */
+.table {
+  table-layout: fixed;   /* anchos estables por columna */
+  width: 100%;
+}
+
+.table th,
+.table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;   /* evita saltos y “empujes” */
+  min-width: 8rem;       /* base razonable; ajusta por columna si necesitas */
+}
+
+/* Números: alineación pro y dígitos de ancho fijo */
+.text-end,
+.num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Ajustes responsivos menores */
 @media (max-width: 576px) {
   .create-btn-wrapper .btn { width: 100%; }
   .search-group { max-width: 100%; }
 }
+
+/* (Opcional) si quieres permitir 2 líneas en algunas celdas:
+.clamp-2 {
+  white-space: normal !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+*/

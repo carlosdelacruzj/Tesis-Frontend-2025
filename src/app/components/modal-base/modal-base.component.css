@@ -1,0 +1,71 @@
+/* Reutiliza clases Bootstrap sin JS de Bootstrap: .modal, .modal-dialog, .modal-content, etc. */
+
+/* Backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0,0,0,.5);
+  z-index: 1050;
+}
+
+/* Contenedor principal (emula .modal d-block) */
+.modal.d-block {
+  position: fixed;
+  inset: 0;
+  z-index: 1055;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Centrado vertical */
+.modal-dialog {
+  margin: 1.75rem auto;
+  max-width: 600px; /* md default */
+}
+
+/* Tamaños */
+.modal-sm { max-width: 300px; }
+.modal-lg { max-width: 900px; }
+.modal-xl { max-width: 1140px; }
+
+.modal-content {
+  background-color: #fff;
+  border: 1px solid rgba(0,0,0,.2);
+  border-radius: .5rem;
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+  overflow: hidden;
+}
+
+/* Transiciones sutiles */
+.fade {
+  transition: opacity .15s linear;
+}
+.fade.show {
+  opacity: 1;
+}
+
+/* Bloquea scroll del body al abrir (igual que Bootstrap) */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Asegurar spacing */
+.modal-header, .modal-body, .modal-footer {
+  padding: 1rem 1.25rem;
+}
+.modal-header {
+  border-bottom: 1px solid rgba(0,0,0,.1);
+}
+.modal-footer {
+  border-top: 1px solid rgba(0,0,0,.1);
+}
+
+/* Botón cerrar */
+.btn-close {
+  background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23000' viewBox='0 0 16 16'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293A1 1 0 0 1 .293 14.293L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+  border: 0;
+  width: 1em;
+  height: 1em;
+  opacity: .6;
+}
+.btn-close:hover { opacity: .9; }
