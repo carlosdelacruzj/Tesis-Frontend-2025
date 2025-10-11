@@ -22,7 +22,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     { key: 'fecha',   header: 'Fecha / horas', sortable: true, width: '160px' },
     { key: 'estado',  header: 'Estado',  sortable: true, width: '120px' },
     { key: 'total',   header: 'Total',   sortable: true, width: '120px', class: 'text-center' },
-    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '140px', class: 'text-center' }
+    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '200px', class: 'text-center' }
   ];
 
   rows: Cotizacion[] = [];
@@ -30,6 +30,10 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   loadingList = false;
   downloadingId: number | null = null;
   error: string | null = null;
+
+  estadoModalOpen = false;
+  estadoTarget: Cotizacion | null = null;
+  estadoDestino: 'Enviada' | 'Aceptada' | 'Rechazada' | '' = '';
 
   private readonly destroy$ = new Subject<void>();
 
@@ -58,6 +62,10 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   }
 
   editCotizacion(cotizacion: Cotizacion): void {
+    if (cotizacion.estado === 'Aceptada' || cotizacion.estado === 'Rechazada') {
+      this.error = 'No puedes editar una cotización que ya fue aceptada o rechazada.';
+      return;
+    }
     this.router.navigate(['/home/gestionar-cotizaciones/editar', cotizacion.id]);
   }
 
@@ -81,6 +89,82 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
           this.downloadingId = null;
         }
       });
+  }
+
+  openEstadoModal(cotizacion: Cotizacion, destino: 'Enviada' | 'Aceptada' | 'Rechazada'): void {
+    this.error = null;
+    if (!cotizacion || !cotizacion.total || cotizacion.total <= 0) {
+      this.error = 'La cotización debe tener un total mayor a cero para cambiar de estado.';
+      return;
+    }
+    this.estadoTarget = cotizacion;
+    this.estadoDestino = destino;
+    this.estadoModalOpen = true;
+  }
+
+  closeEstadoModal(): void {
+    this.estadoModalOpen = false;
+    this.estadoDestino = '';
+    this.estadoTarget = null;
+  }
+
+  confirmEstadoChange(): void {
+    if (!this.estadoTarget || !this.estadoDestino) {
+      this.closeEstadoModal();
+      return;
+    }
+
+    const id = this.estadoTarget.id;
+    const destino = this.estadoDestino;
+    const estadoActual = this.estadoTarget.estado ?? 'Borrador';
+
+    if (!this.estadoTarget.total || this.estadoTarget.total <= 0) {
+      this.error = 'La cotización debe tener un total mayor a cero para cambiar de estado.';
+      this.closeEstadoModal();
+      return;
+    }
+
+    this.cotizacionService.updateEstado(id, destino, estadoActual)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (actualizada) => {
+          this.error = null;
+          if (actualizada) {
+            this.rows = this.rows.map(item =>
+              item.id === actualizada.id ? { ...item, ...actualizada } : item
+            );
+            this.rows = [...this.rows];
+
+            if (this.estadoTarget && this.estadoTarget.id === actualizada.id) {
+              this.estadoTarget = { ...this.estadoTarget, ...actualizada };
+            }
+          } else {
+            this.loadCotizaciones();
+          }
+          this.closeEstadoModal();
+        },
+        error: (err) => {
+          console.error('[cotizacion] updateEstado', err);
+          this.error = 'No pudimos actualizar el estado. Verifica e intenta nuevamente.';
+          this.closeEstadoModal();
+        }
+      });
+  }
+
+  get estadoModalTitle(): string {
+    return 'Confirmar cambio de estado';
+  }
+
+  get estadoModalMessage(): string {
+    if (!this.estadoTarget) {
+      return '';
+    }
+    const nombre = this.estadoTarget.codigo ?? `Cotización #${this.estadoTarget.id}`;
+    const estadoActual = this.estadoTarget.estado ?? 'Borrador';
+    if (estadoActual === 'Borrador') {
+      return `Marcar ${nombre} como enviada.`;
+    }
+    return `Selecciona el nuevo estado para ${nombre}. Estado actual: ${estadoActual}`;
   }
 
   // Hooks opcionales del TableBase (por si quieres loguear/usar server-side luego)

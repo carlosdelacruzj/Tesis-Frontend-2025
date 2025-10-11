@@ -44,7 +44,6 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   loadingList = false;
   error: string | null = null;
 
-  readonly initialSort = { key: 'Creado', direction: 'desc' as const };
 
   private readonly destroy$ = new Subject<void>();
 

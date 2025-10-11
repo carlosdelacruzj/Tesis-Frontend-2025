@@ -31,7 +31,6 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   rows: ClienteRow[] = [];
   loadingList = false;
   error: string | null = null;
-  readonly initialSort = { key: 'codigoCliente', direction: 'desc' as const };
 
   modalRegistroOpen = false;
   modalRegistroLoading = false;

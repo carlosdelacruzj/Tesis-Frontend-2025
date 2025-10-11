@@ -37,7 +37,6 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
 
   loadingList = false;
   error: string | null = null;
-  readonly initialSort = { key: 'nombreCompleto', direction: 'asc' as const };
 
   celularPattern = '^[1-9]{1}[0-9]{6,8}$';
   correoPattern = '^[\\w.+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$';

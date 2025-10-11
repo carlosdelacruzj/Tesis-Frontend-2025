@@ -31,7 +31,6 @@ export class GestionarPerfilesComponent implements OnInit, OnDestroy {
   rows: PerfilRow[] = [];
   loadingList = false;
   error: string | null = null;
-  readonly initialSort = { key: 'nombreCompleto', direction: 'asc' as const };
 
   private readonly destroy$ = new Subject<void>();
 

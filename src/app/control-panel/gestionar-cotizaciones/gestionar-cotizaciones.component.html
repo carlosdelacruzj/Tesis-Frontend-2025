@@ -7,7 +7,7 @@
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10,25,50]" [pageSize]="10"
-      [initialSort]="{ key: 'fecha', direction: 'desc' }" searchPlaceholder="Buscar: cliente, código, evento…"
+      searchPlaceholder="Buscar: cliente, código, evento…"
       emptyText="Sin resultados" (rowClick)="ver($event)" (sortChange)="onSortChange($event)"
       createButtonLabel="Registrar cotización" [showCreateButton]="true" (createClick)="navigateToCreate()"
       (pageChange)="onPageChange($event)">
@@ -44,11 +44,33 @@
       <!-- acciones: puedes mantener Angular Material si prefieres -->
       <ng-template appCell="acciones" let-row>
         <div class="d-flex justify-content-center gap-1">
-          <button mat-icon-button color="primary" type="button" (click)="editCotizacion(row)" matTooltip="Editar">
+          <button mat-icon-button color="primary" type="button" (click)="editCotizacion(row)" matTooltip="Editar"
+            [disabled]="row.estado === 'Aceptada' || row.estado === 'Rechazada'">
             <mat-icon>edit</mat-icon>
           </button>
+          <button
+            mat-icon-button
+            color="accent"
+            type="button"
+            *ngIf="(row.estado || 'Borrador') === 'Borrador'"
+            [disabled]="!row.total"
+            (click)="openEstadoModal(row, 'Enviada')"
+            matTooltip="Marcar como enviada">
+            <mat-icon>send</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            color="primary"
+            type="button"
+            *ngIf="(row.estado || 'Borrador') === 'Enviada'"
+            [disabled]="!row.total"
+            (click)="openEstadoModal(row, 'Aceptada')"
+            matTooltip="Actualizar estado">
+            <mat-icon>how_to_vote</mat-icon>
+          </button>
           <button mat-icon-button color="accent" type="button" (click)="downloadPdf(row)"
-            [disabled]="downloadingId === row.id" matTooltip="Descargar PDF">
+            [disabled]="downloadingId === row.id || !row.total" matTooltip="Descargar PDF"
+            [matTooltipDisabled]="!!row.total">
             <mat-icon *ngIf="downloadingId !== row.id">picture_as_pdf</mat-icon>
             <mat-icon *ngIf="downloadingId === row.id" class="spin">hourglass_top</mat-icon>
           </button>
@@ -64,3 +86,30 @@
     <p class="mt-3 mb-0">Cargando cotizaciones…</p>
   </div>
 </ng-template>
+
+<app-modal-base
+  [open]="estadoModalOpen"
+  [title]="estadoModalTitle"
+  [primaryLabel]="'Confirmar'"
+  [secondaryLabel]="'Cancelar'"
+  [disableClose]="false"
+  [showPrimary]="true"
+  [showSecondary]="true"
+  [primaryVariant]="estadoDestino === 'Rechazada' ? 'danger' : 'primary'"
+  (confirm)="confirmEstadoChange()"
+  (cancel)="closeEstadoModal()"
+  (closed)="closeEstadoModal()">
+  <div class="d-flex flex-column gap-3">
+    <p class="mb-0">{{ estadoModalMessage }}</p>
+    <div *ngIf="estadoTarget && (estadoTarget.estado ?? 'Borrador') === 'Enviada'" class="d-flex flex-column gap-2">
+      <button type="button" class="btn btn-outline-primary" (click)="estadoDestino = 'Aceptada'"
+        [class.active]="estadoDestino === 'Aceptada'">
+        Aceptar cotización
+      </button>
+      <button type="button" class="btn btn-outline-danger" (click)="estadoDestino = 'Rechazada'"
+        [class.active]="estadoDestino === 'Rechazada'">
+        Rechazar cotización
+      </button>
+    </div>
+  </div>
+</app-modal-base>

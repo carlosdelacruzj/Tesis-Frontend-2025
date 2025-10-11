@@ -8,7 +8,7 @@
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
-      [initialSort]="initialSort" searchPlaceholder="Buscar: nombre, documento, correo…" emptyText="Sin resultados"
+      searchPlaceholder="Buscar: nombre, documento, correo…" emptyText="Sin resultados"
       (rowClick)="editarCliente($event)" (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
       [showCreateButton]="true" createButtonLabel="Registrar cliente" (createClick)="navigateToCreate()">
 

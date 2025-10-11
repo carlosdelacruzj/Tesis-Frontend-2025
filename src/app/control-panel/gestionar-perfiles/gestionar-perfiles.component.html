@@ -8,7 +8,7 @@
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="25"
-      [initialSort]="initialSort" searchPlaceholder="Buscar: rol, nombre, documento…"
+      searchPlaceholder="Buscar: rol, nombre, documento…"
       emptyText="Sin perfiles registrados" (rowClick)="editarPerfil($event)" (sortChange)="onSortChange($event)"
       (pageChange)="onPageChange($event)" [showCreateButton]="true" createButtonLabel="Registrar perfil"
       (createClick)="navigateToCreate()">

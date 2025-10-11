@@ -140,9 +140,45 @@ export class CotizacionService {
   }
 
   downloadPdf(id: number | string): Observable<Blob> {
-    const content = `Cotización ${id}\nEste documento es un PDF de demostración generado desde el front.`;
-    const blob = new Blob([content], { type: 'application/pdf' });
-    return of(blob).pipe(delay(this.latency));
+    return this.http.get(`${this.baseUrl}/${id}/pdf`, { responseType: 'blob' }).pipe(
+      catchError(err => {
+        console.error('[cotizacion] downloadPdf', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  updateEstado(id: number | string, estadoNuevo: 'Enviada' | 'Aceptada' | 'Rechazada', estadoEsperado: string | null | undefined): Observable<Cotizacion> {
+    const numericId = Number(id);
+    if (!Number.isFinite(numericId)) {
+      return throwError(() => new Error('Identificador de cotización inválido'));
+    }
+
+    const payload = {
+      estadoNuevo,
+      estadoEsperado: estadoEsperado ?? null
+    };
+
+    return this.http.put<{ detalle: CotizacionApiResponse | CotizacionApiResponse[] | null } & CotizacionApiResponse>(`${this.baseUrl}/${numericId}/estado`, payload).pipe(
+      map(response => {
+        const detalle = Array.isArray(response?.detalle)
+          ? response.detalle.find(item => Number(item?.id ?? item?.idCotizacion) === numericId)
+          : response?.detalle;
+
+        const merged = this.normalizeApiCotizacion({
+          ...response,
+          ...detalle,
+          id: detalle?.id ?? detalle?.idCotizacion ?? response?.id ?? numericId
+        });
+        return merged;
+      }),
+      tap(cotizacion => this.upsertCotizacion(cotizacion)),
+      map(cotizacion => this.cloneCotizacion(cotizacion)),
+      catchError(err => {
+        console.error('[cotizacion] updateEstado', err);
+        return throwError(() => err);
+      })
+    );
   }
 
   getServicios(): Observable<any[]> {

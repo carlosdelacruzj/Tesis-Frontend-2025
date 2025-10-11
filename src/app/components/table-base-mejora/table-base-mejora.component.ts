@@ -54,9 +54,6 @@ export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnCh
     @Input() searchPlaceholder = 'Buscar…';
     /** Texto del footer cuando no hay datos */
     @Input() emptyText = 'Sin resultados';
-    /** Sort inicial */
-    @Input() initialSort?: { key: string; direction: Exclude<SortDirection, ''> };
-
     /** Eventos */
     @Output() sortChange = new EventEmitter<{ key: string; direction: SortDirection }>();
     @Output() pageChange = new EventEmitter<{ page: number; pageSize: number }>();
@@ -71,6 +68,7 @@ export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnCh
     @ContentChildren(CellTemplateDirective) cellTpls!: QueryList<CellTemplateDirective>;
 
     /** Estado reactivo */
+    private dataSignal = signal<T[]>([]);
     searchTerm = signal<string>('');
     sortKey = signal<string>('');
     sortDirection = signal<SortDirection>('');
@@ -86,7 +84,7 @@ export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnCh
         if (this.cellTpls) {
             this.cellTplsChangesSub = this.cellTpls.changes.subscribe(() => this.rebuildCellTemplateMap());
         }
-        this.applyInitialSort();
+        this.dataSignal.set(this.data ?? []);
         this.syncPageSizeFromInput();
         this.syncPageFromInput();
         this.ensureCurrentPageInRange();
@@ -101,8 +99,8 @@ export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnCh
             this.syncPageFromInput();
         }
 
-        if ('initialSort' in changes && !changes['initialSort'].isFirstChange()) {
-            this.applyInitialSort();
+        if ('data' in changes) {
+            this.dataSignal.set(this.data ?? []);
         }
 
         if ('data' in changes || 'columns' in changes || 'pageSize' in changes || 'page' in changes) {
@@ -117,11 +115,12 @@ export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnCh
     /** Filtra globalmente (sólo columnas filterable !== false) */
     filtered = computed<T[]>(() => {
         const term = this.searchTerm().trim().toLowerCase();
-        if (!term) return this.data ?? [];
+        const source = this.dataSignal();
+        if (!term) return source ?? [];
         const keys = this.columns
             .filter(c => (c as any).filterable !== false)
             .map(c => c.key);
-        return (this.data ?? []).filter(row =>
+        return (source ?? []).filter(row =>
             keys.some(k => {
                 const v = getByPath(row, k);
                 return (v ?? '').toString().toLowerCase().includes(term);
@@ -230,16 +229,6 @@ export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnCh
     private rebuildCellTemplateMap(): void {
         this.cellTemplateMap.clear();
         this.cellTpls?.forEach(t => this.cellTemplateMap.set(t.columnKey, t.template));
-    }
-
-    private applyInitialSort(): void {
-        if (!this.initialSort) {
-            this.sortKey.set('');
-            this.sortDirection.set('');
-            return;
-        }
-        this.sortKey.set(this.initialSort.key);
-        this.sortDirection.set(this.initialSort.direction);
     }
 
     private syncPageSizeFromInput(): void {
