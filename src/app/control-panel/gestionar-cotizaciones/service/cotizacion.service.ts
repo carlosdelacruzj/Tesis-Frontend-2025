@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+﻿import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, delay, map, tap } from 'rxjs/operators';
@@ -49,6 +49,26 @@ interface CotizacionApiResponse {
   items?: Array<Record<string, any>> | null;
 }
 
+export interface ClienteBusquedaResultado {
+  [key: string]: any;
+  id?: number | string | null;
+  nombre?: string | null;
+  nombreCompleto?: string | null;
+  razonSocial?: string | null;
+  documento?: string | null;
+  numeroDocumento?: string | null;
+  tipoDocumento?: string | null;
+  ruc?: string | null;
+  correo?: string | null;
+  email?: string | null;
+  telefono?: string | null;
+  celular?: string | null;
+  whatsapp?: string | null;
+  contacto?: string | null;
+  identificador?: string | null;
+  direccion?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CotizacionService {
   private readonly latency = 250;
@@ -85,7 +105,7 @@ export class CotizacionService {
   getCotizacion(id: number | string): Observable<Cotizacion> {
     const numericId = Number(id);
     if (!Number.isFinite(numericId)) {
-      return throwError(() => new Error('Identificador de cotización inválido'));
+      return throwError(() => new Error('Identificador de cotizaciÃ³n invÃ¡lido'));
     }
 
     return this.http.get<CotizacionApiResponse>(`${this.baseUrl}/${numericId}`).pipe(
@@ -98,6 +118,25 @@ export class CotizacionService {
           console.warn('[cotizacion] getCotizacion usando cache por error remoto', err);
           return of(this.cloneCotizacion(cached));
         }
+        return throwError(() => err);
+      })
+    );
+  }
+
+  buscarClientes(query: string, limit = 10): Observable<ClienteBusquedaResultado[]> {
+    const trimmed = (query ?? '').toString().trim();
+    if (!trimmed) {
+      return of([]);
+    }
+
+    const params = new HttpParams()
+      .set('query', trimmed)
+      .set('limit', String(limit));
+
+    return this.http.get<ClienteBusquedaResultado[]>(`${environment.baseUrl}/clientes/buscar`, { params }).pipe(
+      map(items => Array.isArray(items) ? items.map(item => this.normalizeClienteBusqueda(item)) : []),
+      catchError(err => {
+        console.error('[cotizacion] buscarClientes', err);
         return throwError(() => err);
       })
     );
@@ -120,7 +159,7 @@ export class CotizacionService {
     const numericId = Number(id);
     const index = this.cotizaciones.findIndex(cot => cot.id === numericId);
     if (index === -1) {
-      return throwError(() => new Error('Cotización no encontrada'));
+      return throwError(() => new Error('CotizaciÃ³n no encontrada'));
     }
 
     const base = this.cotizaciones[index];
@@ -151,7 +190,7 @@ export class CotizacionService {
   updateEstado(id: number | string, estadoNuevo: 'Enviada' | 'Aceptada' | 'Rechazada', estadoEsperado: string | null | undefined): Observable<Cotizacion> {
     const numericId = Number(id);
     if (!Number.isFinite(numericId)) {
-      return throwError(() => new Error('Identificador de cotización inválido'));
+      return throwError(() => new Error('Identificador de cotizaciÃ³n invÃ¡lido'));
     }
 
     const payload = {
@@ -514,6 +553,38 @@ export class CotizacionService {
     return trimmed;
   }
 
+  private normalizeClienteBusqueda(item: ClienteBusquedaResultado): ClienteBusquedaResultado {
+    if (!item) {
+      return {};
+    }
+    const nombreBase = item.nombreCompleto
+      ?? item.nombre
+      ?? item.razonSocial
+      ?? item.contacto
+      ?? item.email
+      ?? item.correo
+      ?? '';
+    const contactoBase = item.contacto
+      ?? item.celular
+      ?? item.telefono
+      ?? item.whatsapp
+      ?? item.email
+      ?? item.correo
+      ?? '';
+    const identificadorBase = item.identificador
+      ?? item.documento
+      ?? item.numeroDocumento
+      ?? item.ruc
+      ?? '';
+    return {
+      ...item,
+      nombre: item.nombre ?? (nombreBase || undefined),
+      nombreCompleto: item.nombreCompleto ?? (nombreBase || undefined),
+      contacto: item.contacto ?? (contactoBase || undefined),
+      identificador: item.identificador ?? (identificadorBase || undefined)
+    };
+  }
+
   private cleanObject(input: Record<string, any>): Record<string, any> {
     const output: Record<string, any> = {};
     Object.entries(input).forEach(([key, value]) => {
@@ -764,3 +835,6 @@ export class CotizacionService {
       .map(c => this.cloneCotizacion(c));
   }
 }
+
+
+

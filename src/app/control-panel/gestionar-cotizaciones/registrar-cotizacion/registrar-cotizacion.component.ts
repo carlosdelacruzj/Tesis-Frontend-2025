@@ -1,13 +1,14 @@
 import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Router } from '@angular/router';
-import { Subject, finalize, takeUntil } from 'rxjs';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 import { CotizacionItemPayload, CotizacionPayload } from '../model/cotizacion.model';
-import { CotizacionService } from '../service/cotizacion.service';
+import { CotizacionService, ClienteBusquedaResultado } from '../service/cotizacion.service';
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -54,6 +55,22 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
   selectedServicioNombre = '';
   selectedEventoId: number | null = null;
   selectedEventoNombre = '';
+  clienteSearchControl = new UntypedFormControl('');
+  clienteResultados: ClienteBusquedaResultado[] = [];
+  clienteSearchLoading = false;
+  clienteSearchError = '';
+  clienteSeleccionado: ClienteBusquedaResultado | null = null;
+  clienteBusquedaTermino = '';
+
+  clienteDisplay = (cliente?: ClienteBusquedaResultado | string | null): string => {
+    if (!cliente) {
+      return '';
+    }
+    if (typeof cliente === 'string') {
+      return cliente;
+    }
+    return this.resolveClienteNombre(cliente);
+  };
 
   paquetesColumns = ['Descripcion', 'Precio', 'Staff', 'Horas', 'Seleccionar'];
   paquetesDataSource = new MatTableDataSource<any>([]);
@@ -76,6 +93,7 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
 
   ngOnInit(): void {
     this.loadCatalogos();
+    this.initClienteBusqueda();
   }
 
   ngAfterViewInit(): void {
@@ -169,6 +187,100 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
   removePaquete(key: string | number): void {
     this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
     this.syncTotalEstimado();
+  }
+
+  onClienteSelected(cliente: ClienteBusquedaResultado): void {
+    if (!cliente) {
+      return;
+    }
+    this.clienteSeleccionado = cliente;
+    const nombre = this.resolveClienteNombre(cliente);
+    const contacto = this.resolveClienteContacto(cliente);
+    this.clienteSearchControl.setValue(nombre, { emitEvent: false });
+    this.clienteBusquedaTermino = nombre;
+    const patch: Record<string, any> = {};
+    if (nombre) {
+      patch.clienteNombre = nombre;
+    }
+    if (contacto) {
+      patch.clienteContacto = contacto;
+    }
+    if (Object.keys(patch).length) {
+      this.form.patchValue(patch, { emitEvent: false });
+    }
+    this.clienteResultados = [];
+    this.clienteSearchLoading = false;
+    this.clienteSearchError = '';
+  }
+
+  private initClienteBusqueda(): void {
+    this.clienteSearchControl.valueChanges.pipe(
+      map(value => typeof value === 'string' ? value.trim() : ''),
+      tap(value => {
+        this.clienteBusquedaTermino = value;
+        this.clienteSearchError = '';
+        if (value.length <= 1) {
+          this.clienteResultados = [];
+          this.clienteSearchLoading = false;
+          if (!value) {
+            this.clienteSeleccionado = null;
+          }
+        }
+      }),
+      filter(value => value.length > 1),
+      debounceTime(300),
+      distinctUntilChanged(),
+      tap(() => {
+        this.clienteSearchLoading = true;
+      }),
+      switchMap(query =>
+        this.cotizacionService.buscarClientes(query).pipe(
+          catchError(err => {
+            console.error('[cotizacion] buscarClientes', err);
+            this.clienteSearchError = 'No pudimos cargar clientes.';
+            this.clienteSearchLoading = false;
+            return of([]);
+          })
+        )
+      ),
+      takeUntil(this.destroy$)
+    ).subscribe(result => {
+      this.clienteResultados = Array.isArray(result) ? result : [];
+      this.clienteSearchLoading = false;
+    });
+  }
+
+  resolveClienteDocumento(cliente?: ClienteBusquedaResultado | null): string {
+    if (!cliente) {
+      return '';
+    }
+    return (cliente.documento
+      ?? cliente.numeroDocumento
+      ?? cliente.ruc
+      ?? cliente.identificador
+      ?? '').toString();
+  }
+
+  resolveClienteContacto(cliente?: ClienteBusquedaResultado | null): string {
+    if (!cliente) {
+      return '';
+    }
+    return (cliente.contacto
+      ?? cliente.celular
+      ?? cliente.telefono
+      ?? cliente.whatsapp
+      ?? cliente.email
+      ?? cliente.correo
+      ?? '').toString();
+  }
+
+   resolveClienteNombre(cliente: ClienteBusquedaResultado): string {
+    return (cliente.nombreCompleto
+      ?? cliente.nombre
+      ?? cliente.razonSocial
+      ?? cliente.contacto
+      ?? cliente.email
+      ?? '').toString();
   }
 
   pkgKey = (el: any) => this.getPkgKey(el);
@@ -267,7 +379,7 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
     }
 
     if (!this.selectedPaquetes.length) {
-      this.snackBar.open('Selecciona al menos un paquete para la cotización.', 'Cerrar', { duration: 4000 });
+      this.snackBar.open('Selecciona al menos un paquete para la cotizacion.', 'Cerrar', { duration: 4000 });
       return;
     }
 
@@ -278,7 +390,7 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
     const ubicacion = (raw.ubicacion ?? '').toString().trim();
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
-    const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotización de ${clienteNombre}` : 'Solicitud de cotización');
+    const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotizacion de ${clienteNombre}` : 'Solicitud de cotizacion');
     const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas);
     const totalEstimado = Number(raw.totalEstimado ?? this.totalSeleccion) || this.totalSeleccion;
 
@@ -329,12 +441,12 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
       )
       .subscribe({
         next: () => {
-          this.snackBar.open('Cotización registrada correctamente.', 'Cerrar', { duration: 4000 });
+          this.snackBar.open('Cotizacion registrada correctamente.', 'Cerrar', { duration: 4000 });
           this.router.navigate(['/home/gestionar-cotizaciones']);
         },
         error: (err) => {
           console.error('[cotizacion] create', err);
-          this.snackBar.open('No pudimos registrar la cotización. Inténtalo nuevamente.', 'Cerrar', { duration: 5000 });
+          this.snackBar.open('No pudimos registrar la cotizacion. Intentalo nuevamente.', 'Cerrar', { duration: 5000 });
         }
       });
   }
