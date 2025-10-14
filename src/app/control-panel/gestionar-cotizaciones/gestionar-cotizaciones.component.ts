@@ -1,12 +1,16 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, firstValueFrom } from 'rxjs';
 
 import { Cotizacion } from './model/cotizacion.model';
 import { CotizacionService } from './service/cotizacion.service';
 
-// Importa la interfaz de columnas desde TableBase
+// TableBase
 import { TableColumn } from 'src/app/components/table/table-base.component';
+
+// Util: convertir assets a base64
+import { urlToBase64 } from 'src/app/utils/url-to-base64';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-gestionar-cotizaciones',
@@ -14,9 +18,9 @@ import { TableColumn } from 'src/app/components/table/table-base.component';
   styleUrls: ['./gestionar-cotizaciones.component.css']
 })
 export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
-  // columnas que verá TableBase
+
   columns: TableColumn<Cotizacion>[] = [
-    { key: 'codigo', header: 'Código', sortable: true, width: '120px', class: 'text-nowrap' },
+    { key: 'codigo',  header: 'Código',  sortable: true,  width: '120px', class: 'text-nowrap' },
     { key: 'cliente', header: 'Cliente', sortable: true },
     { key: 'evento',  header: 'Evento',  sortable: true },
     { key: 'fecha',   header: 'Fecha / horas', sortable: true, width: '160px' },
@@ -39,27 +43,19 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly cotizacionService: CotizacionService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly http: HttpClient
   ) {}
 
-  ngOnInit(): void {
-    this.loadCotizaciones();
-  }
+  ngOnInit(): void { this.loadCotizaciones(); }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
-  // Navegación y acciones (igual que antes)
   navigateToCreate(): void {
     this.router.navigate(['/home/gestionar-cotizaciones/registrar']);
   }
 
-  ver(row: Cotizacion) {
-    // si quieres abrir detalle al click en fila, o ignóralo
-    // this.router.navigate([...])
-  }
+  ver(_row: Cotizacion) { /* opcional */ }
 
   editCotizacion(cotizacion: Cotizacion): void {
     if (cotizacion.estado === 'Aceptada' || cotizacion.estado === 'Rechazada') {
@@ -69,26 +65,45 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.router.navigate(['/home/gestionar-cotizaciones/editar', cotizacion.id]);
   }
 
-  downloadPdf(cotizacion: Cotizacion): void {
+  // === DESCARGAR PDF usando el SERVICE (NO HttpClient directo) ===
+  async downloadPdf(cotizacion: Cotizacion): Promise<void> {
+    this.error = null;
     this.downloadingId = cotizacion.id;
-    this.cotizacionService.downloadPdf(cotizacion.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (blob) => {
-          const fileUrl = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = fileUrl;
-          link.download = `${cotizacion.codigo ?? 'cotizacion'}-${cotizacion.id}.pdf`;
-          link.click();
-          window.URL.revokeObjectURL(fileUrl);
-          this.downloadingId = null;
+
+    try {
+      // Assets a base64 (data URL). Ajusta nombres si cambian.
+      const logoUrl  = 'assets/images/logocot.jpg';
+      const firmaUrl = 'assets/images/firma.png';
+
+      const [logoDataUrl, firmaDataUrl] = await Promise.all([
+        urlToBase64(this.http, logoUrl),
+        urlToBase64(this.http, firmaUrl),
+      ]);
+
+      const payload = {
+        company: {
+          logoBase64: logoDataUrl,    // data:image/png;base64,...
+          firmaBase64: firmaDataUrl,  // data:image/png;base64,...
         },
-        error: (err) => {
-          console.error('[cotizacion] pdf', err);
-          this.error = 'No se pudo descargar el PDF. Inténtalo nuevamente.';
-          this.downloadingId = null;
-        }
-      });
+        videoEquipo: '35 mm y sistema 4K',
+      };
+
+      const blob = await firstValueFrom(
+        this.cotizacionService.downloadPdf(cotizacion.id, payload)
+      );
+
+      const fileUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = fileUrl;
+      a.download = `${cotizacion.codigo ?? 'cotizacion'}-${cotizacion.id}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(fileUrl);
+    } catch (err) {
+      console.error('[cotizacion] pdf', err);
+      this.error = 'No se pudo descargar el PDF. Revisa que /api/v1/cotizaciones/:id/pdf o el alias /api/cotizacion/:id/pdf respondan en el backend.';
+    } finally {
+      this.downloadingId = null;
+    }
   }
 
   openEstadoModal(cotizacion: Cotizacion, destino: 'Enviada' | 'Aceptada' | 'Rechazada'): void {
@@ -110,8 +125,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
   confirmEstadoChange(): void {
     if (!this.estadoTarget || !this.estadoDestino) {
-      this.closeEstadoModal();
-      return;
+      this.closeEstadoModal(); return;
     }
 
     const id = this.estadoTarget.id;
@@ -120,8 +134,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
     if (!this.estadoTarget.total || this.estadoTarget.total <= 0) {
       this.error = 'La cotización debe tener un total mayor a cero para cambiar de estado.';
-      this.closeEstadoModal();
-      return;
+      this.closeEstadoModal(); return;
     }
 
     this.cotizacionService.updateEstado(id, destino, estadoActual)
@@ -134,7 +147,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
               item.id === actualizada.id ? { ...item, ...actualizada } : item
             );
             this.rows = [...this.rows];
-
             if (this.estadoTarget && this.estadoTarget.id === actualizada.id) {
               this.estadoTarget = { ...this.estadoTarget, ...actualizada };
             }
@@ -151,34 +163,20 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       });
   }
 
-  get estadoModalTitle(): string {
-    return 'Confirmar cambio de estado';
-  }
+  get estadoModalTitle(): string { return 'Confirmar cambio de estado'; }
 
   get estadoModalMessage(): string {
-    if (!this.estadoTarget) {
-      return '';
-    }
+    if (!this.estadoTarget) return '';
     const nombre = this.estadoTarget.codigo ?? `Cotización #${this.estadoTarget.id}`;
     const estadoActual = this.estadoTarget.estado ?? 'Borrador';
-    if (estadoActual === 'Borrador') {
-      return `Marcar ${nombre} como enviada.`;
-    }
+    if (estadoActual === 'Borrador') return `Marcar ${nombre} como enviada.`;
     return `Selecciona el nuevo estado para ${nombre}. Estado actual: ${estadoActual}`;
   }
 
-  // Hooks opcionales del TableBase (por si quieres loguear/usar server-side luego)
-  onSortChange(evt: { key: string; direction: 'asc' | 'desc' | '' }) {
-    // console.log('sortChange', evt);
-  }
-  onPageChange(evt: { page: number; pageSize: number }) {
-    // console.log('pageChange', evt);
-  }
+  onSortChange(_evt: { key: string; direction: 'asc' | 'desc' | '' }) {}
+  onPageChange(_evt: { page: number; pageSize: number }) {}
 
-  // Carga de datos (mismo servicio que ya tenías)
-  reload(): void {
-    this.loadCotizaciones();
-  }
+  reload(): void { this.loadCotizaciones(); }
 
   private loadCotizaciones(): void {
     this.loadingList = true;
@@ -188,7 +186,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (cotizaciones) => {
-          // Puedes normalizar aquí si lo necesitas
           this.rows = cotizaciones ?? [];
           this.loadingList = false;
         },

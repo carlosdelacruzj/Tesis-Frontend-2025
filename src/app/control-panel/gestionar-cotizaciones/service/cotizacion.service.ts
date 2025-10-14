@@ -69,10 +69,26 @@ export interface ClienteBusquedaResultado {
   direccion?: string | null;
 }
 
+function forceApiBase(url: string): string {
+  // Si ya es absoluta, normalízala a :3000 si por error apunta a :4200
+  if (/^https?:\/\//i.test(url)) {
+    return url.replace('http://localhost:4200', 'http://localhost:3000')
+              .replace('https://localhost:4200', 'http://localhost:3000')
+              .replace(/\/+$/,''); // sin slash final
+  }
+  // Si es relativa, fuerza a backend :3000 con /api/v1
+  return 'http://localhost:3000/api/v1';
+}
+
 @Injectable({ providedIn: 'root' })
 export class CotizacionService {
-  private readonly latency = 250;
-  private readonly baseUrl = `${environment.baseUrl}/cotizaciones`;
+      private readonly latency = 250;
+  private readonly apiBase: string =
+    (typeof environment.baseUrl === 'string' && /^https?:\/\//i.test(environment.baseUrl))
+      ? environment.baseUrl
+      : `${window.location.protocol}//${window.location.hostname}:3000${environment.baseUrl || '/api/v1'}`;
+
+  private readonly baseUrl = `${this.apiBase}/cotizaciones`;
   private sequence = 0;
 
   private cotizaciones: Array<Cotizacion & { raw?: CotizacionPayload }> = [];
@@ -105,7 +121,7 @@ export class CotizacionService {
   getCotizacion(id: number | string): Observable<Cotizacion> {
     const numericId = Number(id);
     if (!Number.isFinite(numericId)) {
-      return throwError(() => new Error('Identificador de cotizaciÃ³n invÃ¡lido'));
+      return throwError(() => new Error('Identificador de cotización inválido'));
     }
 
     return this.http.get<CotizacionApiResponse>(`${this.baseUrl}/${numericId}`).pipe(
@@ -159,7 +175,7 @@ export class CotizacionService {
     const numericId = Number(id);
     const index = this.cotizaciones.findIndex(cot => cot.id === numericId);
     if (index === -1) {
-      return throwError(() => new Error('CotizaciÃ³n no encontrada'));
+      return throwError(() => new Error('Cotización no encontrada'));
     }
 
     const base = this.cotizaciones[index];
@@ -178,19 +194,47 @@ export class CotizacionService {
     );
   }
 
-  downloadPdf(id: number | string): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/${id}/pdf`, { responseType: 'blob' }).pipe(
-      catchError(err => {
-        console.error('[cotizacion] downloadPdf', err);
-        return throwError(() => err);
-      })
-    );
+  /**
+   * Descarga el PDF con payload (logoBase64, firmaBase64, videoEquipo).
+   * 1) Intenta POST /api/v1/cotizaciones/:id/pdf (oficial).
+   * 2) Si responde 404, reintenta POST /api/cotizacion/:id/pdf (alias).
+   */
+downloadPdf(
+  id: number | string,
+  payload: {
+    company?: { logoBase64?: string; firmaBase64?: string };
+    videoEquipo?: string;
+  } = {}
+): Observable<Blob> {
+  const numericId = Number(id);
+  if (!Number.isFinite(numericId)) {
+    return throwError(() => new Error('Identificador de cotización inválido'));
   }
+
+  const urlV1 = `${this.baseUrl}/${numericId}/pdf`;
+
+  // Construye alias en el MISMO origen (:3000) por si /api/v1 no tuviera el espejo
+  const aliasBase = this.apiBase.includes('/api/v1')
+    ? this.apiBase.replace('/api/v1', '/api')
+    : this.apiBase;
+  const urlAlias = `${aliasBase}/cotizacion/${numericId}/pdf`;
+
+  return this.http.post(urlV1, payload, { responseType: 'blob' as const }).pipe(
+    catchError(err => {
+      if (err?.status === 404) {
+        return this.http.post(urlAlias, payload, { responseType: 'blob' as const });
+      }
+      return throwError(() => err);
+    })
+  );
+}
+
+
 
   updateEstado(id: number | string, estadoNuevo: 'Enviada' | 'Aceptada' | 'Rechazada', estadoEsperado: string | null | undefined): Observable<Cotizacion> {
     const numericId = Number(id);
     if (!Number.isFinite(numericId)) {
-      return throwError(() => new Error('Identificador de cotizaciÃ³n invÃ¡lido'));
+      return throwError(() => new Error('Identificador de cotización inválido'));
     }
 
     const payload = {
@@ -246,6 +290,8 @@ export class CotizacionService {
       })
     );
   }
+
+  // --------------- helpers internos (no tocados) ---------------
 
   private normalizeApiCotizacion(api: CotizacionApiResponse): Cotizacion & { raw?: CotizacionPayload } {
     const payload = this.extractPayloadFromApi(api);
@@ -804,6 +850,7 @@ export class CotizacionService {
     }
     return new Date().toISOString();
   }
+
   private applyFilters(data: Array<Cotizacion & { raw?: CotizacionPayload }>, filters?: Record<string, string | number | null | undefined>): Cotizacion[] {
     if (!filters) {
       return data.map(c => this.cloneCotizacion(c));
@@ -835,6 +882,3 @@ export class CotizacionService {
       .map(c => this.cloneCotizacion(c));
   }
 }
-
-
-
