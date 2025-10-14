@@ -51,22 +51,28 @@ interface CotizacionApiResponse {
 
 export interface ClienteBusquedaResultado {
   [key: string]: any;
+
+  // Canonizados para tu UI
   id?: number | string | null;
   nombre?: string | null;
   nombreCompleto?: string | null;
-  razonSocial?: string | null;
-  documento?: string | null;
-  numeroDocumento?: string | null;
-  tipoDocumento?: string | null;
-  ruc?: string | null;
   correo?: string | null;
   email?: string | null;
-  telefono?: string | null;
   celular?: string | null;
-  whatsapp?: string | null;
+  telefono?: string | null;
   contacto?: string | null;
-  identificador?: string | null;
+  identificador?: string | null; // DNI/RUC
   direccion?: string | null;
+  codigo?: string | null;        // código amigable (p.ej. CLI-000011)
+
+  // Campos “crudos” del backend (opcional si quieres conservarlos)
+  idCliente?: number | null;
+  codigoCliente?: string | null;
+  doc?: string | null;
+  apellido?: string | null;
+  ruc?: string | null;
+  tipoDocumento?: string | null;
+  numeroDocumento?: string | null;
 }
 
 function forceApiBase(url: string): string {
@@ -97,7 +103,7 @@ export class CotizacionService {
     private readonly http: HttpClient,
     private readonly pedidoService: PedidoService,
     private readonly visualizarService: VisualizarService
-  ) {}
+  ) { }
 
   listCotizaciones(filters?: Record<string, string | number | null | undefined>): Observable<Cotizacion[]> {
     return this.http.get<CotizacionApiResponse[]>(this.baseUrl).pipe(
@@ -141,22 +147,26 @@ export class CotizacionService {
 
   buscarClientes(query: string, limit = 10): Observable<ClienteBusquedaResultado[]> {
     const trimmed = (query ?? '').toString().trim();
-    if (!trimmed) {
-      return of([]);
-    }
+    if (!trimmed) return of([]);
 
-    const params = new HttpParams()
+    // Enviar ambas variantes por compatibilidad con tu backend
+    let params = new HttpParams()
       .set('query', trimmed)
-      .set('limit', String(limit));
+      .set('q', trimmed)
+      .set('limit', String(limit))
+      .set('top', String(limit));
 
-    return this.http.get<ClienteBusquedaResultado[]>(`${environment.baseUrl}/clientes/buscar`, { params }).pipe(
-      map(items => Array.isArray(items) ? items.map(item => this.normalizeClienteBusqueda(item)) : []),
-      catchError(err => {
-        console.error('[cotizacion] buscarClientes', err);
-        return throwError(() => err);
-      })
-    );
+    return this.http
+      .get<ClienteBusquedaResultado[]>(`${environment.baseUrl}/clientes/buscar`, { params })
+      .pipe(
+        map(items => Array.isArray(items) ? items.map(item => this.normalizeClienteBusqueda(item)) : []),
+        catchError(err => {
+          console.error('[cotizacion] buscarClientes', err);
+          return throwError(() => err);
+        })
+      );
   }
+
 
   createCotizacion(payload: CotizacionPayload): Observable<Cotizacion> {
     const outbound = this.toBackendPayload(payload);
@@ -600,34 +610,57 @@ downloadPdf(
   }
 
   private normalizeClienteBusqueda(item: ClienteBusquedaResultado): ClienteBusquedaResultado {
-    if (!item) {
-      return {};
-    }
-    const nombreBase = item.nombreCompleto
-      ?? item.nombre
+    if (!item) return {};
+
+    // Mapear ID y código
+    const id = item.id ?? item.idCliente ?? null;
+    const codigo = item.codigo ?? item.codigoCliente ?? null;
+
+    // Nombre y nombreCompleto
+    const nombreCompuesto = [item.nombre, item.apellido].filter(Boolean).join(' ').trim();
+    const nombreBase =
+      item.nombreCompleto
+      ?? (nombreCompuesto || '')
       ?? item.razonSocial
       ?? item.contacto
       ?? item.email
       ?? item.correo
       ?? '';
-    const contactoBase = item.contacto
+
+    // Contacto: prioriza celular
+    const contactoBase =
+      item.contacto
       ?? item.celular
       ?? item.telefono
       ?? item.whatsapp
       ?? item.email
       ?? item.correo
       ?? '';
-    const identificadorBase = item.identificador
-      ?? item.documento
+
+    // Identificador único (DNI/RUC)
+    const identificadorBase =
+      item.identificador
+      ?? item.doc
       ?? item.numeroDocumento
       ?? item.ruc
       ?? '';
+
+    // Devuelve un objeto ya “canonizado” para tu UI + conserva campos útiles
     return {
       ...item,
+
+      // Canon
+      id,
+      codigo: codigo ?? undefined,
       nombre: item.nombre ?? (nombreBase || undefined),
       nombreCompleto: item.nombreCompleto ?? (nombreBase || undefined),
+      correo: item.correo ?? item.email ?? undefined,
+      email: item.email ?? item.correo ?? undefined,
+      celular: item.celular ?? undefined,
+      telefono: item.telefono ?? undefined,
       contacto: item.contacto ?? (contactoBase || undefined),
-      identificador: item.identificador ?? (identificadorBase || undefined)
+      identificador: identificadorBase || undefined,
+      direccion: item.direccion ?? undefined,
     };
   }
 
