@@ -1,7 +1,7 @@
 ﻿import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, delay, map, tap } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 
 import {
   Cotizacion,
@@ -10,85 +10,20 @@ import {
   CotizacionUpdatePayload,
   CotizacionLead,
   CotizacionContextoPayload,
-  CotizacionDetallePayload
+  CotizacionDetallePayload,
+  CotizacionApiLead,
+  CotizacionApiResponse,
+  ClienteBusquedaResultado,
+  CotizacionPublicPayload,
+  CotizacionPublicResponse,
+  CotizacionPublicResult
 } from '../model/cotizacion.model';
 import { PedidoService } from '../../gestionar-pedido/service/pedido.service';
 import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
 import { environment } from '../../../../environments/environment';
 
-interface CotizacionApiResponse {
-  id?: number | string | null;
-  idCotizacion?: number | string | null;
-  estado?: string | null;
-  fechaCreacion?: string | null;
-  fecha_creacion?: string | null;
-  eventoId?: number | string | null;
-  idEvento?: number | string | null;
-  idTipoEvento?: number | string | null;
-  tipoEvento?: string | null;
-  evento?: string | null;
-  fechaEvento?: string | null;
-  fecha_evento?: string | null;
-  lugar?: string | null;
-  horasEstimadas?: string | number | null;
-  horas_estimadas?: string | number | null;
-  mensaje?: string | null;
-  notas?: string | null;
-  total?: number | string | null;
-  totalEstimado?: number | string | null;
-  lead?: Record<string, any> | null;
-  cotizacion?: (Partial<CotizacionDetallePayload> & {
-    horasEstimadas?: number | string | null;
-    totalEstimado?: number | string | null;
-    total?: number | string | null;
-    fechaEvento?: string | null;
-    fechaCreacion?: string | null;
-    estado?: string | null;
-    idTipoEvento?: number | string | null;
-  }) | null;
-  items?: Array<Record<string, any>> | null;
-}
-
-export interface ClienteBusquedaResultado {
-  [key: string]: any;
-
-  // Canonizados para tu UI
-  id?: number | string | null;
-  nombre?: string | null;
-  nombreCompleto?: string | null;
-  correo?: string | null;
-  email?: string | null;
-  celular?: string | null;
-  telefono?: string | null;
-  contacto?: string | null;
-  identificador?: string | null; // DNI/RUC
-  direccion?: string | null;
-  codigo?: string | null;        // código amigable (p.ej. CLI-000011)
-
-  // Campos “crudos” del backend (opcional si quieres conservarlos)
-  idCliente?: number | null;
-  codigoCliente?: string | null;
-  doc?: string | null;
-  apellido?: string | null;
-  ruc?: string | null;
-  tipoDocumento?: string | null;
-  numeroDocumento?: string | null;
-}
-
-function forceApiBase(url: string): string {
-  // Si ya es absoluta, normalízala a :3000 si por error apunta a :4200
-  if (/^https?:\/\//i.test(url)) {
-    return url.replace('http://localhost:4200', 'http://localhost:3000')
-              .replace('https://localhost:4200', 'http://localhost:3000')
-              .replace(/\/+$/,''); // sin slash final
-  }
-  // Si es relativa, fuerza a backend :3000 con /api/v1
-  return 'http://localhost:3000/api/v1';
-}
-
 @Injectable({ providedIn: 'root' })
 export class CotizacionService {
-      private readonly latency = 250;
   private readonly apiBase: string =
     (typeof environment.baseUrl === 'string' && /^https?:\/\//i.test(environment.baseUrl))
       ? environment.baseUrl
@@ -105,11 +40,12 @@ export class CotizacionService {
     private readonly visualizarService: VisualizarService
   ) { }
 
+  // [1] GET /cotizaciones
   listCotizaciones(filters?: Record<string, string | number | null | undefined>): Observable<Cotizacion[]> {
     return this.http.get<CotizacionApiResponse[]>(this.baseUrl).pipe(
       map(items => items.map(item => this.normalizeApiCotizacion({
         ...item,
-        id: item?.id ?? (item?.cotizacion as any)?.idCotizacion ?? undefined
+        id: item?.id ?? item?.cotizacion?.idCotizacion ?? undefined
       }))),
       tap(list => {
         if (list.length) {
@@ -124,6 +60,7 @@ export class CotizacionService {
     );
   }
 
+  // [2] GET /cotizaciones/:id
   getCotizacion(id: number | string): Observable<Cotizacion> {
     const numericId = Number(id);
     if (!Number.isFinite(numericId)) {
@@ -145,6 +82,25 @@ export class CotizacionService {
     );
   }
 
+  // [3] POST /cotizaciones/public
+  createCotizacionPublic(payload: CotizacionPublicPayload): Observable<CotizacionPublicResult> {
+    const outbound = this.toPublicBackendPayload(payload);
+
+    return this.http.post<CotizacionPublicResponse>(`${this.baseUrl}/public`, outbound).pipe(
+      map(response => {
+        const fallback = response as Record<string, unknown>;
+        return {
+          leadId: this.parseNumberNullable(response?.lead_id) ?? this.parseNumberNullable(fallback['leadId']) ?? null,
+          cotizacionId: this.parseNumberNullable(response?.cotizacion_id) ?? this.parseNumberNullable(fallback['cotizacionId']) ?? null
+        };
+      }),
+      catchError(err => {
+        console.error('[cotizacion] createPublic', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
   buscarClientes(query: string, limit = 10): Observable<ClienteBusquedaResultado[]> {
     const trimmed = (query ?? '').toString().trim();
     if (!trimmed) return of([]);
@@ -157,7 +113,7 @@ export class CotizacionService {
       .set('top', String(limit));
 
     return this.http
-      .get<ClienteBusquedaResultado[]>(`${environment.baseUrl}/clientes/buscar`, { params })
+      .get<Array<Record<string, unknown>>>(`${environment.baseUrl}/clientes/buscar`, { params })
       .pipe(
         map(items => Array.isArray(items) ? items.map(item => this.normalizeClienteBusqueda(item)) : []),
         catchError(err => {
@@ -323,19 +279,20 @@ downloadPdf(
     if (api.fechaCreacion ?? api.fecha_creacion) {
       normalized.createdAt = api.fechaCreacion ?? api.fecha_creacion ?? normalized.createdAt;
     }
-    if ((api.cotizacion as any)?.fechaCreacion) {
-      normalized.createdAt = (api.cotizacion as any).fechaCreacion;
+    if (api.cotizacion?.fechaCreacion) {
+      normalized.createdAt = api.cotizacion.fechaCreacion;
     }
-    if (api.lead) {
-      const leadId = this.parseNumberNullable(api.lead.id ?? api.lead.idlead ?? api.lead.ID);
+    const apiLead = (api.contacto as CotizacionApiLead | undefined) ?? (api.lead as CotizacionApiLead | undefined);
+    if (apiLead) {
+      const leadId = this.parseNumberNullable(apiLead.id ?? apiLead.idlead ?? apiLead.ID);
       normalized.lead = {
         ...normalized.lead,
         id: leadId ?? normalized.lead?.id,
-        nombre: api.lead.nombre ?? api.lead.Nombre ?? normalized.lead?.nombre,
-        celular: api.lead.celular ?? api.lead.Celular ?? normalized.lead?.celular,
-        origen: api.lead.origen ?? api.lead.Origen ?? normalized.lead?.origen,
-        correo: api.lead.correo ?? api.lead.Correo ?? normalized.lead?.correo,
-        fechaCreacion: api.lead.fechaCreacion ?? api.lead.fechaCrea ?? normalized.lead?.fechaCreacion
+        nombre: apiLead.nombre ?? apiLead.Nombre ?? normalized.lead?.nombre,
+        celular: apiLead.celular ?? apiLead.Celular ?? normalized.lead?.celular,
+        origen: apiLead.origen ?? apiLead.Origen ?? normalized.lead?.origen,
+        correo: apiLead.correo ?? apiLead.Correo ?? normalized.lead?.correo,
+        fechaCreacion: apiLead.fechaCreacion ?? apiLead.fechaCrea ?? normalized.lead?.fechaCreacion
       } as CotizacionLead;
     }
 
@@ -352,8 +309,18 @@ downloadPdf(
       ...c,
       lead: c.lead ? { ...c.lead } : undefined,
       items: Array.isArray(c.items) ? c.items.map(item => ({ ...item })) : undefined,
-      raw: c.raw ? { ...(c.raw as any) } : undefined
+      raw: this.cloneRaw(c.raw)
     } as T;
+  }
+
+  private cloneRaw(raw: unknown): unknown {
+    if (Array.isArray(raw)) {
+      return raw.map(item => (typeof item === 'object' && item !== null ? { ...(item as Record<string, unknown>) } : item));
+    }
+    if (typeof raw === 'object' && raw !== null) {
+      return { ...(raw as Record<string, unknown>) };
+    }
+    return raw;
   }
 
   private upsertCotizacion(cotizacion: Cotizacion & { raw?: CotizacionPayload }, prepend = false): void {
@@ -423,12 +390,12 @@ downloadPdf(
   private preparePayload(payload: CotizacionPayload, id: number): CotizacionPayload {
     const lead = payload?.lead ? { ...payload.lead } : {};
     const contexto = payload?.contexto ? { ...payload.contexto } : {};
-    const detalleInput = payload?.cotizacion ?? { fechaEvento: new Date().toISOString() };
+    const detalleInput: CotizacionDetallePayload = payload?.cotizacion ?? { fechaEvento: new Date().toISOString() };
     const fechaEvento = detalleInput.fechaEvento ?? new Date().toISOString();
     const horasEstimadas = detalleInput.horasEstimadas ?? this.parseHorasToNumber(contexto.horasEstimadasTexto);
     const totalEstimado = detalleInput.totalEstimado != null ? Number(detalleInput.totalEstimado) : undefined;
 
-    const idTipoEventoParsed = this.parseNumberNullable((detalleInput as any)?.idTipoEvento ?? detalleInput.eventoId);
+    const idTipoEventoParsed = this.parseNumberNullable(detalleInput.idTipoEvento ?? detalleInput.eventoId);
 
     const detalle = {
       idCotizacion: detalleInput.idCotizacion ?? id,
@@ -590,6 +557,20 @@ downloadPdf(
     return null;
   }
 
+  private toOptionalString(value: unknown): string | undefined {
+    if (value == null) {
+      return undefined;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed ? trimmed : undefined;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+    return undefined;
+  }
+
   private formatDateForBackend(value?: string | null): string | undefined {
     if (value == null) {
       return undefined;
@@ -609,58 +590,68 @@ downloadPdf(
     return trimmed;
   }
 
-  private normalizeClienteBusqueda(item: ClienteBusquedaResultado): ClienteBusquedaResultado {
-    if (!item) return {};
+  private normalizeClienteBusqueda(raw: Record<string, unknown> | null | undefined): ClienteBusquedaResultado {
+    if (!raw) return {};
 
-    // Mapear ID y código
-    const id = item.id ?? item.idCliente ?? null;
-    const codigo = item.codigo ?? item.codigoCliente ?? null;
+    const idRaw = raw['id'] ?? raw['idCliente'];
+    const codigoRaw = raw['codigo'] ?? raw['codigoCliente'];
 
-    // Nombre y nombreCompleto
-    const nombreCompuesto = [item.nombre, item.apellido].filter(Boolean).join(' ').trim();
-    const nombreBase =
-      item.nombreCompleto
+    const nombre = this.toOptionalString(raw['nombre']);
+    const apellido = this.toOptionalString(raw['apellido']);
+    const nombreCompleto = this.toOptionalString(raw['nombreCompleto']);
+    const razonSocial = this.toOptionalString(raw['razonSocial']);
+    const contacto = this.toOptionalString(raw['contacto']);
+    const email = this.toOptionalString(raw['email']);
+    const correo = this.toOptionalString(raw['correo']);
+    const celular = this.toOptionalString(raw['celular']);
+    const telefono = this.toOptionalString(raw['telefono']);
+    const whatsapp = this.toOptionalString(raw['whatsapp']);
+    const direccion = this.toOptionalString(raw['direccion']);
+    const identificador = this.toOptionalString(raw['identificador']);
+    const doc = this.toOptionalString(raw['doc']);
+    const numeroDocumento = this.toOptionalString(raw['numeroDocumento']);
+    const ruc = this.toOptionalString(raw['ruc']);
+
+    const nombreCompuesto = [nombre, apellido].filter(Boolean).join(' ').trim();
+    const nombreBase = nombreCompleto
       ?? (nombreCompuesto || '')
-      ?? item.razonSocial
-      ?? item.contacto
-      ?? item.email
-      ?? item.correo
+      ?? razonSocial
+      ?? contacto
+      ?? email
+      ?? correo
       ?? '';
 
-    // Contacto: prioriza celular
-    const contactoBase =
-      item.contacto
-      ?? item.celular
-      ?? item.telefono
-      ?? item.whatsapp
-      ?? item.email
-      ?? item.correo
+    const contactoBase = contacto
+      ?? celular
+      ?? telefono
+      ?? whatsapp
+      ?? email
+      ?? correo
       ?? '';
 
-    // Identificador único (DNI/RUC)
-    const identificadorBase =
-      item.identificador
-      ?? item.doc
-      ?? item.numeroDocumento
-      ?? item.ruc
+    const identificadorBase = identificador
+      ?? doc
+      ?? numeroDocumento
+      ?? ruc
       ?? '';
 
-    // Devuelve un objeto ya “canonizado” para tu UI + conserva campos útiles
+    const idParsed = this.parseNumberNullable(idRaw);
+    const idValue = idParsed ?? (typeof idRaw === 'string' ? idRaw : undefined);
+    const codigoValue = typeof codigoRaw === 'string' ? codigoRaw : undefined;
+
     return {
-      ...item,
-
-      // Canon
-      id,
-      codigo: codigo ?? undefined,
-      nombre: item.nombre ?? (nombreBase || undefined),
-      nombreCompleto: item.nombreCompleto ?? (nombreBase || undefined),
-      correo: item.correo ?? item.email ?? undefined,
-      email: item.email ?? item.correo ?? undefined,
-      celular: item.celular ?? undefined,
-      telefono: item.telefono ?? undefined,
-      contacto: item.contacto ?? (contactoBase || undefined),
+      ...(raw as ClienteBusquedaResultado),
+      id: idValue ?? undefined,
+      codigo: codigoValue ?? undefined,
+      nombre: nombre ?? (nombreBase || undefined),
+      nombreCompleto: nombreCompleto ?? (nombreBase || undefined),
+      correo: correo ?? email ?? undefined,
+      email: email ?? correo ?? undefined,
+      celular: celular ?? undefined,
+      telefono: telefono ?? undefined,
+      contacto: contacto ?? (contactoBase || undefined),
       identificador: identificadorBase || undefined,
-      direccion: item.direccion ?? undefined,
+      direccion: direccion ?? undefined
     };
   }
 
@@ -679,6 +670,43 @@ downloadPdf(
       return false;
     }
     return Boolean(lead.nombre || lead.celular || lead.correo || lead.origen);
+  }
+
+  private toPublicBackendPayload(payload: CotizacionPublicPayload): Record<string, unknown> {
+    const leadInput = payload?.lead ?? {};
+    const cotizacionInput = payload?.cotizacion ?? { fechaEvento: new Date().toISOString() };
+
+    const leadOutbound = this.hasLeadContent(leadInput)
+      ? this.cleanObject({
+          nombre: this.toOptionalString(leadInput.nombre),
+          celular: this.toOptionalString(leadInput.celular),
+          origen: this.toOptionalString(leadInput.origen),
+          correo: this.toOptionalString(leadInput.correo)
+        })
+      : undefined;
+
+    const fechaEvento = this.formatDateForBackend(cotizacionInput.fechaEvento)
+      ?? this.toOptionalString(cotizacionInput.fechaEvento)
+      ?? new Date().toISOString().slice(0, 10);
+
+    const cotizacionOutbound = this.cleanObject({
+      idTipoEvento: this.parseNumberNullable(cotizacionInput.idTipoEvento) ?? undefined,
+      tipoEvento: this.toOptionalString(cotizacionInput.tipoEvento),
+      fechaEvento,
+      lugar: this.toOptionalString(cotizacionInput.lugar),
+      horasEstimadas: cotizacionInput.horasEstimadas != null ? Number(cotizacionInput.horasEstimadas) : undefined,
+      mensaje: this.toOptionalString(cotizacionInput.mensaje)
+    });
+
+    const outbound: Record<string, unknown> = {
+      cotizacion: cotizacionOutbound
+    };
+
+    if (leadOutbound && Object.keys(leadOutbound).length) {
+      outbound.lead = leadOutbound;
+    }
+
+    return outbound;
   }
 
   private toBackendPayload(payload: CotizacionPayload, options: { includeLead?: boolean } = {}): Record<string, any> {
@@ -737,38 +765,40 @@ downloadPdf(
   }
 
   private extractPayloadFromApi(api: CotizacionApiResponse): CotizacionPayload {
-    const leadRaw = api.lead ?? {};
+    const leadRaw = (api.contacto as CotizacionApiLead | undefined) ?? (api.lead as CotizacionApiLead | undefined) ?? {};
+    const leadIdRaw = this.parseNumberNullable(leadRaw?.id ?? leadRaw?.idlead ?? leadRaw?.ID);
     const lead = {
+      id: leadIdRaw ?? undefined,
       nombre: leadRaw?.nombre ?? leadRaw?.Nombre ?? undefined,
       celular: leadRaw?.celular ?? leadRaw?.Celular ?? undefined,
       origen: leadRaw?.origen ?? leadRaw?.Origen ?? undefined,
       correo: leadRaw?.correo ?? leadRaw?.Correo ?? undefined
     };
 
-    const detalleApi = api.cotizacion ?? {};
+    const detalleApi = api.cotizacion ?? null;
 
     const idCotizacion = this.parseNumberNullable(
-      detalleApi.idCotizacion ?? api.idCotizacion ?? api.id ?? undefined
+      detalleApi?.idCotizacion ?? api.idCotizacion ?? api.id ?? undefined
     );
 
     const eventoId = this.parseNumberNullable(
-      detalleApi.eventoId ?? detalleApi.idTipoEvento ?? api.eventoId ?? api.idEvento ?? api.idTipoEvento ?? undefined
+      detalleApi?.eventoId ?? detalleApi?.idTipoEvento ?? api.eventoId ?? api.idEvento ?? api.idTipoEvento ?? undefined
     );
 
-    const tipoEvento = detalleApi.tipoEvento
+    const tipoEvento = detalleApi?.tipoEvento
       ?? api.tipoEvento
       ?? api.evento
       ?? undefined;
 
-    const fechaEventoRaw = detalleApi.fechaEvento
+    const fechaEventoRaw = detalleApi?.fechaEvento
       ?? api.fechaEvento
       ?? api.fecha_evento
-      ?? detalleApi.fechaCreacion
+      ?? detalleApi?.fechaCreacion
       ?? api.fechaCreacion
       ?? new Date().toISOString();
     const fechaEvento = this.normalizeIsoDate(fechaEventoRaw);
 
-    const horasRaw = detalleApi.horasEstimadas
+    const horasRaw = detalleApi?.horasEstimadas
       ?? api.horasEstimadas
       ?? api.horas_estimadas
       ?? undefined;
@@ -779,8 +809,8 @@ downloadPdf(
       ? horasRaw
       : (horasNumero != null ? `${horasNumero}` : undefined);
 
-    const totalRaw = detalleApi.totalEstimado
-      ?? detalleApi.total
+    const totalRaw = detalleApi?.totalEstimado
+      ?? detalleApi?.total
       ?? api.totalEstimado
       ?? api.total
       ?? undefined;
@@ -791,19 +821,21 @@ downloadPdf(
       eventoId: eventoId ?? undefined,
       tipoEvento,
       fechaEvento,
-      lugar: detalleApi.lugar ?? api.lugar ?? undefined,
+      lugar: detalleApi?.lugar ?? api.lugar ?? undefined,
       horasEstimadas: horasNumero ?? undefined,
-      mensaje: detalleApi.mensaje ?? api.mensaje ?? api.notas ?? undefined,
-      estado: detalleApi.estado ?? api.estado ?? undefined,
+      mensaje: detalleApi?.mensaje ?? api.mensaje ?? api.notas ?? undefined,
+      estado: detalleApi?.estado ?? api.estado ?? undefined,
       totalEstimado: totalNumber ?? undefined
     };
 
     const itemsSource = Array.isArray(api.items) && api.items.length
       ? api.items
-      : (Array.isArray((detalleApi as any)?.items) ? (detalleApi as any).items : []);
+      : Array.isArray(detalleApi?.items)
+        ? detalleApi.items
+        : [];
     const items = itemsSource.map((item, index) => this.extractItemFromApi(item, index));
 
-    const clienteId = this.parseNumberNullable(leadRaw?.id ?? leadRaw?.idlead ?? leadRaw?.ID);
+    const clienteId = leadIdRaw;
 
     const contexto: CotizacionContextoPayload = {
       clienteId: clienteId ?? undefined,
@@ -822,39 +854,47 @@ downloadPdf(
     };
   }
 
-  private extractItemFromApi(item: Record<string, any>, index: number): CotizacionItemPayload {
+  private extractItemFromApi(item: Record<string, unknown>, index: number): CotizacionItemPayload {
     const precio = this.parseNumberNullable(
-      item?.precioUnitario ?? item?.precioUnit ?? item?.precio ?? item?.subtotal
+      item['precioUnitario'] ?? item['precioUnit'] ?? item['precio'] ?? item['subtotal']
     ) ?? 0;
-    const cantidad = this.parseNumberNullable(item?.cantidad) ?? 1;
-    const horas = this.parseNumberNullable(item?.horas);
-    const personal = this.parseNumberNullable(item?.personal);
-    const fotosImpresas = this.parseNumberNullable(item?.fotosImpresas);
-    const trailerMin = this.parseNumberNullable(item?.trailerMin);
-    const filmMin = this.parseNumberNullable(item?.filmMin);
-    const descuento = this.parseNumberNullable(item?.descuento);
-    const recargo = this.parseNumberNullable(item?.recargo);
-    const opcion = this.parseNumberNullable(item?.opcion);
+    const cantidad = this.parseNumberNullable(item['cantidad']) ?? 1;
+    const horas = this.parseNumberNullable(item['horas']);
+    const personal = this.parseNumberNullable(item['personal']);
+    const fotosImpresas = this.parseNumberNullable(item['fotosImpresas']);
+    const trailerMin = this.parseNumberNullable(item['trailerMin']);
+    const filmMin = this.parseNumberNullable(item['filmMin']);
+    const descuento = this.parseNumberNullable(item['descuento']);
+    const recargo = this.parseNumberNullable(item['recargo']);
+    const opcion = this.parseNumberNullable(item['opcion']);
     const idEventoServicio = this.parseNumberNullable(
-      item?.idEventoServicio ?? item?.eventoServicioId ?? item?.idCotizacionServicio
+      item['idEventoServicio'] ?? item['eventoServicioId'] ?? item['idCotizacionServicio']
     );
 
-    const titulo = item?.titulo ?? item?.nombre ?? item?.descripcion ?? `Item ${index + 1}`;
-    const descripcion = item?.descripcion ?? item?.nombre ?? item?.titulo ?? undefined;
-    const monedaRaw = item?.moneda ?? item?.currency ?? item?.Moneda ?? undefined;
+    const titulo = this.toOptionalString(item['titulo'])
+      ?? this.toOptionalString(item['nombre'])
+      ?? this.toOptionalString(item['descripcion'])
+      ?? `Item ${index + 1}`;
+    const descripcion = this.toOptionalString(item['descripcion'])
+      ?? this.toOptionalString(item['nombre'])
+      ?? this.toOptionalString(item['titulo'])
+      ?? undefined;
+    const monedaRaw = this.toOptionalString(item['moneda'])
+      ?? this.toOptionalString(item['currency'])
+      ?? this.toOptionalString(item['Moneda']);
 
     return {
       idEventoServicio: idEventoServicio != null ? idEventoServicio : undefined,
-      grupo: item?.grupo ?? item?.Grupo ?? null,
+      grupo: this.toOptionalString(item['grupo']) ?? this.toOptionalString(item['Grupo']) ?? null,
       opcion: opcion != null ? opcion : null,
       titulo,
       descripcion,
-      moneda: typeof monedaRaw === 'string' ? monedaRaw.toUpperCase() : undefined,
+      moneda: monedaRaw ? monedaRaw.toUpperCase() : undefined,
       precioUnitario: Number.isFinite(precio) ? precio : 0,
       cantidad: Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1,
       descuento: descuento != null ? descuento : undefined,
       recargo: recargo != null ? recargo : undefined,
-      notas: item?.notas ?? undefined,
+      notas: this.toOptionalString(item['notas']),
       horas,
       personal,
       fotosImpresas,
@@ -908,7 +948,7 @@ downloadPdf(
           notas: cot.notas,
           lugar: cot.lugar
         })}${raw ? JSON.stringify(raw) : ''}`.toLowerCase();
-        const directValue = String((cot as any)[key] ?? '').toLowerCase();
+        const directValue = String(((cot as unknown) as Record<string, unknown>)[key] ?? '').toLowerCase();
         const candidate = `${directValue} ${serialized}`;
         return candidate.includes(String(value).toLowerCase());
       }))

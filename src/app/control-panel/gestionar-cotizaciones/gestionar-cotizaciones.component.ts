@@ -188,6 +188,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
         next: (cotizaciones) => {
           this.rows = cotizaciones ?? [];
           this.loadingList = false;
+          console.log('[cotizaciones] list', cotizaciones);
         },
         error: (err) => {
           console.error('[cotizaciones] list', err);

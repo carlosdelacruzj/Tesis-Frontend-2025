@@ -7,8 +7,8 @@ import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
-import { CotizacionItemPayload, CotizacionPayload } from '../model/cotizacion.model';
-import { CotizacionService, ClienteBusquedaResultado } from '../service/cotizacion.service';
+import { CotizacionItemPayload, CotizacionPayload, ClienteBusquedaResultado } from '../model/cotizacion.model';
+import { CotizacionService } from '../service/cotizacion.service';
 
 interface PaqueteSeleccionado {
   key: string | number;

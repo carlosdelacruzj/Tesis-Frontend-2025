@@ -17,7 +17,6 @@ import { RegistrarPagoComponent } from './registrar-pago/registrar-pago.componen
 import { DetallePedidoComponent } from './gestionar-pedido/detalle-pedido/detalle-pedido.component';
 import { ActualizarPedidoComponent } from './gestionar-pedido/actualizar-pedido/actualizar-pedido.component';
 import { AgregarPedidoComponent } from './gestionar-pedido/agregar-pedido/agregar-pedido.component';
-import { ReportesEstadisticosComponent } from './reportes-estadisticos/reportes-estadisticos.component';
 import { GestionarClienteComponent } from './gestionar-cliente/gestionar-cliente.component';
 import { GestionarPerfilesComponent } from './gestionar-perfiles/gestionar-perfiles.component';
 import { RegistrarPerfilComponent } from './gestionar-perfiles/registrar-perfil/registrar-perfil.component';
@@ -33,7 +32,7 @@ const routes: Routes = [
     component: HomeComponent,
     children: [
 
-      { path: 'dashboard', component: ReportesEstadisticosComponent },
+      { path: 'dashboard', component: DashboardComponent },
       { path: 'gestionar-equipos', component: GestionarEquiposComponent },
       { path: 'gestionar-proyecto', component: GestionarProyectoComponent },
       {
