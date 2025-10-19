@@ -19,3 +19,18 @@
   width: 1.4rem;
   height: 1.4rem;
 }
+
+.limpiar-seleccion-link {
+  cursor: pointer;
+  color: var(--bs-link-color, #0d6efd);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.limpiar-seleccion-link:focus {
+  outline: none;
+  text-decoration: none;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.35);
+  border-radius: 0.2rem;
+}

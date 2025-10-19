@@ -15,11 +15,14 @@
               <div class="form-group mb-3">
                 <label class="col-form-label d-flex justify-content-between align-items-center">
                   <span>Cliente existente (opcional)</span>
-                  <button type="button"
-                          class="btn btn-link btn-sm p-0"
-                          (click)="clienteSearchControl.setValue(''); clienteSeleccionado = null; clienteResultados = []">
+                  <span class="limpiar-seleccion-link"
+                        role="button"
+                        tabindex="0"
+                        (click)="clearClienteSeleccionado()"
+                        (keydown.enter)="clearClienteSeleccionado()"
+                        (keydown.space)="clearClienteSeleccionado()">
                     Limpiar selección
-                  </button>
+                  </span>
                 </label>
 
                 <mat-form-field appearance="outline" class="w-100">
@@ -89,8 +92,12 @@
                        formControlName="clienteContacto"
                        placeholder="Ej. 999 999 999">
                 <small class="text-danger"
-                       *ngIf="form.get('clienteContacto')?.invalid && form.get('clienteContacto')?.touched">
-                  Ingresa un medio de contacto válido.
+                       *ngIf="form.get('clienteContacto')?.hasError('required') && form.get('clienteContacto')?.touched">
+                  Ingresa un número de contacto.
+                </small>
+                <small class="text-danger"
+                       *ngIf="form.get('clienteContacto')?.hasError('pattern') && form.get('clienteContacto')?.touched">
+                  Usa solo dígitos (6 a 15).
                 </small>
               </div>
 

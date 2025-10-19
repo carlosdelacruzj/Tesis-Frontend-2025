@@ -1,4 +1,4 @@
-export interface CotizacionLead {
+export interface CotizacionContacto {
   id?: number;
   nombre?: string;
   celular?: string;
@@ -7,7 +7,7 @@ export interface CotizacionLead {
   fechaCreacion?: string;
 }
 
-export interface CotizacionApiLead {
+export interface CotizacionApiContacto {
   id?: number | string | null;
   idlead?: number | string | null;
   ID?: number | string | null;
@@ -28,7 +28,7 @@ export interface Cotizacion {
   id: number;
   codigo?: string;
   cliente?: string;
-  contacto?: string;
+  contactoResumen?: string;
   servicio?: string;
   evento?: string;
   fecha?: string;
@@ -42,18 +42,19 @@ export interface Cotizacion {
   raw?: unknown;
   lugar?: string;
   createdAt?: string;
-  lead?: CotizacionLead;
+  contacto?: CotizacionContacto;
   eventoSolicitado?: string;
   servicioId?: number;
   eventoId?: number;
 }
 
-export interface CotizacionLeadPayload {
+export interface CotizacionContactoPayload {
   id?: number;
   nombre?: string;
   celular?: string;
   origen?: string;
   correo?: string;
+  fechaCreacion?: string;
 }
 
 export interface CotizacionDetallePayload {
@@ -89,8 +90,8 @@ export interface CotizacionApiResponse {
   notas?: string | null;
   total?: number | string | null;
   totalEstimado?: number | string | null;
-  lead?: CotizacionApiLead | null;
-  contacto?: CotizacionApiLead | null;
+  lead?: CotizacionApiContacto | null;
+  contacto?: CotizacionApiContacto | null;
   cotizacion?: (Partial<CotizacionDetallePayload> & {
     horasEstimadas?: number | string | null;
     totalEstimado?: number | string | null;
@@ -133,13 +134,22 @@ export interface CotizacionContextoPayload {
 }
 
 export interface CotizacionPayload {
-  lead: CotizacionLeadPayload;
+  contacto: CotizacionContactoPayload;
   cotizacion: CotizacionDetallePayload;
   items: CotizacionItemPayload[];
   contexto?: CotizacionContextoPayload;
 }
 
 export interface CotizacionUpdatePayload extends Partial<CotizacionPayload> {}
+
+export interface LeadConvertPayload {
+  correo: string;
+  celular: string;
+  nombre: string;
+  apellido: string;
+  numDoc: string;
+  direccion: string;
+}
 
 export interface ClienteBusquedaResultado {
   [key: string]: unknown;
@@ -164,7 +174,7 @@ export interface ClienteBusquedaResultado {
 }
 
 export interface CotizacionPublicPayload {
-  lead: CotizacionLeadPayload;
+  contacto: CotizacionContactoPayload;
   cotizacion: CotizacionDetallePayload;
 }
 

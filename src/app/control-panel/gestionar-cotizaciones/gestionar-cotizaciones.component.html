@@ -19,7 +19,7 @@
       <!-- cliente + contacto: cliente — contacto -->
       <ng-template appCell="cliente" let-row>
         <span>{{ row.cliente || '—' }}</span>
-        <small class="text-muted" *ngIf="row.contacto"> — {{ row.contacto }}</small>
+        <small class="text-muted" *ngIf="row.contactoResumen"> — {{ row.contactoResumen }}</small>
       </ng-template>
 
       <!-- fecha / horas -->
@@ -117,4 +117,141 @@
       </button>
     </div>
   </div>
+</app-modal-base>
+
+<app-modal-base
+  [open]="registroClienteModalOpen"
+  title="Registrar cliente"
+  [disableClose]="registroClienteLoading"
+  [loading]="registroClienteLoading"
+  [useDefaultFooter]="false"
+  (closed)="onLeadRegistroClosed()">
+
+  <form
+    #registroClienteForm="ngForm"
+    id="registroClienteForm"
+    modal-body
+    class="formulario-registro"
+    (ngSubmit)="submitLeadRegistro(registroClienteForm)">
+
+    <div class="alert alert-danger" role="alert" *ngIf="registroClienteError">{{ registroClienteError }}</div>
+
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <mat-form-field appearance="fill" class="w-100">
+          <mat-label>Nombre</mat-label>
+          <input
+            matInput
+            type="text"
+            name="nombre"
+            required
+            [pattern]="registroNombrePattern"
+            [(ngModel)]="registroClienteFormModel.nombre"
+            #registroNombre="ngModel">
+          <mat-error *ngIf="registroNombre.errors?.required">Campo requerido</mat-error>
+          <mat-error *ngIf="registroNombre.errors?.pattern">Sólo letras (2-20)</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <mat-form-field appearance="fill" class="w-100">
+          <mat-label>Apellido</mat-label>
+          <input
+            matInput
+            type="text"
+            name="apellido"
+            required
+            [pattern]="registroApellidoPattern"
+            [(ngModel)]="registroClienteFormModel.apellido"
+            #registroApellido="ngModel">
+          <mat-error *ngIf="registroApellido.errors?.required">Campo requerido</mat-error>
+          <mat-error *ngIf="registroApellido.errors?.pattern">Sólo letras (2-30)</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <mat-form-field appearance="fill" class="w-100">
+          <mat-label>Correo</mat-label>
+          <input
+            matInput
+            type="email"
+            name="correo"
+            required
+            [pattern]="registroCorreoPattern"
+            [(ngModel)]="registroClienteFormModel.correo"
+            #registroCorreo="ngModel">
+          <mat-error *ngIf="registroCorreo.errors?.required">Campo requerido</mat-error>
+          <mat-error *ngIf="registroCorreo.errors?.pattern">Ingrese un correo válido</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <mat-form-field appearance="fill" class="w-100">
+          <mat-label>Número de documento</mat-label>
+          <input
+            matInput
+            type="text"
+            name="numDoc"
+            required
+            [pattern]="registroDocPattern"
+            [(ngModel)]="registroClienteFormModel.numDoc"
+            #registroNumDoc="ngModel">
+          <mat-error *ngIf="registroNumDoc.errors?.required">Campo requerido</mat-error>
+          <mat-error *ngIf="registroNumDoc.errors?.pattern">Sólo números (8 dígitos)</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <mat-form-field appearance="fill" class="w-100">
+          <mat-label>Celular</mat-label>
+          <input
+            matInput
+            type="text"
+            name="celular"
+            required
+            [pattern]="registroCelularPattern"
+            [(ngModel)]="registroClienteFormModel.celular"
+            #registroCelular="ngModel">
+          <mat-error *ngIf="registroCelular.errors?.required">Campo requerido</mat-error>
+          <mat-error *ngIf="registroCelular.errors?.pattern">Sólo números (7-9 dígitos)</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="col-12">
+        <mat-form-field appearance="fill" class="w-100">
+          <mat-label>Dirección</mat-label>
+          <textarea
+            matInput
+            name="direccion"
+            required
+            [(ngModel)]="registroClienteFormModel.direccion"
+            #registroDireccion="ngModel"></textarea>
+          <mat-error *ngIf="registroDireccion.errors?.required">Campo requerido</mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+  </form>
+
+  <div modal-footer class="d-flex justify-content-end gap-2">
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="cancelLeadRegistroModal()"
+      [disabled]="registroClienteLoading">
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      class="btn btn-primary"
+      form="registroClienteForm"
+      [disabled]="registroClienteLoading || registroClienteForm?.invalid">
+      <span
+        *ngIf="registroClienteLoading"
+        class="spinner-border spinner-border-sm me-1"
+        role="status"
+        aria-hidden="true"></span>
+      Registrar y aceptar
+    </button>
+  </div>
+
 </app-modal-base>

@@ -7,7 +7,7 @@ import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
-import { CotizacionItemPayload, CotizacionPayload, ClienteBusquedaResultado } from '../model/cotizacion.model';
+import { CotizacionItemPayload, CotizacionPayload, ClienteBusquedaResultado, CotizacionContextoPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 
 interface PaqueteSeleccionado {
@@ -41,7 +41,7 @@ interface PaqueteSeleccionado {
 export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDestroy {
   form: UntypedFormGroup = this.fb.group({
     clienteNombre: ['Cliente Demo', [Validators.required, Validators.minLength(2)]],
-    clienteContacto: ['999999999', [Validators.required, Validators.minLength(6)]],
+    clienteContacto: ['999999999', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
     fechaEvento: [RegistrarCotizacionComponent.getTodayIsoDate(), Validators.required],
     ubicacion: ['Hotel Belmond', Validators.required],
     horasEstimadas: ['6 horas'],
@@ -203,14 +203,27 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
       patch.clienteNombre = nombre;
     }
     if (contacto) {
-      patch.clienteContacto = contacto;
+      patch.clienteContacto = this.sanitizeContacto(contacto);
     }
     if (Object.keys(patch).length) {
       this.form.patchValue(patch, { emitEvent: false });
     }
+    this.setClienteControlsDisabled(true);
     this.clienteResultados = [];
     this.clienteSearchLoading = false;
     this.clienteSearchError = '';
+  }
+
+  clearClienteSeleccionado(): void {
+    this.clienteSeleccionado = null;
+    this.setClienteControlsDisabled(false);
+    this.clienteSearchControl.setValue('', { emitEvent: false });
+    this.clienteBusquedaTermino = '';
+    this.form.get('clienteNombre')?.reset('', { emitEvent: false });
+    this.form.get('clienteContacto')?.reset('', { emitEvent: false });
+    this.clienteResultados = [];
+    this.clienteSearchError = '';
+    this.clienteSearchLoading = false;
   }
 
   private initClienteBusqueda(): void {
@@ -272,6 +285,24 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
       ?? cliente.email
       ?? cliente.correo
       ?? '').toString();
+  }
+
+  private sanitizeContacto(valor: string): string {
+    return (valor ?? '').toString().replace(/\D/g, '');
+  }
+
+  private setClienteControlsDisabled(disabled: boolean): void {
+    ['clienteNombre', 'clienteContacto'].forEach(key => {
+      const control = this.form.get(key);
+      if (!control) {
+        return;
+      }
+      if (disabled) {
+        control.disable({ emitEvent: false });
+      } else {
+        control.enable({ emitEvent: false });
+      }
+    });
   }
 
    resolveClienteNombre(cliente: ClienteBusquedaResultado): string {
@@ -385,7 +416,7 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
 
     const raw = this.form.getRawValue();
     const clienteNombre = (raw.clienteNombre ?? '').toString().trim();
-    const clienteContacto = (raw.clienteContacto ?? '').toString().trim();
+    const clienteContacto = this.sanitizeContacto((raw.clienteContacto ?? '').toString());
     const fechaEvento = raw.fechaEvento;
     const ubicacion = (raw.ubicacion ?? '').toString().trim();
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
@@ -411,8 +442,23 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
       filmMin: item.filmMin ?? this.getFilmMin(item.origen)
     }));
 
+    const contexto: CotizacionContextoPayload = {};
+    const clienteIdSeleccionado = this.parseNumber(this.clienteSeleccionado?.id);
+    if (clienteIdSeleccionado != null) {
+      contexto.clienteId = clienteIdSeleccionado;
+    }
+    if (this.selectedServicioId != null) {
+      contexto.servicioId = this.selectedServicioId;
+    }
+    if (this.selectedServicioNombre) {
+      contexto.servicioNombre = this.selectedServicioNombre;
+    }
+    if (this.selectedEventoNombre) {
+      contexto.eventoNombre = this.selectedEventoNombre;
+    }
+
     const payload: CotizacionPayload = {
-      lead: {
+      contacto: {
         nombre: clienteNombre,
         celular: clienteContacto,
         origen: 'Backoffice',
@@ -428,7 +474,8 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
         estado: 'Borrador',
         totalEstimado
       },
-      items
+      items,
+      ...(Object.keys(contexto).length ? { contexto } : {})
     };
 
     console.log('[cotizacion] payload listo para enviar', payload);

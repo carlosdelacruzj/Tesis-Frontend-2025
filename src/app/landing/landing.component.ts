@@ -7,7 +7,7 @@ import { catchError, take, takeUntil } from 'rxjs/operators';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE, DateAdapter, MatDateFormats, NativeDateAdapter } from '@angular/material/core';
 import { formatDisplayDate, formatIsoDate } from '../shared/utils/date-utils';
 
-import { LandingCotizacionService, LandingCountryCodeDto, LandingEventDto, LandingPublicCotizacionPayload } from './services/landing-cotizacion.service';
+import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload } from './services/landing-cotizacion.service';
 // Landing copy decks for cards and sections
 interface LandingServiceCard {
   id: string;
@@ -66,28 +66,10 @@ const LANDING_DATE_FORMATS: MatDateFormats = {
   }
 };
 
-interface CountryDialCode {
-  code: string;
-  label: string;
-  dialCode: string;
-}
-
 interface LandingEventOption {
   id: number;
   name: string;
 }
-
-// Short list ensures the selector works if the public API is unreachable
-const FALLBACK_COUNTRY_CODES: CountryDialCode[] = [
-  { code: 'PE', label: 'Perú', dialCode: '+51' },
-  { code: 'MX', label: 'México', dialCode: '+52' },
-  { code: 'CO', label: 'Colombia', dialCode: '+57' },
-  { code: 'AR', label: 'Argentina', dialCode: '+54' },
-  { code: 'CL', label: 'Chile', dialCode: '+56' },
-  { code: 'EC', label: 'Ecuador', dialCode: '+593' },
-  { code: 'US', label: 'Estados Unidos', dialCode: '+1' },
-  { code: 'ES', label: 'España', dialCode: '+34' }
-];
 
 const FALLBACK_EVENT_OPTIONS: LandingEventOption[] = [
   { id: 1, name: 'Boda' },
@@ -340,8 +322,6 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   readonly sourceOptions = ['Recomendación', 'Instagram', 'TikTok', 'Google', 'Evento en vivo', 'Otro'];
 
-  countryCodes: CountryDialCode[] = [];
-  private readonly defaultDialCode = FALLBACK_COUNTRY_CODES[0].dialCode;
   eventOptions: LandingEventOption[] = FALLBACK_EVENT_OPTIONS;
 
   readonly quoteForm: FormGroup;
@@ -367,11 +347,9 @@ export class LandingComponent implements OnInit, OnDestroy {
     private readonly cotizacionService: LandingCotizacionService
   ) {
     this.minQuoteDate = this.startOfToday();
-    this.countryCodes = FALLBACK_COUNTRY_CODES;
     // Primary quote form definition
     this.quoteForm = this.fb.group({
       nombreCompleto: ['', [Validators.required, Validators.minLength(3)]],
-      whatsappCodigo: [this.defaultDialCode, Validators.required],
       whatsappNumero: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
       tipoEvento: ['', Validators.required],
       eventoId: [null],
@@ -431,7 +409,6 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   // Fetches country dial codes from the public REST Countries API
   ngOnInit(): void {
-    this.loadCountryCodes();
     this.loadEventOptions();
   }
 
@@ -533,7 +510,6 @@ export class LandingComponent implements OnInit, OnDestroy {
         this.createWhatsAppLink();
         this.snackBar.open('¡Gracias! Te contactaremos pronto por WhatsApp.', 'Cerrar', { duration: 5000 });
         this.quoteForm.reset({
-          whatsappCodigo: this.countryCodes[0]?.dialCode ?? this.defaultDialCode,
           whatsappNumero: '',
           tipoEvento: '',
           eventoId: null,
@@ -562,28 +538,6 @@ export class LandingComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
-  // Retrieves dial codes and keeps a fallback when the HTTP call fails
-  private loadCountryCodes(): void {
-    this.cotizacionService.getCountryCodes()
-      .pipe(
-        take(1),
-        catchError(err => {
-          console.error('[LandingComponent] No se pudieron cargar códigos desde API', err);
-          return of(FALLBACK_COUNTRY_CODES);
-        }),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(codes => {
-        const normalized = this.normalizeCountryCodes(codes);
-        this.countryCodes = normalized.length ? normalized : FALLBACK_COUNTRY_CODES;
-        const currentCode = this.quoteForm.get('whatsappCodigo')?.value;
-        const isCurrentValid = this.countryCodes.some(option => option.dialCode === currentCode);
-        if (!isCurrentValid) {
-          this.quoteForm.patchValue({ whatsappCodigo: this.countryCodes[0]?.dialCode ?? this.defaultDialCode }, { emitEvent: false });
-        }
-      });
-  }
-
   // Retrieves event names for the select input
   private loadEventOptions(): void {
     this.cotizacionService.getEventos()
@@ -608,7 +562,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     const service = value.tipoEvento || 'servicio de foto y video';
     const date = this.formatDateDisplay(value.fechaEvento) || 'fecha por definir';
     const district = value.distrito || 'Lima';
-    const composedPhone = this.composePhoneNumber(value.whatsappCodigo, value.whatsappNumero);
+    const composedPhone = this.composePhoneNumber(value.whatsappNumero);
     const phoneDigits = composedPhone.replace(/\D+/g, '');
     const baseNumber = phoneDigits || '51999999999';
     const base = `https://wa.me/${baseNumber}`;
@@ -652,7 +606,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   // Shapes the final DTO that the landing service expects
   private buildCotizacionPayload(value: any): LandingPublicCotizacionPayload {
     const nombre = (value.nombreCompleto ?? '').toString().trim();
-    const celular = this.composePhoneNumber(value.whatsappCodigo, value.whatsappNumero);
+    const celular = this.composePhoneNumber(value.whatsappNumero);
     const fechaEvento = this.formatDate(value.fechaEvento) ?? new Date().toISOString().slice(0, 10);
 
     const horasTexto = (value.horas ?? '').toString().trim();
@@ -698,15 +652,9 @@ export class LandingComponent implements OnInit, OnDestroy {
     return payload;
   }
 
-  // Joins selected country code with the numeric WhatsApp input
-  private composePhoneNumber(codeValue: unknown, numberValue: unknown): string {
-    const codeDigits = this.onlyDigits(codeValue);
-    const numberDigits = this.onlyDigits(numberValue);
-    if (!numberDigits) {
-      return '';
-    }
-    const prefix = codeDigits ? `+${codeDigits}` : this.defaultDialCode;
-    return `${prefix}${numberDigits}`;
+  // Normalizes the WhatsApp number keeping only digits provided by the user
+  private composePhoneNumber(numberValue: unknown): string {
+    return this.onlyDigits(numberValue);
   }
 
   private onlyDigits(value: unknown): string {
@@ -784,58 +732,4 @@ export class LandingComponent implements OnInit, OnDestroy {
       ?? '';
   }
 
-  // Maps varying REST Countries structures into a consistent shape for the selector
-  private normalizeCountryCodes(data: Array<LandingCountryCodeDto | CountryDialCode>): CountryDialCode[] {
-    if (!Array.isArray(data)) {
-      return [];
-    }
-    const mapped = data
-      .map(item => {
-        const directDial = (item as any).dialCode ?? (item as any).dial_code;
-        let dial = this.ensurePlusPrefix(directDial);
-
-        if (!dial) {
-          const idd = (item as any).idd;
-          if (idd && (idd.root || (Array.isArray(idd.suffixes) && idd.suffixes.length))) {
-            const root = idd.root ?? '';
-            const suffix = Array.isArray(idd.suffixes) && idd.suffixes.length ? idd.suffixes[0] ?? '' : '';
-            dial = this.ensurePlusPrefix(`${root}${suffix}`);
-          }
-        }
-
-        const code = (item as any).code ?? (item as any).cca2 ?? (item as any).iso2 ?? (item as any).isoCode ?? '';
-        const label =
-          (item as any).label ??
-          (item as any).name?.common ??
-          (item as any).name?.official ??
-          (item as any).name ??
-          (item as any).nombre ??
-          code;
-        return !dial
-          ? null
-          : {
-              code: code || label,
-              label: label || code || dial,
-              dialCode: dial
-            } as CountryDialCode;
-      })
-      .filter((item): item is CountryDialCode => Boolean(item));
-
-    const unique = new Map<string, CountryDialCode>();
-    for (const entry of mapped) {
-      if (!unique.has(entry.dialCode)) {
-        unique.set(entry.dialCode, entry);
-      }
-    }
-    return Array.from(unique.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
-  }
-
-  // Ensures every dial code carries a plus sign and strips stray characters
-  private ensurePlusPrefix(value: unknown): string {
-    const digits = this.onlyDigits(value);
-    if (!digits) {
-      return '';
-    }
-    return `+${digits}`;
-  }
 }

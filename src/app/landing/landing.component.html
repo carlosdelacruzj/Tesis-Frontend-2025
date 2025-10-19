@@ -171,27 +171,15 @@
               obligatorio.</mat-error>
           </mat-form-field>
 
-          <div class="quote__phone-group">
-            <mat-form-field appearance="outline" class="quote__phone-code">
-              <mat-label>Código país</mat-label>
-              <mat-select formControlName="whatsappCodigo" required>
-                <mat-option *ngFor="let option of countryCodes" [value]="option.dialCode">
-                  {{ option.label }} ({{ option.dialCode }})
-                </mat-option>
-              </mat-select>
-              <mat-error *ngIf="quoteForm.get('whatsappCodigo')?.hasError('required')">Elige un código.</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="quote__phone-number">
-              <mat-label>Número WhatsApp</mat-label>
-              <input matInput formControlName="whatsappNumero" autocomplete="tel" placeholder="999999999" required
-                inputmode="tel" />
-              <mat-error *ngIf="quoteForm.get('whatsappNumero')?.hasError('required')">Ingresa tu número.</mat-error>
-              <mat-error *ngIf="quoteForm.get('whatsappNumero')?.hasError('pattern')">Usa solo dígitos (6-15).
-              </mat-error>
-              <mat-hint>Ingresa solo números, sin el signo + ni prefijos.</mat-hint>
-            </mat-form-field>
-          </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Número WhatsApp</mat-label>
+            <input matInput formControlName="whatsappNumero" autocomplete="tel" placeholder="999999999" required
+              inputmode="tel" />
+            <mat-error *ngIf="quoteForm.get('whatsappNumero')?.hasError('required')">Ingresa tu número.</mat-error>
+            <mat-error *ngIf="quoteForm.get('whatsappNumero')?.hasError('pattern')">Usa solo dígitos (6-15).
+            </mat-error>
+            <mat-hint>Ingresa solo números, sin prefijos.</mat-hint>
+          </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Tipo de evento</mat-label>
             <mat-select formControlName="tipoEvento" required (selectionChange)="onEventSelectionChange($event.value)">

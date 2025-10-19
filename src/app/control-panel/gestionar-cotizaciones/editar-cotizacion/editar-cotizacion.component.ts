@@ -301,7 +301,7 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
     const ubicacion = (raw.ubicacion ?? '').toString().trim();
 
     const rawPayload = (this.cotizacion.raw as CotizacionPayload | undefined);
-    const rawLead = rawPayload?.lead;
+    const rawContacto = rawPayload?.contacto;
     const rawDetalle = rawPayload?.cotizacion;
     const rawContexto = rawPayload?.contexto;
     const clienteId = rawContexto?.clienteId;
@@ -328,11 +328,11 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
     }));
 
     const payload: CotizacionPayload = {
-      lead: {
+      contacto: {
         nombre: clienteNombre,
         celular: clienteContacto,
-        origen: rawLead?.origen ?? 'Backoffice',
-        correo: rawLead?.correo
+        origen: rawContacto?.origen ?? 'Backoffice',
+        correo: rawContacto?.correo
       },
       cotizacion: {
         idCotizacion: this.cotizacion.id,
@@ -449,12 +449,12 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
 
   private populateForm(cotizacion: Cotizacion): void {
     const raw = cotizacion.raw as CotizacionPayload | undefined;
-    const lead = raw?.lead;
+    const contactoRaw = raw?.contacto;
     const detalle = raw?.cotizacion;
     const contexto = raw?.contexto;
 
-    const nombre = (lead?.nombre ?? cotizacion.cliente ?? '').toString().trim();
-    const contacto = (lead?.celular ?? cotizacion.contacto ?? '').toString().trim();
+    const nombre = (contactoRaw?.nombre ?? cotizacion.cliente ?? '').toString().trim();
+    const contacto = (contactoRaw?.celular ?? cotizacion.contactoResumen ?? '').toString().trim();
     this.fechaEventoOriginal = detalle?.fechaEvento ?? cotizacion.fecha ?? null;
     const fechaEventoDisplay = this.formatDateDisplay(this.fechaEventoOriginal);
     const horasTexto = contexto?.horasEstimadasTexto

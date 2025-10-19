@@ -8,15 +8,17 @@ import {
   CotizacionItemPayload,
   CotizacionPayload,
   CotizacionUpdatePayload,
-  CotizacionLead,
+  CotizacionContacto,
+  CotizacionContactoPayload,
   CotizacionContextoPayload,
   CotizacionDetallePayload,
-  CotizacionApiLead,
+  CotizacionApiContacto,
   CotizacionApiResponse,
   ClienteBusquedaResultado,
   CotizacionPublicPayload,
   CotizacionPublicResponse,
-  CotizacionPublicResult
+  CotizacionPublicResult,
+  LeadConvertPayload
 } from '../model/cotizacion.model';
 import { PedidoService } from '../../gestionar-pedido/service/pedido.service';
 import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
@@ -230,6 +232,32 @@ downloadPdf(
     );
   }
 
+  convertLeadToCliente(leadId: number | string, payload: LeadConvertPayload): Observable<{ usuarioId?: number | null; clienteId?: number | null; usuarioAccion?: string | null; clienteAccion?: string | null }> {
+    const numericId = Number(leadId);
+    if (!Number.isFinite(numericId)) {
+      return throwError(() => new Error('Identificador de lead inválido'));
+    }
+
+    const body = this.cleanObject({
+      correo: payload?.correo,
+      celular: payload?.celular,
+      nombre: payload?.nombre,
+      apellido: payload?.apellido,
+      numDoc: payload?.numDoc,
+      direccion: payload?.direccion
+    });
+
+    return this.http.post<{ usuarioId?: number | null; clienteId?: number | null; usuarioAccion?: string | null; clienteAccion?: string | null }>(
+      `${this.apiBase}/leads/${numericId}/convertir-a-cliente`,
+      body
+    ).pipe(
+      catchError(err => {
+        console.error('[cotizacion] convertLeadToCliente', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
   getServicios(): Observable<any[]> {
     return this.pedidoService.getServicios().pipe(
       catchError(err => {
@@ -282,18 +310,24 @@ downloadPdf(
     if (api.cotizacion?.fechaCreacion) {
       normalized.createdAt = api.cotizacion.fechaCreacion;
     }
-    const apiLead = (api.contacto as CotizacionApiLead | undefined) ?? (api.lead as CotizacionApiLead | undefined);
-    if (apiLead) {
-      const leadId = this.parseNumberNullable(apiLead.id ?? apiLead.idlead ?? apiLead.ID);
-      normalized.lead = {
-        ...normalized.lead,
-        id: leadId ?? normalized.lead?.id,
-        nombre: apiLead.nombre ?? apiLead.Nombre ?? normalized.lead?.nombre,
-        celular: apiLead.celular ?? apiLead.Celular ?? normalized.lead?.celular,
-        origen: apiLead.origen ?? apiLead.Origen ?? normalized.lead?.origen,
-        correo: apiLead.correo ?? apiLead.Correo ?? normalized.lead?.correo,
-        fechaCreacion: apiLead.fechaCreacion ?? apiLead.fechaCrea ?? normalized.lead?.fechaCreacion
-      } as CotizacionLead;
+    const apiContacto = (api.contacto as CotizacionApiContacto | undefined) ?? (api.lead as CotizacionApiContacto | undefined);
+    if (apiContacto) {
+      const contactoId = this.parseNumberNullable(apiContacto.id ?? apiContacto.idlead ?? apiContacto.ID);
+      const contactoBase: Partial<CotizacionContacto> = normalized.contacto ? { ...normalized.contacto } : {};
+      const contactoMerged: CotizacionContacto = {
+        ...contactoBase,
+        id: contactoId ?? contactoBase.id,
+        nombre: apiContacto.nombre ?? apiContacto.Nombre ?? contactoBase.nombre,
+        celular: apiContacto.celular ?? apiContacto.Celular ?? contactoBase.celular,
+        origen: apiContacto.origen ?? apiContacto.Origen ?? contactoBase.origen,
+        correo: apiContacto.correo ?? apiContacto.Correo ?? contactoBase.correo,
+        fechaCreacion: apiContacto.fechaCreacion ?? apiContacto.fechaCrea ?? contactoBase.fechaCreacion
+      };
+      normalized.contacto = contactoMerged;
+      const resumen = normalized.contactoResumen
+        ?? contactoMerged.celular
+        ?? contactoMerged.nombre;
+      normalized.contactoResumen = resumen ?? normalized.contactoResumen;
     }
 
     normalized.evento = normalized.evento || normalized.eventoSolicitado || payload.cotizacion.tipoEvento;
@@ -307,7 +341,7 @@ downloadPdf(
   private cloneCotizacion<T extends Cotizacion>(c: T): T {
     return {
       ...c,
-      lead: c.lead ? { ...c.lead } : undefined,
+      contacto: c.contacto ? { ...c.contacto } : undefined,
       items: Array.isArray(c.items) ? c.items.map(item => ({ ...item })) : undefined,
       raw: this.cloneRaw(c.raw)
     } as T;
@@ -339,7 +373,7 @@ downloadPdf(
   private buildCotizacion(id: number, payload: CotizacionPayload, codigo?: string): Cotizacion & { raw?: CotizacionPayload } {
     const normalizedPayload = this.preparePayload(payload, id);
     const detalle = normalizedPayload.cotizacion;
-    const lead = normalizedPayload.lead ?? {};
+    const contactoPayload = (normalizedPayload.contacto ?? {}) as CotizacionContactoPayload;
     const contexto = normalizedPayload.contexto ?? {};
     const items = Array.isArray(normalizedPayload.items)
       ? normalizedPayload.items.map((item, index) => this.normalizeItem(item, index))
@@ -349,16 +383,20 @@ downloadPdf(
     const total = detalle.totalEstimado ?? (totalFromItems || undefined) ?? 0;
     const horasTexto = this.formatHoras(detalle.horasEstimadas, contexto.horasEstimadasTexto);
 
-    const clienteDisplay = lead.nombre
+    const clienteDisplay = contactoPayload.nombre
       || (contexto.clienteId != null ? `Cliente #${contexto.clienteId}` : 'Cliente sin nombre');
 
-    const leadNormalized = this.hasLeadContent(lead) ? { ...lead } : undefined;
+    const contactoNormalized = this.hasContactoContent(contactoPayload)
+      ? ({ ...contactoPayload } as CotizacionContacto)
+      : undefined;
+    const contactoResumen = contactoPayload.celular ?? contactoPayload.nombre ?? undefined;
 
     const normalized: Cotizacion & { raw?: CotizacionPayload } = {
       id,
       codigo: codigo ?? `COT-${String(id).padStart(3, '0')}`,
       cliente: clienteDisplay,
-      contacto: lead.celular,
+      contactoResumen,
+      contacto: contactoNormalized,
       servicio: contexto.servicioNombre ?? detalle.tipoEvento,
       evento: contexto.eventoNombre ?? detalle.tipoEvento,
       fecha: detalle.fechaEvento,
@@ -378,7 +416,6 @@ downloadPdf(
       },
       lugar: detalle.lugar,
       createdAt: undefined,
-      lead: leadNormalized,
       eventoSolicitado: detalle.tipoEvento ?? contexto.eventoNombre,
       servicioId: contexto.servicioId,
       eventoId: detalle.eventoId
@@ -388,7 +425,7 @@ downloadPdf(
   }
 
   private preparePayload(payload: CotizacionPayload, id: number): CotizacionPayload {
-    const lead = payload?.lead ? { ...payload.lead } : {};
+    const contacto = payload?.contacto ? { ...payload.contacto } : ({} as CotizacionContactoPayload);
     const contexto = payload?.contexto ? { ...payload.contexto } : {};
     const detalleInput: CotizacionDetallePayload = payload?.cotizacion ?? { fechaEvento: new Date().toISOString() };
     const fechaEvento = detalleInput.fechaEvento ?? new Date().toISOString();
@@ -401,7 +438,7 @@ downloadPdf(
       idCotizacion: detalleInput.idCotizacion ?? id,
       eventoId: detalleInput.eventoId ?? undefined,
       idTipoEvento: idTipoEventoParsed ?? undefined,
-      tipoEvento: detalleInput.tipoEvento ?? contexto.eventoNombre ?? contexto.servicioNombre ?? lead.origen ?? undefined,
+      tipoEvento: detalleInput.tipoEvento ?? contexto.eventoNombre ?? contexto.servicioNombre ?? contacto.origen ?? undefined,
       fechaEvento,
       lugar: detalleInput.lugar ?? undefined,
       horasEstimadas: horasEstimadas ?? undefined,
@@ -415,7 +452,7 @@ downloadPdf(
     const horasTexto = contexto.horasEstimadasTexto ?? this.formatHoras(detalle.horasEstimadas);
 
     return {
-      lead,
+      contacto,
       cotizacion: detalle,
       items,
       contexto: {
@@ -463,7 +500,7 @@ downloadPdf(
     }
 
     const merged: CotizacionPayload = {
-      lead: { ...base?.lead, ...updates?.lead },
+      contacto: { ...base?.contacto, ...updates?.contacto },
       cotizacion: { ...base?.cotizacion, ...updates?.cotizacion },
       items: Array.isArray(updates?.items) ? updates.items : base?.items ?? [],
       contexto: { ...base?.contexto, ...updates?.contexto }
@@ -473,11 +510,11 @@ downloadPdf(
   }
 
   private buildFallbackPayloadFromCotizacion(cotizacion: Cotizacion): CotizacionPayload {
-    const lead: CotizacionPayload['lead'] = {
-      nombre: cotizacion.lead?.nombre ?? cotizacion.cliente,
-      celular: cotizacion.lead?.celular ?? cotizacion.contacto ?? undefined,
-      origen: cotizacion.lead?.origen,
-      correo: cotizacion.lead?.correo
+    const contacto: CotizacionPayload['contacto'] = {
+      nombre: cotizacion.contacto?.nombre ?? cotizacion.cliente,
+      celular: cotizacion.contacto?.celular ?? cotizacion.contactoResumen ?? undefined,
+      origen: cotizacion.contacto?.origen,
+      correo: cotizacion.contacto?.correo
     };
 
     const detalle: CotizacionPayload['cotizacion'] = {
@@ -503,7 +540,7 @@ downloadPdf(
     };
 
     return {
-      lead,
+      contacto,
       cotizacion: detalle,
       items: Array.isArray(cotizacion.items) ? cotizacion.items.map((item, index) => this.normalizeItem(item, index)) : [],
       contexto
@@ -665,23 +702,23 @@ downloadPdf(
     return output;
   }
 
-  private hasLeadContent(lead?: CotizacionPayload['lead']): boolean {
-    if (!lead) {
+  private hasContactoContent(contacto?: CotizacionPayload['contacto']): boolean {
+    if (!contacto) {
       return false;
     }
-    return Boolean(lead.nombre || lead.celular || lead.correo || lead.origen);
+    return Boolean(contacto.nombre || contacto.celular || contacto.correo || contacto.origen);
   }
 
   private toPublicBackendPayload(payload: CotizacionPublicPayload): Record<string, unknown> {
-    const leadInput = payload?.lead ?? {};
+    const contactoInput = payload?.contacto ?? {};
     const cotizacionInput = payload?.cotizacion ?? { fechaEvento: new Date().toISOString() };
 
-    const leadOutbound = this.hasLeadContent(leadInput)
+    const contactoOutbound = this.hasContactoContent(contactoInput)
       ? this.cleanObject({
-          nombre: this.toOptionalString(leadInput.nombre),
-          celular: this.toOptionalString(leadInput.celular),
-          origen: this.toOptionalString(leadInput.origen),
-          correo: this.toOptionalString(leadInput.correo)
+          nombre: this.toOptionalString(contactoInput.nombre),
+          celular: this.toOptionalString(contactoInput.celular),
+          origen: this.toOptionalString(contactoInput.origen),
+          correo: this.toOptionalString(contactoInput.correo)
         })
       : undefined;
 
@@ -702,8 +739,8 @@ downloadPdf(
       cotizacion: cotizacionOutbound
     };
 
-    if (leadOutbound && Object.keys(leadOutbound).length) {
-      outbound.lead = leadOutbound;
+    if (contactoOutbound && Object.keys(contactoOutbound).length) {
+      outbound.lead = contactoOutbound;
     }
 
     return outbound;
@@ -751,28 +788,34 @@ downloadPdf(
       items: itemsOutbound
     };
 
-    if (includeLead && this.hasLeadContent(normalized.lead)) {
+    if (includeLead && this.hasContactoContent(normalized.contacto)) {
       outbound.lead = this.cleanObject({
-        id: normalized.lead?.id,
-        nombre: normalized.lead?.nombre,
-        celular: normalized.lead?.celular,
-        origen: normalized.lead?.origen,
-        correo: normalized.lead?.correo
+        id: normalized.contacto?.id,
+        nombre: normalized.contacto?.nombre,
+        celular: normalized.contacto?.celular,
+        origen: normalized.contacto?.origen,
+        correo: normalized.contacto?.correo
       });
+    }
+
+    const clienteId = this.parseNumberNullable((normalized.contexto as CotizacionContextoPayload | undefined)?.clienteId ?? (normalized.contacto?.id ?? null));
+    if (clienteId != null) {
+      outbound.cliente = { id: clienteId };
     }
 
     return outbound;
   }
 
   private extractPayloadFromApi(api: CotizacionApiResponse): CotizacionPayload {
-    const leadRaw = (api.contacto as CotizacionApiLead | undefined) ?? (api.lead as CotizacionApiLead | undefined) ?? {};
-    const leadIdRaw = this.parseNumberNullable(leadRaw?.id ?? leadRaw?.idlead ?? leadRaw?.ID);
-    const lead = {
-      id: leadIdRaw ?? undefined,
-      nombre: leadRaw?.nombre ?? leadRaw?.Nombre ?? undefined,
-      celular: leadRaw?.celular ?? leadRaw?.Celular ?? undefined,
-      origen: leadRaw?.origen ?? leadRaw?.Origen ?? undefined,
-      correo: leadRaw?.correo ?? leadRaw?.Correo ?? undefined
+    const contactoRaw = (api.contacto as CotizacionApiContacto | undefined) ?? (api.lead as CotizacionApiContacto | undefined) ?? {};
+    const contactoIdRaw = this.parseNumberNullable(contactoRaw?.id ?? contactoRaw?.idlead ?? contactoRaw?.ID);
+    const contacto: CotizacionContactoPayload = {
+      id: contactoIdRaw ?? undefined,
+      nombre: contactoRaw?.nombre ?? contactoRaw?.Nombre ?? undefined,
+      celular: contactoRaw?.celular ?? contactoRaw?.Celular ?? undefined,
+      origen: contactoRaw?.origen ?? contactoRaw?.Origen ?? undefined,
+      correo: contactoRaw?.correo ?? contactoRaw?.Correo ?? undefined,
+      fechaCreacion: contactoRaw?.fechaCreacion ?? contactoRaw?.fechaCrea ?? undefined
     };
 
     const detalleApi = api.cotizacion ?? null;
@@ -835,7 +878,7 @@ downloadPdf(
         : [];
     const items = itemsSource.map((item, index) => this.extractItemFromApi(item, index));
 
-    const clienteId = leadIdRaw;
+    const clienteId = contactoIdRaw;
 
     const contexto: CotizacionContextoPayload = {
       clienteId: clienteId ?? undefined,
@@ -847,7 +890,7 @@ downloadPdf(
     };
 
     return {
-      lead,
+      contacto,
       cotizacion: detalle,
       items,
       contexto
@@ -939,7 +982,7 @@ downloadPdf(
           id: cot.id,
           codigo: cot.codigo,
           cliente: cot.cliente,
-          contacto: cot.contacto,
+          contacto: cot.contactoResumen ?? cot.contacto?.celular ?? cot.contacto?.nombre,
           servicio: cot.servicio,
           evento: cot.evento,
           fecha: cot.fecha,

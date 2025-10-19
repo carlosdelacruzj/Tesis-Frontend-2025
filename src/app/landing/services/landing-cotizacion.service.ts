@@ -22,13 +22,6 @@ export interface LandingPublicCotizacionPayload {
   };
 }
 
-export interface LandingCountryCodeDto {
-  code?: string;
-  name?: string;
-  dialCode?: string;
-  idd?: { root?: string; suffixes?: string[] };
-}
-
 export interface LandingEventDto {
   PK_E_Cod: number;
   E_Nombre: string;
@@ -37,7 +30,6 @@ export interface LandingEventDto {
 @Injectable({ providedIn: 'root' })
 export class LandingCotizacionService {
   private readonly baseUrl = `${environment.baseUrl}/cotizaciones`;
-  private readonly countriesUrl = 'https://restcountries.com/v3.1/all?fields=cca2,name,idd';
 
   constructor(private readonly http: HttpClient) {}
 
@@ -62,11 +54,6 @@ export class LandingCotizacionService {
   delete(id: number | string): Observable<any> {
     console.log('[LandingCotizacionService] DELETE /cotizaciones/' + id);
     return this.http.delete(`${this.baseUrl}/${id}`);
-  }
-
-  getCountryCodes(): Observable<LandingCountryCodeDto[]> {
-    console.log('[LandingCotizacionService] GET', this.countriesUrl);
-    return this.http.get<LandingCountryCodeDto[]>(this.countriesUrl);
   }
 
   getEventos(): Observable<LandingEventDto[]> {
