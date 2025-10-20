@@ -128,6 +128,8 @@
               [showPagination]="false"
               [showPageSizeSelector]="false"
               [showCreateButton]="false"
+              [pageSize]="paquetesRows.length || 10"
+              [pageSizeOptions]="[paquetesRows.length || 10]"
               emptyText="Sin paquetes disponibles">
 
               <ng-template appCell="descripcion" let-row>
@@ -172,68 +174,88 @@
         </mat-card-header>
         <mat-card-content>
           <div class="table-responsive">
-            <table class="table table-sm align-middle">
-              <thead>
-                <tr>
-                  <th>Título</th>
-                  <th class="text-center">Cantidad</th>
-                  <th class="text-end">Precio unit.</th>
-                  <th class="text-end" *ngIf="shouldShowPrecioOriginal()">Original</th>
-                  <th class="text-center">Horas</th>
-                  <th class="text-center">Personal</th>
-                  <th class="text-end">Subtotal</th>
-                  <th style="width:30%">Notas</th>
-                  <th class="text-center">Quitar</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of selectedPaquetes">
-                  <td>{{ item.titulo }}</td>
-                  <td class="text-center">{{ item.cantidad }}</td>
-                  <td class="text-end">
-                    <ng-container *ngIf="!item.editandoPrecio; else precioEditor">
-                      <span role="button" class="text-decoration-underline"
-                        (click)="enablePrecioEdit(item)" title="Haz clic para editar">
-                        {{ item.precio | number:'1.2-2' }}
-                      </span>
-                    </ng-container>
-                    <ng-template #precioEditor>
-                      <input type="number" class="form-control form-control-sm text-end"
-                        [id]="getPrecioInputId(item)" [value]="item.precio" step="0.01"
-                        [attr.min]="getPrecioMinimo(item)"
-                        (blur)="confirmPrecioEdit(item, $any($event.target).value)"
-                        (keydown.enter)="confirmPrecioEdit(item, $any($event.target).value)"
-                        (keydown.escape)="cancelPrecioEdit(item)">
-                      <small class="text-muted">Mínimo: {{ getPrecioMinimo(item) | number:'1.2-2' }}</small>
-                    </ng-template>
-                  </td>
-                  <td class="text-end" *ngIf="shouldShowPrecioOriginal()">
-                    <div>{{ item.precioOriginal | number:'1.2-2' }}</div>
-                    <div *ngIf="getDescuentoPorcentaje(item) != null" class="text-success small">
-                      −{{ getDescuentoPorcentaje(item) | number:'1.0-1' }}%
-                    </div>
-                  </td>
-                  <td class="text-center">{{ item.horas ?? '—' }}</td>
-                  <td class="text-center">{{ item.personal ?? '—' }}</td>
-                  <td class="text-end">{{ (item.precio * (item.cantidad || 1)) | number:'1.2-2' }}</td>
-                  <td>
-                    <input type="text" class="form-control form-control-sm" [(ngModel)]="item.notas"
-                      [ngModelOptions]="{standalone:true}" maxlength="200" placeholder="Notas opcionales">
-                  </td>
-                  <td class="text-center">
-                    <button type="button" class="btn btn-link text-danger p-0"
-                      (click)="removePaquete(item.key)">✖</button>
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <th [attr.colspan]="shouldShowPrecioOriginal() ? 6 : 5" class="text-end">Total</th>
-                  <th class="text-end">{{ totalSeleccion | number:'1.2-2' }}</th>
-                  <th colspan="2"></th>
-                </tr>
-              </tfoot>
-            </table>
+            <app-table-base-mejora
+              [columns]="selectedPaquetesColumns"
+              [data]="selectedPaquetes"
+              [showSearch]="false"
+              [showFooterInfo]="false"
+              [showPagination]="false"
+              [showPageSizeSelector]="false"
+              [showCreateButton]="false"
+              [pageSize]="selectedPaquetes.length || 10"
+              [pageSizeOptions]="[selectedPaquetes.length || 10]"
+              emptyText="Sin paquetes seleccionados">
+
+              <ng-template appCell="titulo" let-row>
+                {{ row.titulo }}
+              </ng-template>
+
+              <ng-template appCell="cantidad" let-row>
+                <div class="text-center">{{ row.cantidad }}</div>
+              </ng-template>
+
+              <ng-template appCell="precioUnit" let-row>
+                <div class="text-end">
+                  <ng-container *ngIf="!row.editandoPrecio; else precioUnitEditor">
+                    <span role="button" class="text-decoration-underline"
+                          (click)="enablePrecioEdit(row)"
+                          title="Haz clic para editar">
+                      {{ row.precio | number:'1.2-2' }}
+                    </span>
+                  </ng-container>
+                  <ng-template #precioUnitEditor>
+                    <input type="number" class="form-control form-control-sm text-end"
+                           [id]="getPrecioInputId(row)"
+                           [value]="row.precio"
+                           step="0.01"
+                           [attr.min]="getPrecioMinimo(row)"
+                           (blur)="confirmPrecioEdit(row, $any($event.target).value)"
+                           (keydown.enter)="confirmPrecioEdit(row, $any($event.target).value)"
+                           (keydown.escape)="cancelPrecioEdit(row)">
+                    <small class="text-muted">Mínimo: {{ getPrecioMinimo(row) | number:'1.2-2' }}</small>
+                  </ng-template>
+                </div>
+              </ng-template>
+
+              <ng-template appCell="precioOriginal" let-row>
+                <div class="text-end">
+                  <div>{{ row.precioOriginal | number:'1.2-2' }}</div>
+                  <div *ngIf="getDescuentoPorcentaje(row) != null" class="text-success small">
+                    −{{ getDescuentoPorcentaje(row) | number:'1.0-1' }}%
+                  </div>
+                </div>
+              </ng-template>
+
+              <ng-template appCell="horas" let-row>
+                <div class="text-center">{{ row.horas ?? '—' }}</div>
+              </ng-template>
+
+              <ng-template appCell="personal" let-row>
+                <div class="text-center">{{ row.personal ?? '—' }}</div>
+              </ng-template>
+
+              <ng-template appCell="subtotal" let-row>
+                <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | number:'1.2-2' }}</div>
+              </ng-template>
+
+              <ng-template appCell="notas" let-row>
+                <input type="text"
+                       class="form-control form-control-sm"
+                       [(ngModel)]="row.notas"
+                       [ngModelOptions]="{standalone:true}"
+                       maxlength="200"
+                       placeholder="Notas opcionales">
+              </ng-template>
+
+              <ng-template appCell="quitar" let-row>
+                <button type="button" class="btn btn-link text-danger p-0"
+                        (click)="removePaquete(row.key)">✖</button>
+              </ng-template>
+
+            </app-table-base-mejora>
+          </div>
+          <div class="text-end mt-2">
+            <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>
           </div>
         </mat-card-content>
       </mat-card>

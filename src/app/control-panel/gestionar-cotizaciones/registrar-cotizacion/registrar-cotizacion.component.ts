@@ -88,6 +88,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   ];
   paquetesRows: PaqueteRow[] = [];
   selectedPaquetes: PaqueteSeleccionado[] = [];
+  selectedPaquetesColumns: TableColumn<PaqueteSeleccionado>[] = [];
 
   loadingCatalogos = false;
   loadingPaquetes = false;
@@ -105,6 +106,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadCatalogos();
     this.initClienteBusqueda();
+    this.refreshSelectedPaquetesColumns();
   }
 
   ngOnDestroy(): void {
@@ -602,6 +604,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (!control?.dirty) {
       control?.setValue(this.totalSeleccion, { emitEvent: false });
     }
+    this.refreshSelectedPaquetesColumns();
   }
 
   private getServicioNombre(item: any): string {
@@ -770,5 +773,27 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   private getPrecioInputIdFromKey(key: string | number): string {
     return `precio-input-${key}`;
+  }
+
+  private refreshSelectedPaquetesColumns(): void {
+    const base: TableColumn<PaqueteSeleccionado>[] = [
+      { key: 'titulo', header: 'Título', sortable: false },
+      { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '110px' },
+      { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-end text-nowrap', width: '140px' }
+    ];
+
+    if (this.shouldShowPrecioOriginal()) {
+      base.push({ key: 'precioOriginal', header: 'Original', sortable: false, class: 'text-end text-nowrap', width: '140px' });
+    }
+
+    base.push(
+      { key: 'horas', header: 'Horas', sortable: false, class: 'text-center', width: '100px' },
+      { key: 'personal', header: 'Personal', sortable: false, class: 'text-center', width: '110px' },
+      { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-end text-nowrap', width: '140px' },
+      { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
+      { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
+    );
+
+    this.selectedPaquetesColumns = base;
   }
 }
