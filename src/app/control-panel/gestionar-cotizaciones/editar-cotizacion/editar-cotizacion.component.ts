@@ -1,14 +1,13 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatSort } from '@angular/material/sort';
-import { MatTableDataSource } from '@angular/material/table';
 import { Subject, finalize, switchMap, takeUntil } from 'rxjs';
 
 import { Cotizacion, CotizacionItemPayload, CotizacionPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { formatDisplayDate, formatIsoDate } from '../../../shared/utils/date-utils';
+import { TableColumn } from 'src/app/components/table/table-base.component';
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -33,12 +32,20 @@ interface PaqueteSeleccionado {
   editandoPrecio?: boolean;
 }
 
+interface PaqueteRow {
+  descripcion: string;
+  precio: number | null;
+  staff: number | null;
+  horas: number | null;
+  raw: any;
+}
+
 @Component({
   selector: 'app-editar-cotizacion',
   templateUrl: './editar-cotizacion.component.html',
   styleUrls: ['./editar-cotizacion.component.css']
 })
-export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestroy {
+export class EditarCotizacionComponent implements OnInit, OnDestroy {
   form: UntypedFormGroup = this.fb.group({
     clienteNombre: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(2)]],
     clienteContacto: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(6)]],
@@ -57,8 +64,14 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
   selectedEventoId: number | null = null;
   selectedEventoNombre = '';
 
-  paquetesColumns = ['Descripcion', 'Precio', 'Staff', 'Horas', 'Seleccionar'];
-  paquetesDataSource = new MatTableDataSource<any>([]);
+  paquetesColumns: TableColumn<PaqueteRow>[] = [
+    { key: 'descripcion', header: 'Descripción', sortable: true },
+    { key: 'precio', header: 'Precio', sortable: true, class: 'text-end text-nowrap', width: '120px' },
+    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '140px' }
+  ];
+  paquetesRows: PaqueteRow[] = [];
   selectedPaquetes: PaqueteSeleccionado[] = [];
 
   loadingCatalogos = false;
@@ -73,8 +86,6 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
 
   private readonly destroy$ = new Subject<void>();
 
-  @ViewChild('paquetesSort') paquetesSort!: MatSort;
-
   constructor(
     private readonly fb: UntypedFormBuilder,
     private readonly route: ActivatedRoute,
@@ -86,12 +97,6 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
   ngOnInit(): void {
     this.loadCatalogos();
     this.loadCotizacion();
-  }
-
-  ngAfterViewInit(): void {
-    if (this.paquetesSort) {
-      this.paquetesDataSource.sort = this.paquetesSort;
-    }
   }
 
   ngOnDestroy(): void {
@@ -541,7 +546,7 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
 
   private loadEventosServicio(): void {
     if (this.selectedEventoId == null || this.selectedServicioId == null) {
-      this.paquetesDataSource.data = [];
+      this.paquetesRows = [];
       this.loadingPaquetes = false;
       return;
     }
@@ -551,15 +556,14 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: paquetes => {
-          this.paquetesDataSource.data = paquetes ?? [];
-          if (this.paquetesSort) {
-            this.paquetesDataSource.sort = this.paquetesSort;
-          }
+          this.paquetesRows = Array.isArray(paquetes)
+            ? paquetes.map(item => this.normalizePaqueteRow(item))
+            : [];
           this.loadingPaquetes = false;
         },
         error: (err) => {
           console.error('[cotizacion] eventos-servicio', err);
-          this.paquetesDataSource.data = [];
+          this.paquetesRows = [];
           this.loadingPaquetes = false;
         }
       });
@@ -629,6 +633,19 @@ export class EditarCotizacionComponent implements OnInit, AfterViewInit, OnDestr
 
   private getFilmMin(item: any): number | null {
     return this.parseNumber(item?.filmMin ?? item?.FilmMin ?? item?.minFilm ?? item?.Film);
+  }
+
+  private normalizePaqueteRow(item: any): PaqueteRow {
+    const precio = this.parseNumber(item?.precio ?? item?.Precio);
+    const staff = this.getPersonal(item);
+    const horas = this.getHoras(item) ?? this.parseHorasToNumber(item?.horasTexto ?? item?.HorasTexto);
+    return {
+      descripcion: this.getDescripcion(item),
+      precio: precio != null ? precio : null,
+      staff: staff != null ? staff : null,
+      horas: horas != null ? horas : null,
+      raw: item
+    };
   }
 
   private getTitulo(item: any): string {

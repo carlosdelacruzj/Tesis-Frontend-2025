@@ -1,14 +1,13 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatSort } from '@angular/material/sort';
-import { MatTableDataSource } from '@angular/material/table';
 import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 import { CotizacionItemPayload, CotizacionPayload, ClienteBusquedaResultado, CotizacionContextoPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
+import { TableColumn } from 'src/app/components/table/table-base.component';
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -33,12 +32,20 @@ interface PaqueteSeleccionado {
   editandoPrecio?: boolean;
 }
 
+interface PaqueteRow {
+  descripcion: string;
+  precio: number | null;
+  staff: number | null;
+  horas: number | null;
+  raw: any;
+}
+
 @Component({
   selector: 'app-registrar-cotizacion',
   templateUrl: './registrar-cotizacion.component.html',
   styleUrls: ['./registrar-cotizacion.component.css']
 })
-export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDestroy {
+export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   form: UntypedFormGroup = this.fb.group({
     clienteNombre: ['Cliente Demo', [Validators.required, Validators.minLength(2)]],
     clienteContacto: ['999999999', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
@@ -72,8 +79,14 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
     return this.resolveClienteNombre(cliente);
   };
 
-  paquetesColumns = ['Descripcion', 'Precio', 'Staff', 'Horas', 'Seleccionar'];
-  paquetesDataSource = new MatTableDataSource<any>([]);
+  paquetesColumns: TableColumn<PaqueteRow>[] = [
+    { key: 'descripcion', header: 'Descripción', sortable: true },
+    { key: 'precio', header: 'Precio', sortable: true, class: 'text-end text-nowrap', width: '120px' },
+    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '140px' }
+  ];
+  paquetesRows: PaqueteRow[] = [];
   selectedPaquetes: PaqueteSeleccionado[] = [];
 
   loadingCatalogos = false;
@@ -81,8 +94,6 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
   loading = false;
 
   private readonly destroy$ = new Subject<void>();
-
-  @ViewChild('paquetesSort') paquetesSort!: MatSort;
 
   constructor(
     private readonly fb: UntypedFormBuilder,
@@ -94,12 +105,6 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
   ngOnInit(): void {
     this.loadCatalogos();
     this.initClienteBusqueda();
-  }
-
-  ngAfterViewInit(): void {
-    if (this.paquetesSort) {
-      this.paquetesDataSource.sort = this.paquetesSort;
-    }
   }
 
   ngOnDestroy(): void {
@@ -569,7 +574,7 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
 
   private loadEventosServicio(): void {
     if (this.selectedEventoId == null || this.selectedServicioId == null) {
-      this.paquetesDataSource.data = [];
+      this.paquetesRows = [];
       this.loadingPaquetes = false;
       return;
     }
@@ -579,15 +584,14 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: paquetes => {
-          this.paquetesDataSource.data = paquetes ?? [];
-          if (this.paquetesSort) {
-            this.paquetesDataSource.sort = this.paquetesSort;
-          }
+          this.paquetesRows = Array.isArray(paquetes)
+            ? paquetes.map(item => this.normalizePaqueteRow(item))
+            : [];
           this.loadingPaquetes = false;
         },
         error: (err) => {
           console.error('[cotizacion] eventos-servicio', err);
-          this.paquetesDataSource.data = [];
+          this.paquetesRows = [];
           this.loadingPaquetes = false;
         }
       });
@@ -707,6 +711,19 @@ export class RegistrarCotizacionComponent implements OnInit, AfterViewInit, OnDe
 
   private getRecargo(item: any): number | null {
     return this.parseNumber(item?.recargo ?? item?.Recargo ?? item?.surcharge ?? item?.Surcharge ?? null);
+  }
+
+  private normalizePaqueteRow(item: any): PaqueteRow {
+    const precio = this.parseNumber(item?.precio ?? item?.Precio);
+    const staff = this.getPersonal(item);
+    const horas = this.getHoras(item) ?? this.parseHorasToNumber(item?.horasTexto ?? item?.HorasTexto);
+    return {
+      descripcion: this.getDescripcion(item),
+      precio: precio != null ? precio : null,
+      staff: staff != null ? staff : null,
+      horas: horas != null ? horas : null,
+      raw: item
+    };
   }
 
   private parseHorasToNumber(value: string | null | undefined): number | undefined {
