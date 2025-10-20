@@ -6,14 +6,14 @@
   <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
   <ng-container *ngIf="!loadingList; else loadingState">
-    <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="25"
+    <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
       searchPlaceholder="Buscar: cliente, documento, estado…" emptyText="Sin resultados"
-      (rowClick)="verPedido($event)" (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
+       (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
       [showCreateButton]="true" createButtonLabel="Registrar pedido" (createClick)="navigateToCreate()">
 
       <ng-template appCell="Cliente" let-row>
         <span>{{ row.Cliente || '—' }}</span>
-        <small class="text-muted" *ngIf="row.Documento"> — {{ row.Documento }}</small>
+        <small class="text-muted" *ngIf="row.Documento"> {{ row.Documento }}</small>
       </ng-template>
 
       <ng-template appCell="Creado" let-row>

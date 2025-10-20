@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgForm } from '@angular/forms';
-import { Subject, takeUntil, firstValueFrom } from 'rxjs';
+import { Subject, takeUntil, firstValueFrom, take } from 'rxjs';
 
 import { Cotizacion } from './model/cotizacion.model';
 import { CotizacionService } from './service/cotizacion.service';
@@ -12,6 +12,7 @@ import { TableColumn } from 'src/app/components/table/table-base.component';
 // Util: convertir assets a base64
 import { urlToBase64 } from 'src/app/utils/url-to-base64';
 import { HttpClient } from '@angular/common/http';
+import swal from 'sweetalert2';
 
 @Component({
   selector: 'app-gestionar-cotizaciones',
@@ -61,6 +62,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private leadConversionPending = false;
   private leadConversionTarget: Cotizacion | null = null;
   private leadConversionDestino: 'Enviada' | 'Aceptada' | 'Rechazada' | '' = '';
+  private clienteCreadoEnAceptacion = false;
 
   @ViewChild('registroClienteForm') registroClienteForm?: NgForm;
 
@@ -183,6 +185,9 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
     this.estadoTarget = target;
     this.estadoDestino = destino as typeof this.estadoDestino;
+    if (destino !== 'Aceptada') {
+      this.clienteCreadoEnAceptacion = false;
+    }
 
     const id = target.id;
     const estadoActual = target.estado ?? 'Borrador';
@@ -212,7 +217,40 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
             if (this.leadConversionTarget && this.leadConversionTarget.id === actualizada.id) {
               this.leadConversionTarget = this.mergeCotizacion(this.leadConversionTarget, actualizada);
             }
+
+            if (destino === 'Aceptada') {
+              // TODO: reemplazar el empleadoId fijo y enviar nombrePedido cuando tengamos esos datos.
+              this.cotizacionService.createPedidoDesdeCotizacion(actualizada.id, { empleadoId: 1 })
+                .pipe(takeUntil(this.destroy$))
+                .subscribe({
+                  next: ({ pedidoId }) => {
+                    console.debug('[cotizaciones] pedido creado desde cotización', { pedidoId, cotizacionId: actualizada.id });
+                    const baseTexto = pedidoId
+                      ? `Pedido #${pedidoId} creado correctamente.`
+                      : 'Pedido creado correctamente.';
+                    const texto = this.clienteCreadoEnAceptacion
+                      ? `Nuevo cliente registrado y cotización aceptada. ${baseTexto}`
+                      : `Cotización aceptada. ${baseTexto}`;
+                    swal.fire({
+                      icon: 'success',
+                      title: 'Proceso completado',
+                      text: texto
+                    });
+                    this.clienteCreadoEnAceptacion = false;
+                  },
+                  error: err => {
+                    console.error('[cotizaciones] migrar a pedido falló', err);
+                    swal.fire({
+                      icon: 'error',
+                      title: 'No pudimos crear el pedido',
+                      text: err?.message ?? 'Intenta nuevamente más tarde.'
+                    });
+                    this.clienteCreadoEnAceptacion = false;
+                  }
+                });
+            }
           } else {
+            this.clienteCreadoEnAceptacion = false;
             this.loadCotizaciones();
           }
           this.closeEstadoModal();
@@ -220,6 +258,17 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
           this.leadConversionTarget = null;
           this.estadoDestino = '';
           this.leadConversionDestino = '';
+
+          this.cotizacionService.getCotizacion(id)
+            .pipe(take(1), takeUntil(this.destroy$))
+            .subscribe({
+              next: detalle => {
+                console.log('[cotizaciones] getCotizacion detalle actualizado', detalle);
+              },
+              error: err => {
+                console.error('[cotizaciones] getCotizacion error al obtener detalle actualizado', err);
+              }
+            });
         },
         error: (err) => {
           console.error('[cotizacion] updateEstado', err);
@@ -289,7 +338,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private openLeadRegistroModal(cotizacion: Cotizacion): void {
     this.leadConversionTarget = cotizacion;
     this.leadConversionDestino = this.estadoDestino;
-    const contacto = this.resolveContacto(cotizacion);
+    const contacto = cotizacion.contacto ?? null;
     console.log('[cotizaciones] openLeadRegistroModal contacto', {
       cotizacionId: cotizacion?.id,
       contacto
@@ -376,7 +425,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
     const target = this.estadoTarget ?? this.leadConversionTarget;
     console.debug('[cotizaciones] submitLeadRegistro target', { target });
-    const contactoId = this.getContactoIdFromCotizacion(target);
+    const contactoId = target.contacto?.id ?? null;
     if (contactoId == null) {
       this.registroClienteError = 'No pudimos identificar el lead asociado a la cotización.';
       this.leadConversionPending = false;
@@ -421,6 +470,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
             destino: this.estadoDestino,
             cotizacionId: this.estadoTarget?.id ?? this.leadConversionTarget?.id
           });
+          this.clienteCreadoEnAceptacion = true;
           this.registroClienteLoading = false;
           this.leadConversionPending = false;
           this.closeLeadRegistroModal(false);
@@ -428,6 +478,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.registroClienteLoading = false;
+          this.clienteCreadoEnAceptacion = false;
           const msg = err?.error?.message ?? 'No pudimos registrar al cliente. Intenta nuevamente.';
           this.registroClienteError = msg;
           console.error('[cotizaciones] convertLeadToCliente error', err);
@@ -446,53 +497,8 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     return digitos.slice(-9);
   }
 
-  private getContactoIdFromCotizacion(cotizacion: Cotizacion | null): number | null {
-    const contacto = this.resolveContacto(cotizacion);
-    if (!contacto) {
-      console.warn('[cotizaciones] getContactoIdFromCotizacion: sin contacto', { cotizacion });
-      return null;
-    }
-
-    const posibles = [
-      (contacto as any)?.id,
-      (contacto as any)?.idContacto,
-      (contacto as any)?.idlead,
-      (contacto as any)?.ID,
-      (contacto as any)?.lead_id,
-      (contacto as any)?.leadId
-    ];
-
-    console.log('[cotizaciones] getContactoIdFromCotizacion candidatos', {
-      cotizacionId: cotizacion?.id,
-      posibles,
-      contacto
-    });
-
-    for (const valor of posibles) {
-      if (valor == null) {
-        continue;
-      }
-      const numero = Number(valor);
-      if (Number.isFinite(numero) && numero > 0) {
-        console.log('[cotizaciones] getContactoIdFromCotizacion hit', {
-          cotizacionId: cotizacion?.id,
-          valor,
-          numero
-        });
-        return numero;
-      }
-    }
-
-    console.warn('[cotizaciones] getContactoIdFromCotizacion: ninguno válido', {
-      cotizacionId: cotizacion?.id,
-      contacto
-    });
-
-    return null;
-  }
-
   private esLead(cotizacion: Cotizacion | null): boolean {
-    const contacto = this.resolveContacto(cotizacion);
+    const contacto = cotizacion?.contacto ?? null;
     const origen = (contacto?.origen ?? '').toString().trim().toUpperCase();
     return origen === 'LEAD';
   }
@@ -506,47 +512,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       contacto,
       contactoResumen
     };
-  }
-
-  private resolveContacto(cotizacion: Cotizacion | null): (Cotizacion & { contacto?: any })['contacto'] | Record<string, any> | null {
-    if (!cotizacion) {
-      return null;
-    }
-
-    const contacto = cotizacion.contacto;
-    if (contacto && (contacto.id != null || contacto.nombre || contacto.celular || contacto.correo)) {
-      console.debug('[cotizaciones] resolveContacto -> contacto normalizado', {
-        cotizacionId: cotizacion.id,
-        contacto
-      });
-      return contacto;
-    }
-
-    const raw = cotizacion.raw as { contacto?: unknown } | undefined;
-    const rawContacto = raw && typeof raw === 'object' ? (raw as Record<string, any>).contacto : undefined;
-    if (rawContacto && typeof rawContacto === 'object') {
-      console.debug('[cotizaciones] resolveContacto -> raw.contacto', {
-        cotizacionId: cotizacion.id,
-        rawContacto
-      });
-      return rawContacto as Record<string, any>;
-    }
-
-    const rawLead = raw && typeof raw === 'object' ? (raw as Record<string, any>).lead : undefined;
-    if (rawLead && typeof rawLead === 'object') {
-      console.debug('[cotizaciones] resolveContacto -> raw.lead', {
-        cotizacionId: cotizacion.id,
-        rawLead
-      });
-      return rawLead as Record<string, any>;
-    }
-
-    console.warn('[cotizaciones] resolveContacto: no se encontró contacto', {
-      cotizacionId: cotizacion.id,
-      raw
-    });
-
-    return null;
   }
 }
 

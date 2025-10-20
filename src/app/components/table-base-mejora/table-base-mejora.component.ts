@@ -62,6 +62,10 @@ export class TableBaseMejoraComponent<T = any> implements AfterContentInit, OnCh
     @Input() showCreateButton = true;
     @Input() createButtonLabel = 'Registrar';
     @Input() createButtonDisabled = false;
+    @Input() showSearch = true;
+    @Input() showFooterInfo = true;
+    @Input() showPagination = true;
+    @Input() showPageSizeSelector = true;
     @Output() createClick = new EventEmitter<void>();
 
     /** Plantillas proyectadas */

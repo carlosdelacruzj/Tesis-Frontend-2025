@@ -28,7 +28,7 @@ export interface PedidoRow {
 export class GestionarPedidoComponent implements OnInit, OnDestroy {
   columns: TableColumn<PedidoRow>[] = [
     { key: 'ID', header: 'ID', sortable: true, width: '90px', class: 'text-center text-nowrap' },
-    { key: 'Cliente', header: 'Cliente', sortable: true },
+    { key: 'Cliente', header: 'Cliente', sortable: true, class: 'cliente-col text-center' },
     { key: 'Creado', header: 'Creado', sortable: true, width: '140px' },
     { key: 'ProxFecha', header: 'Próx. fecha', sortable: true, width: '160px' },
     { key: 'ProxHora', header: 'Próx. hora', sortable: true, width: '120px', class: 'text-center' },

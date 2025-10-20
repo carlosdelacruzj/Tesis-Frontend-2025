@@ -1,7 +1,7 @@
 <!-- TOP BAR -->
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
   <!-- Buscador (izquierda) -->
-  <div class="input-group search-group">
+  <div class="input-group search-group" *ngIf="showSearch">
     <span class="input-group-text gap-1">
       <mat-icon fontIcon="search" aria-hidden="true"></mat-icon>
       <span class="visually-hidden">Buscar</span>
@@ -78,7 +78,7 @@
   <div class="d-flex flex-column flex-md-row align-items-center w-100 gap-2">
 
     <!-- Izquierda: Mostrando -->
-    <div class="flex-grow-1 order-1 order-md-1 w-100 w-md-auto text-center text-md-start text-muted small">
+    <div *ngIf="showFooterInfo" class="flex-grow-1 order-1 order-md-1 w-100 w-md-auto text-center text-md-start text-muted small">
       Mostrando
       <strong>{{ pageStart | number }}</strong> –
       <strong>{{ pageEnd | number }}</strong>
@@ -86,7 +86,7 @@
     </div>
 
     <!-- Centro: Paginación (números) -->
-    <nav class="order-2 mx-auto" aria-label="Paginación">
+    <nav *ngIf="showPagination" class="order-2 mx-auto" aria-label="Paginación">
       <ul class="pagination pagination-sm mb-0">
         <li class="page-item" [class.disabled]="currentPage() === 1">
           <button class="page-link" (click)="changePage(1)" aria-label="Primera">&laquo;</button>
@@ -110,7 +110,7 @@
     </nav>
 
     <!-- Derecha: Filas por página -->
-    <div class="flex-grow-1 order-3 w-100 w-md-auto d-flex justify-content-md-end justify-content-center">
+    <div *ngIf="showPageSizeSelector" class="flex-grow-1 order-3 w-100 w-md-auto d-flex justify-content-md-end justify-content-center">
       <div class="d-flex align-items-center gap-2">
         <label class="form-label m-0 small">Filas por página</label>
         <select class="form-select form-select-sm" style="width: auto" [ngModel]="currentPageSize()"

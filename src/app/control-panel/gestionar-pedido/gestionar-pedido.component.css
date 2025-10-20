@@ -1,0 +1,11 @@
+:host ::ng-deep th.cliente-col,
+:host ::ng-deep td.cliente-col {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: initial;
+}
+
+:host ::ng-deep td.cliente-col span,
+:host ::ng-deep td.cliente-col small {
+  white-space: normal;
+}

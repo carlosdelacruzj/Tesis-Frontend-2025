@@ -187,3 +187,12 @@ export interface CotizacionPublicResult {
   leadId: number | null;
   cotizacionId: number | null;
 }
+
+export interface CotizacionPedidoPayload {
+  empleadoId: number | string;
+  nombrePedido?: string | null;
+}
+
+export interface CotizacionPedidoResponse {
+  pedidoId: number;
+}

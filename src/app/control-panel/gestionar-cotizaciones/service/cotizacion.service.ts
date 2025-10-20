@@ -18,7 +18,9 @@ import {
   CotizacionPublicPayload,
   CotizacionPublicResponse,
   CotizacionPublicResult,
-  LeadConvertPayload
+  LeadConvertPayload,
+  CotizacionPedidoPayload,
+  CotizacionPedidoResponse
 } from '../model/cotizacion.model';
 import { PedidoService } from '../../gestionar-pedido/service/pedido.service';
 import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
@@ -197,7 +199,48 @@ downloadPdf(
   );
 }
 
+  createPedidoDesdeCotizacion(
+    id: number | string,
+    payload: CotizacionPedidoPayload
+  ): Observable<CotizacionPedidoResponse> {
+    const numericId = Number(id);
+    if (!Number.isFinite(numericId)) {
+      return throwError(() => new Error('Identificador de cotización inválido'));
+    }
 
+    const empleadoId = this.parseNumberNullable(payload?.empleadoId);
+    if (empleadoId == null) {
+      return throwError(() => new Error('El empleado asignado es obligatorio.'));
+    }
+
+    const body = this.cleanObject({
+      empleadoId,
+      nombrePedido: this.toOptionalString(payload?.nombrePedido)
+    });
+
+    return this.http
+      .post<CotizacionPedidoResponse | Record<string, unknown>>(
+        `${this.baseUrl}/${numericId}/pedido`,
+        body
+      )
+      .pipe(
+        map(response => {
+          const parsedId =
+            this.parseNumberNullable((response as CotizacionPedidoResponse)?.pedidoId) ??
+            this.parseNumberNullable((response as Record<string, unknown>)?.['id']);
+
+          if (parsedId == null) {
+            throw new Error('Respuesta inválida al crear el pedido de la cotización.');
+          }
+
+          return { pedidoId: parsedId };
+        }),
+        catchError(err => {
+          console.error('[cotizacion] createPedidoDesdeCotizacion', err);
+          return throwError(() => err);
+        })
+      );
+  }
 
   updateEstado(id: number | string, estadoNuevo: 'Enviada' | 'Aceptada' | 'Rechazada', estadoEsperado: string | null | undefined): Observable<Cotizacion> {
     const numericId = Number(id);
