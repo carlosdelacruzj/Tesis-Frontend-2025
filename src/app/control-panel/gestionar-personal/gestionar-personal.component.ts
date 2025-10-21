@@ -1,5 +1,4 @@
-import { Component, OnDestroy, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import swal from 'sweetalert2';
 import { Subject, takeUntil } from 'rxjs';
@@ -18,7 +17,6 @@ type ModalMode = 'view' | 'edit';
 @Component({
   selector: 'app-gestionar-personal',
   templateUrl: './gestionar-personal.component.html',
-  providers: [NgbModalConfig, NgbModal],
   styleUrls: ['./gestionar-personal.component.css']
 })
 export class GestionarPersonalComponent implements OnInit, OnDestroy {
@@ -46,14 +44,21 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
-  @ViewChild('contentUpdate', { static: true }) contentUpdate!: TemplateRef<any>;
-  @ViewChild('contentView', { static: true }) contentView!: TemplateRef<any>;
   @ViewChild('createForm') createForm?: NgForm;
 
   modalCrearOpen = false;
   modalCrearLoading = false;
   modalCrearSaving = false;
   modalCrearError: string | null = null;
+
+  modalEditarOpen = false;
+  modalEditarLoading = false;
+  modalEditarSaving = false;
+  modalEditarError: string | null = null;
+
+  modalVerOpen = false;
+  modalVerLoading = false;
+  modalVerError: string | null = null;
 
   nuevoEmpleado = {
     nombre: '',
@@ -62,19 +67,14 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
     celular: '',
     documento: '',
     direccion: '',
-    autonomo: 'NO' as 'SI' | 'NO',
+    autonomo: 1 as 1 | 2,
     idCargo: 0,
     idEstado: 1
   };
 
   constructor(
-    private readonly personalService: PersonalService,
-    private readonly modalService: NgbModal,
-    config: NgbModalConfig
-  ) {
-    config.backdrop = 'static';
-    config.keyboard = false;
-  }
+    private readonly personalService: PersonalService
+  ) {}
 
   ngOnInit(): void {
     this.loadEmpleados();
@@ -97,7 +97,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       celular: '',
       documento: '',
       direccion: '',
-      autonomo: 'NO',
+      autonomo: 1 as 1 | 2,
       idCargo: 0,
       idEstado: 1
     };
@@ -117,11 +117,21 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
   }
 
   verEmpleado(row: EmpleadoRow): void {
-    this.openModal('view', row);
+    this.modalVerError = null;
+    this.modalVerOpen = true;
+    this.modalVerLoading = true;
+    this.selected = null;
+    this.loadEmpleado(row.idEmpleado, 'view', row);
   }
 
   editarEmpleado(row: EmpleadoRow): void {
-    this.openModal('edit', row);
+    this.modalEditarError = null;
+    this.modalEditarOpen = true;
+    this.modalEditarLoading = true;
+    this.modalEditarSaving = false;
+    this.selected = null;
+    this.loadEmpleado(row.idEmpleado, 'edit', row);
+    this.loadCargos();
   }
 
   UpdateEmpleado(empleadoForm: NgForm): void {
@@ -138,12 +148,20 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       idEstado: v.Estado !== undefined && v.Estado !== null ? Number(v.Estado) : this.selected.idEstado
     };
 
+    if (empleadoForm.invalid) {
+      empleadoForm.control.markAllAsTouched();
+      return;
+    }
+
+    this.modalEditarSaving = true;
+
     this.personalService.updateEmpleado(dto)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
+          this.modalEditarSaving = false;
           this.loadEmpleados();
-          this.loadEmpleado(dto.idEmpleado);
+          this.loadEmpleado(dto.idEmpleado, 'edit');
           swal.fire({
             text: 'Se actualizó al empleado exitosamente',
             icon: 'success',
@@ -154,6 +172,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('[personal] update', err);
+          this.modalEditarSaving = false;
           swal.fire({
             text: 'Ocurrió un error, volver a intentar.',
             icon: 'warning',
@@ -188,17 +207,15 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       });
   }
 
-  private openModal(mode: ModalMode, row: EmpleadoRow): void {
-    this.selected = row;
-    this.loadEmpleado(row.idEmpleado, mode);
-    const template = mode === 'edit' ? this.contentUpdate : this.contentView;
-    this.modalService.open(template);
+  private loadEmpleado(id: number, mode: ModalMode = 'view', fallback?: EmpleadoRow): void {
     if (mode === 'edit') {
-      this.loadCargos();
+      this.modalEditarLoading = true;
+      this.modalEditarError = null;
+    } else {
+      this.modalVerLoading = true;
+      this.modalVerError = null;
     }
-  }
 
-  private loadEmpleado(id: number, mode: ModalMode = 'view'): void {
     this.personalService.getEmpleadoById(id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -207,9 +224,27 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
             ...empleado,
             nombreCompleto: `${empleado.nombre ?? ''} ${empleado.apellido ?? ''}`.trim()
           };
+          if (mode === 'edit') {
+            this.modalEditarLoading = false;
+          } else {
+            this.modalVerLoading = false;
+          }
         },
         error: (err) => {
           console.error(`[personal] detalle ${mode}`, err);
+          if (fallback) {
+            this.selected = {
+              ...fallback,
+              nombreCompleto: `${fallback.nombre ?? ''} ${fallback.apellido ?? ''}`.trim()
+            };
+          }
+          if (mode === 'edit') {
+            this.modalEditarLoading = false;
+            this.modalEditarError = 'No pudimos cargar los datos del empleado.';
+          } else {
+            this.modalVerLoading = false;
+            this.modalVerError = 'No pudimos cargar los datos del empleado.';
+          }
         }
       });
   }
@@ -237,6 +272,35 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
           this.modalCrearError = 'No pudimos cargar la lista de cargos.';
         }
       });
+  }
+
+  onEditModalClosed(): void {
+    this.modalEditarOpen = false;
+    this.modalEditarLoading = false;
+    this.modalEditarSaving = false;
+    this.modalEditarError = null;
+    this.selected = null;
+  }
+
+  closeEditModal(): void {
+    if (this.modalEditarLoading || this.modalEditarSaving) {
+      return;
+    }
+    this.modalEditarOpen = false;
+  }
+
+  onViewModalClosed(): void {
+    this.modalVerOpen = false;
+    this.modalVerLoading = false;
+    this.modalVerError = null;
+    this.selected = null;
+  }
+
+  closeViewModal(): void {
+    if (this.modalVerLoading) {
+      return;
+    }
+    this.modalVerOpen = false;
   }
 
   onCreateModalClosed(): void {
@@ -270,7 +334,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       ...this.nuevoEmpleado,
       idCargo: Number(this.nuevoEmpleado.idCargo),
       idEstado: this.nuevoEmpleado.idEstado !== undefined ? Number(this.nuevoEmpleado.idEstado) : undefined,
-      autonomo: this.nuevoEmpleado.autonomo === 'SI' ? 'SI' : 'NO'
+      autonomo: Number(this.nuevoEmpleado.autonomo) as 1 | 2
     };
 
     this.personalService.createEmpleado(payload)
@@ -292,7 +356,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
             celular: '',
             documento: '',
             direccion: '',
-            autonomo: 'NO',
+            autonomo: 1,
             idCargo: 0,
             idEstado: 1
           });

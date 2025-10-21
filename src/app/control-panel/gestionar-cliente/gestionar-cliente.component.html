@@ -63,56 +63,61 @@
 
     <div class="row g-3">
       <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Nombre</mat-label>
-          <input matInput type="text" name="nombre" ngModel required [pattern]="nombrePattern" #nombre="ngModel">
-          <mat-error *ngIf="nombre.errors?.required">Campo requerido</mat-error>
-          <mat-error *ngIf="nombre.errors?.pattern">Sólo letras (2-20)</mat-error>
-        </mat-form-field>
+        <label class="form-label">Nombre</label>
+        <input type="text" class="form-control" name="nombre" required [pattern]="nombrePattern"
+               ngModel #nombre="ngModel">
+        <div class="invalid-feedback d-block" *ngIf="nombre.invalid && (nombre.dirty || nombre.touched)">
+          <span *ngIf="nombre.errors?.required">Campo requerido</span>
+          <span *ngIf="nombre.errors?.pattern">Sólo letras (2-20)</span>
+        </div>
       </div>
 
       <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Apellido</mat-label>
-          <input matInput type="text" name="apellido" ngModel required [pattern]="apellidoPattern" #apellido="ngModel">
-          <mat-error *ngIf="apellido.errors?.required">Campo requerido</mat-error>
-          <mat-error *ngIf="apellido.errors?.pattern">Sólo letras (2-30)</mat-error>
-        </mat-form-field>
+        <label class="form-label">Apellido</label>
+        <input type="text" class="form-control" name="apellido" required [pattern]="apellidoPattern"
+               ngModel #apellido="ngModel">
+        <div class="invalid-feedback d-block" *ngIf="apellido.invalid && (apellido.dirty || apellido.touched)">
+          <span *ngIf="apellido.errors?.required">Campo requerido</span>
+          <span *ngIf="apellido.errors?.pattern">Sólo letras (2-30)</span>
+        </div>
       </div>
 
       <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Correo</mat-label>
-          <input matInput type="email" name="correo" ngModel required [pattern]="correoPattern" #correo="ngModel">
-          <mat-error *ngIf="correo.errors?.required">Campo requerido</mat-error>
-          <mat-error *ngIf="correo.errors?.pattern">Ingrese un correo válido</mat-error>
-        </mat-form-field>
+        <label class="form-label">Correo</label>
+        <input type="email" class="form-control" name="correo" required [pattern]="correoPattern"
+               ngModel #correo="ngModel">
+        <div class="invalid-feedback d-block" *ngIf="correo.invalid && (correo.dirty || correo.touched)">
+          <span *ngIf="correo.errors?.required">Campo requerido</span>
+          <span *ngIf="correo.errors?.pattern">Ingrese un correo válido</span>
+        </div>
       </div>
 
       <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Número de documento</mat-label>
-          <input matInput type="text" name="doc" ngModel required [pattern]="docPattern" #doc="ngModel">
-          <mat-error *ngIf="doc.errors?.required">Campo requerido</mat-error>
-          <mat-error *ngIf="doc.errors?.pattern">Sólo números (8 dígitos)</mat-error>
-        </mat-form-field>
+        <label class="form-label">Número de documento</label>
+        <input type="text" class="form-control" name="doc" required [pattern]="docPattern"
+               ngModel #doc="ngModel">
+        <div class="invalid-feedback d-block" *ngIf="doc.invalid && (doc.dirty || doc.touched)">
+          <span *ngIf="doc.errors?.required">Campo requerido</span>
+          <span *ngIf="doc.errors?.pattern">Sólo números (8 dígitos)</span>
+        </div>
       </div>
 
       <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Celular</mat-label>
-          <input matInput type="text" name="celular" ngModel required [pattern]="celularPattern" #celular="ngModel">
-          <mat-error *ngIf="celular.errors?.required">Campo requerido</mat-error>
-          <mat-error *ngIf="celular.errors?.pattern">Sólo números (7-9 dígitos)</mat-error>
-        </mat-form-field>
+        <label class="form-label">Celular</label>
+        <input type="text" class="form-control" name="celular" required [pattern]="celularPattern"
+               ngModel #celular="ngModel">
+        <div class="invalid-feedback d-block" *ngIf="celular.invalid && (celular.dirty || celular.touched)">
+          <span *ngIf="celular.errors?.required">Campo requerido</span>
+          <span *ngIf="celular.errors?.pattern">Sólo números (7-9 dígitos)</span>
+        </div>
       </div>
 
       <div class="col-12">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Dirección</mat-label>
-          <textarea matInput name="direccion" ngModel required #direccion="ngModel"></textarea>
-          <mat-error *ngIf="direccion.errors?.required">Campo requerido</mat-error>
-        </mat-form-field>
+        <label class="form-label">Dirección</label>
+        <textarea class="form-control" name="direccion" required ngModel #direccion="ngModel"></textarea>
+        <div class="invalid-feedback d-block" *ngIf="direccion.invalid && (direccion.dirty || direccion.touched)">
+          <span>Campo requerido</span>
+        </div>
       </div>
     </div>
   </form>
@@ -150,61 +155,55 @@
 
       <div class="row g-3">
         <div class="col-12 col-md-6">
-          <mat-form-field appearance="fill" class="w-100">
-            <mat-label>Código</mat-label>
-            <input matInput type="text" name="codigoCliente" [readonly]="true"
-              [value]="selectedCliente?.codigoCliente || ('CLI-' + selectedCliente?.idCliente)">
-          </mat-form-field>
+          <label class="form-label">Código</label>
+          <input type="text" class="form-control" name="codigoCliente" readonly
+            [value]="selectedCliente?.codigoCliente || ('CLI-' + selectedCliente?.idCliente)">
         </div>
 
         <div class="col-12 col-md-6">
-          <mat-form-field appearance="fill" class="w-100">
-            <mat-label>Nombre</mat-label>
-            <input matInput type="text" name="nombre" [readonly]="true" [value]="selectedCliente?.nombre || ''">
-          </mat-form-field>
+          <label class="form-label">Nombre</label>
+          <input type="text" class="form-control" name="nombre" readonly [value]="selectedCliente?.nombre || ''">
         </div>
 
         <div class="col-12 col-md-6">
-          <mat-form-field appearance="fill" class="w-100">
-            <mat-label>Apellido</mat-label>
-            <input matInput type="text" name="apellido" [readonly]="true" [value]="selectedCliente?.apellido || ''">
-          </mat-form-field>
+          <label class="form-label">Apellido</label>
+          <input type="text" class="form-control" name="apellido" readonly [value]="selectedCliente?.apellido || ''">
         </div>
 
         <div class="col-12 col-md-6">
-          <mat-form-field appearance="fill" class="w-100">
-            <mat-label>Correo</mat-label>
-            <input matInput type="email" name="correo" required [pattern]="correoPattern"
-              [(ngModel)]="editFormModel.correo" #correoEdit="ngModel">
-            <mat-error *ngIf="correoEdit.errors?.required">Campo requerido</mat-error>
-            <mat-error *ngIf="correoEdit.errors?.pattern">Ingrese un correo válido</mat-error>
-          </mat-form-field>
+          <label class="form-label">Correo</label>
+          <input type="email" class="form-control" name="correo" required [pattern]="correoPattern"
+            [(ngModel)]="editFormModel.correo" #correoEdit="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="correoEdit.invalid && (correoEdit.dirty || correoEdit.touched)">
+            <span *ngIf="correoEdit.errors?.required">Campo requerido</span>
+            <span *ngIf="correoEdit.errors?.pattern">Ingrese un correo válido</span>
+          </div>
         </div>
 
         <div class="col-12 col-md-6">
-          <mat-form-field appearance="fill" class="w-100">
-            <mat-label>Número de documento</mat-label>
-            <input matInput type="text" name="doc" [readonly]="true" [value]="selectedCliente?.doc || ''">
-          </mat-form-field>
+          <label class="form-label">Número de documento</label>
+          <input type="text" class="form-control" name="doc" readonly [value]="selectedCliente?.doc || ''">
         </div>
 
         <div class="col-12 col-md-6">
-          <mat-form-field appearance="fill" class="w-100">
-            <mat-label>Celular</mat-label>
-            <input matInput type="text" name="celular" required [pattern]="celularPattern"
-              [(ngModel)]="editFormModel.celular" #celularEdit="ngModel">
-            <mat-error *ngIf="celularEdit.errors?.required">Campo requerido</mat-error>
-            <mat-error *ngIf="celularEdit.errors?.pattern">Sólo números (7-9 dígitos)</mat-error>
-          </mat-form-field>
+          <label class="form-label">Celular</label>
+          <input type="text" class="form-control" name="celular" required [pattern]="celularPattern"
+            [(ngModel)]="editFormModel.celular" #celularEdit="ngModel">
+          <div class="invalid-feedback d-block"
+            *ngIf="celularEdit.invalid && (celularEdit.dirty || celularEdit.touched)">
+            <span *ngIf="celularEdit.errors?.required">Campo requerido</span>
+            <span *ngIf="celularEdit.errors?.pattern">Sólo números (7-9 dígitos)</span>
+          </div>
         </div>
 
         <div class="col-12">
-          <mat-form-field appearance="fill" class="w-100">
-            <mat-label>Dirección</mat-label>
-            <textarea matInput name="direccion" required [(ngModel)]="editFormModel.direccion"
-              #direccionEdit="ngModel"></textarea>
-            <mat-error *ngIf="direccionEdit.errors?.required">Campo requerido</mat-error>
-          </mat-form-field>
+          <label class="form-label">Dirección</label>
+          <textarea class="form-control" name="direccion" required [(ngModel)]="editFormModel.direccion"
+            #direccionEdit="ngModel"></textarea>
+          <div class="invalid-feedback d-block"
+            *ngIf="direccionEdit.invalid && (direccionEdit.dirty || direccionEdit.touched)">
+            <span>Campo requerido</span>
+          </div>
         </div>
       </div>
     </form>

@@ -29,15 +29,15 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   columns: TableColumn<PedidoRow>[] = [
     { key: 'ID', header: 'ID', sortable: true, width: '90px', class: 'text-center text-nowrap' },
     { key: 'Cliente', header: 'Cliente', sortable: true, class: 'cliente-col text-center' },
-    { key: 'Creado', header: 'Creado', sortable: true, width: '140px' },
+    // { key: 'Creado', header: 'Creado', sortable: true, width: '140px' },
     { key: 'ProxFecha', header: 'Próx. fecha', sortable: true, width: '160px' },
     { key: 'ProxHora', header: 'Próx. hora', sortable: true, width: '120px', class: 'text-center' },
-    { key: 'Ubicacion', header: 'Ubicación', sortable: true },
+    // { key: 'Ubicacion', header: 'Ubicación', sortable: true },
     { key: 'TipoEvento', header: 'Tipo', sortable: true },
     { key: 'TotalLabel', header: 'Total', sortable: true, width: '140px', class: 'text-end text-nowrap' },
     { key: 'Estado', header: 'Estado', sortable: true, width: '140px', class: 'text-center' },
     { key: 'Pago', header: 'Pago', sortable: true, width: '120px', class: 'text-center' },
-    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '140px', class: 'text-center' }
+    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '160px', class: 'text-center' }
   ];
 
   rows: PedidoRow[] = [];

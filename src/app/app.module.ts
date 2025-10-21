@@ -49,6 +49,7 @@ import { LandingComponent } from './landing/landing.component';
 import { GestionarCotizacionesComponent } from './control-panel/gestionar-cotizaciones/gestionar-cotizaciones.component';
 import { RegistrarCotizacionComponent } from './control-panel/gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
 import { EditarCotizacionComponent } from './control-panel/gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
+import { AgendaOperativaComponent } from './control-panel/agenda-operativa/agenda-operativa.component';
 import { CellTemplateDirective, TableBaseComponent } from './components/table/table-base.component';
 import { TableBaseMejoraComponent } from './components/table-base-mejora/table-base-mejora.component';
 import { ModalBaseComponent } from './components/modal-base/modal-base.component';
@@ -91,6 +92,7 @@ import { AddEventoComponent } from 'src/app/components/add-evento/add-evento.com
         GestionarCotizacionesComponent,
         RegistrarCotizacionComponent,
         EditarCotizacionComponent,
+        AgendaOperativaComponent,
         AddEventoComponent,
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,

@@ -81,6 +81,10 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
   private static activeScrollLocks = 0;
   private hasScrollLock = false;
   private closingInternally = false;
+  private dragPosition = { x: 0, y: 0 };
+  private dragOrigin = { x: 0, y: 0 };
+  private dragStartPoint: { x: number; y: number } | null = null;
+  private dragging = false;
 
   constructor(
     @Inject(DOCUMENT) private readonly doc: Document | null,
@@ -109,6 +113,7 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
         setTimeout(() => this.onOpened(), 0);
         this.closingInternally = false;
       } else {
+        this.resetDragPosition();
         if (!this.closingInternally) {
           this.restoreFocus();
           this.closed.emit('close'); // cierre programático
@@ -119,6 +124,7 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.resetDragPosition();
     this.unlockBodyScroll();
   }
 
@@ -128,6 +134,7 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.closingInternally = true;
     this.open = false;
     this.syncBodyScroll();
+    this.resetDragPosition();
     this.restoreFocus();
     this.closed.emit(reason);
   }
@@ -151,6 +158,21 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
     }
   }
 
+  onDragStart(ev: MouseEvent): void {
+    if (ev.button !== 0 || !this.dialogRef?.nativeElement) {
+      return;
+    }
+    const target = ev.target as HTMLElement | null;
+    if (target?.closest('button, a, input, textarea, select')) {
+      return;
+    }
+    this.dragging = true;
+    this.dragStartPoint = { x: ev.clientX, y: ev.clientY };
+    this.dragOrigin = { ...this.dragPosition };
+    this.renderer.addClass(this.dialogRef.nativeElement, 'is-dragging');
+    ev.preventDefault();
+  }
+
   /** ESC para cerrar y TAB para trap de foco */
   @HostListener('document:keydown', ['$event'])
   onKeydown(ev: KeyboardEvent) {
@@ -164,11 +186,35 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
     }
   }
 
+  @HostListener('document:mousemove', ['$event'])
+  onDocumentMouseMove(ev: MouseEvent): void {
+    if (!this.dragging || !this.dragStartPoint || !this.dialogRef?.nativeElement) {
+      return;
+    }
+    const nextX = this.dragOrigin.x + (ev.clientX - this.dragStartPoint.x);
+    const nextY = this.dragOrigin.y + (ev.clientY - this.dragStartPoint.y);
+    this.dragPosition = { x: nextX, y: nextY };
+    this.applyDialogTransform(nextX, nextY);
+  }
+
+  @HostListener('document:mouseup', ['$event'])
+  onDocumentMouseUp(ev: MouseEvent): void {
+    if (!this.dragging) return;
+    if (ev.button !== 0) return;
+    this.dragging = false;
+    this.dragStartPoint = null;
+    this.dragOrigin = { ...this.dragPosition };
+    if (this.dialogRef?.nativeElement) {
+      this.renderer.removeClass(this.dialogRef.nativeElement, 'is-dragging');
+    }
+  }
+
   /** ---------------- private helpers ---------------- */
 
   private onOpened() {
     this.previouslyFocused = this.doc?.activeElement ?? null;
     if (!this.dialogRef?.nativeElement) return;
+    this.resetDragPosition();
 
     if (this.autofocus) {
       const focusables = this.getFocusableElements(this.dialogRef.nativeElement);
@@ -206,6 +252,22 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
       ev.preventDefault(); last.focus();
     } else if (!ev.shiftKey && active === last) {
       ev.preventDefault(); first.focus();
+    }
+  }
+
+  private applyDialogTransform(x: number, y: number): void {
+    if (!this.dialogRef?.nativeElement) return;
+    this.dialogRef.nativeElement.style.transform = `translate(${x}px, ${y}px)`;
+  }
+
+  private resetDragPosition(): void {
+    this.dragging = false;
+    this.dragPosition = { x: 0, y: 0 };
+    this.dragOrigin = { x: 0, y: 0 };
+    this.dragStartPoint = null;
+    if (this.dialogRef?.nativeElement) {
+      this.renderer.removeClass(this.dialogRef.nativeElement, 'is-dragging');
+      this.dialogRef.nativeElement.style.transform = '';
     }
   }
 

@@ -8,10 +8,9 @@
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
-      searchPlaceholder="Buscar: código, nombre, documento…"
-      emptyText="Sin personal registrado" (rowClick)="verEmpleado($event)" (sortChange)="onSortChange($event)"
-      (pageChange)="onPageChange($event)" [showCreateButton]="true" createButtonLabel="Registrar empleado"
-      (createClick)="navigateToCreate()">
+      searchPlaceholder="Buscar: código, nombre, documento…" emptyText="Sin personal registrado"
+       (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
+      [showCreateButton]="true" createButtonLabel="Registrar empleado" (createClick)="navigateToCreate()">
 
       <ng-template appCell="codigoEmpleado" let-row>
         {{ row.codigoEmpleado || ('EMP-' + row.idEmpleado) }}
@@ -20,8 +19,7 @@
       <ng-template appCell="nombreCompleto" let-row>
         <div class="d-flex flex-column">
           <span>{{ row.nombre }} {{ row.apellido }}</span>
-          <small class="text-muted" *ngIf="row.autonomo === 'SI'">Autónomo</small>
-          <small class="text-muted" *ngIf="row.autonomo === 'NO'">Dependiente</small>
+          <small class="text-muted">{{ row.autonomo === 2 ? 'Autónomo' : 'Dependiente' }}</small>
         </div>
       </ng-template>
 
@@ -36,7 +34,7 @@
       <ng-template appCell="estado" let-row>
         <span class="badge" [class.bg-success]="row.estado === 'DISPONIBLE'"
           [class.bg-danger]="row.estado === 'NO_DISPONIBLE'" [class.bg-secondary]="!row.estado">
-          {{ row.estado || (row.autonomo === 'SI' ? 'Autónomo' : 'Dependiente') }}
+          {{ row.estado || (row.autonomo === 2 ? 'Autónomo' : 'Dependiente') }}
         </span>
       </ng-template>
 
@@ -64,34 +62,27 @@
   </div>
 </ng-template>
 
-<app-modal-base
-  [open]="modalCrearOpen"
-  title="Registrar empleado"
-  [disableClose]="modalCrearLoading || modalCrearSaving"
-  [loading]="modalCrearSaving"
-  [useDefaultFooter]="false"
+<app-modal-base [open]="modalCrearOpen" title="Registrar empleado"
+  [disableClose]="modalCrearLoading || modalCrearSaving" [loading]="modalCrearSaving" [useDefaultFooter]="false"
   (closed)="onCreateModalClosed()">
 
   <div modal-body class="formulario-registro">
-    <div *ngIf="modalCrearError && !modalCrearLoading" class="alert alert-danger" role="alert">{{ modalCrearError }}</div>
+    <div *ngIf="modalCrearError && !modalCrearLoading" class="alert alert-danger" role="alert">{{ modalCrearError }}
+    </div>
 
     <div *ngIf="modalCrearLoading" class="d-flex flex-column align-items-center justify-content-center py-4 text-muted">
       <mat-spinner diameter="32"></mat-spinner>
       <p class="mt-3 mb-0">Preparando formulario…</p>
     </div>
 
-    <form
-      *ngIf="!modalCrearLoading"
-      #createForm="ngForm"
-      id="createEmpleadoForm"
-      novalidate
+    <form *ngIf="!modalCrearLoading" #createForm="ngForm" id="createEmpleadoForm" novalidate
       (ngSubmit)="submitCreate(createForm)">
 
       <div class="row g-3">
         <div class="col-12 col-md-6">
           <label class="form-label">Nombres</label>
           <input type="text" class="form-control" name="nombre" required [pattern]="nombresPattern"
-                 [(ngModel)]="nuevoEmpleado.nombre" #nombreCtrl="ngModel">
+            [(ngModel)]="nuevoEmpleado.nombre" #nombreCtrl="ngModel">
           <div class="invalid-feedback d-block" *ngIf="nombreCtrl.invalid && (nombreCtrl.dirty || nombreCtrl.touched)">
             <span *ngIf="nombreCtrl.errors?.required">Campo requerido</span>
             <span *ngIf="nombreCtrl.errors?.pattern">Sólo letras (2-20)</span>
@@ -101,17 +92,40 @@
         <div class="col-12 col-md-6">
           <label class="form-label">Apellidos</label>
           <input type="text" class="form-control" name="apellido" required [pattern]="apellidoPattern"
-                 [(ngModel)]="nuevoEmpleado.apellido" #apellidoCtrl="ngModel">
-          <div class="invalid-feedback d-block" *ngIf="apellidoCtrl.invalid && (apellidoCtrl.dirty || apellidoCtrl.touched)">
+            [(ngModel)]="nuevoEmpleado.apellido" #apellidoCtrl="ngModel">
+          <div class="invalid-feedback d-block"
+            *ngIf="apellidoCtrl.invalid && (apellidoCtrl.dirty || apellidoCtrl.touched)">
             <span *ngIf="apellidoCtrl.errors?.required">Campo requerido</span>
             <span *ngIf="apellidoCtrl.errors?.pattern">Sólo letras (2-30)</span>
           </div>
         </div>
 
         <div class="col-12 col-md-6">
+          <label class="form-label">Documento</label>
+          <input type="text" class="form-control" name="documento" required [pattern]="docPattern"
+            [(ngModel)]="nuevoEmpleado.documento" #documentoCtrl="ngModel">
+          <div class="invalid-feedback d-block"
+            *ngIf="documentoCtrl.invalid && (documentoCtrl.dirty || documentoCtrl.touched)">
+            <span *ngIf="documentoCtrl.errors?.required">Campo requerido</span>
+            <span *ngIf="documentoCtrl.errors?.pattern">Sólo números (8 dígitos)</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Celular</label>
+          <input type="text" class="form-control" name="celular" required [pattern]="celularPattern"
+            [(ngModel)]="nuevoEmpleado.celular" #celularCtrl="ngModel">
+          <div class="invalid-feedback d-block"
+            *ngIf="celularCtrl.invalid && (celularCtrl.dirty || celularCtrl.touched)">
+            <span *ngIf="celularCtrl.errors?.required">Campo requerido</span>
+            <span *ngIf="celularCtrl.errors?.pattern">Sólo números (7-9 dígitos)</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
           <label class="form-label">Correo</label>
           <input type="email" class="form-control" name="correo" required [pattern]="correoPattern"
-                 [(ngModel)]="nuevoEmpleado.correo" #correoCtrl="ngModel">
+            [(ngModel)]="nuevoEmpleado.correo" #correoCtrl="ngModel">
           <div class="invalid-feedback d-block" *ngIf="correoCtrl.invalid && (correoCtrl.dirty || correoCtrl.touched)">
             <span *ngIf="correoCtrl.errors?.required">Campo requerido</span>
             <span *ngIf="correoCtrl.errors?.pattern">Ingrese un correo válido</span>
@@ -119,39 +133,10 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Celular</label>
-          <input type="text" class="form-control" name="celular" required [pattern]="celularPattern"
-                 [(ngModel)]="nuevoEmpleado.celular" #celularCtrl="ngModel">
-          <div class="invalid-feedback d-block" *ngIf="celularCtrl.invalid && (celularCtrl.dirty || celularCtrl.touched)">
-            <span *ngIf="celularCtrl.errors?.required">Campo requerido</span>
-            <span *ngIf="celularCtrl.errors?.pattern">Sólo números (7-9 dígitos)</span>
-          </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-          <label class="form-label">Documento</label>
-          <input type="text" class="form-control" name="documento" required [pattern]="docPattern"
-                 [(ngModel)]="nuevoEmpleado.documento" #documentoCtrl="ngModel">
-          <div class="invalid-feedback d-block" *ngIf="documentoCtrl.invalid && (documentoCtrl.dirty || documentoCtrl.touched)">
-            <span *ngIf="documentoCtrl.errors?.required">Campo requerido</span>
-            <span *ngIf="documentoCtrl.errors?.pattern">Sólo números (8 dígitos)</span>
-          </div>
-        </div>
-
-        <div class="col-12">
-          <label class="form-label">Dirección</label>
-          <input type="text" class="form-control" name="direccion" required
-                 [(ngModel)]="nuevoEmpleado.direccion" #direccionCtrl="ngModel">
-          <div class="invalid-feedback d-block" *ngIf="direccionCtrl.invalid && (direccionCtrl.dirty || direccionCtrl.touched)">
-            <span>Campo requerido</span>
-          </div>
-        </div>
-
-        <div class="col-12 col-md-6">
           <label class="form-label">Autónomo</label>
           <select class="form-select" name="autonomo" [(ngModel)]="nuevoEmpleado.autonomo" required>
-            <option value="NO">No</option>
-            <option value="SI">Sí</option>
+            <option [ngValue]="1">No</option>
+            <option [ngValue]="2">Sí</option>
           </select>
         </div>
 
@@ -167,10 +152,20 @@
           <label class="form-label">Cargo</label>
           <select class="form-select" name="idCargo" required [(ngModel)]="nuevoEmpleado.idCargo" #cargoCtrl="ngModel">
             <option [ngValue]="0" disabled>Seleccione un cargo</option>
-            <option *ngFor="let cargo of cargos" [ngValue]="cargo.idCargo">{{ cargo.cargo }}</option>
+            <option *ngFor="let cargo of cargos" [ngValue]="cargo.idCargo">{{ cargo.cargoNombre }}</option>
           </select>
           <div class="invalid-feedback d-block" *ngIf="cargoCtrl.invalid && (cargoCtrl.dirty || cargoCtrl.touched)">
             <span>Seleccione un cargo</span>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Dirección</label>
+          <textarea class="form-control" name="direccion" rows="3" required [(ngModel)]="nuevoEmpleado.direccion"
+            #direccionCtrl="ngModel"></textarea>
+          <div class="invalid-feedback d-block"
+            *ngIf="direccionCtrl.invalid && (direccionCtrl.dirty || direccionCtrl.touched)">
+            <span>Campo requerido</span>
           </div>
         </div>
       </div>
@@ -179,222 +174,190 @@
 
   <div modal-footer class="d-flex justify-content-end gap-2">
     <button type="button" class="btn btn-outline-secondary" (click)="closeCreateModal()"
-            [disabled]="modalCrearLoading || modalCrearSaving">
+      [disabled]="modalCrearLoading || modalCrearSaving">
       Cancelar
     </button>
-    <button
-      type="submit"
-      class="btn btn-primary"
-      form="createEmpleadoForm"
+    <button type="submit" class="btn btn-primary" form="createEmpleadoForm"
       [disabled]="modalCrearSaving || modalCrearLoading || createForm?.invalid">
-      <span *ngIf="modalCrearSaving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+      <span *ngIf="modalCrearSaving" class="spinner-border spinner-border-sm me-1" role="status"
+        aria-hidden="true"></span>
       Registrar
     </button>
   </div>
 
 </app-modal-base>
 
-<!-- ========== MODAL: UPDATE ========== -->
-<ng-template #contentUpdate let-c="close" let-d="dismiss">
-  <div class="modal-header">
-    <h3 class="modal-title mm" id="modal-basic-title">Actualizar Empleado</h3>
-    <button type="button" class="close" aria-label="Close" (click)="d('Cross click')">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
+<app-modal-base [open]="modalEditarOpen" title="Actualizar empleado"
+  [disableClose]="modalEditarLoading || modalEditarSaving" [loading]="modalEditarSaving" [useDefaultFooter]="false"
+  (closed)="onEditModalClosed()">
 
-  <div class="modal-body">
-    <form #EmpleadoUpdateForm="ngForm">
-      <mat-card class="card">
-        <mat-card-header>
-          <mat-card-title>
-            <h4>Datos personales</h4>
-          </mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="card-body" style="padding-top: 10px;">
-          <div class="form-group">
-            <!-- ID oculto para el NgForm -->
-            <input type="text" name="ID" [(ngModel)]="selected.idEmpleado" class="form-control text-input"
-              style="display: none;">
-          </div>
+  <div modal-body class="formulario-registro">
+    <div class="alert alert-danger" role="alert" *ngIf="modalEditarError && !modalEditarLoading">{{ modalEditarError }}
+    </div>
 
-          <div class="form-group">
-            <label class='col-form-label1'>Nombres</label>
-            <input type="text" class="form-control form-control-sm" name="Nombres" [(ngModel)]="selected.nombre"
-              disabled>
-          </div>
+    <div *ngIf="modalEditarLoading"
+      class="d-flex flex-column align-items-center justify-content-center py-4 text-muted">
+      <mat-spinner diameter="32"></mat-spinner>
+      <p class="mt-3 mb-0">Cargando empleado…</p>
+    </div>
 
-          <div class="form-group">
-            <label class='col-form-label1'>Apellidos</label>
-            <input type="text" class="form-control form-control-sm" name="Apellidos" [(ngModel)]="selected.apellido"
-              disabled>
-          </div>
+    <form *ngIf="!modalEditarLoading && selected" #EmpleadoUpdateForm="ngForm" id="updateEmpleadoForm"
+      (ngSubmit)="UpdateEmpleado(EmpleadoUpdateForm)">
 
-          <div class="form-group">
-            <label class='col-form-label1'>N° documento de identidad</label>
-            <input type="text" class="form-control form-control-sm" name="DNI" [(ngModel)]="selected.documento"
-              disabled>
-          </div>
+      <div class="row g-3">
+        <input type="hidden" name="ID" [(ngModel)]="selected.idEmpleado">
 
-          <div class="form-group">
-            <label class='col-form-label1'>Direccion</label>
-            <input type="text" class="form-control form-control-sm" name="Direccion" #Direccion="ngModel"
-              [(ngModel)]="selected.direccion" required>
-            <div *ngIf="Direccion.errors?.pattern">
-              <p>*Ingrese una Dirección correcta</p>
-            </div>
-            <div *ngIf="Direccion.errors?.required">
-              <p>*Campo Requerido</p>
-            </div>
-          </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Nombres</label>
+          <input type="text" class="form-control" name="Nombres" [(ngModel)]="selected.nombre" disabled>
+        </div>
 
-          <div class="form-group">
-            <label class='col-form-label1'>Celular</label>
-            <input type="text" class="form-control form-control-sm" name="Celular" #Celular="ngModel"
-              [(ngModel)]="selected.celular" [pattern]="celularPattern" required>
-            <div *ngIf="Celular.errors?.pattern">
-              <p>*Sólo números</p>
-            </div>
-            <div *ngIf="Celular.errors?.required">
-              <p>*Campo Requerido</p>
-            </div>
-          </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Apellidos</label>
+          <input type="text" class="form-control" name="Apellidos" [(ngModel)]="selected.apellido" disabled>
+        </div>
 
-          <div class="form-group">
-            <label class='col-form-label1'>Email</label>
-            <input type="text" class="form-control form-control-sm" name="Correo" #Correo="ngModel"
-              [(ngModel)]="selected.correo" [pattern]="correoPattern" required>
-            <div *ngIf="Correo.errors?.pattern">
-              <p>*Ingrese un email correcto</p>
-            </div>
-            <div *ngIf="Correo.errors?.required">
-              <p>*Campo Requerido</p>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
+        <div class="col-12 col-md-6">
+          <label class="form-label">N° documento de identidad</label>
+          <input type="text" class="form-control" name="DNI" [(ngModel)]="selected.documento" disabled>
+        </div>
 
-      <mat-card class="card">
-        <mat-card-header>
-          <mat-card-title>Detalle</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="card-body" style="padding-top: 10px;">
-          <div class="form-group">
-            <label class='col-form-label1'>Estado</label>
-            <select type="text" class="form-control form-control-sm" name="Estado" #Estado="ngModel"
-              [(ngModel)]="selected.idEstado" required>
-              <option matInput [ngValue]="1">Disponible</option>
-              <option matInput [ngValue]="2">No Disponible</option>
-            </select>
-            <div *ngIf="Estado.errors?.required">
-              <p>*Campo Requerido</p>
-            </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Celular</label>
+          <input type="text" class="form-control" name="Celular" #Celular="ngModel" [(ngModel)]="selected.celular"
+            [pattern]="celularPattern" required>
+          <div class="invalid-feedback d-block" *ngIf="Celular.invalid && (Celular.dirty || Celular.touched)">
+            <span *ngIf="Celular.errors?.required">Campo requerido</span>
+            <span *ngIf="Celular.errors?.pattern">Sólo números (7-9 dígitos)</span>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label class='col-form-label1'>Autonomo</label>
-            <input type="text" class="form-control form-control-sm" *ngIf="selected.autonomo === 'SI'" name="Autonomo"
-              ngModel="Si" disabled>
-            <input type="text" class="form-control form-control-sm" *ngIf="selected.autonomo === 'NO'" name="Autonomo"
-              ngModel="No" disabled>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Email</label>
+          <input type="text" class="form-control" name="Correo" #Correo="ngModel" [(ngModel)]="selected.correo"
+            [pattern]="correoPattern" required>
+          <div class="invalid-feedback d-block" *ngIf="Correo.invalid && (Correo.dirty || Correo.touched)">
+            <span *ngIf="Correo.errors?.required">Campo requerido</span>
+            <span *ngIf="Correo.errors?.pattern">Ingrese un email válido</span>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label class='col-form-label1'>Cargo</label>
-            <input type="text" class="form-control form-control-sm" name="Cargo" [ngModel]="selected.cargo" disabled>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Estado</label>
+          <select class="form-select" name="Estado" #Estado="ngModel" [(ngModel)]="selected.idEstado" required>
+            <option [ngValue]="1">Disponible</option>
+            <option [ngValue]="2">No disponible</option>
+          </select>
+          <div class="invalid-feedback d-block" *ngIf="Estado.invalid && (Estado.dirty || Estado.touched)">
+            <span>Campo requerido</span>
           </div>
-        </mat-card-content>
-      </mat-card>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Autónomo</label>
+          <input type="text" class="form-control" name="Autonomo" [ngModel]="selected?.autonomo === 2 ? 'Sí' : 'No'"
+            disabled>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Cargo</label>
+          <input type="text" class="form-control" name="Cargo" [ngModel]="selected.cargo" disabled>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Dirección</label>
+          <textarea class="form-control" name="Direccion" rows="3" #Direccion="ngModel" [(ngModel)]="selected.direccion"
+            required></textarea>
+          <div class="invalid-feedback d-block" *ngIf="Direccion.invalid && (Direccion.dirty || Direccion.touched)">
+            <span>Campo requerido</span>
+          </div>
+        </div>
+      </div>
     </form>
+
+    <div *ngIf="!modalEditarLoading && !selected && !modalEditarError" class="text-muted">
+      Selecciona un empleado para editar.
+    </div>
   </div>
 
-  <div class="modal-footer">
-    <button type="button" class="btn btn-outline-dark" (click)="UpdateEmpleado(EmpleadoUpdateForm)"
-      [disabled]="EmpleadoUpdateForm.invalid">
+  <div modal-footer class="d-flex justify-content-end gap-2">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeEditModal()"
+      [disabled]="modalEditarLoading || modalEditarSaving">
+      Cancelar
+    </button>
+    <button type="submit" class="btn btn-primary" form="updateEmpleadoForm"
+      [disabled]="modalEditarSaving || modalEditarLoading || !selected">
+      <span *ngIf="modalEditarSaving" class="spinner-border spinner-border-sm me-1" role="status"
+        aria-hidden="true"></span>
       Actualizar
     </button>
-    <button type="button" class="btn btn-outline-dark" (click)="d('Cross click')">Cancelar</button>
   </div>
-</ng-template>
 
-<!-- ========== MODAL: VIEW ========== -->
-<ng-template #contentView let-c="close" let-d="dismiss">
-  <div class="modal-header">
-    <h3 class="modal-title mm" id="modal-basic-title">Detalles del Empleado</h3>
-    <button type="button" class="close" aria-label="Close" (click)="d('Cross click')">
-      <span aria-hidden="true">&times;</span>
+</app-modal-base>
+
+<app-modal-base [open]="modalVerOpen" title="Detalles del empleado" [disableClose]="modalVerLoading"
+  [useDefaultFooter]="false" (closed)="onViewModalClosed()">
+
+  <div modal-body class="formulario-registro">
+    <div class="alert alert-danger" role="alert" *ngIf="modalVerError && !modalVerLoading">{{ modalVerError }}</div>
+
+    <div *ngIf="modalVerLoading" class="d-flex flex-column align-items-center justify-content-center py-4 text-muted">
+      <mat-spinner diameter="32"></mat-spinner>
+      <p class="mt-3 mb-0">Cargando empleado…</p>
+    </div>
+
+    <ng-container *ngIf="!modalVerLoading && selected">
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Nombres</label>
+          <input type="text" class="form-control" name="Nombres" [ngModel]="selected.nombre" disabled>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Apellidos</label>
+          <input type="text" class="form-control" name="Apellidos" [ngModel]="selected.apellido" disabled>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">N° documento de identidad</label>
+          <input type="text" class="form-control" name="DNI" [ngModel]="selected.documento" disabled>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Celular</label>
+          <input type="text" class="form-control" name="Celular" [ngModel]="selected.celular" disabled>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Email</label>
+          <input type="text" class="form-control" name="Correo" [ngModel]="selected.correo" disabled>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Estado</label>
+          <input type="text" class="form-control" name="Estado"
+            [ngModel]="selected.estado || (selected?.autonomo === 2 ? 'Autónomo' : 'Dependiente')" disabled>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Autónomo</label>
+          <input type="text" class="form-control" name="Autonomo" [ngModel]="selected?.autonomo === 2 ? 'Sí' : 'No'"
+            disabled>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Cargo</label>
+          <input type="text" class="form-control" name="Cargo" [ngModel]="selected.cargo" disabled>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Dirección</label>
+          <textarea class="form-control" name="Direccion" rows="3" [ngModel]="selected.direccion" disabled></textarea>
+        </div>
+      </div>
+    </ng-container>
+
+    <div *ngIf="!modalVerLoading && !selected && !modalVerError" class="text-muted">
+      Selecciona un empleado para ver.
+    </div>
+  </div>
+
+  <div modal-footer class="d-flex justify-content-end gap-2">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeViewModal()" [disabled]="modalVerLoading">
+      Cerrar
     </button>
   </div>
 
-  <div class="modal-body">
-    <form #EmpleadoViewForm="ngForm">
-      <mat-card class="card">
-        <mat-card-header>
-          <mat-card-title>
-            <h4>Datos personales</h4>
-          </mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="card-body" style="padding-top: 10px;">
-          <div class="form-group">
-            <label class='col-form-label1'>Nombres</label>
-            <input type="text" class="form-control form-control-sm" name="Nombres" [(ngModel)]="selected.nombre"
-              disabled>
-          </div>
-          <div class="form-group">
-            <label class='col-form-label1'>Apellidos</label>
-            <input type="text" class="form-control form-control-sm" name="Apellidos" [(ngModel)]="selected.apellido"
-              disabled>
-          </div>
-          <div class="form-group">
-            <label class='col-form-label1'>N° documento de identidad</label>
-            <input type="text" class="form-control form-control-sm" name="DNI" [(ngModel)]="selected.documento"
-              disabled>
-          </div>
-          <div class="form-group">
-            <label class='col-form-label1'>Celular</label>
-            <input type="text" class="form-control form-control-sm" name="Celular" [(ngModel)]="selected.celular"
-              disabled>
-          </div>
-          <div class="form-group">
-            <label class='col-form-label1'>Email</label>
-            <input type="text" class="form-control form-control-sm" name="Correo" [(ngModel)]="selected.correo"
-              disabled>
-          </div>
-          <div class="form-group">
-            <label class='col-form-label1'>Direccion</label>
-            <input type="text" class="form-control form-control-sm" name="Direccion" [(ngModel)]="selected.direccion"
-              disabled>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <mat-card class="card">
-        <mat-card-header>
-          <mat-card-title>Detalle</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="card-body" style="padding-top: 10px;">
-          <div class="form-group">
-            <label class='col-form-label1'>Estado</label>
-            <input type="text" class="form-control form-control-sm" name="Estado"
-              [ngModel]="selected.estado || (selected.autonomo === 'SI' ? 'Autónomo' : 'Dependiente')" disabled>
-          </div>
-          <div class="form-group">
-            <label class='col-form-label1'>Autonomo</label>
-            <input type="text" class="form-control form-control-sm" *ngIf="selected.autonomo === 'SI'" name="Autonomo"
-              ngModel="Si" disabled>
-            <input type="text" class="form-control form-control-sm" *ngIf="selected.autonomo === 'NO'" name="Autonomo"
-              ngModel="No" disabled>
-          </div>
-          <div class="form-group">
-            <label class='col-form-label1'>Cargo</label>
-            <input type="text" class="form-control form-control-sm" name="Cargo" [ngModel]="selected.cargo" disabled>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </form>
-  </div>
-
-  <div class="modal-footer">
-    <button type="button" class="btn btn-outline-dark" (click)="d('Cross click')">Cancelar</button>
-  </div>
-</ng-template>
+</app-modal-base>

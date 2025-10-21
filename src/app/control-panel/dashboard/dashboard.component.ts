@@ -69,6 +69,14 @@ interface SalesSource {
   note: string;
 }
 
+interface AgendaHighlight {
+  label: string;
+  value: string;
+  detail: string;
+  icon: string;
+  theme: 'primary' | 'success' | 'warning';
+}
+
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -160,6 +168,30 @@ export class DashboardComponent {
       crewLead: 'Marcos Paredes',
       status: 'Brief en revisión',
       statusClass: 'status-neutral'
+    }
+  ];
+
+  readonly agendaHighlights: AgendaHighlight[] = [
+    {
+      label: 'Eventos hoy',
+      value: '3',
+      detail: '1 pendiente de inicio',
+      icon: 'event_available',
+      theme: 'primary'
+    },
+    {
+      label: 'Staff asignado',
+      value: '12 / 15',
+      detail: '80% confirmado',
+      icon: 'group',
+      theme: 'success'
+    },
+    {
+      label: 'Alertas logísticas',
+      value: '2',
+      detail: 'Traslado y streaming',
+      icon: 'notification_important',
+      theme: 'warning'
     }
   ];
 

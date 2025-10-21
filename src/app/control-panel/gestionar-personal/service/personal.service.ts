@@ -8,7 +8,7 @@ import { Empleado, EmpleadoUpdateDto } from '../model/personal.model';
 // ❗ Opcionales: déjalos si usas esos endpoints; si no, elimínalos.
 export interface Cargo {
   idCargo: number;
-  cargo: string;
+  cargoNombre: string;
 }
 export type EmpleadoDisponible = Pick<
   Empleado,

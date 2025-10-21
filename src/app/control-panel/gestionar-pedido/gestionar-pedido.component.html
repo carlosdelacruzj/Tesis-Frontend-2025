@@ -8,8 +8,8 @@
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
       searchPlaceholder="Buscar: cliente, documento, estado…" emptyText="Sin resultados"
-       (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
-      [showCreateButton]="true" createButtonLabel="Registrar pedido" (createClick)="navigateToCreate()">
+      (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)" [showCreateButton]="true"
+      createButtonLabel="Registrar pedido">
 
       <ng-template appCell="Cliente" let-row>
         <span>{{ row.Cliente || '—' }}</span>
@@ -64,6 +64,10 @@
           <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); verPedido(row)"
             matTooltip="Ver detalle">
             <mat-icon>visibility</mat-icon>
+          </button>
+          <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); verPedido(row)"
+            matTooltip="Realizar Pago">
+            <mat-icon>request_quote</mat-icon>
           </button>
         </div>
       </ng-template>

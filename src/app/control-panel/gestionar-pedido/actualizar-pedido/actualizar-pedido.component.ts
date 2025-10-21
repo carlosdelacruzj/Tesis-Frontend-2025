@@ -9,8 +9,17 @@ import { of, take, finalize } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
+import { TableColumn } from 'src/app/components/table/table-base.component';
 
 type Tag = { nombre: string; direccion: string; usedAt?: number };
+type PedidoPaqueteSeleccionado = {
+  key: string | number;
+  eventKey: string | number | null;
+  ID?: number;
+  descripcion: string;
+  precio: number;
+  notas: string;
+};
 
 @Component({
   selector: 'app-actualizar-pedido',
@@ -21,7 +30,13 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   saving = false;
   // ====== Columnas ======
   columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas', 'Editar', 'Quitar'];
-  columnsToDisplay1 = ['Descripcion', 'Precio', 'Staff', 'Horas', 'Seleccionar'];
+  paquetesColumns: TableColumn<PaqueteRow>[] = [
+    { key: 'descripcion', header: 'Descripción', sortable: true },
+    { key: 'precio', header: 'Precio', sortable: true, class: 'text-end text-nowrap', width: '120px' },
+    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '140px' }
+  ];
 
   // ====== Data y catálogos ======
   servicios: any[] = [];
@@ -30,14 +45,12 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   eventoSeleccionado = 1;
 
   dataSource: MatTableDataSource<any> = new MatTableDataSource<any>([]);
-  dataSource1: MatTableDataSource<any> = new MatTableDataSource<any>([]);
+  paquetesRows: PaqueteRow[] = [];
 
   @ViewChild('sortUbic') sortUbic!: MatSort;
-  @ViewChild('sortPaq') sortPaq!: MatSort;
 
   private bindSorts() {
     if (this.sortUbic) this.dataSource.sort = this.sortUbic;
-    if (this.sortPaq) this.dataSource1.sort = this.sortPaq;
   }
 
   // ====== Estado general ======
@@ -59,15 +72,16 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   ubicacion = [{ ID: 0, dbId: 0, Direccion: '', Fecha: '', Hora: '', DireccionExacta: '', Notas: '' }];
 
   // ====== Paquetes seleccionados ======
-  selectedPaquetes: Array<{
-    key: string | number;
-    eventKey: string | number | null;
-    ID?: number;
-    descripcion: string;
-    precio: number;
-    notas: string;
-  }> = [];
+  selectedPaquetes: PedidoPaqueteSeleccionado[] = [];
   currentEventoKey: string | number | null = null;
+  selectedPaquetesColumns: TableColumn<PedidoPaqueteSeleccionado>[] = [
+    { key: 'descripcion', header: 'Descripción', sortable: false },
+    { key: 'precio', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' },
+    { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' },
+    { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-end text-nowrap', width: '140px' },
+    { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
+    { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
+  ];
 
   // ====== TAGS ======
   tagsPedido: Tag[] = [];
@@ -327,8 +341,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const obs: any = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getEventosServicio] devolvió undefined o no-Observable');
-      this.dataSource1.data = [];
-      this.bindSorts();
+      this.paquetesRows = [];
       return;
     }
     obs.pipe(
@@ -337,8 +350,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         return of([]); // fallback
       })
     ).subscribe((res: any) => {
-      this.dataSource1.data = res ?? [];
-      this.bindSorts();
+      this.paquetesRows = Array.isArray(res)
+        ? res.map(item => this.normalizePaqueteRow(item))
+        : [];
     });
   }
 
@@ -747,4 +761,25 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     );
   }
 
+  private normalizePaqueteRow(item: any): PaqueteRow {
+    const precio = Number(item?.precio ?? item?.Precio ?? item?.precioUnit ?? item?.precio_unitario);
+    const staff = Number(item?.staff ?? item?.Staff ?? item?.personal ?? item?.Personal);
+    const horas = Number(item?.horas ?? item?.Horas ?? item?.duration ?? item?.Duracion);
+
+    return {
+      descripcion: item?.descripcion ?? item?.Descripcion ?? item?.titulo ?? 'Paquete',
+      precio: Number.isFinite(precio) ? precio : null,
+      staff: Number.isFinite(staff) ? staff : null,
+      horas: Number.isFinite(horas) ? horas : null,
+      raw: item
+    };
+  }
+}
+
+interface PaqueteRow {
+  descripcion: string;
+  precio: number | null;
+  staff: number | null;
+  horas: number | null;
+  raw: any;
 }

@@ -8,6 +8,7 @@ import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, 
 import { CotizacionItemPayload, CotizacionPayload, ClienteBusquedaResultado, CotizacionContextoPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { TableColumn } from 'src/app/components/table/table-base.component';
+import swal from 'sweetalert2';
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -495,8 +496,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          this.snackBar.open('Cotizacion registrada correctamente.', 'Cerrar', { duration: 4000 });
-          this.router.navigate(['/home/gestionar-cotizaciones']);
+          void swal.fire({
+            icon: 'success',
+            title: 'Cotización registrada',
+            text: 'La cotización se registró correctamente.'
+          }).then(() => this.router.navigate(['/home/gestionar-cotizaciones']));
         },
         error: (err) => {
           console.error('[cotizacion] create', err);

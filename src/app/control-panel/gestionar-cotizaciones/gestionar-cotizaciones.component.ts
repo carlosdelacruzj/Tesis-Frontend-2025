@@ -248,6 +248,20 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                     this.clienteCreadoEnAceptacion = false;
                   }
                 });
+            } else {
+              let title = 'Estado actualizado';
+              let text = 'La cotización se actualizó correctamente.';
+              switch (destino) {
+                case 'Enviada':
+                  title = 'Cotización enviada';
+                  text = 'La cotización se marcó como enviada correctamente.';
+                  break;
+                case 'Rechazada':
+                  title = 'Cotización rechazada';
+                  text = 'La cotización se marcó como rechazada correctamente.';
+                  break;
+              }
+              swal.fire({ icon: 'success', title, text });
             }
           } else {
             this.clienteCreadoEnAceptacion = false;

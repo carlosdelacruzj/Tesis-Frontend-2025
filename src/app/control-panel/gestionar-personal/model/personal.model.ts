@@ -53,7 +53,7 @@ export interface Empleado {
   celular: string;
   documento: string;
   direccion: string;
-  autonomo: 'SI' | 'NO';
+  autonomo: 1 | 2;
   idCargo: number;
   cargo: string;
   idEstado: number;                                   // ← NUEVO

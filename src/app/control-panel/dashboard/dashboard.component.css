@@ -195,6 +195,64 @@
   color: #3b6ef5;
 }
 
+.agenda-snapshot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agenda-snapshot__item {
+  border: 1px solid rgba(31, 41, 55, 0.08);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.agenda-snapshot__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+.agenda-snapshot__label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #5b647a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.agenda-snapshot__value {
+  margin: 2px 0 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #1f2a44;
+}
+
+.agenda-snapshot__detail {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6c7385;
+}
+
+.agenda--primary .agenda-snapshot__icon {
+  background: linear-gradient(135deg, #3b6ef5, #4f83ff);
+}
+
+.agenda--success .agenda-snapshot__icon {
+  background: linear-gradient(135deg, #1f8f5f, #22a56d);
+}
+
+.agenda--warning .agenda-snapshot__icon {
+  background: linear-gradient(135deg, #f79e1b, #ffb547);
+}
+
 .table {
   margin-bottom: 0;
   font-size: 0.95rem;

@@ -292,86 +292,104 @@
                     </div>
 
                     <div class="row">
-                        <!-- #1: referenciar sort de esta tabla -->
-                        <table mat-table [dataSource]="dataSource1" matSort #sortPaq="matSort" class="table">
+                        <app-table-base-mejora
+                            [columns]="paquetesColumns"
+                            [data]="paquetesRows"
+                            [showSearch]="false"
+                            [showFooterInfo]="false"
+                            [showPagination]="false"
+                            [showPageSizeSelector]="false"
+                            [showCreateButton]="false"
+                            [pageSize]="paquetesRows.length || 10"
+                            [pageSizeOptions]="[paquetesRows.length || 10]"
+                            emptyText="Sin paquetes disponibles">
 
-                            <ng-container matColumnDef="Descripcion">
-                                <th mat-header-cell mat-sort-header *matHeaderCellDef class="text-center"> Descripcion </th>
-                                <td mat-cell *matCellDef="let element"> {{element.descripcion}} </td>
-                            </ng-container>
+                            <ng-template appCell="descripcion" let-row>
+                                {{ row.descripcion || '—' }}
+                            </ng-template>
 
-                            <ng-container matColumnDef="Precio">
-                                <th mat-header-cell mat-sort-header *matHeaderCellDef class="text-center"> Precio </th>
-                                <td mat-cell *matCellDef="let element" class="text-center"> {{element.precio}} </td>
-                            </ng-container>
-                            <ng-container matColumnDef="Staff">
-                                <th mat-header-cell mat-sort-header *matHeaderCellDef class="text-center"> Staff </th>
-                                <td mat-cell *matCellDef="let element" class="text-center"> {{element.staff}} </td>
-                            </ng-container>
-                            <ng-container matColumnDef="Horas">
-                                <th mat-header-cell mat-sort-header *matHeaderCellDef class="text-center"> Horas </th>
-                                <td mat-cell *matCellDef="let element" class="text-center"> {{element.horas}} </td>
-                            </ng-container>
+                            <ng-template appCell="precio" let-row>
+                                {{ row.precio != null ? (row.precio | number:'1.2-2') : '—' }}
+                            </ng-template>
 
-                            <ng-container matColumnDef="Seleccionar">
-                                <th mat-header-cell *matHeaderCellDef class="text-center"> Seleccionar </th>
-                                <td mat-cell *matCellDef="let element" class="text-center">
+                            <ng-template appCell="staff" let-row>
+                                {{ row.staff != null ? row.staff : '—' }}
+                            </ng-template>
+
+                            <ng-template appCell="horas" let-row>
+                                {{ row.horas != null ? row.horas : '—' }}
+                            </ng-template>
+
+                            <ng-template appCell="acciones" let-row>
+                                <div class="d-flex justify-content-center">
                                     <button type="button" class="btn btn-outline-primary btn-sm"
-                                        *ngIf="!isInSeleccion(element); else quitarBtn" (click)="addPaquete(element)">
+                                            *ngIf="!isInSeleccion(row.raw); else quitarBtn"
+                                            (click)="addPaquete(row.raw)">
                                         Agregar
                                     </button>
                                     <ng-template #quitarBtn>
                                         <button type="button" class="btn btn-outline-danger btn-sm"
-                                            (click)="removePaquete(pkgKey(element))">
+                                                (click)="removePaquete(pkgKey(row.raw))">
                                             Quitar
                                         </button>
                                     </ng-template>
-                                </td>
-                            </ng-container>
-                            <tr mat-header-row *matHeaderRowDef="columnsToDisplay1"></tr>
-                            <tr mat-row *matRowDef="let row; columns: columnsToDisplay1;"></tr>
-                        </table>
+                                </div>
+                            </ng-template>
+
+                        </app-table-base-mejora>
                     </div>
                     <div class="row mt-3" *ngIf="selectedPaquetes.length">
                         <div class="col">
                             <h6>Seleccionados ({{selectedPaquetes.length}})</h6>
 
-                            <table class="table table-sm align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>Descripción</th>
-                                        <th class="text-end">Precio</th>
-                                        <th class="text-center">Cant.</th>
-                                        <th class="text-end">Subtotal</th>
-                                        <th style="width:28%">Notas</th>
-                                        <th class="text-center">Quitar</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let it of selectedPaquetes">
-                                        <td>{{ it.descripcion }}</td>
-                                        <td class="text-end">{{ it.precio | number:'1.2-2' }}</td>
-                                        <td class="text-center">1</td>
-                                        <td class="text-end">{{ it.precio | number:'1.2-2' }}</td>
-                                        <td>
-                                            <input type="text" class="form-control form-control-sm"
-                                                placeholder="Notas del ítem (opcional)" [(ngModel)]="it.notas"
-                                                [ngModelOptions]="{standalone:true}" maxlength="255">
-                                        </td>
-                                        <td class="text-center">
-                                            <button type="button" class="btn btn-link text-danger p-0" title="Quitar"
-                                                (click)="removePaquete(it.key)">✖</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="3" class="text-end">Total</th>
-                                        <th class="text-end">{{ totalSeleccion | number:'1.2-2' }}</th>
-                                        <th colspan="2"></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                            <app-table-base-mejora
+                                [columns]="selectedPaquetesColumns"
+                                [data]="selectedPaquetes"
+                                [showSearch]="false"
+                                [showFooterInfo]="false"
+                                [showPagination]="false"
+                                [showPageSizeSelector]="false"
+                                [showCreateButton]="false"
+                                [pageSize]="selectedPaquetes.length || 10"
+                                [pageSizeOptions]="[selectedPaquetes.length || 10]"
+                                emptyText="Sin paquetes seleccionados">
+
+                                <ng-template appCell="descripcion" let-row>
+                                    {{ row.descripcion }}
+                                </ng-template>
+
+                                <ng-template appCell="precio" let-row>
+                                    <div class="text-end">{{ row.precio | number:'1.2-2' }}</div>
+                                </ng-template>
+
+                                <ng-template appCell="cantidad">
+                                    <div class="text-center">1</div>
+                                </ng-template>
+
+                                <ng-template appCell="subtotal" let-row>
+                                    <div class="text-end">{{ row.precio | number:'1.2-2' }}</div>
+                                </ng-template>
+
+                                <ng-template appCell="notas" let-row>
+                                    <input type="text"
+                                           class="form-control form-control-sm"
+                                           placeholder="Notas del ítem (opcional)"
+                                           [(ngModel)]="row.notas"
+                                           [ngModelOptions]="{standalone:true}"
+                                           maxlength="255">
+                                </ng-template>
+
+                                <ng-template appCell="quitar" let-row>
+                                    <button type="button" class="btn btn-link text-danger p-0" title="Quitar"
+                                            (click)="removePaquete(row.key)">
+                                        ✖
+                                    </button>
+                                </ng-template>
+
+                            </app-table-base-mejora>
+                            <div class="text-end mt-2">
+                                <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>
+                            </div>
                         </div>
                     </div>
 

@@ -12,7 +12,7 @@
   <div class="modal-dialog {{ sizeClass }}">
     <div class="modal-content" #dialog tabindex="-1">
       <!-- Header -->
-      <div class="modal-header">
+      <div class="modal-header" (mousedown)="onDragStart($event)">
         <!-- Slot opcional -->
         <ng-content select="[modal-header]"></ng-content>
 

@@ -40,7 +40,7 @@
       <section class="panel">
         <div class="panel__header">
           <h2>Eventos en producción</h2>
-          <button class="btn btn-link panel__action" type="button">Ver agenda completa</button>
+          <a class="btn btn-link panel__action" routerLink="agenda-operativa">Ver agenda completa</a>
         </div>
         <div class="table-responsive">
           <table class="table align-middle">
@@ -173,6 +173,24 @@
             </div>
           </li>
         </ul>
+      </section>
+      <section class="panel">
+        <div class="panel__header">
+          <h2>Resumen agenda de hoy</h2>
+          <a routerLink="agenda-operativa" class="btn btn-outline-primary btn-sm">Abrir agenda</a>
+        </div>
+        <div class="agenda-snapshot">
+          <div class="agenda-snapshot__item" *ngFor="let item of agendaHighlights" [ngClass]="'agenda--' + item.theme">
+            <div class="agenda-snapshot__icon">
+              <i class="material-icons">{{ item.icon }}</i>
+            </div>
+            <div>
+              <p class="agenda-snapshot__label">{{ item.label }}</p>
+              <p class="agenda-snapshot__value">{{ item.value }}</p>
+              <p class="agenda-snapshot__detail">{{ item.detail }}</p>
+            </div>
+          </div>
+        </div>
       </section>
     </aside>
   </div>
