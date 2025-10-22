@@ -1,12 +1,8 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ProyectoService } from '../service/proyecto.service';
-import { FormGroup, NgForm } from '@angular/forms';
-import { MatTableDataSource } from '@angular/material/table';
-import { Proyecto } from '../model/proyecto.model';
+import { NgForm } from '@angular/forms';
 import { PedidoService } from '../service/pedido.service';
-import { Pedido } from '../model/pedido.model';
 import { DateAdapter } from '@angular/material/core';
-import { DatePipe } from '@angular/common';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 interface Food {
@@ -32,8 +28,7 @@ export class AgregarProyectoComponent implements OnInit {
   constructor(
     public service: ProyectoService,
     public service2: PedidoService,
-    private dateAdapter: DateAdapter<Date>,
-    private datePipe: DatePipe
+    private dateAdapter: DateAdapter<Date>
   ) {
     this.dateAdapter.setLocale('es');
   }

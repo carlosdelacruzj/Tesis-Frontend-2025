@@ -7,10 +7,8 @@ import {
     ContentChildren,
     QueryList,
     Directive,
-    InputSignal,
     signal,
-    computed,
-    effect
+    computed
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';

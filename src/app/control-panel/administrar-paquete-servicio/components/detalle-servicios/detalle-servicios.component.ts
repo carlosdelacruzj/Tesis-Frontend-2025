@@ -3,7 +3,6 @@ import { NgForm } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { EventoAllServiciosService } from '../../service/detalle-servicios.service';
 import { EventoServicioService } from '../../service/evento-servicio.service';
-import { EventServiceComponent } from '../event-service/event-service.component';
 
 interface sServicios {
   ID: number;

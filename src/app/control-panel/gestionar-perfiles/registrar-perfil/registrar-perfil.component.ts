@@ -1,9 +1,6 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { PerfilService } from '../service/perfil.service';
-import { FormGroup, NgForm, NgModel, UntypedFormControl, Validators } from '@angular/forms';
-import { MatTableDataSource } from '@angular/material/table';
-import { Perfil } from '../model/perfil.model';
-import { DateAdapter } from '@angular/material/core';
+import { NgForm, UntypedFormControl, Validators } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 interface roles {

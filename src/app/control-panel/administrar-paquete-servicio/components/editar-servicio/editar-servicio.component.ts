@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { EventoAllServiciosService } from './../../service/detalle-servicios.service';
-import { EventoServicioService } from '../../service/evento-servicio.service';
 
 interface sServicios {
   ID: number;

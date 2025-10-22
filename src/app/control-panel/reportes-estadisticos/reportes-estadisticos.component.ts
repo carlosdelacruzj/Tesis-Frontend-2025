@@ -1,9 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { ReportesEstadisticos } from './services/reportes-estadisticos.service';
-import { Equipos, Proyecto, Data } from './models/reportes-estadisticos.model';
-import { single, single2, single4, single3 } from './data';
+import { Equipos, Proyecto } from './models/reportes-estadisticos.model';
 
 @Component({
   selector: 'app-reportes-estadisticos',

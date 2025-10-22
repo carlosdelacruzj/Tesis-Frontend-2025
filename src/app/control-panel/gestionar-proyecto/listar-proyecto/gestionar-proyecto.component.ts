@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { ProyectoService } from 'src/app/control-panel/gestionar-proyecto/service/proyecto.service';
 import { MatPaginator } from '@angular/material/paginator';
