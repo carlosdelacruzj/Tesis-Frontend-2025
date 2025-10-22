@@ -37,24 +37,78 @@
                         </mat-card-header>
                         <mat-card-content class="card-body">
                             <div class="form-group">
-                                <label class='col-form-label'>Documento de identidad</label>
-                                <div class="input-group mb-3">
-                                    <input type="text" class="form-control" name="dni" [(ngModel)]="dniCliente">
-                                    <div class="input-group-append">
-                                        <button (click)="buscarCliente(dniCliente)" type="button"
-                                            class="btn btn-danger">Buscar</button>
-                                    </div>
+                                <label class="col-form-label">Cliente</label>
+
+                                <div class="input-group mb-1">
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        placeholder="Buscar por nombre, documento, correo o teléfono"
+                                        [formControl]="clienteSearchControl"
+                                        [matAutocomplete]="clienteAuto">
+                                    <span class="input-group-text bg-white" *ngIf="clienteSearchLoading">
+                                        <span
+                                            class="spinner-border spinner-border-sm text-primary"
+                                            role="status"
+                                            aria-hidden="true"></span>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary"
+                                        (click)="limpiarBusqueda()"
+                                        [disabled]="clienteSearchLoading || (!clienteSeleccionado && !clienteBusquedaTermino)">
+                                        Limpiar
+                                    </button>
                                 </div>
+                                <small class="text-danger d-block mt-1" *ngIf="clienteSearchError">
+                                    {{ clienteSearchError }}
+                                </small>
+                                <small
+                                    class="text-muted d-block mt-1"
+                                    *ngIf="!clienteSearchLoading && !clienteSearchError && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSeleccionado">
+                                    Sin resultados para “{{ clienteBusquedaTermino }}”.
+                                </small>
+
+                                <mat-autocomplete
+                                    #clienteAuto="matAutocomplete"
+                                    [displayWith]="clienteDisplayFn"
+                                    (optionSelected)="onClienteSelected($event.option.value)">
+                                    <mat-option *ngFor="let cliente of clienteResultados" [value]="cliente">
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-semibold">
+                                                {{ resolveClienteNombre(cliente) }}
+                                            </span>
+                                            <small class="text-muted">
+                                                {{ resolveClienteContacto(cliente) }}
+                                                <span *ngIf="resolveClienteDocumento(cliente)">
+                                                    · {{ resolveClienteDocumento(cliente) }}
+                                                </span>
+                                            </small>
+                                        </div>
+                                    </mat-option>
+                                    <mat-option
+                                        *ngIf="!clienteSearchLoading && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1"
+                                        disabled>
+                                        Sin resultados para “{{ clienteBusquedaTermino }}”
+                                    </mat-option>
+                                </mat-autocomplete>
+
                             </div>
                             <div class="form-group">
-                                <label class='col-form-label'>Nombres</label>
-                                <input type="text" class="form-control" name="nombre" [(ngModel)]="infoCliente.nombre"
+                                <label class='col-form-label'>Documento de identidad</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    [value]="infoCliente?.documento || '-'"
                                     disabled>
                             </div>
                             <div class="form-group">
-                                <label class='col-form-label'>Apellidos</label>
-                                <input type="text" class="form-control" name="Apellido"
-                                    [(ngModel)]="infoCliente.apellido" disabled>
+                                <label class='col-form-label'>Celular</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    [value]="infoCliente?.celular || '-'"
+                                    disabled>
                             </div>
                         </mat-card-content>
                     </mat-card>

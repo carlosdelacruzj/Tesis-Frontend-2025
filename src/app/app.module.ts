@@ -40,16 +40,10 @@ import { GestionarClienteComponent } from './control-panel/gestionar-cliente/ges
 import { GestionarPerfilesComponent } from './control-panel/gestionar-perfiles/gestionar-perfiles.component';
 import { RegistrarPerfilComponent } from './control-panel/gestionar-perfiles/registrar-perfil/registrar-perfil.component';
 import { EditarPerfilComponent } from './control-panel/gestionar-perfiles/editar-perfil/editar-perfil.component';
-import { VerCalendarioComponent } from './control-panel/ver-calendario/ver-calendario.component';
-import { FullCalendarModule } from '@fullcalendar/angular';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import { DialogComponent } from './control-panel/ver-calendario/dialog/dialog.component';
 import { LandingComponent } from './landing/landing.component';
 import { GestionarCotizacionesComponent } from './control-panel/gestionar-cotizaciones/gestionar-cotizaciones.component';
 import { RegistrarCotizacionComponent } from './control-panel/gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
 import { EditarCotizacionComponent } from './control-panel/gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
-import { AgendaOperativaComponent } from './control-panel/agenda-operativa/agenda-operativa.component';
 import { CellTemplateDirective, TableBaseComponent } from './components/table/table-base.component';
 import { TableBaseMejoraComponent } from './components/table-base-mejora/table-base-mejora.component';
 import { ModalBaseComponent } from './components/modal-base/modal-base.component';
@@ -86,13 +80,10 @@ import { AddEventoComponent } from 'src/app/components/add-evento/add-evento.com
         RegistrarPerfilComponent,
         EditarPerfilComponent,
         DetallesAlquiladoComponent,
-        VerCalendarioComponent,
-        DialogComponent,
         LandingComponent,
         GestionarCotizacionesComponent,
         RegistrarCotizacionComponent,
         EditarCotizacionComponent,
-        AgendaOperativaComponent,
         AddEventoComponent,
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
@@ -109,8 +100,7 @@ import { AddEventoComponent } from 'src/app/components/add-evento/add-evento.com
         CellTemplateDirective,
         TableBaseComponent,
         TableBaseMejoraComponent,
-        ModalBaseComponent,
-        FullCalendarModule], providers: [
+        ModalBaseComponent], providers: [
             { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() },
             DatePipe,
             provideHttpClient(withInterceptorsFromDi())

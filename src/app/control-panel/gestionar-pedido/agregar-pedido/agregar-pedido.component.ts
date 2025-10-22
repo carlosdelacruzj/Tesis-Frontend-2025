@@ -1,12 +1,15 @@
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
+import { CotizacionService } from '../../gestionar-cotizaciones/service/cotizacion.service';
+import { ClienteBusquedaResultado } from '../../gestionar-cotizaciones/model/cotizacion.model';
 import swal from 'sweetalert2';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatSort } from '@angular/material/sort';
-import { of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { FormControl } from '@angular/forms';
+import { of, Subject } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table/table-base.component';
 
@@ -25,7 +28,7 @@ type PedidoPaqueteSeleccionado = {
   templateUrl: './agregar-pedido.component.html',
   styleUrls: ['./agregar-pedido.component.css']
 })
-export class AgregarPedidoComponent implements OnInit, AfterViewInit {
+export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy {
   // ====== Columnas ======
   columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas', 'Editar', 'Quitar'];
   paquetesColumns: TableColumn<PaqueteRow>[] = [
@@ -56,7 +59,14 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
   // ====== Estado general ======
   CodigoEmpleado: number = 1;
   infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
-  dniCliente: any;
+  dniCliente: string = '';
+  clienteResultados: ClienteBusquedaResultado[] = [];
+  clienteSearchLoading = false;
+  clienteSearchError = '';
+  clienteSeleccionado: ClienteBusquedaResultado | null = null;
+  clienteBusquedaTermino = '';
+  clienteSearchControl = new FormControl<string | ClienteBusquedaResultado>('');
+  private readonly destroy$ = new Subject<void>();
 
   // ====== Evento actual (inputs) ======
   Direccion: any;
@@ -91,6 +101,8 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
   constructor(
     public pedidoService: PedidoService,
     public visualizarService: VisualizarService,
+    private readonly cotizacionService: CotizacionService,
+    private readonly cdr: ChangeDetectorRef
   ) { }
 
   // ====== Ciclo de vida ======
@@ -103,11 +115,53 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
     this.fechaValidate(this.fechaCreate);
 
     if (this.dniCliente) this.loadTagsCliente();
+
+    this.clienteSearchControl.valueChanges
+      .pipe(
+        map(value => this.normalizeClienteTerm(value)),
+        tap(value => {
+          this.clienteBusquedaTermino = value;
+          this.clienteSearchError = '';
+          if (value.length <= 1) {
+            this.clienteResultados = [];
+            this.clienteSearchLoading = false;
+            if (!value) {
+              this.clienteSeleccionado = null;
+            }
+          }
+        }),
+        filter(value => value.length > 1),
+        debounceTime(250),
+        distinctUntilChanged(),
+        tap(() => {
+          this.clienteSearchLoading = true;
+        }),
+        switchMap(query =>
+          this.cotizacionService.buscarClientes(query).pipe(
+            catchError(err => {
+              console.error('[pedido] buscarClientes', err);
+              this.clienteSearchError = 'No pudimos cargar clientes.';
+              this.clienteSearchLoading = false;
+              return of([]);
+            })
+          )
+        ),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(result => {
+        this.clienteSearchLoading = false;
+        this.clienteResultados = Array.isArray(result) ? result : [];
+      });
   }
 
   ngAfterViewInit(): void {
     // Enlaza sorts cuando ya existen las vistas
     this.bindSorts();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // ====== Helpers TAGS ======
@@ -136,6 +190,11 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   loadTagsCliente() {
+    if (!this.dniCliente) {
+      this.tagsCliente = [];
+      return;
+    }
+
     try {
       const raw = localStorage.getItem(this.tagStorageKey);
       this.tagsCliente = raw ? JSON.parse(raw) : [];
@@ -145,6 +204,10 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   saveTagsCliente() {
+    if (!this.dniCliente) {
+      return;
+    }
+
     const max = 12;
     const arr = this.tagsCliente
       .sort((a: Tag, b: Tag) => (b.usedAt || 0) - (a.usedAt || 0))
@@ -245,7 +308,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   // ====== Cliente ======
-  getDataCliente(dni: number) {
+  getDataCliente(dni: number | string) {
     const obs: any = this.pedidoService.getDni?.(dni);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getDni] devolvió undefined o no-Observable');
@@ -257,19 +320,246 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
         return of([]); // fallback
       })
     ).subscribe((res: any) => {
-      if (res.length == 0) {
-        this.infoCliente;
-      } else {
-        this.infoCliente = res[0];
-        // console.log('dni', dni);
-        // console.log('infoCliente', this.infoCliente);
-        this.loadTagsCliente();
+      if (!Array.isArray(res) || res.length === 0) {
+        return;
       }
+      const raw = res[0] ?? {};
+      const nombre = this.toOptionalString(raw.nombre ?? raw.Nombre);
+      const apellido = this.toOptionalString(raw.apellido ?? raw.Apellido);
+      const documento = this.toOptionalString(raw.documento ?? raw.Documento ?? raw.numeroDocumento);
+      const correo = this.toOptionalString(raw.correo ?? raw.email ?? raw.Correo);
+      const celular = this.toOptionalString(raw.celular ?? raw.telefono ?? raw.Celular);
+      const direccion = this.toOptionalString(raw.direccion ?? raw.Direccion);
+      const idCliente = this.parseNumberNullable(raw.idCliente ?? raw.IdCliente ?? raw.id);
+      const idUsuario = this.parseNumberNullable(raw.idUsuario ?? raw.IdUsuario ?? raw.usuarioId);
+
+      this.infoCliente = {
+        nombre: nombre || this.infoCliente.nombre || '-',
+        apellido: apellido || this.infoCliente.apellido || '-',
+        celular: celular || this.infoCliente.celular || '-',
+        correo: correo || this.infoCliente.correo || '-',
+        documento: documento || this.infoCliente.documento || this.dniCliente || '-',
+        direccion: direccion || this.infoCliente.direccion || '-',
+        idCliente: idCliente ?? this.infoCliente.idCliente ?? 0,
+        idUsuario: idUsuario ?? this.infoCliente.idUsuario ?? 0
+      };
+
+      if (documento) {
+        this.dniCliente = documento;
+      }
+
+      this.loadTagsCliente();
     });
   }
 
-  buscarCliente(dni: number) {
-    this.getDataCliente(dni);
+  seleccionarCliente(cliente: ClienteBusquedaResultado): void {
+    if (!cliente) {
+      return;
+    }
+
+    this.clienteSeleccionado = cliente;
+    const documento = this.resolveClienteDocumento(cliente);
+    this.dniCliente = documento || '';
+    this.visualizarService.selectAgregarPedido.doc = this.dniCliente;
+    this.setInfoClienteFromResultado(cliente);
+    this.clienteResultados = [];
+    this.clienteSearchControl.setValue(cliente, { emitEvent: false });
+    this.clienteSearchControl.disable({ emitEvent: false });
+    this.clienteBusquedaTermino = this.resolveClienteNombre(cliente);
+    this.clienteSearchLoading = false;
+
+    this.loadTagsCliente();
+    this.cdr.detectChanges();
+  }
+
+  limpiarBusqueda(): void {
+    this.clienteSearchControl.setValue('', { emitEvent: false });
+    this.clienteBusquedaTermino = '';
+    this.dniCliente = '';
+    this.clienteResultados = [];
+    this.clienteSeleccionado = null;
+    this.clienteSearchError = '';
+    this.clienteSearchLoading = false;
+    this.infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
+    this.clienteSearchControl.enable({ emitEvent: false });
+    this.visualizarService.selectAgregarPedido.doc = '';
+    this.tagsCliente = [];
+    this.tagsPedido = [];
+  }
+
+  private normalizeClienteTerm(value: string | ClienteBusquedaResultado | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    return this.resolveClienteNombre(value).trim();
+  }
+
+  readonly clienteDisplayFn = (cliente: ClienteBusquedaResultado | string | null): string => {
+    if (!cliente) {
+      return '';
+    }
+    if (typeof cliente === 'string') {
+      return cliente;
+    }
+    return this.resolveClienteNombre(cliente);
+  };
+
+  onClienteSelected(cliente: ClienteBusquedaResultado): void {
+    this.seleccionarCliente(cliente);
+  }
+
+  private setInfoClienteFromResultado(cliente: ClienteBusquedaResultado): void {
+    if (!cliente) {
+      return;
+    }
+
+    const documento = this.resolveClienteDocumento(cliente);
+    const contacto = this.resolveClienteContacto(cliente);
+    const correo = this.resolveClienteCorreo(cliente);
+    const ids = this.extractClienteIds(cliente);
+    const nombrePreferido = this.resolveClienteNombre(cliente);
+    const { nombre, apellido } = this.deriveNombreApellido(cliente, nombrePreferido);
+
+    this.infoCliente = {
+      nombre: nombre || '-',
+      apellido: apellido || '-',
+      celular: contacto || '-',
+      correo: correo || '-',
+      documento: documento || '-',
+      direccion: (cliente.direccion as string) || '-',
+      idCliente: ids.idCliente ?? 0,
+      idUsuario: ids.idUsuario ?? 0
+    };
+  }
+
+  resolveClienteNombre(cliente?: ClienteBusquedaResultado | null): string {
+    if (!cliente) {
+      return '';
+    }
+    return [
+      cliente.nombreCompleto,
+      cliente.nombre,
+      cliente.razonSocial,
+      cliente.contacto,
+      cliente.email,
+      cliente.correo
+    ]
+      .map(value => this.toOptionalString(value))
+      .find(value => !!value) || '';
+  }
+
+  resolveClienteDocumento(cliente?: ClienteBusquedaResultado | null): string {
+    if (!cliente) {
+      return '';
+    }
+    return [
+      cliente.doc,
+      cliente.numeroDocumento,
+      cliente.identificador,
+      cliente.ruc,
+      cliente.codigo,
+      cliente.codigoCliente,
+      cliente.id,
+      cliente.idCliente
+    ]
+      .map(value => this.toOptionalString(value))
+      .find(value => !!value) || '';
+  }
+
+  resolveClienteContacto(cliente?: ClienteBusquedaResultado | null): string {
+    if (!cliente) {
+      return '';
+    }
+    return [
+      cliente.contacto,
+      cliente.celular,
+      cliente.telefono,
+      cliente.whatsapp,
+      cliente.email,
+      cliente.correo
+    ]
+      .map(value => this.toOptionalString(value))
+      .find(value => !!value) || '';
+  }
+
+  private resolveClienteCorreo(cliente?: ClienteBusquedaResultado | null): string {
+    if (!cliente) {
+      return '';
+    }
+    return [
+      cliente.email,
+      cliente.correo
+    ]
+      .map(value => this.toOptionalString(value))
+      .find(value => !!value) || '';
+  }
+
+  private deriveNombreApellido(cliente: ClienteBusquedaResultado, fallback: string): { nombre: string; apellido: string } {
+    const nombre = this.toOptionalString(cliente.nombre);
+    const apellido = this.toOptionalString(cliente.apellido);
+
+    if (nombre || apellido) {
+      return {
+        nombre: nombre || '',
+        apellido: apellido || ''
+      };
+    }
+
+    const base = this.toOptionalString(fallback);
+    if (!base) {
+      return { nombre: '', apellido: '' };
+    }
+
+    const tokens = base.split(/\s+/).filter(Boolean);
+    if (tokens.length === 1) {
+      return { nombre: tokens[0], apellido: '' };
+    }
+
+    return {
+      nombre: tokens.slice(0, -1).join(' '),
+      apellido: tokens.slice(-1).join(' ')
+    };
+  }
+
+  private extractClienteIds(cliente: ClienteBusquedaResultado): { idCliente?: number; idUsuario?: number } {
+    const idCliente = this.parseNumberNullable(cliente.id ?? cliente.idCliente ?? cliente['clienteId']);
+    const idUsuario = this.parseNumberNullable(cliente['idUsuario'] ?? cliente['usuarioId']);
+    return { idCliente: idCliente ?? undefined, idUsuario: idUsuario ?? undefined };
+  }
+
+  private toOptionalString(value: unknown): string | undefined {
+    if (value == null) {
+      return undefined;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed ? trimmed : undefined;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+    return undefined;
+  }
+
+  private parseNumberNullable(value: unknown): number | undefined {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    }
+    return undefined;
+  }
+
+  get clienteNombreCompleto(): string {
+    const nombre = this.toOptionalString(this.infoCliente?.nombre);
+    const apellido = this.toOptionalString(this.infoCliente?.apellido);
+    const texto = [nombre, apellido].filter(Boolean).join(' ').trim();
+    return texto || '-';
   }
 
   // ====== Catálogos ======
@@ -492,9 +782,9 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Enviar ======
   postPedido() {
-    if (!this.dniCliente) {
+    if (!this.infoCliente?.idCliente) {
       swal.fire({
-        text: 'Ingresa el DNI del cliente.',
+        text: 'Selecciona un cliente existente antes de registrar.',
         icon: 'warning',
         showCancelButton: false,
         customClass: { confirmButton: 'btn btn-warning' },

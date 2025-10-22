@@ -90,6 +90,39 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   // ====== Pedido actual ======
   private pedidoId!: number;
 
+  private toOptionalString(value: unknown): string | undefined {
+    if (value == null) {
+      return undefined;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed ? trimmed : undefined;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+    return undefined;
+  }
+
+  get clienteNombreCompleto(): string {
+    const nombre = this.toOptionalString(this.infoCliente?.nombre);
+    const apellido = this.toOptionalString(this.infoCliente?.apellido);
+    const texto = [nombre, apellido].filter(Boolean).join(' ').trim();
+    return texto || '-';
+  }
+
+  get clienteDocumento(): string {
+    return (
+      this.toOptionalString(this.infoCliente?.documento) ??
+      this.toOptionalString(this.dniCliente) ??
+      '-'
+    );
+  }
+
+  get clienteCelular(): string {
+    return this.toOptionalString(this.infoCliente?.celular) ?? '-';
+  }
+
   constructor(
     public pedidoService: PedidoService,
     public visualizarService: VisualizarService,

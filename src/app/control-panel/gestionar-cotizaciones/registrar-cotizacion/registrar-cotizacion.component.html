@@ -13,64 +13,51 @@
 
               <!-- ===== Cliente existente (Autocomplete) ===== -->
               <div class="form-group mb-3">
-                <label class="col-form-label d-flex justify-content-between align-items-center">
-                  <span>Cliente existente (opcional)</span>
-                  <span class="limpiar-seleccion-link"
-                        role="button"
-                        tabindex="0"
-                        (click)="clearClienteSeleccionado()"
-                        (keydown.enter)="clearClienteSeleccionado()"
-                        (keydown.space)="clearClienteSeleccionado()">
-                    Limpiar selección
-                  </span>
-                </label>
+                <label class="col-form-label">Cliente existente (opcional)</label>
 
-                <mat-form-field appearance="outline" class="w-100">
-                  <mat-label>Buscar por nombre, razón social o contacto</mat-label>
+                <div class="input-group mb-1">
                   <input type="text"
-                         matInput
+                         class="form-control"
+                         placeholder="Buscar por nombre, razón social o contacto"
                          [formControl]="clienteSearchControl"
-                         [matAutocomplete]="auto"
-                         [attr.aria-describedby]="'cliente-ayuda cliente-error'">
-
-                  <!-- Loading spinner dentro del input -->
-                  <mat-icon matSuffix *ngIf="clienteSearchLoading" class="me-1">
-                    <mat-progress-spinner diameter="16" mode="indeterminate"></mat-progress-spinner>
-                  </mat-icon>
-
-                  <!-- Estado / ayuda -->
-                  <mat-hint id="cliente-ayuda" *ngIf="!clienteSearchLoading && !clienteSearchError">
-                    Escribe 2+ letras para buscar.
-                  </mat-hint>
-                  <mat-error id="cliente-error" *ngIf="clienteSearchError">
-                    {{ clienteSearchError }}
-                  </mat-error>
-
-                  <mat-autocomplete #auto="matAutocomplete"
-                                    [displayWith]="clienteDisplay"
-                                    (optionSelected)="onClienteSelected($event.option.value)">
-                    <mat-option *ngFor="let c of clienteResultados" [value]="c">
-                      <div class="d-flex flex-column">
-                        <span class="fw-semibold">{{ (c.nombreCompleto || c.nombre || c.razonSocial || c.contacto || c.email) }}</span>
-                        <small class="text-muted">
-                          {{ resolveClienteContacto(c) }} <span *ngIf="resolveClienteDocumento(c)">· {{ resolveClienteDocumento(c) }}</span>
-                        </small>
-                      </div>
-                    </mat-option>
-                    <mat-option *ngIf="!clienteSearchLoading && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1" disabled>
-                      Sin resultados para “{{ clienteBusquedaTermino }}”
-                    </mat-option>
-                  </mat-autocomplete>
-                </mat-form-field>
-
-                <!-- Chip de selección (si hay cliente seleccionado) -->
-                <div *ngIf="clienteSeleccionado" class="mt-2">
-                  <span class="badge bg-primary-subtle text-primary">
-                    Seleccionado:
-                    {{ resolveClienteNombre(clienteSeleccionado) }}
-                    <span *ngIf="resolveClienteContacto(clienteSeleccionado)"> · {{ resolveClienteContacto(clienteSeleccionado) }}</span>
+                         [matAutocomplete]="auto">
+                  <span class="input-group-text bg-white" *ngIf="clienteSearchLoading">
+                    <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
                   </span>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="clearClienteSeleccionado()"
+                    [disabled]="clienteSearchLoading || (!clienteSeleccionado && !clienteBusquedaTermino)">
+                    Limpiar
+                  </button>
                 </div>
+
+                <small class="text-danger d-block mt-1" *ngIf="clienteSearchError">
+                  {{ clienteSearchError }}
+                </small>
+                <small class="text-muted d-block mt-1"
+                       *ngIf="!clienteSearchLoading && !clienteSearchError && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled">
+                  Sin resultados para “{{ clienteBusquedaTermino }}”.
+                </small>
+
+                <mat-autocomplete #auto="matAutocomplete"
+                                  [displayWith]="clienteDisplay"
+                                  (optionSelected)="onClienteSelected($event.option.value)">
+                  <mat-option *ngFor="let c of clienteResultados" [value]="c">
+                    <div class="d-flex flex-column">
+                      <span class="fw-semibold">{{ (c.nombreCompleto || c.nombre || c.razonSocial || c.contacto || c.email) }}</span>
+                      <small class="text-muted">
+                        {{ resolveClienteContacto(c) }} <span *ngIf="resolveClienteDocumento(c)">· {{ resolveClienteDocumento(c) }}</span>
+                      </small>
+                    </div>
+                  </mat-option>
+                  <mat-option
+                    *ngIf="!clienteSearchLoading && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled"
+                    disabled>
+                    Sin resultados para “{{ clienteBusquedaTermino }}”
+                  </mat-option>
+                </mat-autocomplete>
               </div>
               <!-- ===== Fin Cliente existente (Autocomplete) ===== -->
               <div class="form-group">

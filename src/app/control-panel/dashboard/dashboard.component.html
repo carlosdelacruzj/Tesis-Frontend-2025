@@ -10,7 +10,10 @@
     <div class="dashboard-header__meta">
       <span class="dashboard-header__week">{{ dashboardMeta.weekRange }}</span>
       <span class="dashboard-header__update">{{ dashboardMeta.lastUpdate }}</span>
-      <button class="btn btn-dark dashboard-header__cta" type="button">Nueva cotización</button>
+      <button class="btn btn-dark dashboard-header__cta" type="button"
+        routerLink="/home/gestionar-cotizaciones/registrar">
+        Nueva cotización
+      </button>
     </div>
   </header>
 
@@ -21,14 +24,11 @@
         <span class="summary-card__chip">{{ card.period }}</span>
       </div>
       <div class="summary-card__value">{{ card.value }}</div>
-      <div
-        class="summary-card__trend"
-        [ngClass]="{
+      <div class="summary-card__trend" [ngClass]="{
           'is-up': card.trend === 'up',
           'is-down': card.trend === 'down',
           'is-flat': card.trend === 'flat'
-        }"
-      >
+        }">
         <span class="summary-card__trend-value">{{ card.change }}</span>
         <span class="summary-card__trend-caption">{{ card.subtitle }}</span>
       </div>
@@ -144,13 +144,10 @@
           <h2>Canales de captación</h2>
         </div>
         <ul class="sales-sources">
-          <li
-            *ngFor="let source of salesSources"
-            [ngClass]="{
+          <li *ngFor="let source of salesSources" [ngClass]="{
               'is-up': source.trend === 'up',
               'is-down': source.trend === 'down'
-            }"
-          >
+            }">
             <div class="sales-sources__channel">{{ source.channel }}</div>
             <div class="sales-sources__meta">
               <span class="sales-sources__value">{{ source.contribution }}</span>

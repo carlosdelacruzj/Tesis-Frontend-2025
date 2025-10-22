@@ -9,7 +9,7 @@
     <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
       searchPlaceholder="Buscar: cliente, documento, estado…" emptyText="Sin resultados"
       (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)" [showCreateButton]="true"
-      createButtonLabel="Registrar pedido">
+      createButtonLabel="Registrar pedido" (createClick)="navigateToCreate()">
 
       <ng-template appCell="Cliente" let-row>
         <span>{{ row.Cliente || '—' }}</span>

@@ -21,11 +21,9 @@ import { GestionarClienteComponent } from './gestionar-cliente/gestionar-cliente
 import { GestionarPerfilesComponent } from './gestionar-perfiles/gestionar-perfiles.component';
 import { RegistrarPerfilComponent } from './gestionar-perfiles/registrar-perfil/registrar-perfil.component';
 import { EditarPerfilComponent } from './gestionar-perfiles/editar-perfil/editar-perfil.component';
-import { VerCalendarioComponent } from './ver-calendario/ver-calendario.component';
 import { GestionarCotizacionesComponent } from './gestionar-cotizaciones/gestionar-cotizaciones.component';
 import { RegistrarCotizacionComponent } from './gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
 import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
-import { AgendaOperativaComponent } from './agenda-operativa/agenda-operativa.component';
 
 const routes: Routes = [
   {
@@ -81,8 +79,6 @@ const routes: Routes = [
        { path: 'gestionar-cotizaciones', component: GestionarCotizacionesComponent },
       { path: 'gestionar-cotizaciones/registrar', component: RegistrarCotizacionComponent },
       { path: 'gestionar-cotizaciones/editar/:id', component: EditarCotizacionComponent },
-      { path: 'agenda-operativa', component: AgendaOperativaComponent },
-       { path: 'ver-calendario', component: VerCalendarioComponent },
       { path: '**', pathMatch: 'full', redirectTo: 'dashboard' },
 
     ]

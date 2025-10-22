@@ -37,22 +37,30 @@
             </mat-card-header>
             <mat-card-content class="card-body">
               <div class="form-group">
-                <label class='col-form-label'>Documento de identidad</label>
-                <div class="input-group mb-3">
-                  <input type="text" class="form-control" name="dni" [(ngModel)]="dniCliente" disabled>
-                  <!-- <div class="input-group-append">
-                    <button (click)="buscarCliente(dniCliente)" type="button"
-                            class="btn btn-danger">Buscar</button>
-                  </div> -->
+                <label class="col-form-label">Cliente</label>
+                <div class="input-group mb-1">
+                  <input
+                    type="text"
+                    class="form-control"
+                    [value]="clienteNombreCompleto"
+                    disabled>
                 </div>
               </div>
               <div class="form-group">
-                <label class='col-form-label'>Nombres</label>
-                <input type="text" class="form-control" name="nombre" [(ngModel)]="infoCliente.nombre" disabled>
+                <label class='col-form-label'>Documento de identidad</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="clienteDocumento"
+                  disabled>
               </div>
               <div class="form-group">
-                <label class='col-form-label'>Apellidos</label>
-                <input type="text" class="form-control" name="Apellido" [(ngModel)]="infoCliente.apellido" disabled>
+                <label class='col-form-label'>Celular</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="clienteCelular"
+                  disabled>
               </div>
             </mat-card-content>
           </mat-card>

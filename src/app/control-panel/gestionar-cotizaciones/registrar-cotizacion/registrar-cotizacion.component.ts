@@ -70,7 +70,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   clienteSeleccionado: ClienteBusquedaResultado | null = null;
   clienteBusquedaTermino = '';
 
-  clienteDisplay = (cliente?: ClienteBusquedaResultado | string | null): string => {
+  readonly clienteDisplay = (cliente?: ClienteBusquedaResultado | string | null): string => {
     if (!cliente) {
       return '';
     }
@@ -217,6 +217,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.form.patchValue(patch, { emitEvent: false });
     }
     this.setClienteControlsDisabled(true);
+    this.clienteSearchControl.disable({ emitEvent: false });
     this.clienteResultados = [];
     this.clienteSearchLoading = false;
     this.clienteSearchError = '';
@@ -232,6 +233,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.clienteResultados = [];
     this.clienteSearchError = '';
     this.clienteSearchLoading = false;
+    this.clienteSearchControl.enable({ emitEvent: false });
   }
 
   private initClienteBusqueda(): void {

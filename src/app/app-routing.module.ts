@@ -17,7 +17,6 @@ import { AdministrarEquiposComponent } from './control-panel/administrar-equipos
 import { GestionarPersonalComponent } from './control-panel/gestionar-personal/gestionar-personal.component';
 import { ListarportipoComponent } from './control-panel/administrar-equipos/listarportipo/listarportipo.component';
 import { ValidarTokenGuard } from './guards/validar-token.guard';
-import { VerCalendarioComponent } from './control-panel/ver-calendario/ver-calendario.component';
 import { LandingComponent } from './landing/landing.component';
 /* 
 const routes: Routes = [
