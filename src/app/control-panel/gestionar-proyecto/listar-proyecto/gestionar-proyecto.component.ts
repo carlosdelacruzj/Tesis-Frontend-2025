@@ -8,7 +8,7 @@ import { PedidoService } from '../service/pedido.service';
 import { Pedido, Pedido2 } from '../model/pedido.model';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { NgForm } from '@angular/forms';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { formatDisplayDate } from '../../../shared/utils/date-utils';
 
 @Component({
@@ -165,7 +165,7 @@ export class GestionarProyectoComponent implements OnInit {
 
     this.service.updateProyecto(data).subscribe((res) => {
       this.getProyecto();
-      swal.fire({
+      Swal.fire({
         text: 'Se actulizó al empleado exitosamente',
         icon: 'success',
         showCancelButton: false,
@@ -177,7 +177,7 @@ export class GestionarProyectoComponent implements OnInit {
     },
       (err) => {
         console.error(err)
-        swal.fire({
+        Swal.fire({
           text: 'Ocurrió un error, volver a intentar.',
           icon: 'warning',
           showCancelButton: false,

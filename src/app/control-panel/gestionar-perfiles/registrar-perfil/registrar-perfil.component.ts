@@ -4,7 +4,7 @@ import { FormGroup, NgForm, NgModel, UntypedFormControl, Validators } from '@ang
 import { MatTableDataSource } from '@angular/material/table';
 import { Perfil } from '../model/perfil.model';
 import { DateAdapter } from '@angular/material/core';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 interface roles {
   PK_Rol_Cod: number;
@@ -47,7 +47,7 @@ export class RegistrarPerfilComponent implements OnInit {
     this.service.postPermiso(data).subscribe(
       (res) => { 
       this.clear(PerfilForm);
-      swal.fire({
+      Swal.fire({
         text: 'Registro exitoso',
         icon: 'success',
         showCancelButton: false,
@@ -58,7 +58,7 @@ export class RegistrarPerfilComponent implements OnInit {
     });
     },
       (err) => {console.error(err)
-        swal.fire({
+        Swal.fire({
           text: 'Ocurrió un error, volver a intentar.',
           icon: 'warning',
           showCancelButton: false,

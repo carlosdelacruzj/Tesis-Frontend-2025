@@ -5,7 +5,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { AdministrarEquiposService } from '../service/service.service';
 import { NgbModalConfig, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { NgForm } from '@angular/forms';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { formatDate } from '@angular/common';
 import { take, map } from 'rxjs/operators';
 
@@ -110,7 +110,7 @@ addEquipo(equipoForm: NgForm) {
     console.log('EXISTE: ', this.existe, serie);
 
     if (this.existe === 1) {
-      swal.fire({
+      Swal.fire({
         text: 'La serie ingresada ya existe',
         icon: 'warning',
         showCancelButton: false,
@@ -121,7 +121,7 @@ addEquipo(equipoForm: NgForm) {
     }
 
     // this.existe === 0
-    swal
+    Swal
       .fire({
         title: 'Esta seguro del registro?',
         text: 'El equipo se registrara con el modelo ' + this.Modelo,
@@ -135,7 +135,7 @@ addEquipo(equipoForm: NgForm) {
       .then((options) => {
         if (!options.isConfirmed) return;
 
-        swal.fire({
+        Swal.fire({
           text: 'Registro exitoso',
           icon: 'success',
           showCancelButton: false,
@@ -158,7 +158,7 @@ addEquipo(equipoForm: NgForm) {
           },
           (err) => {
             console.error(err);
-            swal.fire({
+            Swal.fire({
               text: 'Ocurrió un error, volver a intentar.',
               icon: 'warning',
               showCancelButton: false,

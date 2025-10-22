@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
 import { Cliente } from './model/cliente.model';
@@ -150,7 +150,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.modalRegistroLoading = false;
-          swal.fire({
+          Swal.fire({
             text: 'Registro exitoso',
             icon: 'success',
             showCancelButton: false,
@@ -217,7 +217,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
             ? (res.message || 'Ocurrió un error, volver a intentar.')
             : 'Actualización exitosa';
 
-          swal.fire({
+          Swal.fire({
             text: msg,
             icon: isBackendError ? 'warning' : 'success',
             showCancelButton: false,

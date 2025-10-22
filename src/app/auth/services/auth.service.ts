@@ -5,7 +5,7 @@ import { catchError, map, tap } from "rxjs/operators";
 
 import { AuthResponse, Usuario } from '../interfaces/auth.interface';
 import { Observable, of } from 'rxjs';
-import Swal from 'sweetalert2'
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js'
  
 
 @Injectable({

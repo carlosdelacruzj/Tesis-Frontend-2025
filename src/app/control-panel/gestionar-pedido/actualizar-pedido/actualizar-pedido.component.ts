@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatSort } from '@angular/material/sort';
 import { of, take, finalize } from 'rxjs';
@@ -134,7 +134,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.pedidoId = +(this.route.snapshot.paramMap.get('id') || 0);
     if (!this.pedidoId) {
-      swal.fire({
+      Swal.fire({
         text: 'ID de pedido inválido.',
         icon: 'error',
         showCancelButton: false,
@@ -481,7 +481,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.norm(u.Direccion) === this.norm(direccion || '')
     );
     if (yaExiste) {
-      swal.fire({
+      Swal.fire({
         text: 'Ya existe un evento con la misma fecha, hora y ubicación.',
         icon: 'warning',
         showCancelButton: false,
@@ -512,7 +512,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   async deleteElement(p: any, c: any) {
     const fila = this.ubicacion.find(x => x.Hora == c && x.Direccion == p);
-    const { isConfirmed } = await swal.fire({
+    const { isConfirmed } = await Swal.fire({
       title: '¿Eliminar ubicación?',
       html: `<div style="text-align:left">
             <b>Fecha:</b> ${fila?.Fecha || '-'}<br>
@@ -555,7 +555,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     obs.pipe(
       catchError((err: any) => {
         console.error('[getPedidoById] error', err);
-        swal.fire({
+        Swal.fire({
           text: 'No se pudo cargar el pedido.',
           icon: 'error',
           showCancelButton: false,
@@ -655,7 +655,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (!this.pedidoId) return;
 
     if (!this.infoCliente?.idCliente) {
-      swal.fire({
+      Swal.fire({
         text: 'El pedido debe tener un cliente válido.',
         icon: 'warning',
         showCancelButton: false,
@@ -666,7 +666,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
 
     if (!this.ubicacion?.length || !this.ubicacion.some(u => (u?.Direccion || '').trim())) {
-      swal.fire({
+      Swal.fire({
         text: 'Agrega al menos una ubicación válida antes de actualizar.',
         icon: 'warning',
         showCancelButton: false,
@@ -677,7 +677,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
 
     if (!this.selectedPaquetes?.length) {
-      swal.fire({
+      Swal.fire({
         text: 'Selecciona al menos un paquete/ítem antes de actualizar.',
         icon: 'warning',
         showCancelButton: false,
@@ -730,7 +730,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const horaInvalida = payload.eventos.some(e => !/^\d{2}:\d{2}:\d{2}$/.test(e.hora));
     const fechaInvalida = payload.eventos.some(e => !/^\d{4}-\d{2}-\d{2}$/.test(e.fecha));
     if (horaInvalida || fechaInvalida) {
-      swal.fire({
+      Swal.fire({
         text: 'Revisa el formato de fecha (YYYY-MM-DD) y hora (HH:mm:ss) en los eventos.',
         icon: 'warning',
         showCancelButton: false,
@@ -747,7 +747,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const obs: any = this.visualizarService.updatePedido?.(this.pedidoId, payload);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.error('[updatePedido] no disponible');
-      swal.fire({
+      Swal.fire({
         text: 'No se pudo enviar la actualización.',
         icon: 'error',
         showCancelButton: false,
@@ -757,12 +757,12 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       return;
     }
     // Mostrar loading inmediatamente después de confirmar que obs existe
-    swal.fire({
+    Swal.fire({
       title: 'Actualizando...',
       text: 'Por favor espera unos segundos',
       allowOutsideClick: false,
       didOpen: () => {
-        swal.showLoading();
+        Swal.showLoading();
       }
     });
     this.saving = true; // ← activa el candado SOLO cuando ya vas a llamar al API
@@ -772,7 +772,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       finalize(() => { this.saving = false; }) // ← libéralo siempre
     ).subscribe(
       (res: any) => {
-        swal.fire({
+        Swal.fire({
           text: 'Pedido actualizado correctamente.',
           icon: 'success',
           showCancelButton: false,
@@ -783,7 +783,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       },
       (err: any) => {
         console.error('[updatePedido] error', err);
-        swal.fire({
+        Swal.fire({
           text: 'Ocurrió un error al actualizar, vuelve a intentar.',
           icon: 'warning',
           showCancelButton: false,

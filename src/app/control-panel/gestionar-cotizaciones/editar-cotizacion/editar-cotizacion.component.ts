@@ -8,7 +8,7 @@ import { Cotizacion, CotizacionItemPayload, CotizacionPayload } from '../model/c
 import { CotizacionService } from '../service/cotizacion.service';
 import { formatDisplayDate, formatIsoDate } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table/table-base.component';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -372,7 +372,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          void swal.fire({
+          void Swal.fire({
             icon: 'success',
             title: 'Cotización actualizada',
             text: 'Los cambios se guardaron correctamente.'

@@ -3,7 +3,7 @@ import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { AdministrarEquiposService } from '../service/service.service';
 import { NgForm } from '@angular/forms';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { formatDate } from '@angular/common';
 import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
 
@@ -130,7 +130,7 @@ export class DetallesAlquiladoComponent implements OnInit {
   }
   //Actualizar equipo
   updateAlquilado(equipoForm: NgForm) {
-    swal
+    Swal
       .fire({
         title: 'Esta seguro del cambio?',
         icon: 'warning',
@@ -142,7 +142,7 @@ export class DetallesAlquiladoComponent implements OnInit {
       })
       .then((options) => {
         if (options.isConfirmed) {
-          swal.fire({
+          Swal.fire({
             text: 'Cambio exitoso',
             icon: 'success',
             showCancelButton: false,
@@ -164,7 +164,7 @@ export class DetallesAlquiladoComponent implements OnInit {
             },
             (err) => {
               console.error(err);
-              swal.fire({
+              Swal.fire({
                 text: 'Ocurrió un error, volver a intentar.',
                 icon: 'warning',
                 showCancelButton: false,

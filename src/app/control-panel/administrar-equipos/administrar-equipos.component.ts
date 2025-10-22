@@ -3,7 +3,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
 import { AdministrarEquiposService } from './service/service.service';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
 
 interface TEquipo {
@@ -253,7 +253,7 @@ export class AdministrarEquiposComponent implements OnInit {
     console.log(this.existe)
     //inicio
     if (this.existe === 1) {
-      swal.fire({
+      Swal.fire({
         text: 'La serie ingresada ya existe',
         icon: 'warning',
         showCancelButton: false,
@@ -263,7 +263,7 @@ export class AdministrarEquiposComponent implements OnInit {
         buttonsStyling: false,
       });
     } else if (this.existe === 0) {//FINNNN
-      swal
+      Swal
         .fire({
           title: 'Esta seguro del registro?',
           icon: 'warning',
@@ -275,7 +275,7 @@ export class AdministrarEquiposComponent implements OnInit {
         })
         .then((options) => {
           if (options.isConfirmed) {
-            swal.fire({
+            Swal.fire({
               text: 'Registro exitoso',
               icon: 'success',
               showCancelButton: false,
@@ -306,7 +306,7 @@ export class AdministrarEquiposComponent implements OnInit {
               },
               (err) => {
                 console.error(err);
-                swal.fire({
+                Swal.fire({
                   text: 'Ocurrió un error, volver a intentar.',
                   icon: 'warning',
                   showCancelButton: false,

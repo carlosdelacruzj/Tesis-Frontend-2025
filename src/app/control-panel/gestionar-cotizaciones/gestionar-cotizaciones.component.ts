@@ -12,7 +12,7 @@ import { TableColumn } from 'src/app/components/table/table-base.component';
 // Util: convertir assets a base64
 import { urlToBase64 } from 'src/app/utils/url-to-base64';
 import { HttpClient } from '@angular/common/http';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 @Component({
   selector: 'app-gestionar-cotizaciones',
@@ -231,7 +231,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                     const texto = this.clienteCreadoEnAceptacion
                       ? `Nuevo cliente registrado y cotización aceptada. ${baseTexto}`
                       : `Cotización aceptada. ${baseTexto}`;
-                    swal.fire({
+                    Swal.fire({
                       icon: 'success',
                       title: 'Proceso completado',
                       text: texto
@@ -240,7 +240,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                   },
                   error: err => {
                     console.error('[cotizaciones] migrar a pedido falló', err);
-                    swal.fire({
+                    Swal.fire({
                       icon: 'error',
                       title: 'No pudimos crear el pedido',
                       text: err?.message ?? 'Intenta nuevamente más tarde.'
@@ -261,7 +261,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                   text = 'La cotización se marcó como rechazada correctamente.';
                   break;
               }
-              swal.fire({ icon: 'success', title, text });
+              Swal.fire({ icon: 'success', title, text });
             }
           } else {
             this.clienteCreadoEnAceptacion = false;

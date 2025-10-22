@@ -4,7 +4,7 @@ import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
 import { CotizacionService } from '../../gestionar-cotizaciones/service/cotizacion.service';
 import { ClienteBusquedaResultado } from '../../gestionar-cotizaciones/model/cotizacion.model';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatSort } from '@angular/material/sort';
 import { FormControl } from '@angular/forms';
@@ -634,7 +634,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
 
   addPaquete(el: any, eventoKey: any = this.currentEventoKey) {
     if (this.isInSeleccion(el, eventoKey)) {
-      swal.fire({
+      Swal.fire({
         text: 'Ya seleccionaste este paquete para este evento.',
         icon: 'info',
         showCancelButton: false,
@@ -713,7 +713,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       this.norm(u.Direccion) === this.norm(direccion || '')
     );
     if (yaExiste) {
-      swal.fire({
+      Swal.fire({
         text: 'Ya existe un evento con la misma fecha, hora y ubicación.',
         icon: 'warning',
         showCancelButton: false,
@@ -747,7 +747,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
 
   async deleteElement(p: any, c: any) {
     const fila = this.ubicacion.find(x => x.Hora == c && x.Direccion == p);
-    const { isConfirmed } = await swal.fire({
+    const { isConfirmed } = await Swal.fire({
       title: '¿Eliminar ubicación?',
       html: `<div style="text-align:left">
             <b>Fecha:</b> ${fila?.Fecha || '-'}<br>
@@ -783,7 +783,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   // ====== Enviar ======
   postPedido() {
     if (!this.infoCliente?.idCliente) {
-      swal.fire({
+      Swal.fire({
         text: 'Selecciona un cliente existente antes de registrar.',
         icon: 'warning',
         showCancelButton: false,
@@ -795,7 +795,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     // ====== Validaciones previas ======
     const primera = this.ubicacion.find(u => (u?.Direccion || '').trim());
     if (!primera) {
-      swal.fire({
+      Swal.fire({
         text: 'Agrega al menos una ubicación válida antes de registrar.',
         icon: 'warning',
         showCancelButton: false,
@@ -806,7 +806,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     }
 
     if (!this.selectedPaquetes?.length) {
-      swal.fire({
+      Swal.fire({
         text: 'Selecciona al menos un paquete/ítem antes de registrar.',
         icon: 'warning',
         showCancelButton: false,
@@ -863,7 +863,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
 
     // ====== Validaciones de coherencia (extra) ======
     if (!payload.eventos.length) {
-      swal.fire({
+      Swal.fire({
         text: 'Debes registrar al menos un evento (fecha, hora y ubicación).',
         icon: 'warning',
         showCancelButton: false,
@@ -875,7 +875,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     const horaInvalida = payload.eventos.some(e => !/^\d{2}:\d{2}:\d{2}$/.test(e.hora));
     const fechaInvalida = payload.eventos.some(e => !/^\d{4}-\d{2}-\d{2}$/.test(e.fecha));
     if (horaInvalida || fechaInvalida) {
-      swal.fire({
+      Swal.fire({
         text: 'Revisa el formato de fecha (YYYY-MM-DD) y hora (HH:mm:ss) en los eventos.',
         icon: 'warning',
         showCancelButton: false,
@@ -894,7 +894,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     // ====== Envío ======
     this.visualizarService.postPedidos(payload).subscribe(
       (res) => {
-        swal.fire({
+        Swal.fire({
           text: 'Registro exitoso',
           icon: 'success',
           showCancelButton: false,
@@ -904,7 +904,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       },
       (err) => {
         console.error('[postPedidos] error', err);
-        swal.fire({
+        Swal.fire({
           text: 'Ocurrió un error, volver a intentar.',
           icon: 'warning',
           showCancelButton: false,

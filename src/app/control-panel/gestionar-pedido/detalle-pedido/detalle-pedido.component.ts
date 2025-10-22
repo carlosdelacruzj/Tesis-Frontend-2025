@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { MatSort } from '@angular/material/sort';
 import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -110,7 +110,7 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.pedidoId = +(this.route.snapshot.paramMap.get('id') || 0);
     if (!this.pedidoId) {
-      swal.fire({
+      Swal.fire({
         text: 'ID de pedido inválido.',
         icon: 'error',
         showCancelButton: false,
@@ -201,7 +201,7 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
     obs.pipe(
       catchError((err: any) => {
         console.error('[getPedidoById] error', err);
-        swal.fire({
+        Swal.fire({
           text: 'No se pudo cargar el pedido.',
           icon: 'error',
           showCancelButton: false,

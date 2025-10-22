@@ -8,7 +8,7 @@ import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, 
 import { CotizacionItemPayload, CotizacionPayload, ClienteBusquedaResultado, CotizacionContextoPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { TableColumn } from 'src/app/components/table/table-base.component';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -498,7 +498,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          void swal.fire({
+          void Swal.fire({
             icon: 'success',
             title: 'Cotización registrada',
             text: 'La cotización se registró correctamente.'

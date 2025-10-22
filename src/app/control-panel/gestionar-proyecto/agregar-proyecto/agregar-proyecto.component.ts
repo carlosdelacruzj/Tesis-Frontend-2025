@@ -7,7 +7,7 @@ import { PedidoService } from '../service/pedido.service';
 import { Pedido } from '../model/pedido.model';
 import { DateAdapter } from '@angular/material/core';
 import { DatePipe } from '@angular/common';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 interface Food {
   value: string;
@@ -59,7 +59,7 @@ export class AgregarProyectoComponent implements OnInit {
       (res) => {
         console.log('DATA: ', res);
         this.btnDisabled = true;
-        swal.fire({
+        Swal.fire({
           text: 'Registro exitoso',
           icon: 'success',
           showCancelButton: false,
@@ -71,7 +71,7 @@ export class AgregarProyectoComponent implements OnInit {
       },
       (err) => {
         console.error(err)
-        swal.fire({
+        Swal.fire({
           text: 'Ocurrió un error, volver a intentar.',
           icon: 'warning',
           showCancelButton: false,

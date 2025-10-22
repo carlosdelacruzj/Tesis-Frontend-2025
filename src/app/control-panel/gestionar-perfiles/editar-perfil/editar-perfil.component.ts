@@ -4,7 +4,7 @@ import { FormGroup, NgForm, NgModel, UntypedFormControl, Validators } from '@ang
 import { MatTableDataSource } from '@angular/material/table';
 import { Perfil } from '../model/perfil.model';
 import { DateAdapter } from '@angular/material/core';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 interface roles {
   PK_Rol_Cod: number;
@@ -44,7 +44,7 @@ export class EditarPerfilComponent implements OnInit {
     console.log(data);
     try {
       this.service.putPermiso(data).subscribe();
-      swal.fire({
+      Swal.fire({
         text: 'Actualización exitosa',
         icon: 'success',
         showCancelButton: false,

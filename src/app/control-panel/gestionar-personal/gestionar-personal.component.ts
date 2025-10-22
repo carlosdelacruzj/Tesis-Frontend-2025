@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
-import swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { Subject, takeUntil } from 'rxjs';
 
 import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
@@ -162,7 +162,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
           this.modalEditarSaving = false;
           this.loadEmpleados();
           this.loadEmpleado(dto.idEmpleado, 'edit');
-          swal.fire({
+          Swal.fire({
             text: 'Se actualizó al empleado exitosamente',
             icon: 'success',
             showCancelButton: false,
@@ -173,7 +173,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('[personal] update', err);
           this.modalEditarSaving = false;
-          swal.fire({
+          Swal.fire({
             text: 'Ocurrió un error, volver a intentar.',
             icon: 'warning',
             showCancelButton: false,
@@ -342,7 +342,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.modalCrearSaving = false;
-          swal.fire({
+          Swal.fire({
             text: 'Registro exitoso',
             icon: 'success',
             showCancelButton: false,
