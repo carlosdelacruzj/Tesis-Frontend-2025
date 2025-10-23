@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdministrarEquiposComponent } from './administrar-equipos/administrar-equipos.component';
+import { AdministrarEquipos2Component } from './administrar-equipos-2/administrar-equipos-2.component';
 import { ListarportipoComponent } from './administrar-equipos/listarportipo/listarportipo.component';
 import { AdministrarPaqueteServicioComponent } from './administrar-paquete-servicio/administrar-paquete-servicio.component';
 import { EditarServicioComponent } from './administrar-paquete-servicio/components/editar-servicio/editar-servicio.component';
@@ -30,57 +31,32 @@ const routes: Routes = [
     path: '',
     component: HomeComponent,
     children: [
-
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'gestionar-equipos', component: GestionarEquiposComponent },
+      { path: 'gestionar-equipos/listarportipo', component: ListarportipoComponent },
       { path: 'gestionar-proyecto', component: GestionarProyectoComponent },
-      {
-        path: 'gestionar-proyecto/agregar-proyecto',
-        component: AgregarProyectoComponent,
-      },
-      {
-        path: 'administrar-paquete-servicio/editar-servicio',
-        component: EditarServicioComponent,
-      },
-      { path: 'gestionar-pedido', component: GestionarPedidoComponent },
-      {
-        path: 'administrar-paquete-servicio',
-        component: AdministrarPaqueteServicioComponent,
-      },
-      { path: 'administrar-equipos', component: AdministrarEquiposComponent },
       { path: 'gestionar-proyecto/agregar-proyecto', component: AgregarProyectoComponent },
-      { path: 'administrar-paquete-servicio/editar-servicio', component: EditarServicioComponent },
-
+      { path: 'administrar-equipos', component: AdministrarEquiposComponent },
+      { path: 'administrar-equipos-2', component: AdministrarEquipos2Component },
       { path: 'administrar-paquete-servicio', component: AdministrarPaqueteServicioComponent },
-      //PEDIDO RUTAS
+      { path: 'administrar-paquete-servicio/editar-servicio', component: EditarServicioComponent },
       { path: 'gestionar-pedido', component: GestionarPedidoComponent },
       { path: 'gestionar-pedido/agregar', component: AgregarPedidoComponent },
       { path: 'gestionar-pedido/actualizar/:id', component: ActualizarPedidoComponent },
       { path: 'gestionar-pedido/detalle/:id', component: DetallePedidoComponent },
-    
-      //PERSONAL RUTAS
       { path: 'gestionar-personal', component: GestionarPersonalComponent },
-
-      //LISTAR EQUIPO
-      { path: 'administrar-equipos/listarportipo', component: ListarportipoComponent },
-
-
       { path: 'registrar-pago', component: RegistrarPagoComponent },
-      { path: 'administrar-paquete-servicio', component: AdministrarPaqueteServicioComponent },
       { path: 'generar-contrato', component: GenerarContratoComponent },
       { path: 'generar-contrato/contrato', component: ContratoComponent },
-
-      //Clientes y perfiles
-
       { path: 'gestionar-cliente', component: GestionarClienteComponent },
-      { path: 'gestionar-perfiles', component: GestionarPerfilesComponent},
-       { path: 'gestionar-perfiles/registrar-perfil', component: RegistrarPerfilComponent},
-       { path: 'gestionar-perfiles/editar-perfil', component: EditarPerfilComponent},
-       { path: 'gestionar-cotizaciones', component: GestionarCotizacionesComponent },
+      { path: 'gestionar-perfiles', component: GestionarPerfilesComponent },
+      { path: 'gestionar-perfiles/registrar-perfil', component: RegistrarPerfilComponent },
+      { path: 'gestionar-perfiles/editar-perfil', component: EditarPerfilComponent },
+      { path: 'gestionar-cotizaciones', component: GestionarCotizacionesComponent },
       { path: 'gestionar-cotizaciones/registrar', component: RegistrarCotizacionComponent },
       { path: 'gestionar-cotizaciones/editar/:id', component: EditarCotizacionComponent },
-      { path: '**', pathMatch: 'full', redirectTo: 'dashboard' },
-
+      { path: '**', redirectTo: 'dashboard' },
     ]
   }
 ];
