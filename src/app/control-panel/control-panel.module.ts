@@ -8,6 +8,7 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { ControlPanelRoutingModule } from './control-panel-routing.module';
 import { AngularMaterialModule } from '../shared/angular-material/angular-material.module';
 import { CellTemplateDirective, TableBaseComponent } from '../components/table-base/table-base.component';
+import { ListToolbarComponent } from '../components/list-toolbar/list-toolbar.component';
 import { ModalBaseComponent } from '../components/modal-base/modal-base.component';
 import { HomeComponent } from './home/home.component';
 import { FooterComponent } from '../shared/footer/footer.component';
@@ -96,6 +97,7 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     NgbModule,
     TableBaseComponent,
     CellTemplateDirective,
+    ListToolbarComponent,
     ModalBaseComponent
   ]
 })

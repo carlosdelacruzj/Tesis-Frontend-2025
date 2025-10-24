@@ -1,0 +1,67 @@
+.list-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.text-block h1 {
+  margin: 0;
+  font-weight: 600;
+  color: #13203a;
+}
+
+.text-block p {
+  margin: 4px 0 0;
+  color: #5a6a83;
+  max-width: 520px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.actions .create-btn-wrapper .btn mat-icon {
+  margin-right: 4px;
+}
+
+.search-group {
+  max-width: 420px;
+}
+
+.create-btn-wrapper .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 600px) {
+  .list-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .search-group {
+    flex: 1 1 auto;
+    max-width: 100%;
+  }
+
+  .create-btn-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .create-btn-wrapper .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

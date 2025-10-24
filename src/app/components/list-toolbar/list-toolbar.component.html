@@ -1,0 +1,37 @@
+<div class="list-toolbar">
+  <div class="text-block" *ngIf="title || description">
+    <h1 *ngIf="title">{{ title }}</h1>
+    <p *ngIf="description">{{ description }}</p>
+  </div>
+
+  <div class="actions">
+    <div class="input-group search-group" *ngIf="showSearch">
+      <span class="input-group-text gap-1">
+        <mat-icon fontIcon="search" aria-hidden="true"></mat-icon>
+        <span class="visually-hidden">Buscar</span>
+      </span>
+      <input
+        type="text"
+        class="form-control"
+        [placeholder]="searchPlaceholder"
+        [(ngModel)]="searchValue"
+        (ngModelChange)="onSearchChange($event || '')"
+      />
+      <button *ngIf="searchValue" class="btn btn-outline-secondary" type="button" (click)="clearSearch()">
+        Limpiar
+      </button>
+    </div>
+
+    <div class="create-btn-wrapper" *ngIf="showCreateButton">
+      <button
+        class="btn btn-outline-dark btn-md"
+        type="button"
+        [disabled]="disableCreate"
+        (click)="onCreate()"
+      >
+        <mat-icon *ngIf="createButtonIcon" [fontIcon]="createButtonIcon"></mat-icon>
+        {{ createButtonLabel }}
+      </button>
+    </div>
+  </div>
+</div>

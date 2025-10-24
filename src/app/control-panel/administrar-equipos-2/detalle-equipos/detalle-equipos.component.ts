@@ -1,7 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { AdministrarEquipos2Service, EquipoInventario } from '../administrar-equipos-2.service';
+import { AdministrarEquipos2Service } from '../service/administrar-equipos-2.service';
+import { EquipoInventario } from '../models/equipo-inventario.model';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
 interface FiltrosDetalle {

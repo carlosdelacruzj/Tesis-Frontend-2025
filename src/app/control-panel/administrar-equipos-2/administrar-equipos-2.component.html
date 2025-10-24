@@ -1,42 +1,29 @@
 <div class="dashboard-content">
-  <div class="page-header">
-    <div class="page-header-text">
-      <h1>Inventario de equipos</h1>
-      <p>Explora rápidamente los modelos disponibles agrupados por tipo y accede al detalle completo.</p>
-    </div>
+  <app-list-toolbar
+    [title]="'Inventario de equipos'"
+    [description]="'Explora rápidamente los modelos disponibles agrupados por tipo y accede al detalle completo.'"
+    [showSearch]="true"
+    [searchPlaceholder]="'Tipo, marca o modelo'"
+    [searchValue]="busqueda"
+    [showCreateButton]="true"
+    [createButtonLabel]="'Nuevo tipo'"
+    [disableCreate]="formTipo.cargando"
+    (searchChange)="onBuscar($event)"
+    (createClick)="abrirModalTipo()"
+  >
+  </app-list-toolbar>
 
-    <div class="filters">
-      <mat-form-field appearance="outline" class="filter-field">
-        <mat-label>Buscar</mat-label>
-        <input
-          matInput
-          #buscador
-          type="text"
-          placeholder="Tipo, marca o modelo"
-          (keyup)="onBuscar(buscador.value)"
-        />
-        <button
-          mat-icon-button
-          matSuffix
-          aria-label="Limpiar búsqueda"
-          *ngIf="filtroTexto"
-          (click)="buscador.value = ''; onBuscar('')"
-        >
-          <mat-icon>close</mat-icon>
-        </button>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" class="filter-field">
-        <mat-label>Categoría</mat-label>
-        <mat-select [value]="categoriaSeleccionada" (selectionChange)="onSeleccionarCategoria($event.value)">
-          <mat-option value="todas">Todas las categorías</mat-option>
-          <mat-option *ngFor="let categoria of categoriasDisponibles" [value]="categoria">
-            {{ categoria | titlecase }}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
-    </div>
-  </div>
+  <!-- <div class="filtros-secundarios">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Categoría</mat-label>
+      <mat-select [value]="categoriaSeleccionada" (selectionChange)="onSeleccionarCategoria($event.value)">
+        <mat-option value="todas">Todas las categorías</mat-option>
+        <mat-option *ngFor="let categoria of categoriasDisponibles" [value]="categoria">
+          {{ categoria }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div> -->
 
   <ng-container *ngIf="filtradoResumen.length; else emptyState">
     <div class="card-grid">
@@ -78,7 +65,7 @@
 
         <mat-card-actions class="card-actions">
           <button mat-stroked-button color="primary" (click)="verDetallePorTipo(tipo)">
-            Ver equipos de este tipo
+            Ver equipos
           </button>
         </mat-card-actions>
       </mat-card>
@@ -91,4 +78,55 @@
       <p>No hay equipos registrados en el inventario.</p>
     </div>
   </ng-template>
+
+  <app-modal-base
+    [open]="modalTipoOpen"
+    title="Registrar nuevo tipo"
+    [disableClose]="formTipo.cargando"
+    [useDefaultFooter]="false"
+    [loading]="formTipo.cargando"
+    (closed)="onModalTipoClosed()"
+  >
+    <div modal-body class="dialogo-tipo-contenido">
+      <p>Ingresa el nombre del nuevo tipo de equipo.</p>
+      <mat-form-field appearance="outline" class="w-100">
+        <mat-label>Nombre del tipo</mat-label>
+        <input
+          matInput
+          [(ngModel)]="formTipo.nombre"
+          (ngModelChange)="formTipo.nombre = normalizarEntrada($event)"
+          maxlength="80"
+        />
+      </mat-form-field>
+      <mat-divider></mat-divider>
+      <p class="mt-3 mb-1">
+        Por favor confirma que el nombre es correcto. Esta acción no podrá deshacerse.
+      </p>
+      <mat-checkbox [(ngModel)]="formTipo.confirmacion">
+        Confirmo que el nombre es correcto
+      </mat-checkbox>
+      <div class="mensaje-error" *ngIf="formTipo.error">
+        <mat-icon>error_outline</mat-icon>
+        {{ formTipo.error }}
+      </div>
+      <div class="mensaje-exito" *ngIf="formTipo.exito">
+        <mat-icon>check_circle</mat-icon>
+        {{ formTipo.exito }}
+      </div>
+    </div>
+    <div modal-footer class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary" type="button" (click)="onModalTipoClosed()" [disabled]="formTipo.cargando">
+        Cancelar
+      </button>
+      <button
+        class="btn btn-primary d-inline-flex align-items-center gap-2"
+        type="button"
+        (click)="confirmarCrearTipo()"
+        [disabled]="!formTipo.confirmacion || !formTipo.nombre || formTipo.cargando"
+      >
+        <span class="spinner-border spinner-border-sm" *ngIf="formTipo.cargando" role="status" aria-hidden="true"></span>
+        <span>Crear</span>
+      </button>
+    </div>
+  </app-modal-base>
 </div>
