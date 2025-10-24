@@ -1,35 +1,13 @@
-import { Component } from '@angular/core';
-import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { AdministrarEquipos2Service, ResumenEquipo } from './administrar-equipos-2.service';
 
-type EstadoPropio = 'operativo' | 'mantenimiento' | 'reserva' | 'baja';
-type EstadoAlquilado = 'activo' | 'por-vencer' | 'devuelto';
-
-interface EquipoPropio {
-  id: number;
-  tipo: string;
-  marca: string;
-  modelo: string;
-  estado: EstadoPropio;
-  cantidad: number;
-  ubicacion: string;
-  responsable: string;
-}
-
-interface EquipoAlquilado {
-  id: number;
-  tipo: string;
-  proveedor: string;
-  serie: string;
-  estado: EstadoAlquilado;
-  proyecto: string;
-  finContrato: string;
-  responsable: string;
-  contactoProveedor: string;
-}
-
-interface EquipoSeleccionado {
-  origen: 'propio' | 'alquilado';
-  registro: EquipoPropio | EquipoAlquilado;
+interface ResumenPorTipo {
+  idTipoEquipo: number;
+  nombreTipoEquipo: string;
+  totalCantidad: number;
+  modelos: ResumenEquipo[];
+  categoria: string;
 }
 
 @Component({
@@ -37,115 +15,139 @@ interface EquipoSeleccionado {
   templateUrl: './administrar-equipos-2.component.html',
   styleUrls: ['./administrar-equipos-2.component.css']
 })
-export class AdministrarEquipos2Component {
-  /** Columnas reutilizando la tabla base */
-  readonly columnasPropios: TableColumn<EquipoPropio>[] = [
-    { key: 'tipo', header: 'Equipo', sortable: true, class: 'text-capitalize' },
-    { key: 'marca', header: 'Marca', sortable: true, class: 'text-capitalize' },
-    { key: 'modelo', header: 'Modelo', sortable: true, class: 'text-capitalize' },
-    { key: 'estado', header: 'Estado', sortable: true, class: 'text-center estado-col', width: '140px' },
-    { key: 'cantidad', header: 'Stock', sortable: true, class: 'text-center', width: '90px' },
-    { key: 'ubicacion', header: 'Ubicación', sortable: true, class: 'text-capitalize' },
-    { key: 'responsable', header: 'Responsable', sortable: true, class: 'text-capitalize' },
-    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, class: 'text-center acciones-col', width: '120px' }
-  ];
+export class AdministrarEquipos2Component implements OnInit {
+  resumenPorTipo: ResumenPorTipo[] = [];
+  filtradoResumen: ResumenPorTipo[] = [];
+  readonly maxModelosCompactos = 5;
+  categoriasDisponibles: string[] = [];
+  filtroTexto = '';
+  categoriaSeleccionada = 'todas';
 
-  readonly columnasAlquilados: TableColumn<EquipoAlquilado>[] = [
-    { key: 'tipo', header: 'Equipo', sortable: true, class: 'text-capitalize' },
-    { key: 'proveedor', header: 'Proveedor', sortable: true, class: 'text-capitalize' },
-    { key: 'serie', header: 'Serie', sortable: true, class: 'text-uppercase' },
-    { key: 'estado', header: 'Estado', sortable: true, class: 'text-center estado-col', width: '140px' },
-    { key: 'proyecto', header: 'Proyecto asignado', sortable: true },
-    { key: 'finContrato', header: 'Fin contrato', sortable: true, class: 'text-center', width: '130px' },
-    { key: 'responsable', header: 'Responsable', sortable: true, class: 'text-capitalize' },
-    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, class: 'text-center acciones-col', width: '120px' }
-  ];
+  constructor(
+    private readonly administrarEquipos2Service: AdministrarEquipos2Service,
+    private readonly router: Router
+  ) {}
 
-  /** Mock de datos para el maquetado */
-  equiposPropios: EquipoPropio[] = [
-    { id: 1, tipo: 'Consola de sonido', marca: 'Yamaha', modelo: 'QL5', estado: 'operativo', cantidad: 3, ubicacion: 'Almacén Lima', responsable: 'María Torres' },
-    { id: 2, tipo: 'Cabeza móvil', marca: 'Clay Paky', modelo: 'Mythos 2', estado: 'mantenimiento', cantidad: 2, ubicacion: 'Taller Piura', responsable: 'Fiorella Díaz' },
-    { id: 3, tipo: 'Truss 3m', marca: 'Prolyte', modelo: 'H30V', estado: 'reserva', cantidad: 12, ubicacion: 'Almacén Lima', responsable: 'Alberto Ruiz' },
-    { id: 4, tipo: 'Generador eléctrico', marca: 'Honda', modelo: 'EU70is', estado: 'operativo', cantidad: 1, ubicacion: 'Proyecto Feria Innova', responsable: 'Luis Ortega' }
-  ];
-
-  equiposAlquilados: EquipoAlquilado[] = [
-    { id: 101, tipo: 'Pantalla LED 3.9mm', proveedor: 'ProDisplay', serie: 'PD-39-781', estado: 'activo', proyecto: 'Cusco Fest 2024', finContrato: '2024-05-22', responsable: 'Patricia Gómez', contactoProveedor: 'ventas@prodisplay.pe' },
-    { id: 102, tipo: 'Switcher de video 4K', proveedor: 'LiveRent', serie: 'LR-ATEM-204', estado: 'por-vencer', proyecto: 'Expo Tech 2024', finContrato: '2024-04-30', responsable: 'Carlos Vega', contactoProveedor: '+51 987 654 321' },
-    { id: 103, tipo: 'Line Array K2', proveedor: 'SoundHire', serie: 'SH-K2-332', estado: 'devuelto', proyecto: 'Aniversario UPC', finContrato: '2024-03-15', responsable: 'Juan Pérez', contactoProveedor: 'logistica@soundhire.pe' }
-  ];
-
-  selectedEquipo: EquipoSeleccionado | null = null;
-
-  /** Etiquetas de estado para chips */
-  private readonly estadoPropioMap: Record<EstadoPropio, string> = {
-    operativo: 'Operativo',
-    mantenimiento: 'En mantenimiento',
-    reserva: 'Reservado',
-    baja: 'De baja'
-  };
-
-  private readonly estadoAlquiladoMap: Record<EstadoAlquilado, string> = {
-    activo: 'Contrato activo',
-    'por-vencer': 'Próximo a vencer',
-    devuelto: 'Devuelto'
-  };
-
-  trackById(_: number, item: EquipoPropio | EquipoAlquilado): number {
-    return item.id;
+  ngOnInit(): void {
+    this.cargarResumen();
   }
 
-  trackByIndex(index: number): number {
-    return index;
+  trackByTipo(_: number, item: ResumenPorTipo): number {
+    return item.idTipoEquipo;
   }
 
-  registrarEquipoPropio(): void {
-    console.log('Registrar nuevo equipo propio');
+  trackByModelo(_: number, item: ResumenEquipo): number {
+    return item.idModelo;
   }
 
-  registrarEquipoAlquilado(): void {
-    console.log('Registrar nuevo equipo alquilado');
+  verDetallePorTipo(tipo: ResumenPorTipo): void {
+    this.router.navigate(['/home/administrar-equipos-2/detalle'], {
+      queryParams: {
+        tipo: tipo.idTipoEquipo,
+        tipoNombre: tipo.nombreTipoEquipo
+      }
+    });
   }
 
-  editarEquipo(registro: EquipoPropio | EquipoAlquilado, origen: 'propio' | 'alquilado'): void {
-    console.log('Editar', origen, registro);
+  verDetallePorModelo(tipo: ResumenPorTipo, modelo: ResumenEquipo): void {
+    this.router.navigate(['/home/administrar-equipos-2/detalle'], {
+      queryParams: {
+        tipo: tipo.idTipoEquipo,
+        tipoNombre: tipo.nombreTipoEquipo,
+        marca: modelo.idMarca,
+        marcaNombre: modelo.nombreMarca,
+        modelo: modelo.idModelo,
+        modeloNombre: modelo.nombreModelo
+      }
+    });
   }
 
-  eliminarEquipo(registro: EquipoPropio | EquipoAlquilado, origen: 'propio' | 'alquilado'): void {
-    console.log('Eliminar', origen, registro);
+  onBuscar(term: string): void {
+    this.filtroTexto = term.trim().toLowerCase();
+    this.aplicarFiltros();
   }
 
-  seleccionarPropio(registro: EquipoPropio): void {
-    this.selectedEquipo = { origen: 'propio', registro };
+  onSeleccionarCategoria(valor: string): void {
+    this.categoriaSeleccionada = valor;
+    this.aplicarFiltros();
   }
 
-  seleccionarAlquilado(registro: EquipoAlquilado): void {
-    this.selectedEquipo = { origen: 'alquilado', registro };
+  private aplicarFiltros(): void {
+    const coincideCategoria = (item: ResumenPorTipo) =>
+      this.categoriaSeleccionada === 'todas' || item.categoria === this.categoriaSeleccionada;
+
+    const coincideTexto = (item: ResumenPorTipo) => {
+      if (!this.filtroTexto) {
+        return true;
+      }
+      const texto = this.filtroTexto;
+      return (
+        item.nombreTipoEquipo.toLowerCase().includes(texto) ||
+        item.modelos.some((modelo) =>
+          `${modelo.nombreMarca} ${modelo.nombreModelo}`.toLowerCase().includes(texto)
+        )
+      );
+    };
+
+    this.filtradoResumen = this.resumenPorTipo.filter(
+      (item) => coincideCategoria(item) && coincideTexto(item)
+    );
   }
 
-  cerrarDetalle(): void {
-    this.selectedEquipo = null;
+  private cargarResumen(): void {
+    this.administrarEquipos2Service.getResumenEquipos().subscribe({
+      next: (equipos) => {
+        this.resumenPorTipo = this.agruparPorTipo(equipos);
+        this.categoriasDisponibles = Array.from(
+          new Set(this.resumenPorTipo.map((item) => item.categoria))
+        );
+        this.aplicarFiltros();
+      },
+      error: (error) => {
+        console.error('Error al cargar el resumen de equipos', error);
+      }
+    });
   }
 
-  etiquetaEstadoPropio(estado: EstadoPropio): string {
-    return this.estadoPropioMap[estado] ?? estado;
+  private agruparPorTipo(equipos: ResumenEquipo[]): ResumenPorTipo[] {
+    const mapa = new Map<number, ResumenPorTipo>();
+
+    equipos.forEach((equipo) => {
+      const existente = mapa.get(equipo.idTipoEquipo);
+
+      if (!existente) {
+        mapa.set(equipo.idTipoEquipo, {
+          idTipoEquipo: equipo.idTipoEquipo,
+          nombreTipoEquipo: equipo.nombreTipoEquipo,
+          totalCantidad: equipo.cantidad,
+          modelos: [equipo],
+          categoria: this.obtenerCategoria(equipo.nombreTipoEquipo)
+        });
+        return;
+      }
+
+      existente.totalCantidad += equipo.cantidad;
+      existente.modelos = [...existente.modelos, equipo];
+    });
+
+    return Array.from(mapa.values());
   }
 
-  etiquetaEstadoAlquilado(estado: EstadoAlquilado): string {
-    return this.estadoAlquiladoMap[estado] ?? estado;
-  }
+  private obtenerCategoria(nombreTipo: string): string {
+    const texto = nombreTipo.toLowerCase();
 
-  propioSeleccionado(): EquipoPropio | null {
-    if (this.selectedEquipo?.origen !== 'propio') {
-      return null;
+    if (texto.includes('cámara') || texto.includes('drone') || texto.includes('video')) {
+      return 'Video';
     }
-    return this.selectedEquipo.registro as EquipoPropio;
-  }
 
-  alquiladoSeleccionado(): EquipoAlquilado | null {
-    if (this.selectedEquipo?.origen !== 'alquilado') {
-      return null;
+    if (texto.includes('micrófono') || texto.includes('audio') || texto.includes('recorder')) {
+      return 'Audio';
     }
-    return this.selectedEquipo.registro as EquipoAlquilado;
+
+    if (texto.includes('iluminación') || texto.includes('luz') || texto.includes('led')) {
+      return 'Iluminación';
+    }
+
+    return 'Otros';
   }
 }

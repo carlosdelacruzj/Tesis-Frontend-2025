@@ -7,7 +7,7 @@ import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, 
 
 import { CotizacionItemPayload, CotizacionPayload, ClienteBusquedaResultado, CotizacionContextoPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
-import { TableColumn } from 'src/app/components/table/table-base.component';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 interface PaqueteSeleccionado {

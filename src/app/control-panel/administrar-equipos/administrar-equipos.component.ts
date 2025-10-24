@@ -4,7 +4,7 @@ import { NgForm } from '@angular/forms';
 import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
 import { AdministrarEquiposService } from './service/service.service';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
-import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
 interface TEquipo {
   PK_TE_Cod: number;

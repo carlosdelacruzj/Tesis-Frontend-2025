@@ -8,36 +8,36 @@ import {
     QueryList,
     Directive,
     signal,
-    computed
+    computed,
+    AfterContentInit,
+    OnChanges,
+    OnDestroy,
+    SimpleChanges
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { Subscription } from 'rxjs';
 
 /** Dirección de ordenamiento */
 export type SortDirection = 'asc' | 'desc' | '';
 
-/** Definición de columna */
+/** Definición de columna base */
 export interface TableColumn<T = any> {
-    /** Clave del campo en el objeto (permite notación 'cliente.nombre' usando getByPath) */
     key: string;
-    /** Encabezado a mostrar */
     header: string;
-    /** Columna ordenable */
     sortable?: boolean;
-    /** Columna filtrable (si omites, se asume true) */
     filterable?: boolean;
-    /** Ancho opcional (ej. '120px', '20%') */
     width?: string;
-    /** Clases CSS para <th>/<td> */
     class?: string;
+    minWidth?: string;
+    maxWidth?: string;
 }
 
 /**
- * Directiva para inyectar una plantilla de celda personalizada.
+ * Directiva para inyectar plantillas personalizadas por columna.
  * Uso:
- * <ng-template appCell="acciones" let-row>
- *   <button (click)="editar(row)">Editar</button>
- * </ng-template>
+ * <ng-template appCell="acciones" let-row>...</ng-template>
  */
 @Directive({
     selector: 'ng-template[appCell]',
@@ -45,7 +45,7 @@ export interface TableColumn<T = any> {
 })
 export class CellTemplateDirective {
     @Input('appCell') columnKey!: string;
-    constructor(public template: TemplateRef<any>) { }
+    constructor(public readonly template: TemplateRef<any>) { }
 }
 
 /** Utilidad: obtener valor por path 'a.b.c' desde un objeto */
@@ -56,14 +56,14 @@ function getByPath(obj: any, path: string): any {
 @Component({
     selector: 'app-table-base',
     standalone: true,
-    imports: [CommonModule, FormsModule, CellTemplateDirective],
+    imports: [CommonModule, FormsModule, MatIconModule, CellTemplateDirective],
     templateUrl: './table-base.component.html',
     styleUrls: ['./table-base.component.css']
 })
-export class TableBaseComponent<T = any> {
+export class TableBaseComponent<T = any> implements AfterContentInit, OnChanges, OnDestroy {
     /** Datos completos (cliente-side pagination/filter/sort) */
     @Input({ required: true }) data: T[] = [];
-    /** Columnas a mostrar */
+    /** Columnas a mostrar (extendidas con min/max opcionales) */
     @Input({ required: true }) columns: TableColumn<T>[] = [];
     /** Tamaños de página disponibles */
     @Input() pageSizeOptions: number[] = [5, 10, 20, 50];
@@ -75,9 +75,6 @@ export class TableBaseComponent<T = any> {
     @Input() searchPlaceholder = 'Buscar…';
     /** Texto del footer cuando no hay datos */
     @Input() emptyText = 'Sin resultados';
-    /** Sort inicial */
-    @Input() initialSort?: { key: string; direction: Exclude<SortDirection, ''> };
-
     /** Eventos */
     @Output() sortChange = new EventEmitter<{ key: string; direction: SortDirection }>();
     @Output() pageChange = new EventEmitter<{ page: number; pageSize: number }>();
@@ -86,12 +83,17 @@ export class TableBaseComponent<T = any> {
     @Input() showCreateButton = true;
     @Input() createButtonLabel = 'Registrar';
     @Input() createButtonDisabled = false;
+    @Input() showSearch = true;
+    @Input() showFooterInfo = true;
+    @Input() showPagination = true;
+    @Input() showPageSizeSelector = true;
     @Output() createClick = new EventEmitter<void>();
 
     /** Plantillas proyectadas */
     @ContentChildren(CellTemplateDirective) cellTpls!: QueryList<CellTemplateDirective>;
 
     /** Estado reactivo */
+    private dataSignal = signal<T[]>([]);
     searchTerm = signal<string>('');
     sortKey = signal<string>('');
     sortDirection = signal<SortDirection>('');
@@ -100,33 +102,50 @@ export class TableBaseComponent<T = any> {
 
     /** Mapa de plantillas por columnKey */
     cellTemplateMap = new Map<string, TemplateRef<any>>();
+    private cellTplsChangesSub?: Subscription;
 
     ngAfterContentInit(): void {
-        // Construye el mapa de plantillas
-        this.cellTemplateMap.clear();
-        this.cellTpls?.forEach(t => this.cellTemplateMap.set(t.columnKey, t.template));
+        this.rebuildCellTemplateMap();
+        if (this.cellTpls) {
+            this.cellTplsChangesSub = this.cellTpls.changes.subscribe(() => this.rebuildCellTemplateMap());
+        }
+        this.dataSignal.set(this.data ?? []);
+        this.syncPageSizeFromInput();
+        this.syncPageFromInput();
+        this.ensureCurrentPageInRange();
+    }
 
-        // Aplica sort inicial si viene configurado
-        if (this.initialSort) {
-            this.sortKey.set(this.initialSort.key);
-            this.sortDirection.set(this.initialSort.direction);
+    ngOnChanges(changes: SimpleChanges): void {
+        if ('pageSize' in changes) {
+            this.syncPageSizeFromInput();
+        }
+
+        if ('page' in changes) {
+            this.syncPageFromInput();
+        }
+
+        if ('data' in changes) {
+            this.dataSignal.set(this.data ?? []);
+        }
+
+        if ('data' in changes || 'columns' in changes || 'pageSize' in changes || 'page' in changes) {
+            this.ensureCurrentPageInRange();
         }
     }
 
-    ngOnChanges(): void {
-        // Asegura que las páginas sigan siendo válidas si cambian inputs
-        const totalPages = Math.max(1, Math.ceil(this.filteredAndSorted().length / this.currentPageSize()));
-        if (this.currentPage() > totalPages) this.currentPage.set(totalPages);
+    ngOnDestroy(): void {
+        this.cellTplsChangesSub?.unsubscribe();
     }
 
     /** Filtra globalmente (sólo columnas filterable !== false) */
     filtered = computed<T[]>(() => {
         const term = this.searchTerm().trim().toLowerCase();
-        if (!term) return this.data ?? [];
+        const source = this.dataSignal();
+        if (!term) return source ?? [];
         const keys = this.columns
-            .filter(c => c.filterable !== false)
+            .filter(c => (c as any).filterable !== false)
             .map(c => c.key);
-        return (this.data ?? []).filter(row =>
+        return (source ?? []).filter(row =>
             keys.some(k => {
                 const v = getByPath(row, k);
                 return (v ?? '').toString().toLowerCase().includes(term);
@@ -180,7 +199,7 @@ export class TableBaseComponent<T = any> {
     totalPages = computed(() => Math.max(1, Math.ceil(this.totalItems() / this.currentPageSize())));
 
     /** UI handlers */
-    toggleSort(col: TableColumn) {
+    toggleSort(col: TableColumn<T>) {
         if (!col.sortable) return;
         const currentKey = this.sortKey();
         const currentDir = this.sortDirection();
@@ -231,4 +250,30 @@ export class TableBaseComponent<T = any> {
     }
 
     trackByIndex = (_: number, __: any) => _;
+
+    private rebuildCellTemplateMap(): void {
+        this.cellTemplateMap.clear();
+        this.cellTpls?.forEach(t => this.cellTemplateMap.set(t.columnKey, t.template));
+    }
+
+    private syncPageSizeFromInput(): void {
+        const candidate = Number(this.pageSize);
+        const fallback = this.pageSizeOptions?.[0] ?? 10;
+        const next = Number.isFinite(candidate) && candidate > 0 ? Math.floor(candidate) : fallback;
+        this.currentPageSize.set(next);
+    }
+
+    private syncPageFromInput(): void {
+        const candidate = Number(this.page);
+        const next = Number.isFinite(candidate) && candidate > 0 ? Math.floor(candidate) : 1;
+        this.currentPage.set(next);
+    }
+
+    private ensureCurrentPageInRange(): void {
+        const totalPages = this.totalPages();
+        const clamped = Math.min(Math.max(1, this.currentPage()), totalPages);
+        if (clamped !== this.currentPage()) {
+            this.currentPage.set(clamped);
+        }
+    }
 }

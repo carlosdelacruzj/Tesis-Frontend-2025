@@ -1,196 +1,94 @@
-<div class="container-fluid dashboard-content administrar-equipos-2">
-  <header class="page-header">
-    <div>
-      <h1>Administrar Equipos 2</h1>
-      <p>Registra, actualiza estados y gestiona tanto tus equipos propios como los alquilados.</p>
+<div class="dashboard-content">
+  <div class="page-header">
+    <div class="page-header-text">
+      <h1>Inventario de equipos</h1>
+      <p>Explora rápidamente los modelos disponibles agrupados por tipo y accede al detalle completo.</p>
     </div>
-    <div class="page-actions">
-      <button mat-stroked-button color="primary">
-        <mat-icon>upload_file</mat-icon>
-        Importar
-      </button>
-      <button mat-stroked-button>
-        <mat-icon>download</mat-icon>
-        Exportar
-      </button>
+
+    <div class="filters">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          #buscador
+          type="text"
+          placeholder="Tipo, marca o modelo"
+          (keyup)="onBuscar(buscador.value)"
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          aria-label="Limpiar búsqueda"
+          *ngIf="filtroTexto"
+          (click)="buscador.value = ''; onBuscar('')"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Categoría</mat-label>
+        <mat-select [value]="categoriaSeleccionada" (selectionChange)="onSeleccionarCategoria($event.value)">
+          <mat-option value="todas">Todas las categorías</mat-option>
+          <mat-option *ngFor="let categoria of categoriasDisponibles" [value]="categoria">
+            {{ categoria | titlecase }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
     </div>
-  </header>
+  </div>
 
-  <mat-tab-group>
-    <mat-tab label="Equipos propios">
-      <div class="tab-panel">
-        <app-table-base-mejora
-          [columns]="columnasPropios"
-          [data]="equiposPropios"
-          [pageSize]="5"
-          [pageSizeOptions]="[5, 10, 25]"
-          searchPlaceholder="Buscar por equipo, marca o responsable"
-          createButtonLabel="Registrar equipo propio"
-          (rowClick)="seleccionarPropio($event)"
-          (createClick)="registrarEquipoPropio()"
-        >
-          <ng-template appCell="estado" let-row>
-            <span class="estado-chip" [ngClass]="row.estado">
-              {{ etiquetaEstadoPropio(row.estado) }}
-            </span>
-          </ng-template>
+  <ng-container *ngIf="filtradoResumen.length; else emptyState">
+    <div class="card-grid">
+      <mat-card
+        class="equipment-card"
+        *ngFor="let tipo of filtradoResumen; trackBy: trackByTipo"
+      >
+        <mat-card-header>
+          <div mat-card-avatar class="equipment-avatar">
+            {{ tipo.nombreTipoEquipo | slice: 0:1 }}
+          </div>
+          <mat-card-title>{{ tipo.nombreTipoEquipo }}</mat-card-title>
+          <mat-card-subtitle>
+            {{ tipo.totalCantidad }} {{ tipo.totalCantidad === 1 ? 'equipo' : 'equipos' }}
+          </mat-card-subtitle>
+        </mat-card-header>
 
-          <ng-template appCell="acciones" let-row>
-            <button
-              mat-icon-button
-              color="primary"
-              (click)="editarEquipo(row, 'propio'); $event.stopPropagation()"
-              aria-label="Editar equipo propio"
-            >
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              color="warn"
-              (click)="eliminarEquipo(row, 'propio'); $event.stopPropagation()"
-              aria-label="Eliminar equipo propio"
-            >
-              <mat-icon>delete</mat-icon>
-            </button>
-          </ng-template>
-        </app-table-base-mejora>
-      </div>
-    </mat-tab>
-
-    <mat-tab label="Equipos alquilados">
-      <div class="tab-panel">
-        <app-table-base-mejora
-          [columns]="columnasAlquilados"
-          [data]="equiposAlquilados"
-          [pageSize]="5"
-          [pageSizeOptions]="[5, 10, 25]"
-          searchPlaceholder="Buscar por proveedor, proyecto o serie"
-          createButtonLabel="Registrar equipo alquilado"
-          (rowClick)="seleccionarAlquilado($event)"
-          (createClick)="registrarEquipoAlquilado()"
-        >
-          <ng-template appCell="estado" let-row>
-            <span class="estado-chip" [ngClass]="row.estado">
-              {{ etiquetaEstadoAlquilado(row.estado) }}
-            </span>
-          </ng-template>
-
-          <ng-template appCell="acciones" let-row>
-            <button
-              mat-icon-button
-              color="primary"
-              (click)="editarEquipo(row, 'alquilado'); $event.stopPropagation()"
-              aria-label="Editar equipo alquilado"
-            >
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              color="warn"
-              (click)="eliminarEquipo(row, 'alquilado'); $event.stopPropagation()"
-              aria-label="Eliminar equipo alquilado"
-            >
-              <mat-icon>delete</mat-icon>
-            </button>
-          </ng-template>
-        </app-table-base-mejora>
-      </div>
-    </mat-tab>
-  </mat-tab-group>
-
-  <mat-card class="detail-card" *ngIf="selectedEquipo as detalle">
-    <mat-card-content>
-      <div class="detail-header">
-        <div>
-          <h2>Detalle del equipo</h2>
-          <span class="origen" [ngClass]="detalle.origen">
-            {{ detalle.origen === 'propio' ? 'Inventario propio' : 'Equipo alquilado' }}
+        <mat-card-content>
+          <ul class="model-list">
+            <li *ngFor="let modelo of tipo.modelos | slice: 0: maxModelosCompactos; trackBy: trackByModelo">
+              <button
+                type="button"
+                class="model-item"
+                (click)="verDetallePorModelo(tipo, modelo)"
+              >
+                <span class="model-name">
+                  {{ modelo.nombreMarca }} · {{ modelo.nombreModelo }}
+                </span>
+                <span class="model-count">
+                  {{ modelo.cantidad }}
+                </span>
+              </button>
+            </li>
+          </ul>
+          <span class="preview-note" *ngIf="tipo.modelos.length > maxModelosCompactos">
+            + {{ tipo.modelos.length - maxModelosCompactos }} modelo{{ tipo.modelos.length - maxModelosCompactos === 1 ? '' : 's' }} más
           </span>
-        </div>
-        <div class="detail-actions">
-          <button mat-flat-button color="primary" (click)="editarEquipo(detalle.registro, detalle.origen)">
-            <mat-icon>edit</mat-icon>
-            Editar
-          </button>
-          <button mat-stroked-button color="warn" (click)="eliminarEquipo(detalle.registro, detalle.origen)">
-            <mat-icon>delete</mat-icon>
-            Dar de baja
-          </button>
-          <button mat-button (click)="cerrarDetalle()">Cerrar</button>
-        </div>
-      </div>
+        </mat-card-content>
 
-      <ng-container *ngIf="propioSeleccionado() as propio; else alquiladoTemplate">
-        <div class="detail-grid">
-          <div class="detail-item">
-            <span class="label">Equipo</span>
-            <span class="value">
-              {{ propio.tipo }} · {{ propio.marca }} {{ propio.modelo }}
-            </span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Estado</span>
-            <span class="value estado-chip" [ngClass]="propio.estado">
-              {{ etiquetaEstadoPropio(propio.estado) }}
-            </span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Cantidad disponible</span>
-            <span class="value">{{ propio.cantidad }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Ubicación</span>
-            <span class="value">{{ propio.ubicacion }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Responsable</span>
-            <span class="value">{{ propio.responsable }}</span>
-          </div>
-        </div>
-      </ng-container>
+        <mat-card-actions class="card-actions">
+          <button mat-stroked-button color="primary" (click)="verDetallePorTipo(tipo)">
+            Ver equipos de este tipo
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </ng-container>
 
-      <ng-template #alquiladoTemplate>
-        <ng-container *ngIf="alquiladoSeleccionado() as alquilado">
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="label">Equipo</span>
-              <span class="value">
-                {{ alquilado.tipo }}
-              </span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Proveedor</span>
-              <span class="value">{{ alquilado.proveedor }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Serie</span>
-              <span class="value">{{ alquilado.serie }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Estado</span>
-              <span class="value estado-chip" [ngClass]="alquilado.estado">
-                {{ etiquetaEstadoAlquilado(alquilado.estado) }}
-              </span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Proyecto</span>
-              <span class="value">{{ alquilado.proyecto || 'Sin asignar' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Fin de contrato</span>
-              <span class="value">{{ alquilado.finContrato }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Responsable interno</span>
-              <span class="value">{{ alquilado.responsable }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">Contacto proveedor</span>
-              <span class="value">{{ alquilado.contactoProveedor }}</span>
-            </div>
-          </div>
-        </ng-container>
-      </ng-template>
-    </mat-card-content>
-  </mat-card>
+  <ng-template #emptyState>
+    <div class="empty-state">
+      <mat-icon>inventory_2</mat-icon>
+      <p>No hay equipos registrados en el inventario.</p>
+    </div>
+  </ng-template>
 </div>

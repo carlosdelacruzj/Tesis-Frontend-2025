@@ -120,7 +120,7 @@
           </div>
 
           <div class="table-responsive" *ngIf="!loadingPaquetes; else paquetesLoading">
-            <app-table-base-mejora
+            <app-table-base
               [columns]="paquetesColumns"
               [data]="paquetesRows"
               [showSearch]="false"
@@ -163,7 +163,7 @@
                 </div>
               </ng-template>
 
-            </app-table-base-mejora>
+            </app-table-base>
           </div>
         </mat-card-content>
       </mat-card>
@@ -174,7 +174,7 @@
         </mat-card-header>
         <mat-card-content>
           <div class="table-responsive">
-            <app-table-base-mejora
+            <app-table-base
               [columns]="selectedPaquetesColumns"
               [data]="selectedPaquetes"
               [showSearch]="false"
@@ -252,7 +252,7 @@
                         (click)="removePaquete(row.key)">✖</button>
               </ng-template>
 
-            </app-table-base-mejora>
+            </app-table-base>
           </div>
           <div class="text-end mt-2">
             <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>

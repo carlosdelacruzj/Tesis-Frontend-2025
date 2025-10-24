@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { from, Subject, takeUntil } from 'rxjs';
 
-import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { Perfil } from './model/perfil.model';
 import { PerfilService } from './service/perfil.service';
 

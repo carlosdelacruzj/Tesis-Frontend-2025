@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
 import { PedidoService } from './service/pedido.service';
-import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
 export interface PedidoRow {
   ID: number;

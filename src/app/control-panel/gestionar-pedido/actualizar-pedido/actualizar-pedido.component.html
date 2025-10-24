@@ -286,7 +286,7 @@
           </div>
 
           <div class="row">
-            <app-table-base-mejora
+            <app-table-base
               [columns]="paquetesColumns"
               [data]="paquetesRows"
               [showSearch]="false"
@@ -329,14 +329,14 @@
                 </div>
               </ng-template>
 
-            </app-table-base-mejora>
+            </app-table-base>
           </div>
 
           <div class="row mt-3" *ngIf="selectedPaquetes.length">
             <div class="col">
               <h6>Seleccionados ({{selectedPaquetes.length}})</h6>
 
-              <app-table-base-mejora
+              <app-table-base
                 [columns]="selectedPaquetesColumns"
                 [data]="selectedPaquetes"
                 [showSearch]="false"
@@ -374,7 +374,7 @@
                     (click)="removePaquete(row.key)">✖</button>
                 </ng-template>
 
-              </app-table-base-mejora>
+              </app-table-base>
               <div class="text-end mt-2">
                 <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>
               </div>

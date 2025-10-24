@@ -7,7 +7,7 @@
   <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
   <ng-container *ngIf="!loadingList; else loadingState">
-    <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="25"
+    <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="25"
       searchPlaceholder="Buscar: rol, nombre, documento…"
       emptyText="Sin perfiles registrados" (rowClick)="editarPerfil($event)" (sortChange)="onSortChange($event)"
       (pageChange)="onPageChange($event)" [showCreateButton]="true" createButtonLabel="Registrar perfil"
@@ -52,7 +52,7 @@
         </div>
       </ng-template>
 
-    </app-table-base-mejora>
+    </app-table-base>
   </ng-container>
 
 </div>

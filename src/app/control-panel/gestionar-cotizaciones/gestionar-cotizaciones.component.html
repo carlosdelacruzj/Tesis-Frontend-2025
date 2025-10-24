@@ -6,7 +6,7 @@
   <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
   <ng-container *ngIf="!loadingList; else loadingState">
-    <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10,25,50]" [pageSize]="10"
+    <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10,25,50]" [pageSize]="10"
       searchPlaceholder="Buscar: cliente, código, evento…"
       emptyText="Sin resultados" (rowClick)="ver($event)" (sortChange)="onSortChange($event)"
       createButtonLabel="Registrar cotización" [showCreateButton]="true" (createClick)="navigateToCreate()"
@@ -81,7 +81,7 @@
           </button>
         </div>
       </ng-template>
-    </app-table-base-mejora>
+    </app-table-base>
   </ng-container>
 </div>
 

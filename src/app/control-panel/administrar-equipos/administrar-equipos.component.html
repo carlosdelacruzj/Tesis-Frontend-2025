@@ -6,7 +6,7 @@
         <mat-tab label="Equipos Adquiridos">
             <div class="dashboard-ecommerce" *ngIf="esPrincipal">
                 <div class="container-fluid">
-                    <app-table-base-mejora
+                    <app-table-base
                         [columns]="columnasAdquiridos"
                         [data]="equiposAdquiridos"
                         [pageSizeOptions]="[5, 10, 25, 50]"
@@ -29,7 +29,7 @@
                             </button>
                         </ng-template>
 
-                    </app-table-base-mejora>
+                    </app-table-base>
                 </div>
             </div>
             <div *ngIf="!esPrincipal">
@@ -48,7 +48,7 @@
         <mat-tab label="Equipos Alquilados">
             <div class="dashboard-ecommerce" *ngIf="isPrincipal">
                 <div class="container-fluid">
-                    <app-table-base-mejora
+                    <app-table-base
                         [columns]="columnasAlquilados"
                         [data]="equiposAlquilados"
                         [pageSizeOptions]="[5, 10, 25, 50]"
@@ -72,7 +72,7 @@
                             </button>
                         </ng-template>
 
-                    </app-table-base-mejora>
+                    </app-table-base>
                 </div>
             </div>
             <div *ngIf="!isPrincipal">

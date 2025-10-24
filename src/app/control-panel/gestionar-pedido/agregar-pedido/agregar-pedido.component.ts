@@ -11,7 +11,7 @@ import { FormControl } from '@angular/forms';
 import { of, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
-import { TableColumn } from 'src/app/components/table/table-base.component';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
 type Tag = { nombre: string; direccion: string; usedAt?: number };
 type PedidoPaqueteSeleccionado = {

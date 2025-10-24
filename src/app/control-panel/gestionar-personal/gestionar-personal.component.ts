@@ -3,7 +3,7 @@ import { NgForm } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { Subject, takeUntil } from 'rxjs';
 
-import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { PersonalService, Cargo } from './service/personal.service';
 import { Empleado, EmpleadoUpdateDto } from './model/personal.model';
 

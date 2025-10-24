@@ -7,8 +7,7 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { ControlPanelRoutingModule } from './control-panel-routing.module';
 import { AngularMaterialModule } from '../shared/angular-material/angular-material.module';
-import { CellTemplateDirective, TableBaseComponent } from '../components/table/table-base.component';
-import { TableBaseMejoraComponent } from '../components/table-base-mejora/table-base-mejora.component';
+import { CellTemplateDirective, TableBaseComponent } from '../components/table-base/table-base.component';
 import { ModalBaseComponent } from '../components/modal-base/modal-base.component';
 import { HomeComponent } from './home/home.component';
 import { FooterComponent } from '../shared/footer/footer.component';
@@ -31,6 +30,7 @@ import { DetallePedidoComponent } from './gestionar-pedido/detalle-pedido/detall
 import { ActualizarProyectoComponent } from './gestionar-proyecto/actualizar-proyecto/actualizar-proyecto.component';
 import { AdministrarEquiposComponent } from './administrar-equipos/administrar-equipos.component';
 import { AdministrarEquipos2Component } from './administrar-equipos-2/administrar-equipos-2.component';
+import { DetalleEquiposComponent } from './administrar-equipos-2/detalle-equipos/detalle-equipos.component';
 import { ListarportipoComponent } from './administrar-equipos/listarportipo/listarportipo.component';
 import { DetallesAlquiladoComponent } from './administrar-equipos/detalles-alquilado/detalles-alquilado.component';
 import { GestionarPersonalComponent } from './gestionar-personal/gestionar-personal.component';
@@ -56,6 +56,7 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     GestionarEquiposComponent,
     AdministrarEquiposComponent,
     AdministrarEquipos2Component,
+    DetalleEquiposComponent,
     ListarportipoComponent,
     DetallesAlquiladoComponent,
     GestionarProyectoComponent,
@@ -95,7 +96,6 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     NgbModule,
     TableBaseComponent,
     CellTemplateDirective,
-    TableBaseMejoraComponent,
     ModalBaseComponent
   ]
 })

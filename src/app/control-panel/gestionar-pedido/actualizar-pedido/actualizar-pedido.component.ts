@@ -9,7 +9,7 @@ import { of, take, finalize } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
-import { TableColumn } from 'src/app/components/table/table-base.component';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
 type Tag = { nombre: string; direccion: string; usedAt?: number };
 type PedidoPaqueteSeleccionado = {

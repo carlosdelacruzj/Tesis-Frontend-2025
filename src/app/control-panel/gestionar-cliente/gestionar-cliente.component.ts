@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
-import { TableColumn } from 'src/app/components/table-base-mejora/table-base-mejora.component';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { Cliente } from './model/cliente.model';
 import { ClienteService } from './service/cliente.service';
 

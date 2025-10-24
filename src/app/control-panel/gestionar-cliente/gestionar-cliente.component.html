@@ -7,7 +7,7 @@
   <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
   <ng-container *ngIf="!loadingList; else loadingState">
-    <app-table-base-mejora [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
+    <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
       searchPlaceholder="Buscar: nombre, documento, correo…" emptyText="Sin resultados"
       (rowClick)="editarCliente($event)" (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
       [showCreateButton]="true" createButtonLabel="Registrar cliente" (createClick)="navigateToCreate()">
@@ -41,7 +41,7 @@
         </div>
       </ng-template>
 
-    </app-table-base-mejora>
+    </app-table-base>
   </ng-container>
 
 </div>

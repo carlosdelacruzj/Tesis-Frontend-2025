@@ -1,0 +1,102 @@
+.detalle-equipos {
+  gap: 24px;
+  padding-bottom: 32px;
+}
+
+.detalle-equipos .page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.back-button mat-icon {
+  margin-right: 6px;
+}
+
+.detalle-equipos h1 {
+  margin: 0;
+  font-weight: 600;
+  color: #13203a;
+}
+
+.detalle-subtitle {
+  margin: 6px 0 0;
+  color: #5a6a83;
+  font-size: 14px;
+}
+
+.detalle-status {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #4c5b78;
+}
+
+.detalle-status mat-progress-bar {
+  height: 6px;
+  border-radius: 999px;
+}
+
+.detalle-status.error {
+  flex-direction: row;
+  align-items: center;
+  color: #c62828;
+}
+
+.detalle-status.error mat-icon {
+  margin-right: 6px;
+}
+
+.detalle-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.detalle-chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background-color: #f0f4ff;
+  color: #1a49a0;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.estado-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background-color: #dde8ff;
+  color: #1a49a0;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.empty-state {
+  margin: 64px auto;
+  max-width: 320px;
+  text-align: center;
+  color: #5c6a82;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.empty-state mat-icon {
+  font-size: 56px;
+  width: 56px;
+  height: 56px;
+  color: #c7d4ea;
+}
+
+@media (max-width: 768px) {
+  .detalle-equipos .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

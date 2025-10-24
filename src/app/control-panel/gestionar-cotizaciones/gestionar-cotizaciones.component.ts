@@ -7,7 +7,7 @@ import { Cotizacion } from './model/cotizacion.model';
 import { CotizacionService } from './service/cotizacion.service';
 
 // TableBase
-import { TableColumn } from 'src/app/components/table/table-base.component';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
 // Util: convertir assets a base64
 import { urlToBase64 } from 'src/app/utils/url-to-base64';
