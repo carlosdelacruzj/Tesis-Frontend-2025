@@ -1,13 +1,9 @@
-.detalle-equipos {
+.equipo-detalle {
   gap: 24px;
   padding-bottom: 32px;
 }
 
-.back-button mat-icon {
-  margin-right: 6px;
-}
-
-.detalle-equipos .toolbar-actions {
+.equipo-detalle .toolbar-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -15,11 +11,11 @@
   gap: 12px;
 }
 
-.detalle-equipos .toolbar-actions button mat-icon {
+.back-button mat-icon {
   margin-right: 6px;
 }
 
-.detalle-equipos h1 {
+.equipo-detalle h1 {
   margin: 0;
   font-weight: 600;
   color: #13203a;
@@ -60,6 +56,18 @@
   color: #1a49a0;
   font-weight: 600;
   font-size: 13px;
+}
+
+.estado-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background-color: #dde8ff;
+  color: #1a49a0;
+  font-weight: 600;
+  font-size: 12px;
 }
 
 .empty-state {

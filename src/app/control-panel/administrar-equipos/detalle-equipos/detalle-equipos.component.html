@@ -1,32 +1,34 @@
 <div class="dashboard-content detalle-equipos">
-  <div class="page-header">
-    <button mat-button class="back-button" (click)="volver()">
-      <mat-icon>arrow_back</mat-icon>
-      Volver al resumen
-    </button>
-
-    <div class="header-text">
-      <h1>{{ filtros.tipoNombre || 'Inventario de equipos' }}</h1>
-      <p class="detalle-subtitle">
-        <span *ngIf="filtros.marcaNombre || filtros.modeloNombre">
-          {{ filtros.marcaNombre || 'Todas las marcas' }} ·
-          {{ filtros.modeloNombre || 'Todos los modelos' }}
-        </span>
-        <span *ngIf="!(filtros.marcaNombre || filtros.modeloNombre)">
-          Visualiza los equipos registrados para este tipo.
-        </span>
-      </p>
+  <app-list-toolbar
+    [title]="toolbarTitle"
+    [description]="toolbarDescription"
+    [showSearch]="true"
+    [searchPlaceholder]="'Marca o modelo'"
+    [searchValue]="busqueda"
+    [showCreateButton]="false"
+    (searchChange)="onBuscar($event)"
+  >
+    <div actions class="toolbar-actions">
+      <button mat-button type="button" class="back-button" (click)="volver()">
+        <mat-icon>arrow_back</mat-icon>
+        Volver al inventario
+      </button>
+      <button
+        mat-stroked-button
+        color="primary"
+        type="button"
+        (click)="verDetalleGeneral()"
+        [disabled]="!resumenModelos.length"
+      >
+        <mat-icon>table_rows</mat-icon>
+        Ver lista completa
+      </button>
     </div>
-
-    <button mat-stroked-button color="primary" (click)="abrirModalEquipo()">
-      <mat-icon>add</mat-icon>
-      Registrar equipo
-    </button>
-  </div>
+  </app-list-toolbar>
 
   <div class="detalle-status" *ngIf="cargando">
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-    <span>Cargando equipos...</span>
+    <span>Cargando resumen…</span>
   </div>
 
   <div class="detalle-status error" *ngIf="error">
@@ -35,37 +37,21 @@
   </div>
 
   <ng-container *ngIf="!cargando && !error">
-    <div class="detalle-resumen">
-      <div class="detalle-chip">
-        Total registrados: {{ equipos.length }}
-      </div>
-      <div class="detalle-chip" *ngIf="filtros.tipoNombre">
-        Tipo: {{ filtros.tipoNombre }}
-      </div>
-      <div class="detalle-chip" *ngIf="filtros.marcaNombre">
-        Marca: {{ filtros.marcaNombre }}
-      </div>
-      <div class="detalle-chip" *ngIf="filtros.modeloNombre">
-        Modelo: {{ filtros.modeloNombre }}
-      </div>
-    </div>
 
-    <ng-container *ngIf="equipos.length; else sinEquipos">
+    <ng-container *ngIf="resumenModelos.length; else sinEquipos">
       <app-table-base
-        [columns]="columnas"
-        [data]="equipos"
+        [columns]="columnasResumen"
+        [data]="gruposFiltrados"
         [pageSize]="10"
         [pageSizeOptions]="[10, 25, 50]"
-        searchPlaceholder="Buscar por serie, marca o modelo"
         [showCreateButton]="false"
-        [emptyText]="'No hay equipos registrados con estos filtros.'"
+        [showSearch]="false"
+        [emptyText]="'No hay modelos registrados con estos filtros.'"
       >
-        <ng-template appCell="nombreEstado" let-row>
-          <span class="estado-pill">{{ row.nombreEstado }}</span>
-        </ng-template>
-
-        <ng-template appCell="fechaIngreso" let-row>
-          {{ row.fechaIngreso | date: 'mediumDate' }}
+        <ng-template appCell="acciones" let-row>
+          <button class="btn btn-outline-primary btn-sm" type="button" (click)="verDetalleModelo(row)">
+            Ver equipos
+          </button>
         </ng-template>
       </app-table-base>
     </ng-container>
@@ -77,121 +63,4 @@
       <p>No hay equipos registrados con estos filtros.</p>
     </div>
   </ng-template>
-
-  <app-modal-base
-    [open]="modalEquipoOpen"
-    title="Registrar equipo"
-    [disableClose]="formEquipo.cargando"
-    [useDefaultFooter]="false"
-    [loading]="formEquipo.cargando"
-    (closed)="onModalEquipoClosed()"
-  >
-    <app-formulario-base
-      [open]="modalEquipoOpen"
-      [loading]="formEquipo.cargando"
-      [loadingMessage]="'Registrando equipo…'"
-      [error]="formEquipo.error"
-    >
-      <form
-        id="crearEquipoForm"
-        #crearEquipoForm="ngForm"
-        class="row g-3"
-        (ngSubmit)="confirmarCrearEquipo()"
-      >
-        <div class="col-12 col-md-6">
-          <label class="form-label" for="fechaIngresoEquipo">Fecha de ingreso</label>
-          <input
-            id="fechaIngresoEquipo"
-            name="fechaIngresoEquipo"
-            type="date"
-            class="form-control"
-            required
-            [(ngModel)]="formEquipo.fechaIngreso"
-            #fechaIngresoCtrl="ngModel"
-          />
-          <div class="invalid-feedback d-block" *ngIf="fechaIngresoCtrl.invalid && (fechaIngresoCtrl.dirty || fechaIngresoCtrl.touched)">
-            Selecciona una fecha válida.
-          </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-          <label class="form-label" for="modeloEquipoSelect">Modelo</label>
-          <select
-            id="modeloEquipoSelect"
-            name="modeloEquipoSelect"
-            class="form-select"
-            required
-            [disabled]="!modelosDisponibles.length"
-            [(ngModel)]="formEquipo.idModelo"
-            #modeloCtrl="ngModel"
-          >
-            <option [ngValue]="null" disabled>Selecciona un modelo</option>
-            <option *ngFor="let modelo of modelosDisponibles" [ngValue]="modelo.idModelo">
-              {{ modelo.nombreMarca }} · {{ modelo.nombre }}
-            </option>
-          </select>
-          <div class="invalid-feedback d-block" *ngIf="modeloCtrl.invalid && (modeloCtrl.dirty || modeloCtrl.touched)">
-            Selecciona un modelo.
-          </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-          <label class="form-label" for="estadoEquipoSelect">Estado</label>
-          <select
-            id="estadoEquipoSelect"
-            name="estadoEquipoSelect"
-            class="form-select"
-            required
-            [disabled]="!estadosDisponibles.length"
-            [(ngModel)]="formEquipo.idEstado"
-            #estadoCtrl="ngModel"
-          >
-            <option [ngValue]="null" disabled>Selecciona un estado</option>
-            <option *ngFor="let estado of estadosDisponibles" [ngValue]="estado.idEstado">
-              {{ estado.nombreEstado }}
-            </option>
-          </select>
-          <div class="invalid-feedback d-block" *ngIf="estadoCtrl.invalid && (estadoCtrl.dirty || estadoCtrl.touched)">
-            Selecciona un estado.
-          </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-          <label class="form-label" for="serieEquipo">Número de serie</label>
-          <input
-            id="serieEquipo"
-            name="serieEquipo"
-            type="text"
-            class="form-control text-uppercase"
-            maxlength="80"
-            required
-            [(ngModel)]="formEquipo.serie"
-            #serieCtrl="ngModel"
-          />
-          <div class="invalid-feedback d-block" *ngIf="serieCtrl.invalid && (serieCtrl.dirty || serieCtrl.touched)">
-            Ingrese un número de serie.
-          </div>
-        </div>
-
-        <div class="col-12 mensaje-exito" *ngIf="formEquipo.exito">
-          <mat-icon>check_circle</mat-icon>
-          {{ formEquipo.exito }}
-        </div>
-      </form>
-    </app-formulario-base>
-    <div modal-footer class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary" type="button" (click)="onModalEquipoClosed()" [disabled]="formEquipo.cargando">
-        Cancelar
-      </button>
-      <button
-        class="btn btn-primary d-inline-flex align-items-center gap-2"
-        type="submit"
-        form="crearEquipoForm"
-        [disabled]="crearEquipoForm.invalid || formEquipo.cargando"
-      >
-        <span class="spinner-border spinner-border-sm" *ngIf="formEquipo.cargando" role="status" aria-hidden="true"></span>
-        <span>Registrar</span>
-      </button>
-    </div>
-  </app-modal-base>
 </div>

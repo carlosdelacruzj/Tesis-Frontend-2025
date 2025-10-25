@@ -4,6 +4,8 @@ import { AdministrarEquiposService } from './service/administrar-equipos.service
 import { EquipoResumen } from './models/equipo-resumen.model';
 import { Marca } from './models/marca.model';
 import { TipoEquipo } from './models/tipo-equipo.model';
+import { forkJoin } from 'rxjs';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 interface ResumenPorTipo {
   idTipoEquipo: number;
@@ -52,9 +54,6 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
   modalModeloOpen = false;
   tiposDisponibles: TipoEquipo[] = [];
   marcasDisponibles: Marca[] = [];
-  private cerrarTipoTimeout: any;
-  private cerrarMarcaTimeout: any;
-  private cerrarModeloTimeout: any;
 
   constructor(
     private readonly administrarEquiposService: AdministrarEquiposService,
@@ -63,23 +62,9 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarResumen();
-    this.cargarTipos();
-    this.cargarMarcas();
   }
 
   ngOnDestroy(): void {
-    if (this.cerrarTipoTimeout) {
-      clearTimeout(this.cerrarTipoTimeout);
-      this.cerrarTipoTimeout = null;
-    }
-    if (this.cerrarMarcaTimeout) {
-      clearTimeout(this.cerrarMarcaTimeout);
-      this.cerrarMarcaTimeout = null;
-    }
-    if (this.cerrarModeloTimeout) {
-      clearTimeout(this.cerrarModeloTimeout);
-      this.cerrarModeloTimeout = null;
-    }
   }
 
   trackByTipo(_: number, item: ResumenPorTipo): number {
@@ -95,12 +80,13 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
       queryParams: {
         tipo: tipo.idTipoEquipo,
         tipoNombre: tipo.nombreTipoEquipo
-      }
+      },
+      state: { modelos: tipo.modelos }
     });
   }
 
   verDetallePorModelo(tipo: ResumenPorTipo, modelo: EquipoResumen): void {
-    this.router.navigate(['/home/administrar-equipos/detalle'], {
+    this.router.navigate(['/home/administrar-equipos/equipos'], {
       queryParams: {
         tipo: tipo.idTipoEquipo,
         tipoNombre: tipo.nombreTipoEquipo,
@@ -120,10 +106,6 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
   onModalTipoClosed(): void {
     this.modalTipoOpen = false;
     this.resetFormularioTipo();
-    if (this.cerrarTipoTimeout) {
-      clearTimeout(this.cerrarTipoTimeout);
-      this.cerrarTipoTimeout = null;
-    }
   }
 
   abrirModalMarca(): void {
@@ -134,10 +116,6 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
   onModalMarcaClosed(): void {
     this.modalMarcaOpen = false;
     this.resetFormularioMarca();
-    if (this.cerrarMarcaTimeout) {
-      clearTimeout(this.cerrarMarcaTimeout);
-      this.cerrarMarcaTimeout = null;
-    }
   }
 
   abrirModalModelo(): void {
@@ -149,10 +127,6 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
   onModalModeloClosed(): void {
     this.modalModeloOpen = false;
     this.resetFormularioModelo();
-    if (this.cerrarModeloTimeout) {
-      clearTimeout(this.cerrarModeloTimeout);
-      this.cerrarModeloTimeout = null;
-    }
   }
 
   onBuscar(term: string): void {
@@ -191,17 +165,30 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
 
     this.administrarEquiposService.crearTipoEquipo(nombre).subscribe({
       next: () => {
-        this.formTipo.exito = 'Tipo creado correctamente.';
         this.formTipo.cargando = false;
         this.cargarResumen();
-        this.cerrarTipoTimeout = setTimeout(() => {
-          this.onModalTipoClosed();
-        }, 1000);
+        this.onModalTipoClosed();
+        void Swal.fire({
+          icon: 'success',
+          title: 'Tipo registrado',
+          text: 'El tipo de equipo se creó correctamente.',
+          confirmButtonText: 'Aceptar',
+          buttonsStyling: false,
+          customClass: { confirmButton: 'btn btn-success' }
+        });
       },
       error: (error) => {
         console.error('Error al crear tipo de equipo', error);
-        this.formTipo.error = 'No se pudo crear el tipo. Intenta nuevamente.';
         this.formTipo.cargando = false;
+        this.formTipo.error = null;
+        void Swal.fire({
+          icon: 'error',
+          title: 'No se pudo registrar',
+          text: 'Ocurrió un problema al crear el tipo. Intenta nuevamente.',
+          confirmButtonText: 'Aceptar',
+          buttonsStyling: false,
+          customClass: { confirmButton: 'btn btn-danger' }
+        });
       }
     });
   }
@@ -225,17 +212,30 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
 
     this.administrarEquiposService.crearMarca(nombre).subscribe({
       next: () => {
-        this.formMarca.exito = 'Marca creada correctamente.';
         this.formMarca.cargando = false;
         this.cargarMarcas();
-        this.cerrarMarcaTimeout = setTimeout(() => {
-          this.onModalMarcaClosed();
-        }, 1000);
+        this.onModalMarcaClosed();
+        void Swal.fire({
+          icon: 'success',
+          title: 'Marca registrada',
+          text: 'La marca se creó correctamente.',
+          confirmButtonText: 'Aceptar',
+          buttonsStyling: false,
+          customClass: { confirmButton: 'btn btn-success' }
+        });
       },
       error: (error) => {
         console.error('Error al crear marca', error);
-        this.formMarca.error = 'No se pudo crear la marca. Intenta nuevamente.';
         this.formMarca.cargando = false;
+        this.formMarca.error = null;
+        void Swal.fire({
+          icon: 'error',
+          title: 'No se pudo registrar',
+          text: 'Ocurrió un problema al crear la marca. Intenta nuevamente.',
+          confirmButtonText: 'Aceptar',
+          buttonsStyling: false,
+          customClass: { confirmButton: 'btn btn-danger' }
+        });
       }
     });
   }
@@ -256,17 +256,30 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
 
     this.administrarEquiposService.crearModelo({ nombre, idTipoEquipo, idMarca }).subscribe({
       next: () => {
-        this.formModelo.exito = 'Modelo creado correctamente.';
         this.formModelo.cargando = false;
         this.cargarResumen();
-        this.cerrarModeloTimeout = setTimeout(() => {
-          this.onModalModeloClosed();
-        }, 1000);
+        this.onModalModeloClosed();
+        void Swal.fire({
+          icon: 'success',
+          title: 'Modelo registrado',
+          text: 'El modelo se creó correctamente.',
+          confirmButtonText: 'Aceptar',
+          buttonsStyling: false,
+          customClass: { confirmButton: 'btn btn-success' }
+        });
       },
       error: (error) => {
         console.error('Error al crear modelo', error);
-        this.formModelo.error = 'No se pudo crear el modelo. Intenta nuevamente.';
         this.formModelo.cargando = false;
+        this.formModelo.error = null;
+        void Swal.fire({
+          icon: 'error',
+          title: 'No se pudo registrar',
+          text: 'Ocurrió un problema al crear el modelo. Intenta nuevamente.',
+          confirmButtonText: 'Aceptar',
+          buttonsStyling: false,
+          customClass: { confirmButton: 'btn btn-danger' }
+        });
       }
     });
   }
@@ -294,14 +307,20 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
   }
 
   private cargarResumen(): void {
-    this.administrarEquiposService.getResumenEquipos().subscribe({
-      next: (equipos) => {
-        this.resumenPorTipo = this.agruparPorTipo(equipos);
+    forkJoin({
+      resumen: this.administrarEquiposService.getResumenEquipos(),
+      tipos: this.administrarEquiposService.obtenerTipos()
+    }).subscribe({
+      next: ({ resumen, tipos }) => {
+        this.tiposDisponibles = tipos;
+        if (this.modalModeloOpen && !this.formModelo.idTipoEquipo && this.tiposDisponibles.length) {
+          this.formModelo.idTipoEquipo = this.tiposDisponibles[0].idTipoEquipo;
+        }
+        this.resumenPorTipo = this.construirResumenPorTipo(resumen, tipos);
         this.categoriasDisponibles = Array.from(
           new Set(this.resumenPorTipo.map((item) => item.categoria))
         );
         this.aplicarFiltros();
-        this.cargarTipos();
         this.cargarMarcas();
       },
       error: (error) => {
@@ -310,7 +329,7 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
     });
   }
 
-  private agruparPorTipo(equipos: EquipoResumen[]): ResumenPorTipo[] {
+  private construirResumenPorTipo(equipos: EquipoResumen[], tipos: TipoEquipo[]): ResumenPorTipo[] {
     const mapa = new Map<number, ResumenPorTipo>();
 
     equipos.forEach((equipo) => {
@@ -331,7 +350,21 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
       existente.modelos = [...existente.modelos, equipo];
     });
 
-    return Array.from(mapa.values());
+    tipos.forEach((tipo) => {
+      if (!mapa.has(tipo.idTipoEquipo)) {
+        mapa.set(tipo.idTipoEquipo, {
+          idTipoEquipo: tipo.idTipoEquipo,
+          nombreTipoEquipo: tipo.nombre,
+          totalCantidad: 0,
+          modelos: [],
+          categoria: this.obtenerCategoria(tipo.nombre)
+        });
+      }
+    });
+
+    return Array.from(mapa.values()).sort((a, b) =>
+      a.nombreTipoEquipo.localeCompare(b.nombreTipoEquipo)
+    );
   }
 
   private obtenerCategoria(nombreTipo: string): string {
@@ -368,8 +401,8 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
 
   private existeTipo(nombre: string): boolean {
     const normalizado = this.normalizarTexto(nombre);
-    return this.resumenPorTipo.some(
-      (tipo) => this.normalizarTexto(tipo.nombreTipoEquipo) === normalizado
+    return this.tiposDisponibles.some(
+      (tipo) => this.normalizarTexto(tipo.nombre) === normalizado
     );
   }
 

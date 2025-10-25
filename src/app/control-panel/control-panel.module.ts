@@ -4,7 +4,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { ControlPanelRoutingModule } from './control-panel-routing.module';
 import { AngularMaterialModule } from '../shared/angular-material/angular-material.module';
 import { CellTemplateDirective, TableBaseComponent } from '../components/table-base/table-base.component';
@@ -32,11 +31,11 @@ import { DetallePedidoComponent } from './gestionar-pedido/detalle-pedido/detall
 import { ActualizarProyectoComponent } from './gestionar-proyecto/actualizar-proyecto/actualizar-proyecto.component';
 import { AdministrarEquiposComponent } from './administrar-equipos/administrar-equipos.component';
 import { DetalleEquiposComponent } from './administrar-equipos/detalle-equipos/detalle-equipos.component';
+import { EquipoDetalleComponent } from './administrar-equipos/equipo-detalle/equipo-detalle.component';
 import { GestionarPersonalComponent } from './gestionar-personal/gestionar-personal.component';
 import { RegistrarPagoComponent } from './registrar-pago/registrar-pago.component';
 import { GenerarContratoComponent } from './generar-contrato/generar-contrato.component';
 import { ContratoComponent } from './generar-contrato/contrato/contrato.component';
-import { ReportesEstadisticosComponent } from './reportes-estadisticos/reportes-estadisticos.component';
 import { GestionarClienteComponent } from './gestionar-cliente/gestionar-cliente.component';
 import { GestionarPerfilesComponent } from './gestionar-perfiles/gestionar-perfiles.component';
 import { RegistrarPerfilComponent } from './gestionar-perfiles/registrar-perfil/registrar-perfil.component';
@@ -55,6 +54,7 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     GestionarEquiposComponent,
     AdministrarEquiposComponent,
     DetalleEquiposComponent,
+    EquipoDetalleComponent,
     GestionarProyectoComponent,
     AgregarProyectoComponent,
     ActualizarProyectoComponent,
@@ -72,7 +72,6 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     RegistrarPagoComponent,
     GenerarContratoComponent,
     ContratoComponent,
-    ReportesEstadisticosComponent,
     GestionarClienteComponent,
     GestionarPerfilesComponent,
     RegistrarPerfilComponent,
@@ -87,7 +86,6 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     ReactiveFormsModule,
     ControlPanelRoutingModule,
     AngularMaterialModule,
-    NgxChartsModule,
     DragDropModule,
     NgbModule,
     TableBaseComponent,

@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdministrarEquiposComponent } from './administrar-equipos/administrar-equipos.component';
 import { DetalleEquiposComponent } from './administrar-equipos/detalle-equipos/detalle-equipos.component';
+import { EquipoDetalleComponent } from './administrar-equipos/equipo-detalle/equipo-detalle.component';
 import { AdministrarPaqueteServicioComponent } from './administrar-paquete-servicio/administrar-paquete-servicio.component';
 import { EditarServicioComponent } from './administrar-paquete-servicio/components/editar-servicio/editar-servicio.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -37,6 +38,7 @@ const routes: Routes = [
       { path: 'gestionar-proyecto/agregar-proyecto', component: AgregarProyectoComponent },
       { path: 'administrar-equipos', component: AdministrarEquiposComponent },
       { path: 'administrar-equipos/detalle', component: DetalleEquiposComponent },
+      { path: 'administrar-equipos/equipos', component: EquipoDetalleComponent },
       { path: 'administrar-paquete-servicio', component: AdministrarPaqueteServicioComponent },
       { path: 'administrar-paquete-servicio/editar-servicio', component: EditarServicioComponent },
       { path: 'gestionar-pedido', component: GestionarPedidoComponent },

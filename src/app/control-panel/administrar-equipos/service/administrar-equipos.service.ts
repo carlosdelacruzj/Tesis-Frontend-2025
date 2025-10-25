@@ -17,6 +17,7 @@ export class AdministrarEquiposService {
   private readonly tiposUrl = `${environment.baseUrl}/inventario/tipos-equipo`;
   private readonly marcasUrl = `${environment.baseUrl}/inventario/marcas`;
   private readonly modelosUrl = `${environment.baseUrl}/inventario/modelos`;
+  private readonly estadosUrl = `${environment.baseUrl}/inventario/equipos/estados`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -94,6 +95,10 @@ export class AdministrarEquiposService {
     return this.http.get<Modelo[]>(this.modelosUrl);
   }
 
+  obtenerEstados(): Observable<Array<{ idEstado: number; nombreEstado: string }>> {
+    return this.http.get<Array<{ idEstado: number; nombreEstado: string }>>(this.estadosUrl);
+  }
+
   crearEquipo(payload: { fechaIngreso: string; idModelo: number; idEstado: number; serie: string }): Observable<void> {
     return this.http.post<void>(this.inventarioUrl, payload);
   }
@@ -104,5 +109,11 @@ export class AdministrarEquiposService {
 
   eliminarEquipo(idEquipo: number): Observable<void> {
     return this.http.delete<void>(`${this.inventarioUrl}/${idEquipo}`);
+  }
+
+  actualizarEstadoEquipo(idEquipo: number, idEstado: number): Observable<EquipoInventario> {
+    return this.http.patch<EquipoInventario>(`${this.inventarioUrl}/${idEquipo}/estado`, {
+      idEstado
+    });
   }
 }

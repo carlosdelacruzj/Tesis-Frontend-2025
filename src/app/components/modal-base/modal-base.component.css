@@ -21,10 +21,15 @@
 }
 
 /* Centrado y posición base */
+/* Sizing baseline with responsive clamp */
 .modal-dialog {
   margin: 0;
+  width: min(600px, 90vw);
   max-width: 600px; /* md default */
+  min-width: 320px;
+  max-height: 90vh;
   position: relative;
+  display: flex;
   pointer-events: auto;
   will-change: transform;
 }
