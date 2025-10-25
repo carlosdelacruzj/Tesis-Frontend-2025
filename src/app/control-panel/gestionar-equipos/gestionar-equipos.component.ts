@@ -116,11 +116,6 @@ export class GestionarEquiposComponent implements OnInit, AfterViewInit {
 
       //GET EQUIPOS BY PROYECTO ID
 
-      // this.service.getEquiposByProyecto(id).subscribe((data) => {
-      //   this.equipos_proyecto = data;
-      //   this.cantidad_asigacion = this.equipos_proyecto.length;
-      // });
-
       this.service.getEquiposByProyecto(id).subscribe((response: any) => {
         this.dataSource2 = new MatTableDataSource(response);
         this.bindAssignedTable();
