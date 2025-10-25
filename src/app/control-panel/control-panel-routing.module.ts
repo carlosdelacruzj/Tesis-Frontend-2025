@@ -1,9 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdministrarEquiposComponent } from './administrar-equipos/administrar-equipos.component';
-import { AdministrarEquipos2Component } from './administrar-equipos-2/administrar-equipos-2.component';
-import { DetalleEquiposComponent } from './administrar-equipos-2/detalle-equipos/detalle-equipos.component';
-import { ListarportipoComponent } from './administrar-equipos/listarportipo/listarportipo.component';
+import { DetalleEquiposComponent } from './administrar-equipos/detalle-equipos/detalle-equipos.component';
 import { AdministrarPaqueteServicioComponent } from './administrar-paquete-servicio/administrar-paquete-servicio.component';
 import { EditarServicioComponent } from './administrar-paquete-servicio/components/editar-servicio/editar-servicio.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
@@ -35,12 +33,10 @@ const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'gestionar-equipos', component: GestionarEquiposComponent },
-      { path: 'gestionar-equipos/listarportipo', component: ListarportipoComponent },
       { path: 'gestionar-proyecto', component: GestionarProyectoComponent },
       { path: 'gestionar-proyecto/agregar-proyecto', component: AgregarProyectoComponent },
       { path: 'administrar-equipos', component: AdministrarEquiposComponent },
-      { path: 'administrar-equipos-2', component: AdministrarEquipos2Component },
-      { path: 'administrar-equipos-2/detalle', component: DetalleEquiposComponent },
+      { path: 'administrar-equipos/detalle', component: DetalleEquiposComponent },
       { path: 'administrar-paquete-servicio', component: AdministrarPaqueteServicioComponent },
       { path: 'administrar-paquete-servicio/editar-servicio', component: EditarServicioComponent },
       { path: 'gestionar-pedido', component: GestionarPedidoComponent },

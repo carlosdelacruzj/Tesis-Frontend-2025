@@ -114,13 +114,14 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
     this.modalRegistroOpen = false;
     this.modalRegistroLoading = false;
     this.modalRegistroError = null;
-    this.createForm?.resetForm();
+    this.resetCreateFormState();
   }
 
   closeCreateModal(): void {
     if (this.modalRegistroLoading) {
       return;
     }
+    this.resetCreateFormState();
     this.modalRegistroOpen = false;
   }
 
@@ -157,7 +158,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
             customClass: { confirmButton: 'btn btn-success' },
             buttonsStyling: false
           });
-          this.createForm?.resetForm();
+          this.resetCreateFormState();
           this.modalRegistroOpen = false;
           this.loadClientes();
         },
@@ -238,6 +239,14 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
           this.modalEditarError = msg;
         }
       });
+  }
+
+  private resetCreateFormState(): void {
+    if (this.createForm) {
+      this.createForm.resetForm();
+      this.createForm.form.markAsPristine();
+      this.createForm.form.markAsUntouched();
+    }
   }
 
   private createEmptyEditModel(cliente?: ClienteRow) {

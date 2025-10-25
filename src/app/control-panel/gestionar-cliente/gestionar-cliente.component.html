@@ -53,74 +53,83 @@
   </div>
 </ng-template>
 
-<app-modal-base [open]="modalRegistroOpen" title="Registrar cliente" [disableClose]="modalRegistroLoading"
-  [loading]="modalRegistroLoading" [useDefaultFooter]="false" (closed)="onModalClosed()">
+<app-modal-base
+  [open]="modalRegistroOpen"
+  title="Registrar cliente"
+  [disableClose]="modalRegistroLoading"
+  [loading]="modalRegistroLoading"
+  [useDefaultFooter]="false"
+  (closed)="onModalClosed()">
 
-  <form #createForm="ngForm" id="createClienteForm" modal-body class="formulario-registro"
-    (ngSubmit)="submitCreate(createForm)">
+  <app-formulario-base
+    [open]="modalRegistroOpen"
+    [loading]="modalRegistroLoading"
+    [loadingMessage]="'Preparando formulario…'"
+    [error]="modalRegistroError">
 
-    <div class="alert alert-danger" role="alert" *ngIf="modalRegistroError">{{ modalRegistroError }}</div>
+    <form #createForm="ngForm" id="createClienteForm" (ngSubmit)="submitCreate(createForm)">
 
-    <div class="row g-3">
-      <div class="col-12 col-md-6">
-        <label class="form-label">Nombre</label>
-        <input type="text" class="form-control" name="nombre" required [pattern]="nombrePattern"
-               ngModel #nombre="ngModel">
-        <div class="invalid-feedback d-block" *ngIf="nombre.invalid && (nombre.dirty || nombre.touched)">
-          <span *ngIf="nombre.errors?.required">Campo requerido</span>
-          <span *ngIf="nombre.errors?.pattern">Sólo letras (2-20)</span>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Nombre</label>
+          <input type="text" class="form-control" name="nombre" required [pattern]="nombrePattern"
+                 ngModel #nombre="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="nombre.invalid && (nombre.dirty || nombre.touched)">
+            <span *ngIf="nombre.errors?.required">Campo requerido</span>
+            <span *ngIf="nombre.errors?.pattern">Sólo letras (2-20)</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Apellido</label>
+          <input type="text" class="form-control" name="apellido" required [pattern]="apellidoPattern"
+                 ngModel #apellido="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="apellido.invalid && (apellido.dirty || apellido.touched)">
+            <span *ngIf="apellido.errors?.required">Campo requerido</span>
+            <span *ngIf="apellido.errors?.pattern">Sólo letras (2-30)</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Correo</label>
+          <input type="email" class="form-control" name="correo" required [pattern]="correoPattern"
+                 ngModel #correo="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="correo.invalid && (correo.dirty || correo.touched)">
+            <span *ngIf="correo.errors?.required">Campo requerido</span>
+            <span *ngIf="correo.errors?.pattern">Ingrese un correo válido</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Número de documento</label>
+          <input type="text" class="form-control" name="doc" required [pattern]="docPattern"
+                 ngModel #doc="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="doc.invalid && (doc.dirty || doc.touched)">
+            <span *ngIf="doc.errors?.required">Campo requerido</span>
+            <span *ngIf="doc.errors?.pattern">Sólo números (8 dígitos)</span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Celular</label>
+          <input type="text" class="form-control" name="celular" required [pattern]="celularPattern"
+                 ngModel #celular="ngModel">
+          <div class="invalid-feedback d-block" *ngIf="celular.invalid && (celular.dirty || celular.touched)">
+            <span *ngIf="celular.errors?.required">Campo requerido</span>
+            <span *ngIf="celular.errors?.pattern">Sólo números (7-9 dígitos)</span>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Dirección</label>
+          <textarea class="form-control" name="direccion" required ngModel #direccion="ngModel"></textarea>
+          <div class="invalid-feedback d-block" *ngIf="direccion.invalid && (direccion.dirty || direccion.touched)">
+            <span>Campo requerido</span>
+          </div>
         </div>
       </div>
-
-      <div class="col-12 col-md-6">
-        <label class="form-label">Apellido</label>
-        <input type="text" class="form-control" name="apellido" required [pattern]="apellidoPattern"
-               ngModel #apellido="ngModel">
-        <div class="invalid-feedback d-block" *ngIf="apellido.invalid && (apellido.dirty || apellido.touched)">
-          <span *ngIf="apellido.errors?.required">Campo requerido</span>
-          <span *ngIf="apellido.errors?.pattern">Sólo letras (2-30)</span>
-        </div>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <label class="form-label">Correo</label>
-        <input type="email" class="form-control" name="correo" required [pattern]="correoPattern"
-               ngModel #correo="ngModel">
-        <div class="invalid-feedback d-block" *ngIf="correo.invalid && (correo.dirty || correo.touched)">
-          <span *ngIf="correo.errors?.required">Campo requerido</span>
-          <span *ngIf="correo.errors?.pattern">Ingrese un correo válido</span>
-        </div>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <label class="form-label">Número de documento</label>
-        <input type="text" class="form-control" name="doc" required [pattern]="docPattern"
-               ngModel #doc="ngModel">
-        <div class="invalid-feedback d-block" *ngIf="doc.invalid && (doc.dirty || doc.touched)">
-          <span *ngIf="doc.errors?.required">Campo requerido</span>
-          <span *ngIf="doc.errors?.pattern">Sólo números (8 dígitos)</span>
-        </div>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <label class="form-label">Celular</label>
-        <input type="text" class="form-control" name="celular" required [pattern]="celularPattern"
-               ngModel #celular="ngModel">
-        <div class="invalid-feedback d-block" *ngIf="celular.invalid && (celular.dirty || celular.touched)">
-          <span *ngIf="celular.errors?.required">Campo requerido</span>
-          <span *ngIf="celular.errors?.pattern">Sólo números (7-9 dígitos)</span>
-        </div>
-      </div>
-
-      <div class="col-12">
-        <label class="form-label">Dirección</label>
-        <textarea class="form-control" name="direccion" required ngModel #direccion="ngModel"></textarea>
-        <div class="invalid-feedback d-block" *ngIf="direccion.invalid && (direccion.dirty || direccion.touched)">
-          <span>Campo requerido</span>
-        </div>
-      </div>
-    </div>
-  </form>
+    </form>
+  </app-formulario-base>
 
   <div modal-footer class="d-flex justify-content-end gap-2">
     <button type="button" class="btn btn-outline-secondary" (click)="closeCreateModal()"
@@ -137,21 +146,21 @@
 
 </app-modal-base>
 
-<app-modal-base [open]="modalEditarOpen" title="Editar cliente" [disableClose]="modalEditarLoading || modalEditarSaving"
-  [loading]="modalEditarSaving" [useDefaultFooter]="false" (closed)="onEditModalClosed()">
+<app-modal-base
+  [open]="modalEditarOpen"
+  title="Editar cliente"
+  [disableClose]="modalEditarLoading || modalEditarSaving"
+  [loading]="modalEditarSaving"
+  [useDefaultFooter]="false"
+  (closed)="onEditModalClosed()">
 
-  <div modal-body class="formulario-registro">
-    <div class="alert alert-danger" role="alert" *ngIf="modalEditarError && !modalEditarLoading">{{ modalEditarError }}
-    </div>
+  <app-formulario-base
+    [open]="modalEditarOpen"
+    [loading]="modalEditarLoading"
+    [loadingMessage]="'Cargando cliente…'"
+    [error]="!modalEditarLoading ? modalEditarError : null">
 
-    <div *ngIf="modalEditarLoading"
-      class="d-flex flex-column align-items-center justify-content-center py-4 text-muted">
-      <mat-spinner diameter="32"></mat-spinner>
-      <p class="mt-3 mb-0">Cargando cliente…</p>
-    </div>
-
-    <form *ngIf="!modalEditarLoading && selectedCliente" #editForm="ngForm" id="editClienteForm"
-      (ngSubmit)="submitEdit(editForm)">
+    <form *ngIf="selectedCliente" #editForm="ngForm" id="editClienteForm" (ngSubmit)="submitEdit(editForm)">
 
       <div class="row g-3">
         <div class="col-12 col-md-6">
@@ -208,10 +217,10 @@
       </div>
     </form>
 
-    <div *ngIf="!modalEditarLoading && !selectedCliente && !modalEditarError" class="text-muted">
+    <div *ngIf="!selectedCliente && !modalEditarLoading && !modalEditarError" class="text-muted">
       Selecciona un cliente para editar.
     </div>
-  </div>
+  </app-formulario-base>
 
   <div modal-footer class="d-flex justify-content-end gap-2">
     <button type="button" class="btn btn-outline-secondary" (click)="closeEditModal()"

@@ -127,16 +127,18 @@
   [useDefaultFooter]="false"
   (closed)="onLeadRegistroClosed()">
 
-  <form
-    #registroClienteForm="ngForm"
-    id="registroClienteForm"
-    modal-body
-    class="formulario-registro"
-    (ngSubmit)="submitLeadRegistro(registroClienteForm)">
+  <app-formulario-base
+    [open]="registroClienteModalOpen"
+    [loading]="registroClienteLoading"
+    [loadingMessage]="'Preparando formulario…'"
+    [error]="registroClienteError">
 
-    <div class="alert alert-danger" role="alert" *ngIf="registroClienteError">{{ registroClienteError }}</div>
+    <form
+      #registroClienteForm="ngForm"
+      id="registroClienteForm"
+      (ngSubmit)="submitLeadRegistro(registroClienteForm)">
 
-    <div class="row g-3">
+      <div class="row g-3">
       <div class="col-12 col-md-6">
         <mat-form-field appearance="fill" class="w-100">
           <mat-label>Nombre</mat-label>
@@ -229,8 +231,9 @@
           <mat-error *ngIf="registroDireccion.errors?.required">Campo requerido</mat-error>
         </mat-form-field>
       </div>
-    </div>
-  </form>
+      </div>
+    </form>
+  </app-formulario-base>
 
   <div modal-footer class="d-flex justify-content-end gap-2">
     <button

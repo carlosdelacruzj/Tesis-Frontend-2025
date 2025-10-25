@@ -24,6 +24,12 @@
   gap: 12px;
 }
 
+.extra-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .actions .create-btn-wrapper .btn mat-icon {
   margin-right: 4px;
 }
@@ -54,10 +60,14 @@
     max-width: 100%;
   }
 
-  .create-btn-wrapper {
+  .extra-actions {
     width: 100%;
-    display: flex;
     justify-content: flex-end;
+  }
+
+  .create-btn-wrapper,
+  .extra-actions > * {
+    width: 100%;
   }
 
   .create-btn-wrapper .btn {

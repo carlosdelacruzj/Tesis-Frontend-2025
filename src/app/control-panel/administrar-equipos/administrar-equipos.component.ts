@@ -1,326 +1,449 @@
-import { formatDate } from '@angular/common';
-import { Component, Input, OnInit } from '@angular/core';
-import { NgForm } from '@angular/forms';
-import { NgbModal, NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
-import { AdministrarEquiposService } from './service/service.service';
-import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
-import { TableColumn } from 'src/app/components/table-base/table-base.component';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { AdministrarEquiposService } from './service/administrar-equipos.service';
+import { EquipoResumen } from './models/equipo-resumen.model';
+import { Marca } from './models/marca.model';
+import { TipoEquipo } from './models/tipo-equipo.model';
 
-interface TEquipo {
-  PK_TE_Cod: number;
-  TE_Nombre: string;
-}
-
-interface MEquipo {
-  Id: number;
-  Nombre: string;
-}
-
-interface Proyecto {
-  ID: number;
-  Nombre: string;
-  Fecha: string;
-  Servicio: string;
-  Evento: string;
-  Estado: number;
-}
-
-interface Empleado {
-  ID: number;
-  Nombre: string;
-  Apellido: string;
-  Car_Nombre: string;
-  DNI: string;
-  Celular: string;
-  Correo: string;
-  Autonomo: number;
-  Cargo: string;
-  Estado: string;
-}
-
-interface EquipoGrupoRow {
-  tipoEquipo?: string;
-  marca?: string;
-  modelo?: string;
-  cantidad?: number;
-  idTipoEquipo?: number;
-  idMarca?: number;
-  idModelo?: number;
-  IdEquipo?: number;
-  IdMarca?: number;
-  IdModelo?: number;
-  Modelo?: string;
-}
-
-interface EquipoAlquiladoRow {
-  tipoEquipo?: string;
-  serie?: string;
-  proyectoAsig?: string;
-  empleadoAsig?: string;
-  estado?: string;
-  id?: number;
-  ID?: number;
-  Serie?: string;
+interface ResumenPorTipo {
+  idTipoEquipo: number;
+  nombreTipoEquipo: string;
+  totalCantidad: number;
+  modelos: EquipoResumen[];
+  categoria: string;
 }
 
 @Component({
   selector: 'app-administrar-equipos',
   templateUrl: './administrar-equipos.component.html',
-  styleUrls: ['./administrar-equipos.component.css'],
+  styleUrls: ['./administrar-equipos.component.css']
 })
-export class AdministrarEquiposComponent implements OnInit {
-  /** Datos para las tablas reutilizables */
-  equiposAdquiridos: EquipoGrupoRow[] = [];
-  equiposAlquilados: EquipoAlquiladoRow[] = [];
-
-  /** Definición de columnas para tabla base */
-  readonly columnasAdquiridos: TableColumn<EquipoGrupoRow>[] = [
-    { key: 'tipoEquipo', header: 'Equipo', sortable: true, class: 'text-center text-capitalize' },
-    { key: 'marca', header: 'Marca', sortable: true, class: 'text-center text-capitalize' },
-    { key: 'modelo', header: 'Modelo', sortable: true, class: 'text-center text-capitalize' },
-    { key: 'cantidad', header: 'Cantidad', sortable: true, class: 'text-center', width: '120px' },
-    { key: 'acciones', header: 'Ver', sortable: false, filterable: false, class: 'text-center', width: '110px' }
-  ];
-
-  readonly columnasAlquilados: TableColumn<EquipoAlquiladoRow>[] = [
-    { key: 'tipoEquipo', header: 'Equipo', sortable: true, class: 'text-center text-capitalize' },
-    { key: 'serie', header: 'N° Serie', sortable: true, class: 'text-center text-capitalize' },
-    { key: 'proyectoAsig', header: 'Proyecto Asignado', sortable: true, class: 'text-center text-capitalize' },
-    { key: 'empleadoAsig', header: 'Empleado Asignado', sortable: true, class: 'text-center text-capitalize' },
-    { key: 'estado', header: 'Estado', sortable: true, class: 'text-center text-capitalize', width: '140px' },
-    { key: 'acciones', header: 'Detalle', sortable: false, filterable: false, class: 'text-center', width: '110px' }
-  ];
-
-  //VALIDACION DE FECHA
-  minimo: string = '';
-  maximo: string = '';
-  fechaFinEdicion: Date = new Date();
-
-  @Input() estado = 'ALQUILADO';
-
-  proyecto: Proyecto[] = [];
-  empleado: Empleado[] = [];
-  equipos: TEquipo[] = [];
-  marcas: MEquipo[] = [];
-  esPrincipal: boolean = true;
-  isPrincipal: boolean = true;
-  idEquipo: number = 0;
-  idMarca: number = 0;
-  idModelo: number = 0;
-  Modelo: string = '';
-  id: number = 0;
-  serie: string = '';
-  seriePattern = '^[A-Z]{3,3}[-]{1,1}[0-9]{3,3}$';
-
-  hoy: number = Date.now();
-
-  sHoy = '';
-  existe: number = 0;
-
-  idProyecto: number = 0;
+export class AdministrarEquiposComponent implements OnInit, OnDestroy {
+  resumenPorTipo: ResumenPorTipo[] = [];
+  filtradoResumen: ResumenPorTipo[] = [];
+  readonly maxModelosCompactos = 5;
+  categoriasDisponibles: string[] = [];
+  busqueda = '';
+  filtroTexto = '';
+  categoriaSeleccionada = 'todas';
+  formTipo = {
+    nombre: '',
+    confirmacion: false,
+    cargando: false,
+    error: null as string | null,
+    exito: null as string | null
+  };
+  modalTipoOpen = false;
+  formMarca = {
+    nombre: '',
+    cargando: false,
+    error: null as string | null,
+    exito: null as string | null
+  };
+  modalMarcaOpen = false;
+  formModelo = {
+    nombre: '',
+    idTipoEquipo: null as number | null,
+    idMarca: null as number | null,
+    cargando: false,
+    error: null as string | null,
+    exito: null as string | null
+  };
+  modalModeloOpen = false;
+  tiposDisponibles: TipoEquipo[] = [];
+  marcasDisponibles: Marca[] = [];
+  private cerrarTipoTimeout: any;
+  private cerrarMarcaTimeout: any;
+  private cerrarModeloTimeout: any;
 
   constructor(
-    public service: AdministrarEquiposService,
-    config: NgbModalConfig,
-    private modalService: NgbModal
-  ) {
-    config.backdrop = 'static';
-    config.keyboard = false;
-
-    this.sHoy = formatDate(this.hoy, 'yyyy-MM-dd', 'en-US');
-  }
+    private readonly administrarEquiposService: AdministrarEquiposService,
+    private readonly router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.getEquipos();
-    this.getEquiposAlquilados();
-    this.getTipoEquipos();
-    this.getMarcaEquipos();
-    //VALIDACION DE FECHA
-    this.fechaValidate(this.fechaFinEdicion);
-  }
-  //VALIDACION DE FECHA
-  fechaValidate(date:any) {
-
-    this.minimo = this.addDaysToDate(date, 1);
-    this.maximo = this.addDaysToDate(date, 365);
+    this.cargarResumen();
+    this.cargarTipos();
+    this.cargarMarcas();
   }
 
-  addDaysToDate(date:any, days:any) {
-    var res = new Date(date);
-    res.setDate(res.getDate() + days);
-    return this.convert(res);
-  }
-  convert(str:any) {
-    var date = new Date(str),
-      mnth = ("0" + (date.getMonth() + 1)).slice(-2),
-      day = ("0" + date.getDate()).slice(-2);
-    return [date.getFullYear(), mnth, day].join("-");
-  }
-  //FIN VALIDACION DE FECHA
-  //Muestra de tabla equipos adquiridos
-  getEquipos() {
-    this.service.getAllGroup().subscribe((response: any) => {
-      console.log(response);
-      this.equiposAdquiridos = response || [];
-    });
-  }
-  getEmpleados() {
-    this.service.getAllEmpleados().subscribe((response) => {
-      this.empleado = response;
-    });
-  }
-  getProyectos() {
-    this.service.getAllProyectos().subscribe((response) => {
-      this.proyecto = response;
-    });
-  }
-
-  //Muestra la tabla de equipos alquilados
-  getEquiposAlquilados() {
-    this.service.getEquiposAlquilados().subscribe((response: any) => {
-      this.equiposAlquilados = response || [];
-    });
-  }
-  //
-  getTipoEquipos() {
-    this.service.getTipoEquipo().subscribe((response) => {
-      this.equipos = response;
-    });
-  }
-  getMarcaEquipos() {
-    this.service.getMarcaEquipo().subscribe((response) => {
-      this.marcas = response;
-    });
-  }
-  //Segunda vista
-  verDetalle(
-    idEquipo: number,
-    idMarca: number,
-    idModelo: number,
-    Modelo: string
-  ) {
-    this.esPrincipal = false;
-    this.idEquipo = idEquipo;
-    this.idMarca = idMarca;
-    this.idModelo = idModelo;
-    this.Modelo = Modelo;
-  }
-  seleccionarGrupo(row: EquipoGrupoRow) {
-    if (!row) { return; }
-    const idEquipo = row.idTipoEquipo ?? row.IdEquipo;
-    const idMarca = row.idMarca ?? row.IdMarca;
-    const idModelo = row.idModelo ?? row.IdModelo;
-    const modelo = row.modelo ?? row.Modelo ?? '';
-    if (idEquipo != null && idMarca != null && idModelo != null) {
-      this.verDetalle(idEquipo, idMarca, idModelo, modelo);
+  ngOnDestroy(): void {
+    if (this.cerrarTipoTimeout) {
+      clearTimeout(this.cerrarTipoTimeout);
+      this.cerrarTipoTimeout = null;
+    }
+    if (this.cerrarMarcaTimeout) {
+      clearTimeout(this.cerrarMarcaTimeout);
+      this.cerrarMarcaTimeout = null;
+    }
+    if (this.cerrarModeloTimeout) {
+      clearTimeout(this.cerrarModeloTimeout);
+      this.cerrarModeloTimeout = null;
     }
   }
-  seleccionarAlquilado(row: EquipoAlquiladoRow) {
-    if (!row) { return; }
-    const id = row.id ?? row.ID;
-    const serie = row.serie ?? row.Serie ?? '';
-    if (id != null) {
-      this.verDetalleAlquilado(id, serie);
-    }
-  }
-  //vISTA ALQUILDO
-  verDetalleAlquilado(id: number, serie: string) {
-    this.isPrincipal = false;
-    this.id = id;
-    this.serie = serie;
+
+  trackByTipo(_: number, item: ResumenPorTipo): number {
+    return item.idTipoEquipo;
   }
 
-  registrarAlquilado(content: any) {
-    this.modalService.open(content);
-    this.getProyectos();
-    this.getEmpleados();
-    this.service.postAlquilado.estado = this.estado;
-    this.service.postAlquilado.fechaEntrada = this.sHoy;
+  trackByModelo(_: number, item: EquipoResumen): number {
+    return item.idModelo;
   }
-  //Selector de seria devuelve. Existe = 1 | No existe = 0
-  getSerie1(idEquipo: string) {
-    this.service.getExisteSerie(idEquipo).subscribe((response) => {
-      this.existe = response;
-      console.log(this.existe)
-    });
-  }
-  clear(equipoForm: NgForm) {
-    equipoForm.reset();
-  }
-  //Registro de equipo Alquilado
-  addAlquilado(equipoForm: NgForm) {
-    this.getSerie1(equipoForm.value.serie)
-    console.log(this.existe)
-    //inicio
-    if (this.existe === 1) {
-      Swal.fire({
-        text: 'La serie ingresada ya existe',
-        icon: 'warning',
-        showCancelButton: false,
-        customClass: {
-          confirmButton: 'btn btn-warning',
-        },
-        buttonsStyling: false,
-      });
-    } else if (this.existe === 0) {//FINNNN
-      Swal
-        .fire({
-          title: 'Esta seguro del registro?',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#3085d6',
-          cancelButtonColor: '#d33',
-          confirmButtonText: 'Si, registrar ahora!',
-          cancelButtonText: 'Cancelar',
-        })
-        .then((options) => {
-          if (options.isConfirmed) {
-            Swal.fire({
-              text: 'Registro exitoso',
-              icon: 'success',
-              showCancelButton: false,
-              customClass: {
-                confirmButton: 'btn btn-success',
-              },
-              buttonsStyling: false,
-            });
-            let data = {
-              tipoEquipo: equipoForm.value.tipoEquipo,
-              marca: equipoForm.value.marca,
-              modelo: equipoForm.value.modelo,
-              serie: equipoForm.value.serie,
-              fechaEntrada: equipoForm.value.fechaEntrada,
-              fechaSalida: equipoForm.value.fechaSalida,
-              fk_Pro_Cod: equipoForm.value.fk_Pro_Cod,
-              fk_Empleado_Cod: equipoForm.value.fk_Empleado_Cod,
-              estado: equipoForm.value.estado,
-            };
-            this.service.rEquipoA(data).subscribe(
-              (res) => {
-                console.log('DATA: ', res);
-                this.clear(equipoForm);
-                this.getEquipos();
-                this.getEquiposAlquilados();
-                this.getTipoEquipos();
-                this.getMarcaEquipos();
-              },
-              (err) => {
-                console.error(err);
-                Swal.fire({
-                  text: 'Ocurrió un error, volver a intentar.',
-                  icon: 'warning',
-                  showCancelButton: false,
-                  customClass: {
-                    confirmButton: 'btn btn-warning',
-                  },
-                  buttonsStyling: false,
-                });
-              }
-            );
-          }
-        });
-        //INICIO
+
+  verDetallePorTipo(tipo: ResumenPorTipo): void {
+    this.router.navigate(['/home/administrar-equipos/detalle'], {
+      queryParams: {
+        tipo: tipo.idTipoEquipo,
+        tipoNombre: tipo.nombreTipoEquipo
       }
-      //FINNNNNNNNNN
+    });
+  }
+
+  verDetallePorModelo(tipo: ResumenPorTipo, modelo: EquipoResumen): void {
+    this.router.navigate(['/home/administrar-equipos/detalle'], {
+      queryParams: {
+        tipo: tipo.idTipoEquipo,
+        tipoNombre: tipo.nombreTipoEquipo,
+        marca: modelo.idMarca,
+        marcaNombre: modelo.nombreMarca,
+        modelo: modelo.idModelo,
+        modeloNombre: modelo.nombreModelo
+      }
+    });
+  }
+
+  abrirModalTipo(): void {
+    this.resetFormularioTipo();
+    this.modalTipoOpen = true;
+  }
+
+  onModalTipoClosed(): void {
+    this.modalTipoOpen = false;
+    this.resetFormularioTipo();
+    if (this.cerrarTipoTimeout) {
+      clearTimeout(this.cerrarTipoTimeout);
+      this.cerrarTipoTimeout = null;
+    }
+  }
+
+  abrirModalMarca(): void {
+    this.resetFormularioMarca();
+    this.modalMarcaOpen = true;
+  }
+
+  onModalMarcaClosed(): void {
+    this.modalMarcaOpen = false;
+    this.resetFormularioMarca();
+    if (this.cerrarMarcaTimeout) {
+      clearTimeout(this.cerrarMarcaTimeout);
+      this.cerrarMarcaTimeout = null;
+    }
+  }
+
+  abrirModalModelo(): void {
+    this.resetFormularioModelo();
+    this.modalModeloOpen = true;
+    this.cargarCatalogosModelo();
+  }
+
+  onModalModeloClosed(): void {
+    this.modalModeloOpen = false;
+    this.resetFormularioModelo();
+    if (this.cerrarModeloTimeout) {
+      clearTimeout(this.cerrarModeloTimeout);
+      this.cerrarModeloTimeout = null;
+    }
+  }
+
+  onBuscar(term: string): void {
+    const safeTerm = term ?? '';
+    this.busqueda = safeTerm;
+    this.filtroTexto = this.normalizarTexto(safeTerm);
+    this.aplicarFiltros();
+  }
+
+  onSeleccionarCategoria(valor: string): void {
+    this.categoriaSeleccionada = valor;
+    this.aplicarFiltros();
+  }
+
+  confirmarCrearTipo(): void {
+    const nombre = this.formTipo.nombre.trim();
+    this.formTipo.error = null;
+    this.formTipo.exito = null;
+
+    if (!nombre) {
+      this.formTipo.error = 'Ingresa un nombre válido.';
+      return;
+    }
+
+    if (this.existeTipo(nombre)) {
+      this.formTipo.error = 'Ya existe un tipo con ese nombre.';
+      return;
+    }
+
+    if (!this.formTipo.confirmacion) {
+      this.formTipo.error = 'Debes confirmar que el nombre es correcto.';
+      return;
+    }
+
+    this.formTipo.cargando = true;
+
+    this.administrarEquiposService.crearTipoEquipo(nombre).subscribe({
+      next: () => {
+        this.formTipo.exito = 'Tipo creado correctamente.';
+        this.formTipo.cargando = false;
+        this.cargarResumen();
+        this.cerrarTipoTimeout = setTimeout(() => {
+          this.onModalTipoClosed();
+        }, 1000);
+      },
+      error: (error) => {
+        console.error('Error al crear tipo de equipo', error);
+        this.formTipo.error = 'No se pudo crear el tipo. Intenta nuevamente.';
+        this.formTipo.cargando = false;
+      }
+    });
+  }
+
+  confirmarCrearMarca(): void {
+    const nombre = this.formMarca.nombre.trim();
+    this.formMarca.error = null;
+    this.formMarca.exito = null;
+
+    if (!nombre) {
+      this.formMarca.error = 'Ingresa un nombre válido.';
+      return;
+    }
+
+    if (this.existeMarca(nombre)) {
+      this.formMarca.error = 'Ya existe una marca con ese nombre.';
+      return;
+    }
+
+    this.formMarca.cargando = true;
+
+    this.administrarEquiposService.crearMarca(nombre).subscribe({
+      next: () => {
+        this.formMarca.exito = 'Marca creada correctamente.';
+        this.formMarca.cargando = false;
+        this.cargarMarcas();
+        this.cerrarMarcaTimeout = setTimeout(() => {
+          this.onModalMarcaClosed();
+        }, 1000);
+      },
+      error: (error) => {
+        console.error('Error al crear marca', error);
+        this.formMarca.error = 'No se pudo crear la marca. Intenta nuevamente.';
+        this.formMarca.cargando = false;
+      }
+    });
+  }
+
+  confirmarCrearModelo(): void {
+    const nombre = (this.formModelo.nombre || '').trim();
+    const idTipoEquipo = this.formModelo.idTipoEquipo;
+    const idMarca = this.formModelo.idMarca;
+    this.formModelo.error = null;
+    this.formModelo.exito = null;
+
+    if (!nombre || !idTipoEquipo || !idMarca) {
+      this.formModelo.error = 'Completa todos los campos.';
+      return;
+    }
+
+    this.formModelo.cargando = true;
+
+    this.administrarEquiposService.crearModelo({ nombre, idTipoEquipo, idMarca }).subscribe({
+      next: () => {
+        this.formModelo.exito = 'Modelo creado correctamente.';
+        this.formModelo.cargando = false;
+        this.cargarResumen();
+        this.cerrarModeloTimeout = setTimeout(() => {
+          this.onModalModeloClosed();
+        }, 1000);
+      },
+      error: (error) => {
+        console.error('Error al crear modelo', error);
+        this.formModelo.error = 'No se pudo crear el modelo. Intenta nuevamente.';
+        this.formModelo.cargando = false;
+      }
+    });
+  }
+
+  private aplicarFiltros(): void {
+    const coincideCategoria = (item: ResumenPorTipo) =>
+      this.categoriaSeleccionada === 'todas' || item.categoria === this.categoriaSeleccionada;
+
+    const coincideTexto = (item: ResumenPorTipo) => {
+      if (!this.filtroTexto) {
+        return true;
+      }
+      const texto = this.filtroTexto;
+      return (
+        this.normalizarTexto(item.nombreTipoEquipo).includes(texto) ||
+        item.modelos.some((modelo) =>
+          this.normalizarTexto(`${modelo.nombreMarca} ${modelo.nombreModelo}`).includes(texto)
+        )
+      );
+    };
+
+    this.filtradoResumen = this.resumenPorTipo.filter(
+      (item) => coincideCategoria(item) && coincideTexto(item)
+    );
+  }
+
+  private cargarResumen(): void {
+    this.administrarEquiposService.getResumenEquipos().subscribe({
+      next: (equipos) => {
+        this.resumenPorTipo = this.agruparPorTipo(equipos);
+        this.categoriasDisponibles = Array.from(
+          new Set(this.resumenPorTipo.map((item) => item.categoria))
+        );
+        this.aplicarFiltros();
+        this.cargarTipos();
+        this.cargarMarcas();
+      },
+      error: (error) => {
+        console.error('Error al cargar el resumen de equipos', error);
+      }
+    });
+  }
+
+  private agruparPorTipo(equipos: EquipoResumen[]): ResumenPorTipo[] {
+    const mapa = new Map<number, ResumenPorTipo>();
+
+    equipos.forEach((equipo) => {
+      const existente = mapa.get(equipo.idTipoEquipo);
+
+      if (!existente) {
+        mapa.set(equipo.idTipoEquipo, {
+          idTipoEquipo: equipo.idTipoEquipo,
+          nombreTipoEquipo: equipo.nombreTipoEquipo,
+          totalCantidad: equipo.cantidad,
+          modelos: [equipo],
+          categoria: this.obtenerCategoria(equipo.nombreTipoEquipo)
+        });
+        return;
+      }
+
+      existente.totalCantidad += equipo.cantidad;
+      existente.modelos = [...existente.modelos, equipo];
+    });
+
+    return Array.from(mapa.values());
+  }
+
+  private obtenerCategoria(nombreTipo: string): string {
+    const texto = this.normalizarTexto(nombreTipo);
+
+    if (texto.includes('camara') || texto.includes('drone') || texto.includes('video')) {
+      return 'Video';
+    }
+
+    if (texto.includes('microfono') || texto.includes('audio') || texto.includes('recorder')) {
+      return 'Audio';
+    }
+
+    if (texto.includes('iluminacion') || texto.includes('luz') || texto.includes('led')) {
+      return 'Iluminación';
+    }
+
+    return 'Otros';
+  }
+
+  normalizarEntrada(valor: string | null | undefined): string {
+    if (!valor) {
+      return '';
+    }
+    return valor.replace(/\s+/g, ' ');
+  }
+
+  private normalizarTexto(texto: string | null | undefined): string {
+    return (texto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private existeTipo(nombre: string): boolean {
+    const normalizado = this.normalizarTexto(nombre);
+    return this.resumenPorTipo.some(
+      (tipo) => this.normalizarTexto(tipo.nombreTipoEquipo) === normalizado
+    );
+  }
+
+  private existeMarca(nombre: string): boolean {
+    const normalizado = this.normalizarTexto(nombre);
+    return this.marcasDisponibles.some(
+      (marca) => this.normalizarTexto(marca.nombre) === normalizado
+    );
+  }
+
+  private resetFormularioTipo(): void {
+    this.formTipo = {
+      nombre: '',
+      confirmacion: false,
+      cargando: false,
+      error: null,
+      exito: null
+    };
+  }
+
+  private resetFormularioMarca(): void {
+    this.formMarca = {
+      nombre: '',
+      cargando: false,
+      error: null,
+      exito: null
+    };
+  }
+
+  private resetFormularioModelo(): void {
+    this.formModelo = {
+      nombre: '',
+      idTipoEquipo: null,
+      idMarca: null,
+      cargando: false,
+      error: null,
+      exito: null
+    };
+  }
+
+  private cargarTipos(): void {
+        this.administrarEquiposService.obtenerTipos().subscribe({
+      next: (tipos) => {
+        this.tiposDisponibles = tipos;
+        if (this.modalModeloOpen && !this.formModelo.idTipoEquipo && this.tiposDisponibles.length) {
+          this.formModelo.idTipoEquipo = this.tiposDisponibles[0].idTipoEquipo;
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar tipos', error);
+      }
+    });
+  }
+
+  private cargarMarcas(): void {
+    this.administrarEquiposService.obtenerMarcas().subscribe({
+      next: (marcas) => {
+        this.marcasDisponibles = marcas;
+        if (this.modalModeloOpen && !this.formModelo.idMarca && this.marcasDisponibles.length) {
+          this.formModelo.idMarca = this.marcasDisponibles[0].idMarca;
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar marcas', error);
+      }
+    });
+  }
+
+  private cargarCatalogosModelo(): void {
+    if (!this.tiposDisponibles.length) {
+      this.cargarTipos();
+    }
+    if (!this.marcasDisponibles.length) {
+      this.cargarMarcas();
+    }
   }
 }

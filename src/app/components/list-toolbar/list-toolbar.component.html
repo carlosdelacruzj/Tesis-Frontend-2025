@@ -22,16 +22,19 @@
       </button>
     </div>
 
-    <div class="create-btn-wrapper" *ngIf="showCreateButton">
-      <button
-        class="btn btn-outline-dark btn-md"
-        type="button"
-        [disabled]="disableCreate"
-        (click)="onCreate()"
-      >
-        <mat-icon *ngIf="createButtonIcon" [fontIcon]="createButtonIcon"></mat-icon>
-        {{ createButtonLabel }}
-      </button>
+    <div class="extra-actions">
+      <ng-content select="div[actions]"></ng-content>
+      <div class="create-btn-wrapper" *ngIf="showCreateButton">
+        <button
+          class="btn btn-outline-dark btn-md"
+          type="button"
+          [disabled]="disableCreate"
+          (click)="onCreate()"
+        >
+          <mat-icon *ngIf="createButtonIcon" [fontIcon]="createButtonIcon"></mat-icon>
+          {{ createButtonLabel }}
+        </button>
+      </div>
     </div>
   </div>
 </div>

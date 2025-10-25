@@ -10,6 +10,7 @@ import { AngularMaterialModule } from '../shared/angular-material/angular-materi
 import { CellTemplateDirective, TableBaseComponent } from '../components/table-base/table-base.component';
 import { ListToolbarComponent } from '../components/list-toolbar/list-toolbar.component';
 import { ModalBaseComponent } from '../components/modal-base/modal-base.component';
+import { FormularioBaseComponent } from '../components/formulario-base/formulario-base.component';
 import { HomeComponent } from './home/home.component';
 import { FooterComponent } from '../shared/footer/footer.component';
 import { HeaderComponent } from '../shared/header/header.component';
@@ -30,10 +31,7 @@ import { ActualizarPedidoComponent } from './gestionar-pedido/actualizar-pedido/
 import { DetallePedidoComponent } from './gestionar-pedido/detalle-pedido/detalle-pedido.component';
 import { ActualizarProyectoComponent } from './gestionar-proyecto/actualizar-proyecto/actualizar-proyecto.component';
 import { AdministrarEquiposComponent } from './administrar-equipos/administrar-equipos.component';
-import { AdministrarEquipos2Component } from './administrar-equipos-2/administrar-equipos-2.component';
-import { DetalleEquiposComponent } from './administrar-equipos-2/detalle-equipos/detalle-equipos.component';
-import { ListarportipoComponent } from './administrar-equipos/listarportipo/listarportipo.component';
-import { DetallesAlquiladoComponent } from './administrar-equipos/detalles-alquilado/detalles-alquilado.component';
+import { DetalleEquiposComponent } from './administrar-equipos/detalle-equipos/detalle-equipos.component';
 import { GestionarPersonalComponent } from './gestionar-personal/gestionar-personal.component';
 import { RegistrarPagoComponent } from './registrar-pago/registrar-pago.component';
 import { GenerarContratoComponent } from './generar-contrato/generar-contrato.component';
@@ -56,10 +54,7 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     DashboardComponent,
     GestionarEquiposComponent,
     AdministrarEquiposComponent,
-    AdministrarEquipos2Component,
     DetalleEquiposComponent,
-    ListarportipoComponent,
-    DetallesAlquiladoComponent,
     GestionarProyectoComponent,
     AgregarProyectoComponent,
     ActualizarProyectoComponent,
@@ -98,7 +93,8 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     TableBaseComponent,
     CellTemplateDirective,
     ListToolbarComponent,
-    ModalBaseComponent
+    ModalBaseComponent,
+    FormularioBaseComponent
   ]
 })
 export class ControlPanelModule { }

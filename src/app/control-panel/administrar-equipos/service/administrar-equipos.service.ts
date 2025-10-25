@@ -11,7 +11,7 @@ import { Modelo } from '../models/modelo.model';
 @Injectable({
   providedIn: 'root'
 })
-export class AdministrarEquipos2Service {
+export class AdministrarEquiposService {
   private readonly resumenUrl = `${environment.baseUrl}/inventario/equipos/resumen`;
   private readonly inventarioUrl = `${environment.baseUrl}/inventario/equipos`;
   private readonly tiposUrl = `${environment.baseUrl}/inventario/tipos-equipo`;

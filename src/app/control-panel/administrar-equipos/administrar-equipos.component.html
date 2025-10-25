@@ -1,185 +1,327 @@
-<div class="container-fluid dashboard-content">
-    <!-- Titulo -->
-    <h1>Administrar Equipos</h1>
-    <!-- Grupos -->
-    <mat-tab-group>
-        <mat-tab label="Equipos Adquiridos">
-            <div class="dashboard-ecommerce" *ngIf="esPrincipal">
-                <div class="container-fluid">
-                    <app-table-base
-                        [columns]="columnasAdquiridos"
-                        [data]="equiposAdquiridos"
-                        [pageSizeOptions]="[5, 10, 25, 50]"
-                        [pageSize]="5"
-                        [showCreateButton]="false"
-                        searchPlaceholder="Buscar por equipo, marca o modelo"
-                        emptyText="Sin equipos registrados"
-                        (rowClick)="seleccionarGrupo($event)">
-
-                        <ng-template appCell="cantidad" let-row>
-                            {{ row.cantidad ?? row.Cantidad ?? 0 }}
-                        </ng-template>
-
-                        <ng-template appCell="acciones" let-row>
-                            <button mat-mini-fab color="primary"
-                                (click)="$event.stopPropagation(); seleccionarGrupo(row)"
-                                style="background-color: transparent; color: #101c30"
-                                aria-label="Btn Ver">
-                                <mat-icon>menu</mat-icon>
-                            </button>
-                        </ng-template>
-
-                    </app-table-base>
-                </div>
-            </div>
-            <div *ngIf="!esPrincipal">
-                <!-- Boton para el registro de equipo -->
-                <div>
-                    <div style="position: absolute">
-                        <button class="btn btn-primary btn-lg" (click)="esPrincipal = true; getEquipos()">
-            <mat-icon>reply_all</mat-icon>
+<div class="dashboard-content">
+  <app-list-toolbar
+    [title]="'Inventario de equipos'"
+    [description]="'Explora rápidamente los modelos disponibles agrupados por tipo y accede al detalle completo.'"
+    [showSearch]="true"
+    [searchPlaceholder]="'Tipo, marca o modelo'"
+    [searchValue]="busqueda"
+    [showCreateButton]="false"
+    (searchChange)="onBuscar($event)"
+  >
+    <div actions>
+      <div class="toolbar-actions">
+        <button mat-stroked-button color="primary" [matMenuTriggerFor]="menuRegistrar" type="button">
+          Registrar
+          <mat-icon>expand_more</mat-icon>
+        </button>
+        <mat-menu #menuRegistrar="matMenu">
+          <button mat-menu-item (click)="abrirModalTipo()">
+            <mat-icon>category</mat-icon>
+            <span>Tipo</span>
           </button>
-                    </div>
-                </div>
-                <app-listarportipo [idEquipo]="idEquipo" [idMarca]="idMarca" [idModelo]="idModelo" [Modelo]="Modelo">
-                </app-listarportipo>
-            </div>
-        </mat-tab>
-        <mat-tab label="Equipos Alquilados">
-            <div class="dashboard-ecommerce" *ngIf="isPrincipal">
-                <div class="container-fluid">
-                    <app-table-base
-                        [columns]="columnasAlquilados"
-                        [data]="equiposAlquilados"
-                        [pageSizeOptions]="[5, 10, 25, 50]"
-                        [pageSize]="5"
-                        searchPlaceholder="Buscar equipo, serie o asignaciones"
-                        emptyText="Sin equipos alquilados"
-                        createButtonLabel="Registrar Equipo"
-                        (createClick)="registrarAlquilado(contentCreate)"
-                        (rowClick)="seleccionarAlquilado($event)">
-
-                        <ng-template appCell="estado" let-row>
-                            {{ row.estado ?? row.Estado ?? 'Sin estado' }}
-                        </ng-template>
-
-                        <ng-template appCell="acciones" let-row>
-                            <button mat-mini-fab color="primary"
-                                (click)="$event.stopPropagation(); seleccionarAlquilado(row)"
-                                style="background-color: transparent; color: #101c30"
-                                aria-label="Btn Ver">
-                                <mat-icon>menu</mat-icon>
-                            </button>
-                        </ng-template>
-
-                    </app-table-base>
-                </div>
-            </div>
-            <div *ngIf="!isPrincipal">
-                <!-- Boton para el registro de equipo -->
-                <div>
-                    <div style="position: absolute">
-                        <button class="btn btn-primary btn-lg" (click)="isPrincipal = true; getEquiposAlquilados()">
-            <mat-icon>reply_all</mat-icon>
+          <button mat-menu-item (click)="abrirModalMarca()">
+            <mat-icon>sell</mat-icon>
+            <span>Marca</span>
           </button>
-                    </div>
-                </div>
-                <app-detalles-alquilado [id]="id" [serie]="serie">
-                </app-detalles-alquilado>
-            </div>
-        </mat-tab>
-    </mat-tab-group>
+          <button mat-menu-item (click)="abrirModalModelo()">
+            <mat-icon>devices</mat-icon>
+            <span>Modelo</span>
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+  </app-list-toolbar>
+
+  <ng-container *ngIf="filtradoResumen.length; else emptyState">
+    <div class="card-grid">
+      <mat-card
+        class="equipment-card"
+        *ngFor="let tipo of filtradoResumen; trackBy: trackByTipo"
+      >
+        <mat-card-header>
+          <div mat-card-avatar class="equipment-avatar">
+            {{ tipo.nombreTipoEquipo | slice: 0:1 }}
+          </div>
+          <mat-card-title>{{ tipo.nombreTipoEquipo }}</mat-card-title>
+          <mat-card-subtitle>
+            {{ tipo.totalCantidad }} {{ tipo.totalCantidad === 1 ? 'equipo' : 'equipos' }}
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <ul class="model-list">
+            <li *ngFor="let modelo of tipo.modelos | slice: 0: maxModelosCompactos; trackBy: trackByModelo">
+              <button
+                type="button"
+                class="model-item"
+                (click)="verDetallePorModelo(tipo, modelo)"
+              >
+                <span class="model-name">
+                  {{ modelo.nombreMarca }} · {{ modelo.nombreModelo }}
+                </span>
+                <span class="model-count">
+                  {{ modelo.cantidad }}
+                </span>
+              </button>
+            </li>
+          </ul>
+          <span class="preview-note" *ngIf="tipo.modelos.length > maxModelosCompactos">
+            + {{ tipo.modelos.length - maxModelosCompactos }} modelo{{ tipo.modelos.length - maxModelosCompactos === 1 ? '' : 's' }} más
+          </span>
+        </mat-card-content>
+
+        <mat-card-actions class="card-actions">
+          <button mat-stroked-button color="primary" (click)="verDetallePorTipo(tipo)">
+            Ver equipos
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </ng-container>
+
+  <ng-template #emptyState>
+    <div class="empty-state">
+      <mat-icon>inventory_2</mat-icon>
+      <p>No hay equipos registrados en el inventario.</p>
+    </div>
+  </ng-template>
+
+  <app-modal-base
+    [open]="modalTipoOpen"
+    title="Registrar nuevo tipo"
+    [disableClose]="formTipo.cargando"
+    [useDefaultFooter]="false"
+    [loading]="formTipo.cargando"
+    (closed)="onModalTipoClosed()"
+  >
+    <app-formulario-base
+      [open]="modalTipoOpen"
+      [loading]="formTipo.cargando"
+      [loadingMessage]="'Registrando tipo…'"
+      [error]="formTipo.error"
+    >
+      <form
+        id="crearTipoForm"
+        #crearTipoForm="ngForm"
+        class="row g-3"
+        (ngSubmit)="confirmarCrearTipo()"
+        autocomplete="off"
+      >
+        <div class="col-12 col-md-8">
+          <label class="form-label" for="nombreTipo">Nombre del tipo</label>
+          <input
+            id="nombreTipo"
+            name="nombreTipo"
+            type="text"
+            class="form-control"
+            maxlength="80"
+            required
+            [(ngModel)]="formTipo.nombre"
+            (ngModelChange)="formTipo.nombre = normalizarEntrada($event)"
+            #nombreTipoCtrl="ngModel"
+          />
+          <div class="invalid-feedback d-block" *ngIf="nombreTipoCtrl.invalid && (nombreTipoCtrl.dirty || nombreTipoCtrl.touched)">
+            Ingresa un nombre válido.
+          </div>
+        </div>
+
+        <div class="col-12">
+          <p class="mb-2">
+            Por favor confirma que el nombre es correcto. Esta acción no podrá deshacerse.
+          </p>
+          <div class="form-check">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="confirmacionTipo"
+              name="confirmacionTipo"
+              [(ngModel)]="formTipo.confirmacion"
+            />
+            <label class="form-check-label" for="confirmacionTipo">
+              Confirmo que el nombre es correcto
+            </label>
+          </div>
+        </div>
+
+        <div class="col-12 mensaje-exito" *ngIf="formTipo.exito">
+          <mat-icon>check_circle</mat-icon>
+          {{ formTipo.exito }}
+        </div>
+      </form>
+    </app-formulario-base>
+    <div modal-footer class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary" type="button" (click)="onModalTipoClosed()" [disabled]="formTipo.cargando">
+        Cancelar
+      </button>
+      <button
+        class="btn btn-primary d-inline-flex align-items-center gap-2"
+        type="submit"
+        form="crearTipoForm"
+        [disabled]="!formTipo.confirmacion || crearTipoForm.invalid || formTipo.cargando"
+      >
+        <span class="spinner-border spinner-border-sm" *ngIf="formTipo.cargando" role="status" aria-hidden="true"></span>
+        <span>Crear</span>
+      </button>
+    </div>
+  </app-modal-base>
+
+  <app-modal-base
+    [open]="modalMarcaOpen"
+    title="Registrar nueva marca"
+    [disableClose]="formMarca.cargando"
+    [useDefaultFooter]="false"
+    [loading]="formMarca.cargando"
+    (closed)="onModalMarcaClosed()"
+  >
+    <app-formulario-base
+      [open]="modalMarcaOpen"
+      [loading]="formMarca.cargando"
+      [loadingMessage]="'Registrando marca…'"
+      [error]="formMarca.error"
+    >
+      <form
+        id="crearMarcaForm"
+        #crearMarcaForm="ngForm"
+        class="row g-3"
+        (ngSubmit)="confirmarCrearMarca()"
+        autocomplete="off"
+      >
+        <div class="col-12 col-md-8">
+          <label class="form-label" for="nombreMarca">Nombre de la marca</label>
+          <input
+            id="nombreMarca"
+            name="nombreMarca"
+            type="text"
+            class="form-control"
+            maxlength="80"
+            required
+            [(ngModel)]="formMarca.nombre"
+            #nombreMarcaCtrl="ngModel"
+          />
+          <div class="invalid-feedback d-block" *ngIf="nombreMarcaCtrl.invalid && (nombreMarcaCtrl.dirty || nombreMarcaCtrl.touched)">
+            Ingresa un nombre válido.
+          </div>
+        </div>
+
+        <div class="col-12 mensaje-exito" *ngIf="formMarca.exito">
+          <mat-icon>check_circle</mat-icon>
+          {{ formMarca.exito }}
+        </div>
+      </form>
+    </app-formulario-base>
+    <div modal-footer class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary" type="button" (click)="onModalMarcaClosed()" [disabled]="formMarca.cargando">
+        Cancelar
+      </button>
+      <button
+        class="btn btn-primary d-inline-flex align-items-center gap-2"
+        type="submit"
+        form="crearMarcaForm"
+        [disabled]="crearMarcaForm.invalid || formMarca.cargando"
+      >
+        <span class="spinner-border spinner-border-sm" *ngIf="formMarca.cargando" role="status" aria-hidden="true"></span>
+        <span>Crear</span>
+      </button>
+    </div>
+  </app-modal-base>
+
+  <app-modal-base
+    [open]="modalModeloOpen"
+    title="Registrar nuevo modelo"
+    [disableClose]="formModelo.cargando"
+    [useDefaultFooter]="false"
+    [loading]="formModelo.cargando"
+    (closed)="onModalModeloClosed()"
+  >
+    <app-formulario-base
+      [open]="modalModeloOpen"
+      [loading]="formModelo.cargando"
+      [loadingMessage]="'Registrando modelo…'"
+      [error]="formModelo.error"
+    >
+      <form
+        id="crearModeloForm"
+        #crearModeloForm="ngForm"
+        class="row g-3"
+        (ngSubmit)="confirmarCrearModelo()"
+        autocomplete="off"
+      >
+        <div class="col-12">
+          <label class="form-label" for="nombreModelo">Nombre del modelo</label>
+          <input
+            id="nombreModelo"
+            name="nombreModelo"
+            type="text"
+            class="form-control"
+            maxlength="120"
+            required
+            [(ngModel)]="formModelo.nombre"
+            #nombreModeloCtrl="ngModel"
+          />
+          <div class="invalid-feedback d-block" *ngIf="nombreModeloCtrl.invalid && (nombreModeloCtrl.dirty || nombreModeloCtrl.touched)">
+            Ingresa un nombre válido.
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="tipoEquipoSelect">Tipo de equipo</label>
+          <select
+            id="tipoEquipoSelect"
+            name="tipoEquipoSelect"
+            class="form-select"
+            required
+            [(ngModel)]="formModelo.idTipoEquipo"
+            #tipoEquipoCtrl="ngModel"
+          >
+            <option [ngValue]="null" disabled>Selecciona un tipo</option>
+            <option *ngFor="let tipo of tiposDisponibles" [ngValue]="tipo.idTipoEquipo">
+              {{ tipo.nombre }}
+            </option>
+          </select>
+          <div class="invalid-feedback d-block" *ngIf="tipoEquipoCtrl.invalid && (tipoEquipoCtrl.dirty || tipoEquipoCtrl.touched)">
+            Selecciona un tipo de equipo.
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="marcaSelect">Marca</label>
+          <select
+            id="marcaSelect"
+            name="marcaSelect"
+            class="form-select"
+            required
+            [(ngModel)]="formModelo.idMarca"
+            #marcaCtrl="ngModel"
+          >
+            <option [ngValue]="null" disabled>Selecciona una marca</option>
+            <option *ngFor="let marca of marcasDisponibles" [ngValue]="marca.idMarca">
+              {{ marca.nombre }}
+            </option>
+          </select>
+          <div class="invalid-feedback d-block" *ngIf="marcaCtrl.invalid && (marcaCtrl.dirty || marcaCtrl.touched)">
+            Selecciona una marca.
+          </div>
+        </div>
+
+        <div class="col-12 mensaje-exito" *ngIf="formModelo.exito">
+          <mat-icon>check_circle</mat-icon>
+          {{ formModelo.exito }}
+        </div>
+      </form>
+    </app-formulario-base>
+    <div modal-footer class="d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary" type="button" (click)="onModalModeloClosed()" [disabled]="formModelo.cargando">
+        Cancelar
+      </button>
+      <button
+        class="btn btn-primary d-inline-flex align-items-center gap-2"
+        type="submit"
+        form="crearModeloForm"
+        [disabled]="crearModeloForm.invalid || formModelo.cargando"
+      >
+        <span class="spinner-border spinner-border-sm" *ngIf="formModelo.cargando" role="status" aria-hidden="true"></span>
+        <span>Crear</span>
+      </button>
+    </div>
+  </app-modal-base>
 </div>
-
-<ng-template #contentCreate let-c="close" let-d="dismiss">
-    <div class="modal-header">
-        <h3 class="modal-title mm" id="modal-basic-title">
-            Registrar Equipo Alquilado
-        </h3>
-        <button type="button" class="close" aria-label="Close" (click)="d('Cross click')">
-    <span aria-hidden="true">&times;</span>
-  </button>
-    </div>
-    <div class="modal-body">
-        <form #EquipoCreateForm="ngForm">
-            <mat-card class="card">
-                <mat-card-content class="card-body" style="padding-top: 10px">
-                    <div class="form-group">
-                        <label class="col-form-label1">Tipo de Equipo</label>
-                        <input type="text" class="form-control form-control-sm" name="tipoEquipo" #tipoEquipo="ngModel" [(ngModel)]="service.postAlquilado.tipoEquipo" />
-                        <div *ngIf="tipoEquipo.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-form-label1">Marca</label>
-                        <input type="text" class="form-control form-control-sm" name="marca" #marca="ngModel" [(ngModel)]="service.postAlquilado.marca" />
-                        <div *ngIf="marca.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-form-label1">Modelo</label>
-                        <input type="text" class="form-control form-control-sm" name="modelo" #modelo="ngModel" [(ngModel)]="service.postAlquilado.modelo" />
-                        <div *ngIf="modelo.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-form-label1">N° Serie</label>
-                        <input type="text" class="form-control form-control-sm" name="serie" #serie="ngModel" [(ngModel)]="service.postAlquilado.serie" [pattern]="seriePattern" required />
-                        <div *ngIf="serie.errors?.pattern">
-                            <p>*Sólo se acepta el formato: AAA-000</p>
-                        </div>
-                        <div *ngIf="serie.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-form-label1">Fecha Entrada</label>
-                        <input type="text" class="form-control form-control-sm" name="fechaEntrada" #fechaEntrada="ngModel" [(ngModel)]="service.postAlquilado.fechaEntrada" readonly />
-                    </div>
-                    <div class="form-group">
-                        <label class="col-form-label1">Fecha Salida</label>
-                        <input type="date" class="form-control form-control-sm" name="fechaSalida" #fechaSalida="ngModel" [(ngModel)]="service.postAlquilado.fechaSalida" />
-                    </div>
-                    <div class="form-group">
-                        <label class="col-form-label1">Proyecto</label><br />
-                        <select mat-select name="fk_Pro_Cod" #fk_Pro_Cod="ngModel" [(ngModel)]="service.postAlquilado.fk_Pro_Cod">
-            <option
-              matInput
-              *ngFor="let Proyecto of proyecto"
-              [value]="Proyecto.ID"
-            >
-              {{ Proyecto.Nombre }}
-            </option>
-          </select>
-                        <input type="text" class="form-control form-control-sm" name="fk_Pro_Cod" #fk_Pro_Cod="ngModel" [(ngModel)]="service.postAlquilado.fk_Pro_Cod" style="display: none" />
-                    </div>
-                    <div class="form-group">
-                        <label class="col-form-label1">Miembro del Staff</label><br />
-                        <select mat-select name="fk_Empleado_Cod" #fk_Empleado_Cod="ngModel" [(ngModel)]="service.postAlquilado.fk_Empleado_Cod">
-            <option
-              matInput
-              *ngFor="let Empleado of empleado"
-              [value]="Empleado.ID"
-            >
-              {{ Empleado.Nombre }} - {{ Empleado.Estado }}
-            </option>
-          </select>
-                        <input type="text" class="form-control form-control-sm" name="fk_Empleado_Cod" #fk_Empleado_Cod="ngModel" [(ngModel)]="service.postAlquilado.fk_Empleado_Cod" style="display: none" />
-                    </div>
-                    <div class="form-group">
-                        <label class="col-form-label1">Estado</label>
-                        <input type="text" class="form-control form-control-sm" name="estado" value="ALQUILADO" #estado="ngModel" [(ngModel)]="service.postAlquilado.estado" readonly />
-                    </div>
-                </mat-card-content>
-            </mat-card>
-        </form>
-    </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-outline-dark" (click)="addAlquilado(EquipoCreateForm)">
-    Registrar
-  </button>
-    </div>
-</ng-template>

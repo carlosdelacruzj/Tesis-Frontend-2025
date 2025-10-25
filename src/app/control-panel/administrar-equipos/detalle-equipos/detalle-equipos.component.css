@@ -11,6 +11,15 @@
   gap: 16px;
 }
 
+.detalle-equipos .page-header button[mat-stroked-button] mat-icon {
+  margin-right: 6px;
+}
+
+.header-text {
+  flex: 1 1 auto;
+  min-width: 220px;
+}
+
 .back-button mat-icon {
   margin-right: 6px;
 }
@@ -92,6 +101,28 @@
   width: 56px;
   height: 56px;
   color: #c7d4ea;
+}
+
+.dialogo-tipo-contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mensaje-error,
+.mensaje-exito {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.mensaje-error {
+  color: #c62828;
+}
+
+.mensaje-exito {
+  color: #2e7d32;
 }
 
 @media (max-width: 768px) {
