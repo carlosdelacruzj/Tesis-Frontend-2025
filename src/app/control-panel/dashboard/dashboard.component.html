@@ -77,29 +77,6 @@
 
       <section class="panel">
         <div class="panel__header">
-          <h2>Estado de proyectos de edición</h2>
-          <span class="panel__caption">Seguimiento de post producción y entregables clave</span>
-        </div>
-        <div class="pipeline-list">
-          <div class="pipeline-item" *ngFor="let project of projectPipelines">
-            <div class="pipeline-item__header">
-              <h3>{{ project.name }}</h3>
-              <span class="pipeline-item__due">{{ project.due }}</span>
-            </div>
-            <div class="pipeline-item__meta">
-              <span class="pipeline-item__stage">{{ project.stage }}</span>
-              <span class="pipeline-item__owner">{{ project.owner }}</span>
-            </div>
-            <div class="progress">
-              <div class="progress-bar" [style.width.%]="project.progress"></div>
-            </div>
-            <div class="pipeline-item__progress">{{ project.progress }}% completado</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel__header">
           <h2>Entregables prioritarios</h2>
           <button class="btn btn-outline-secondary btn-sm" type="button">Ver checklist completo</button>
         </div>
@@ -120,6 +97,25 @@
     </div>
 
     <aside class="content-sidebar">
+      <section class="panel">
+        <div class="panel__header">
+          <h2>Resumen agenda de hoy</h2>
+          <a routerLink="agenda-operativa" class="btn btn-outline-primary btn-sm">Abrir agenda</a>
+        </div>
+        <div class="agenda-snapshot">
+          <div class="agenda-snapshot__item" *ngFor="let item of agendaHighlights" [ngClass]="'agenda--' + item.theme">
+            <div class="agenda-snapshot__icon">
+              <i class="material-icons">{{ item.icon }}</i>
+            </div>
+            <div>
+              <p class="agenda-snapshot__label">{{ item.label }}</p>
+              <p class="agenda-snapshot__value">{{ item.value }}</p>
+              <p class="agenda-snapshot__detail">{{ item.detail }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="panel">
         <div class="panel__header">
           <h2>Utilización de equipos</h2>
@@ -155,39 +151,6 @@
             </div>
           </li>
         </ul>
-      </section>
-
-      <section class="panel">
-        <div class="panel__header">
-          <h2>Checklist inmediato</h2>
-        </div>
-        <ul class="checklist">
-          <li *ngFor="let task of checklist" [class.is-done]="task.done">
-            <span class="checklist__indicator"></span>
-            <div>
-              <p class="checklist__label">{{ task.label }}</p>
-              <span class="checklist__meta">{{ task.owner }} · {{ task.due }}</span>
-            </div>
-          </li>
-        </ul>
-      </section>
-      <section class="panel">
-        <div class="panel__header">
-          <h2>Resumen agenda de hoy</h2>
-          <a routerLink="agenda-operativa" class="btn btn-outline-primary btn-sm">Abrir agenda</a>
-        </div>
-        <div class="agenda-snapshot">
-          <div class="agenda-snapshot__item" *ngFor="let item of agendaHighlights" [ngClass]="'agenda--' + item.theme">
-            <div class="agenda-snapshot__icon">
-              <i class="material-icons">{{ item.icon }}</i>
-            </div>
-            <div>
-              <p class="agenda-snapshot__label">{{ item.label }}</p>
-              <p class="agenda-snapshot__value">{{ item.value }}</p>
-              <p class="agenda-snapshot__detail">{{ item.detail }}</p>
-            </div>
-          </div>
-        </div>
       </section>
     </aside>
   </div>

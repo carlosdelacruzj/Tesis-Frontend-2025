@@ -336,40 +336,6 @@
   color: #b91c1c;
 }
 
-.pipeline-list {
-  display: grid;
-  gap: 18px;
-}
-
-.pipeline-item__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.pipeline-item__header h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1f2a44;
-}
-
-.pipeline-item__due {
-  font-size: 0.82rem;
-  color: #64718d;
-  font-weight: 500;
-}
-
-.pipeline-item__meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 0.82rem;
-  color: #64718d;
-  margin-bottom: 8px;
-}
-
 .progress {
   height: 10px;
   border-radius: 999px;
@@ -383,12 +349,6 @@
 
 .progress--thin {
   height: 8px;
-}
-
-.pipeline-item__progress {
-  margin-top: 6px;
-  font-size: 0.82rem;
-  color: #5b647a;
 }
 
 .deliverables {
@@ -432,8 +392,7 @@
 }
 
 .equipment-list,
-.sales-sources,
-.checklist {
+.sales-sources {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -505,57 +464,6 @@
   font-size: 1.05rem;
   font-weight: 600;
   color: #1f2a44;
-}
-
-.checklist li {
-  display: grid;
-  grid-template-columns: 16px 1fr;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-}
-
-.checklist li:last-child {
-  border-bottom: none;
-}
-
-.checklist__indicator {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 2px solid #a5b4fc;
-  margin-top: 4px;
-}
-
-.checklist li.is-done .checklist__indicator {
-  background: linear-gradient(135deg, #6366f1, #4338ca);
-  border-color: transparent;
-  position: relative;
-}
-
-.checklist li.is-done .checklist__indicator::after {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 0;
-  width: 4px;
-  height: 8px;
-  border-right: 2px solid #fff;
-  border-bottom: 2px solid #fff;
-  transform: rotate(45deg);
-}
-
-.checklist__label {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #1f2a44;
-}
-
-.checklist__meta {
-  font-size: 0.78rem;
-  color: #5b647a;
 }
 
 @media (max-width: 1199px) {

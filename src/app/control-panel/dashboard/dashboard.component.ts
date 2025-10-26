@@ -30,14 +30,6 @@ interface DashboardEvent {
   statusClass: DashboardStatusClass;
 }
 
-interface ProjectPipeline {
-  name: string;
-  progress: number;
-  stage: string;
-  due: string;
-  owner: string;
-}
-
 interface Deliverable {
   title: string;
   client: string;
@@ -52,14 +44,6 @@ interface EquipmentUtilization {
   utilization: number;
   detail: string;
   availability: string;
-}
-
-interface ChecklistItem {
-  id: string;
-  label: string;
-  owner: string;
-  due: string;
-  done: boolean;
 }
 
 interface SalesSource {
@@ -84,50 +68,50 @@ interface AgendaHighlight {
 })
 export class DashboardComponent {
   readonly dashboardMeta = {
-    studioName: 'Nova Memories',
+    studioName: 'Foto D la Cruz',
     weekRange: '13 al 19 Ene 2025',
     lastUpdate: 'Actualizado hace 2h'
   };
 
   readonly summaryCards: DashboardSummaryCard[] = [
     {
-      id: 'bookings',
-      title: 'Eventos confirmados',
-      value: '12',
-      period: 'Enero',
-      change: '+3 reservas',
-      subtitle: 'vs. mes anterior',
+      id: 'agenda-today',
+      title: 'Eventos en agenda',
+      value: '3 eventos',
+      period: 'Hoy',
+      change: '1 en montaje',
+      subtitle: 'Actualización diaria',
       trend: 'up',
       accent: 'accent-sand'
     },
     {
-      id: 'revenue',
-      title: 'Ingresos proyectados',
-      value: '$86,500',
-      period: 'Q1',
-      change: '+18%',
-      subtitle: 'pipeline asegurado',
-      trend: 'up',
+      id: 'crew-coverage',
+      title: 'Cobertura de crew',
+      value: '12 / 15',
+      period: 'Turno de hoy',
+      change: '3 por confirmar',
+      subtitle: 'Coordinación operativa',
+      trend: 'flat',
       accent: 'accent-sky'
     },
     {
-      id: 'avg-ticket',
-      title: 'Ticket promedio',
-      value: '$7,210',
-      period: 'Últimos 30 días',
-      change: '+$540',
-      subtitle: 'por experiencias premium',
-      trend: 'up',
+      id: 'critical-tasks',
+      title: 'Tareas críticas',
+      value: '2 tareas',
+      period: 'Próximas 24h',
+      change: '1 completada hoy',
+      subtitle: 'Checklist inmediato',
+      trend: 'flat',
       accent: 'accent-rose'
     },
     {
-      id: 'nps',
-      title: 'NPS clientes',
-      value: '72',
-      period: 'Trimestre actual',
-      change: '+4 pts',
-      subtitle: 'mejora vs. T4',
-      trend: 'up',
+      id: 'equipment-usage',
+      title: 'Utilización equipos',
+      value: '82%',
+      period: 'Sesiones de hoy',
+      change: '2 unidades libres',
+      subtitle: 'Ver detalle por categoría',
+      trend: 'flat',
       accent: 'accent-forest'
     }
   ];
@@ -173,49 +157,25 @@ export class DashboardComponent {
 
   readonly agendaHighlights: AgendaHighlight[] = [
     {
-      label: 'Eventos hoy',
-      value: '3',
-      detail: '1 pendiente de inicio',
-      icon: 'event_available',
+      label: 'Primera llamada',
+      value: '07:00',
+      detail: 'Montaje InnoTech Summit',
+      icon: 'alarm',
       theme: 'primary'
     },
     {
-      label: 'Staff asignado',
-      value: '12 / 15',
-      detail: '80% confirmado',
-      icon: 'group',
+      label: 'Eventos hoy',
+      value: '3',
+      detail: '1 en montaje · 2 en rodaje',
+      icon: 'event_available',
       theme: 'success'
     },
-    {
+  {
       label: 'Alertas logísticas',
       value: '2',
-      detail: 'Traslado y streaming',
-      icon: 'notification_important',
+      detail: 'Traslado drone · Clima playa',
+      icon: 'warning_amber',
       theme: 'warning'
-    }
-  ];
-
-  readonly projectPipelines: ProjectPipeline[] = [
-    {
-      name: 'Edición Boda Torres',
-      progress: 68,
-      stage: 'Highlight en revisión',
-      due: '23 Ene',
-      owner: 'L. Ramos'
-    },
-    {
-      name: 'Post InnoTech Summit',
-      progress: 40,
-      stage: 'Corrección de color',
-      due: '28 Ene',
-      owner: 'D. Huamán'
-    },
-    {
-      name: 'Álbum Valdez',
-      progress: 85,
-      stage: 'Aprobación cliente',
-      due: '19 Ene',
-      owner: 'M. Paredes'
     }
   ];
 
@@ -264,30 +224,6 @@ export class DashboardComponent {
       utilization: 67,
       detail: 'Mavic 3 (2/3 en ruta)',
       availability: '1 disponible viernes'
-    }
-  ];
-
-  readonly checklist: ChecklistItem[] = [
-    {
-      id: 'task-1',
-      label: 'Confirmar logística con Hacienda Santa Ana',
-      owner: 'Producción',
-      due: 'Jue 16 Ene',
-      done: false
-    },
-    {
-      id: 'task-2',
-      label: 'Enviar moodboard a Nativa Café',
-      owner: 'Creativo',
-      due: 'Hoy',
-      done: false
-    },
-    {
-      id: 'task-3',
-      label: 'Actualizar CRM post evento Torres',
-      owner: 'Comercial',
-      due: 'Ayer',
-      done: true
     }
   ];
 
