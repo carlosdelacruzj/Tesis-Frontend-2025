@@ -323,7 +323,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   private formatearMoneda(valor: number): string {
     return new Intl.NumberFormat('es-PE', {
       style: 'currency',
-      currency: 'PEN',
+      currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(valor);

@@ -20,25 +20,24 @@ export class AuthService {
   }
 
   login(correo: string, pass: string) {
-    const url = `${this.baseUrl}/usuario/consulta/getIniciarSesion/${correo}/${pass}`
-    return this.http.get<AuthResponse>(url)
+    const url = `${this.baseUrl}/auth/login`;
+    return this.http.post<AuthResponse>(url, { email: correo, password: pass })
       .pipe(
         tap(resp => {
-          if (resp[0].token) {
-            localStorage.setItem('token', resp[0].token);
-            // localStorage.setItem('codigo',resp)
+          if (resp?.token) {
+            localStorage.setItem('token', resp.token);
             localStorage.setItem('correo', correo);
             this._usuario = {
-              nombre: resp[0].nombre,
-              apellido: resp[0].apellido,
-              ID: resp[0].apellido,
-              documento: resp[0].documento,
-              rol: resp[0].rol,
-              token: resp[0].token
+              nombre: resp.nombre ?? '',
+              apellido: resp.apellido ?? '',
+              ID: resp.ID ?? 0,
+              documento: resp.documento ?? 0,
+              rol: resp.rol ?? '',
+              token: resp.token
             }
           }
         }),
-        map(resp => resp[0].token),
+        map(resp => resp?.token ?? null),
         catchError(err => of(false))
       );
   }
@@ -50,16 +49,11 @@ export class AuthService {
       );
   }
   verificaAuteticacion(): Observable<boolean> {
-    if (!localStorage.getItem('token')) {
+    const token = localStorage.getItem('token');
+    if (!token) {
       return of(false);
     }
-    return this.http.get<AuthResponse>(`${this.baseUrl}/usuario/consulta/getIniciarSesion/${localStorage.getItem('correo')}/${localStorage.getItem('pass')}`)
-      .pipe(
-        map(resp => {
-          resp = resp[0];
-          return true;
-        })
-      )
+    return of(true);
   }
   logout(){
  

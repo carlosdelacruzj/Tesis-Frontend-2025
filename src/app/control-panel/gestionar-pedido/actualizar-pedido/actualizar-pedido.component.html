@@ -84,8 +84,16 @@
             <div class="col ms-auto">
               <div class="form-group">
                 <label class='col-form-label'>Fecha</label>
-                <input type="date" class="form-control" [min]="minimo" [max]="maximo" name="fechaEvent"
-                  [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent" required>
+                <input
+                  type="date"
+                  class="form-control"
+                  [min]="minimo"
+                  [max]="maximo"
+                  name="fechaEvent"
+                  [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent"
+                  required
+                  [disabled]="true"
+                >
               </div>
             </div>
           </div>
@@ -164,8 +172,15 @@
                     {{ formatProgramDate(element.Fecha) }} ({{ weekdayPeru(element.Fecha) }})
                   </ng-container>
                   <ng-template #fechaEdit>
-                    <input type="date" class="form-control form-control-sm" [(ngModel)]="element.Fecha"
-                      [ngModelOptions]="{standalone:true}" required>
+                    <input
+                      type="date"
+                      class="form-control form-control-sm"
+                      [(ngModel)]="element.Fecha"
+                      [ngModelOptions]="{standalone:true}"
+                      [min]="minimo"
+                      [max]="maximo"
+                      [attr.readonly]="true"
+                      required>
                     <small class="text-danger" *ngIf="!element.Fecha">Requerido</small>
                   </ng-template>
                 </td>

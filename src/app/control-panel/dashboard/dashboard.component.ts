@@ -103,7 +103,7 @@ export class DashboardComponent {
     {
       id: 'revenue',
       title: 'Ingresos proyectados',
-      value: 'S/ 86,500',
+      value: '$86,500',
       period: 'Q1',
       change: '+18%',
       subtitle: 'pipeline asegurado',
@@ -113,9 +113,9 @@ export class DashboardComponent {
     {
       id: 'avg-ticket',
       title: 'Ticket promedio',
-      value: 'S/ 7,210',
+      value: '$7,210',
       period: 'Últimos 30 días',
-      change: '+S/ 540',
+      change: '+$540',
       subtitle: 'por experiencias premium',
       trend: 'up',
       accent: 'accent-rose'

@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 import { LandingComponent } from './landing/landing.component';
+import { ValidarTokenGuard } from './guards/validar-token.guard';
 /* 
 const routes: Routes = [
   {
@@ -26,8 +27,8 @@ const routes: Routes = [
   {
     path: 'home',
     loadChildren: () => import('./control-panel/control-panel.module').then(m => m.ControlPanelModule),
-    // canActivate: [ValidarTokenGuard],
-    // canLoad: [ValidarTokenGuard],
+    canActivate: [ValidarTokenGuard],
+    canLoad: [ValidarTokenGuard],
   },
   { path: '**', redirectTo: '' }
 ];

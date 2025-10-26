@@ -74,6 +74,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   // ====== Paquetes seleccionados ======
   selectedPaquetes: PedidoPaqueteSeleccionado[] = [];
   currentEventoKey: string | number | null = null;
+  private fechaEventoBase: string | null = null;
   selectedPaquetesColumns: TableColumn<PedidoPaqueteSeleccionado>[] = [
     { key: 'descripcion', header: 'Descripción', sortable: false },
     { key: 'precio', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' },
@@ -261,9 +262,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   // ====== Fechas ======
-  fechaValidate(date: Date) {
-    this.minimo = this.addDaysToDate(date, -365); // al editar, permitimos historial más amplio
-    this.maximo = this.addDaysToDate(date, 365);
+  fechaValidate(date: Date | string) {
+    const iso = this.toIsoDate(date);
+    this.minimo = iso;
+    this.maximo = iso;
+    this.fechaEventoBase = iso;
   }
 
   convert(strOrDate: string | Date) {
@@ -579,6 +582,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.fechaCreate = new Date(cab?.fechaCreacion ?? new Date());
       this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(this.fechaCreate, '');
 
+      // Fecha base del evento (cabecera)
+      const fechaEventoCab = cab?.fechaEvento ?? cab?.fecha_evento ?? null;
+      if (fechaEventoCab) {
+        const iso = this.toIsoDate(fechaEventoCab);
+        this.visualizarService.selectAgregarPedido.fechaEvent = iso;
+        this.fechaValidate(iso);
+      }
+
       // Cliente
       this.infoCliente = {
         nombre: cab?.cliente?.nombres ?? '-',
@@ -619,8 +630,17 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       // Precargar controles "Fecha/Hora" superiores con el primer evento (UX)
       const first = this.ubicacion[0];
       if (first) {
-        this.visualizarService.selectAgregarPedido.fechaEvent = first.Fecha;
+        if (!this.visualizarService.selectAgregarPedido.fechaEvent) {
+          this.visualizarService.selectAgregarPedido.fechaEvent = first.Fecha;
+          this.fechaValidate(first.Fecha);
+        }
         this.visualizarService.selectAgregarPedido.horaEvent = first.Hora;
+      } else {
+        if (this.visualizarService.selectAgregarPedido.fechaEvent) {
+          this.fechaValidate(this.visualizarService.selectAgregarPedido.fechaEvent);
+        } else {
+          this.fechaValidate(this.fechaCreate);
+        }
       }
 
       // === Mapear items/paquetes ===
@@ -806,6 +826,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       horas: Number.isFinite(horas) ? horas : null,
       raw: item
     };
+  }
+
+  private toIsoDate(value: string | Date): string {
+    if (!value) {
+      return this.convert(new Date());
+    }
+    if (typeof value === 'string') {
+      if (value.length >= 10) {
+        return value.slice(0, 10);
+      }
+      return this.convert(value);
+    }
+    return this.convert(value);
   }
 }
 

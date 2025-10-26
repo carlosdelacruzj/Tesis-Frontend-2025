@@ -6,3 +6,26 @@
 .pointer {
     cursor: pointer;
 }
+
+.nav-user-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+    min-width: 180px;
+    padding: 0.5rem 0;
+}
+
+.nav-user-dropdown .logout-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 0;
+}
+
+.nav-user-dropdown .logout-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}

@@ -1,5 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AbstractControl, FormBuilder, FormGroup, Validators, FormGroupDirective, ValidationErrors } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subject, of } from 'rxjs';
@@ -8,6 +8,7 @@ import { MAT_DATE_FORMATS, MAT_DATE_LOCALE, DateAdapter, MatDateFormats, NativeD
 import { formatDisplayDate, formatIsoDate } from '../shared/utils/date-utils';
 
 import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload } from './services/landing-cotizacion.service';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 // Landing copy decks for cards and sections
 interface LandingServiceCard {
   id: string;
@@ -334,11 +335,13 @@ export class LandingComponent implements OnInit, OnDestroy {
   activePortfolioFilter: PortfolioItem['type'] | 'Todos' = 'Todos';
   selectedPackageId: string | null = null;
   readonly minQuoteDate: Date;
+  readonly maxQuoteDate: Date;
 
   readonly localBusinessSchema: SafeHtml;
   readonly faqSchema: SafeHtml;
 
   private readonly destroy$ = new Subject<void>();
+  @ViewChild(FormGroupDirective, { static: false }) private quoteFormDirective?: FormGroupDirective;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -346,7 +349,9 @@ export class LandingComponent implements OnInit, OnDestroy {
     private readonly sanitizer: DomSanitizer,
     private readonly cotizacionService: LandingCotizacionService
   ) {
-    this.minQuoteDate = this.startOfToday();
+    const today = this.startOfToday();
+    this.minQuoteDate = this.addDays(today, 1);
+    this.maxQuoteDate = this.addMonths(today, 6);
     // Primary quote form definition
     this.quoteForm = this.fb.group({
       nombreCompleto: ['', [Validators.required, Validators.minLength(3)]],
@@ -356,7 +361,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       fechaEvento: [null, Validators.required],
       distrito: ['', Validators.required],
       mensaje: [''],
-      horas: ['', [Validators.required, Validators.pattern(/^\d+([.,]\d{1,2})?$/)]],
+      horas: ['', [Validators.required, this.horasValidator.bind(this)]],
       invitados: [''],
       presupuesto: [50],
       extras: this.fb.group({
@@ -508,15 +513,15 @@ export class LandingComponent implements OnInit, OnDestroy {
         this.submissionSuccess = true;
         this.trackEvent('quote_submit', { package: this.selectedPackageId });
         this.createWhatsAppLink();
-        this.snackBar.open('¡Gracias! Te contactaremos pronto por WhatsApp.', 'Cerrar', { duration: 5000 });
-        this.quoteForm.reset({
-          whatsappNumero: '',
-          tipoEvento: '',
-          eventoId: null,
-          horas: null,
-          presupuesto: 50,
-          consentimiento: false
+        void Swal.fire({
+          icon: 'success',
+          title: '¡Solicitud recibida!',
+          text: 'Te contactaremos por WhatsApp en las próximas horas.',
+          confirmButtonText: 'Listo',
+          buttonsStyling: false,
+          customClass: { confirmButton: 'btn btn-success' }
         });
+        this.resetQuoteFormState();
         this.syncSelectedEventByName('');
         this.selectedPackageId = null;
       });
@@ -562,12 +567,86 @@ export class LandingComponent implements OnInit, OnDestroy {
     const service = value.tipoEvento || 'servicio de foto y video';
     const date = this.formatDateDisplay(value.fechaEvento) || 'fecha por definir';
     const district = value.distrito || 'Lima';
-    const composedPhone = this.composePhoneNumber(value.whatsappNumero);
-    const phoneDigits = composedPhone.replace(/\D+/g, '');
-    const baseNumber = phoneDigits || '51999999999';
+    const baseNumber = '51931764349';
     const base = `https://wa.me/${baseNumber}`;
-    const message = encodeURIComponent(`Hola quiero una cotización para ${service} el ${date} en ${district}`);
+    const message = encodeURIComponent(`¡Hola! Busco una cotización para ${service} el ${date} en ${district}.`);
     this.whatsAppLink = `${base}?text=${message}`;
+  }
+
+  private resetQuoteFormState(): void {
+    const defaultValue = {
+      nombreCompleto: '',
+      whatsappNumero: '',
+      tipoEvento: '',
+      eventoId: null,
+      fechaEvento: null,
+      distrito: '',
+      mensaje: '',
+      horas: null,
+      invitados: '',
+      presupuesto: 50,
+      extras: {
+        drone: false,
+        segundoFotografo: false,
+        entregaExpress: false,
+        album: false
+      },
+      comoNosConociste: '',
+      consentimiento: false
+    };
+
+    if (this.quoteFormDirective) {
+      this.quoteFormDirective.resetForm(defaultValue);
+    } else {
+      this.quoteForm.reset(defaultValue);
+    }
+
+    this.markControlPristine(this.quoteForm);
+    this.quoteStarted = false;
+  }
+
+  private markControlPristine(control: AbstractControl): void {
+    if (control instanceof FormGroup) {
+      Object.values(control.controls).forEach(child => this.markControlPristine(child));
+    }
+    control.markAsPristine();
+    control.markAsUntouched();
+    control.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+  }
+
+  private horasValidator(control: AbstractControl): ValidationErrors | null {
+    const rawValue = control.value;
+    if (rawValue === null || rawValue === undefined || rawValue === '') {
+      return null;
+    }
+    const normalizedText = typeof rawValue === 'number'
+      ? rawValue.toString()
+      : rawValue.toString().trim();
+
+    if (!normalizedText) {
+      return null;
+    }
+
+    const numericText = normalizedText.replace(',', '.');
+    if (!/^\d+(\.\d+)?$/.test(numericText)) {
+      return { horasFormato: true };
+    }
+
+    const value = Number(numericText);
+    if (!Number.isFinite(value)) {
+      return { horasFormato: true };
+    }
+
+    if (value < 1) {
+      return { horasMin: true };
+    }
+
+    const scaled = value * 2;
+    if (Math.abs(scaled - Math.round(scaled)) > 1e-9) {
+      return { horasStep: true };
+    }
+
+    return null;
   }
 
   formatBudget(value?: number | null): string {
@@ -601,6 +680,18 @@ export class LandingComponent implements OnInit, OnDestroy {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
+  }
+
+  private addDays(base: Date, days: number): Date {
+    const result = new Date(base);
+    result.setDate(result.getDate() + days);
+    return result;
+  }
+
+  private addMonths(base: Date, months: number): Date {
+    const result = new Date(base);
+    result.setMonth(result.getMonth() + months);
+    return result;
   }
 
   // Shapes the final DTO that the landing service expects
@@ -692,7 +783,12 @@ export class LandingComponent implements OnInit, OnDestroy {
         unique.set(key, entry);
       }
     }
-    return Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    return Array.from(unique.values())
+      .filter(option => {
+        const normalized = this.normalizeEventLabel(option.name);
+        return normalized !== '' && normalized !== 'otro';
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   }
 
   private pickEventValue(source: string): string {
@@ -701,10 +797,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (match) {
       return match.name;
     }
-    if (!normalizedSource) {
-      return '';
-    }
-    return 'Otro';
+    return '';
   }
 
   private syncSelectedEventByName(name: string): void {

@@ -20,7 +20,6 @@
         </li>
 
       </ul>
-      <a class="site-header__login" routerLink="/auth/login">Login</a>
     </div>
   </nav>
 
@@ -37,7 +36,7 @@
           Pedir cotización
         </button>
         <a mat-stroked-button color="primary"
-          href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n" target="_blank" rel="noopener"
+          href="https://wa.me/51931764349?text=Hola%20quiero%20una%20cotizaci%C3%B3n" target="_blank" rel="noopener"
           (click)="clickWhatsApp('hero')">
           WhatsApp inmediato
         </a>
@@ -147,7 +146,7 @@
       <div class="cta-band__actions">
         <button mat-raised-button color="primary" (click)="scrollToSection('cotizacion')">Pedir cotización</button>
         <a mat-stroked-button color="primary"
-          href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n" target="_blank" rel="noopener"
+          href="https://wa.me/51931764349?text=Hola%20quiero%20una%20cotizaci%C3%B3n" target="_blank" rel="noopener"
           (click)="clickWhatsApp('cta-band')">
           WhatsApp
         </a>
@@ -185,7 +184,6 @@
             <mat-select formControlName="tipoEvento" required (selectionChange)="onEventSelectionChange($event.value)">
               <mat-option value="">Selecciona un evento</mat-option>
               <mat-option *ngFor="let event of eventOptions" [value]="event.name">{{ event.name }}</mat-option>
-              <mat-option value="Otro">Otro</mat-option>
             </mat-select>
             <mat-error *ngIf="quoteForm.get('tipoEvento')?.hasError('required')">Selecciona un evento.</mat-error>
           </mat-form-field>
@@ -193,20 +191,41 @@
           <mat-form-field appearance="outline">
             <mat-label>Fecha del evento</mat-label>
             <input matInput [matDatepicker]="quoteEventPicker" formControlName="fechaEvento" [min]="minQuoteDate"
-              required (keydown)="$event.preventDefault()" (focus)="quoteEventPicker.open()" readonly />
+              [max]="maxQuoteDate" required (keydown)="$event.preventDefault()"
+              (focus)="quoteEventPicker.open()" readonly />
             <mat-datepicker-toggle matSuffix [for]="quoteEventPicker"></mat-datepicker-toggle>
             <mat-datepicker #quoteEventPicker></mat-datepicker>
             <mat-error *ngIf="quoteForm.get('fechaEvento')?.hasError('required')">Selecciona la fecha.</mat-error>
             <mat-error *ngIf="quoteForm.get('fechaEvento')?.hasError('matDatepickerMin')">No podemos usar una fecha
               pasada.</mat-error>
+            <mat-error *ngIf="quoteForm.get('fechaEvento')?.hasError('matDatepickerMax')">Elige una fecha dentro de los
+              próximos 6 meses.</mat-error>
           </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Horas estimadas</mat-label>
-            <input matInput formControlName="horas" placeholder="Ej. 6" required inputmode="decimal" />
-            <mat-error *ngIf="quoteForm.get('horas')?.hasError('required')">Indica cuántas horas necesitas.</mat-error>
-            <mat-error *ngIf="quoteForm.get('horas')?.hasError('pattern')">Ingresa un número válido (ej. 6 o
-              6.5).</mat-error>
-            <mat-hint>Ingresa solo números (puedes usar decimales).</mat-hint>
+            <input
+              matInput
+              type="number"
+              formControlName="horas"
+              placeholder="Ej. 6"
+              required
+              inputmode="decimal"
+              min="1"
+              step="0.5"
+            />
+            <mat-error *ngIf="quoteForm.get('horas')?.hasError('required')">
+              Indica cuántas horas necesitas.
+            </mat-error>
+            <mat-error *ngIf="quoteForm.get('horas')?.hasError('horasFormato')">
+              Ingresa un número válido (ej. 1, 1.5, 2).
+            </mat-error>
+            <mat-error *ngIf="quoteForm.get('horas')?.hasError('horasMin')">
+              El mínimo es 1 hora.
+            </mat-error>
+            <mat-error *ngIf="quoteForm.get('horas')?.hasError('horasStep')">
+              Usa incrementos de 0.5 horas (1.0, 1.5, 2.0…).
+            </mat-error>
+            <mat-hint>Ingresa horas en múltiplos de 0.5 (mínimo 1).</mat-hint>
           </mat-form-field>
 
 
@@ -314,7 +333,7 @@
     (click)="scrollToSection('cotizacion'); trackEvent('cta_click', { source: 'floating' });">
     Pedir cotización
   </button>
-  <a mat-mini-fab color="primary" href="https://wa.me/51999999999?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
+  <a mat-mini-fab color="primary" href="https://wa.me/51931764349?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
     target="_blank" rel="noopener" aria-label="WhatsApp" (click)="clickWhatsApp('floating')">
     <mat-icon>chat</mat-icon>
   </a>
