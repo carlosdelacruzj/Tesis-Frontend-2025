@@ -89,6 +89,14 @@
   color: #bcd0ff;
 }
 
+.site-header__nav .site-header__login {
+  color: #0f172a;
+}
+
+.site-header__nav .site-header__login:hover {
+  color: #000000;
+}
+
 .site-header__nav button {
   font-weight: 600;
 }

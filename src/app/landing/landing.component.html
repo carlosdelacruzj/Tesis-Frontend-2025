@@ -18,6 +18,11 @@
             Cotización
           </button>
         </li>
+        <li>
+          <a class="site-header__login" routerLink="/auth/login">
+            Login
+          </a>
+        </li>
 
       </ul>
     </div>
@@ -202,7 +207,7 @@
               próximos 6 meses.</mat-error>
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>Horas estimadas</mat-label>
+            <mat-label>duración estimada</mat-label>
             <input
               matInput
               type="number"
@@ -225,7 +230,6 @@
             <mat-error *ngIf="quoteForm.get('horas')?.hasError('horasStep')">
               Usa incrementos de 0.5 horas (1.0, 1.5, 2.0…).
             </mat-error>
-            <mat-hint>Ingresa horas en múltiplos de 0.5 (mínimo 1).</mat-hint>
           </mat-form-field>
 
 
