@@ -64,6 +64,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   ];
 
   rows: PedidoRow[] = [];
+  searchTerm = '';
   loadingList = false;
   error: string | null = null;
   modalPago: ModalPagoState = this.crearEstadoModal();
@@ -87,6 +88,10 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
 
   navigateToCreate(): void {
     this.router.navigate(['/home/gestionar-pedido/agregar']);
+  }
+
+  onToolbarSearch(term: string): void {
+    this.searchTerm = term ?? '';
   }
 
   verPedido(row: PedidoRow): void {

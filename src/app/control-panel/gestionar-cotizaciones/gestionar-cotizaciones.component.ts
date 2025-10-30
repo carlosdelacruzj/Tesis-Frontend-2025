@@ -37,6 +37,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   ];
 
   rows: Cotizacion[] = [];
+  searchTerm = '';
 
   loadingList = false;
   downloadingId: number | null = null;
@@ -78,6 +79,10 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
   navigateToCreate(): void {
     this.router.navigate(['/home/gestionar-cotizaciones/registrar']);
+  }
+
+  onToolbarSearch(term: string): void {
+    this.searchTerm = term ?? '';
   }
 
   ver(_row: Cotizacion) { /* opcional */ }

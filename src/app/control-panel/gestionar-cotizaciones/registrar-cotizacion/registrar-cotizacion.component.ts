@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
@@ -41,6 +41,15 @@ interface PaqueteRow {
   raw: any;
 }
 
+interface ProgramacionEventoItemConfig {
+  nombre?: string;
+  direccion?: string;
+  fecha?: string;
+  hora?: string;
+  notas?: string;
+  esPrincipal?: boolean;
+}
+
 @Component({
   selector: 'app-registrar-cotizacion',
   templateUrl: './registrar-cotizacion.component.html',
@@ -51,10 +60,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     clienteNombre: ['Cliente Demo', [Validators.required, Validators.minLength(2)]],
     clienteContacto: ['999999999', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
     fechaEvento: [RegistrarCotizacionComponent.getTodayIsoDate(), Validators.required],
-    ubicacion: ['Hotel Belmond', Validators.required],
-    horasEstimadas: ['6 horas'],
+    departamento: ['Lima', Validators.required],
+    horasEstimadas: ['6', [Validators.pattern(/^\d+$/)]],
     descripcion: ['Cobertura completa para evento demo'],
-    totalEstimado: [0, Validators.min(0)]
+    totalEstimado: [0, Validators.min(0)],
+    programacion: this.fb.array([
+      this.createProgramacionItem({ nombre: 'Lugar de recepcion', esPrincipal: true }),
+      this.createProgramacionItem({ nombre: 'Ceremonia / iglesia', esPrincipal: true })
+    ])
   });
 
   servicios: any[] = [];
@@ -63,6 +76,34 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   selectedServicioNombre = '';
   selectedEventoId: number | null = null;
   selectedEventoNombre = '';
+  readonly departamentos: string[] = [
+    'Amazonas',
+    'Ancash',
+    'Apurimac',
+    'Arequipa',
+    'Ayacucho',
+    'Cajamarca',
+    'Callao',
+    'Cusco',
+    'Huancavelica',
+    'Huanuco',
+    'Ica',
+    'Junin',
+    'La Libertad',
+    'Lambayeque',
+    'Lima',
+    'Loreto',
+    'Madre de Dios',
+    'Moquegua',
+    'Pasco',
+    'Piura',
+    'Puno',
+    'San Martin',
+    'Tacna',
+    'Tumbes',
+    'Ucayali'
+  ];
+  readonly programacionMinimaRecomendada = 2;
   clienteSearchControl = new UntypedFormControl('');
   clienteResultados: ClienteBusquedaResultado[] = [];
   clienteSearchLoading = false;
@@ -108,11 +149,29 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.loadCatalogos();
     this.initClienteBusqueda();
     this.refreshSelectedPaquetesColumns();
+    this.syncProgramacionFechas();
+    this.form.get('fechaEvento')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(fecha => this.syncProgramacionFechas(fecha));
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  get programacion(): UntypedFormArray {
+    return this.form.get('programacion') as UntypedFormArray;
+  }
+
+  addProgramacionItem(): void {
+    const siguienteIndice = this.programacion.length + 1;
+    const nombreAuto = `Locación ${siguienteIndice}`;
+    this.programacion.push(this.createProgramacionItem({
+      nombre: nombreAuto,
+      fecha: this.form.get('fechaEvento')?.value ?? ''
+    }));
+    this.syncProgramacionFechas();
   }
 
   get totalSeleccion(): number {
@@ -134,8 +193,13 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.loadEventosServicio();
   }
 
-  onEventoChange(eventoId: number): void {
-    this.selectedEventoId = eventoId ?? null;
+  onEventoDropdownChange(rawValue: string): void {
+    this.onEventoChange(this.parseNumber(rawValue));
+  }
+
+  onEventoChange(eventoId: number | null | undefined): void {
+    const parsed = this.parseNumber(eventoId);
+    this.selectedEventoId = parsed ?? null;
     if (this.selectedEventoId == null) {
       this.selectedEventoNombre = '';
     } else {
@@ -428,7 +492,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const clienteNombre = (raw.clienteNombre ?? '').toString().trim();
     const clienteContacto = this.sanitizeContacto((raw.clienteContacto ?? '').toString());
     const fechaEvento = raw.fechaEvento;
-    const ubicacion = (raw.ubicacion ?? '').toString().trim();
+    const departamento = (raw.departamento ?? '').toString().trim();
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotizacion de ${clienteNombre}` : 'Solicitud de cotizacion');
@@ -478,7 +542,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         eventoId: this.selectedEventoId ?? undefined,
         tipoEvento: this.selectedEventoNombre || this.selectedServicioNombre || 'Evento',
         fechaEvento,
-        lugar: ubicacion || undefined,
+        lugar: departamento || undefined,
         horasEstimadas: horasEstimadasNumero,
         mensaje: descripcion,
         estado: 'Borrador',
@@ -515,6 +579,32 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.router.navigate(['/home/gestionar-cotizaciones']);
   }
 
+  private syncProgramacionFechas(fecha?: string | null): void {
+    const fechaReferencia = fecha ?? this.form.get('fechaEvento')?.value ?? '';
+    this.programacion.controls.forEach(control => {
+      const grupo = control as UntypedFormGroup;
+      const fechaControl = grupo.get('fecha');
+      if (!fechaControl) {
+        return;
+      }
+      fechaControl.setValue(fechaReferencia, { emitEvent: false });
+      if (!fechaControl.disabled) {
+        fechaControl.disable({ emitEvent: false });
+      }
+    });
+  }
+
+  private createProgramacionItem(config: ProgramacionEventoItemConfig = {}): UntypedFormGroup {
+    return this.fb.group({
+      nombre: [config.nombre ?? ''],
+      direccion: [config.direccion ?? ''],
+      fecha: [{ value: config.fecha ?? '', disabled: true }],
+      hora: [config.hora ?? ''],
+      notas: [config.notas ?? ''],
+      esPrincipal: [config.esPrincipal ?? false]
+    });
+  }
+
   private loadCatalogos(): void {
     this.loadingCatalogos = true;
 
@@ -536,6 +626,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           }
           this.loadingCatalogos = false;
           this.loadEventosServicio();
+          this.syncProgramacionFechas();
         },
         error: (err) => {
           console.error('[cotizacion] servicios', err);
@@ -544,6 +635,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           this.selectedServicioNombre = '';
           this.loadingCatalogos = false;
           this.loadEventosServicio();
+          this.syncProgramacionFechas();
         }
       });
 

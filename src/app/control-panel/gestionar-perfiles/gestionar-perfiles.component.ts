@@ -29,6 +29,7 @@ export class GestionarPerfilesComponent implements OnInit, OnDestroy {
   ];
 
   rows: PerfilRow[] = [];
+  searchTerm = '';
   loadingList = false;
   error: string | null = null;
 
@@ -50,6 +51,10 @@ export class GestionarPerfilesComponent implements OnInit, OnDestroy {
 
   navigateToCreate(): void {
     this.router.navigate(['/home/gestionar-perfiles/registrar-perfil']);
+  }
+
+  onToolbarSearch(term: string): void {
+    this.searchTerm = term ?? '';
   }
 
   editarPerfil(row: PerfilRow): void {

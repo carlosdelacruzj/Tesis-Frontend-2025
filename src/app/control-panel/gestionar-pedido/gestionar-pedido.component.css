@@ -9,3 +9,10 @@
 :host ::ng-deep td.cliente-col small {
   white-space: normal;
 }
+
+.gestionar-pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 32px;
+}

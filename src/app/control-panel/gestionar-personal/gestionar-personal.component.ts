@@ -30,6 +30,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
   ];
 
   rows: EmpleadoRow[] = [];
+  searchTerm = '';
   cargos: Cargo[] = [];
   selected: EmpleadoRow | null = null;
 
@@ -102,6 +103,10 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       idEstado: 1
     };
     this.loadCargosForCreate();
+  }
+
+  onToolbarSearch(term: string): void {
+    this.searchTerm = term ?? '';
   }
 
   onSortChange(_: SortPayload): void {

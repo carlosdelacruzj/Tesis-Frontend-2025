@@ -1,15 +1,23 @@
-<div class="dashboard-content">
-  <div class="py-4">
-    <h1>Pedidos</h1>
-  </div>
+<div class="dashboard-content gestionar-pedido">
+  <app-list-toolbar
+    [title]="'Pedidos'"
+    [showSearch]="true"
+    [searchPlaceholder]="'Buscar: cliente, documento, estado…'"
+    [searchValue]="searchTerm"
+    [showCreateButton]="true"
+    [createButtonLabel]="'Registrar pedido'"
+    (searchChange)="onToolbarSearch($event)"
+    (createClick)="navigateToCreate()">
+  </app-list-toolbar>
 
   <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
-      searchPlaceholder="Buscar: cliente, documento, estado…" emptyText="Sin resultados"
-      (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)" [showCreateButton]="true"
-      createButtonLabel="Registrar pedido" (createClick)="navigateToCreate()">
+      emptyText="Sin resultados"
+      (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
+      [showCreateButton]="false" [showSearch]="false"
+      [externalSearchTerm]="searchTerm">
 
       <ng-template appCell="Cliente" let-row>
         <span>{{ row.Cliente || '—' }}</span>

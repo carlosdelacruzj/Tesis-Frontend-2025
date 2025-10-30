@@ -1,16 +1,24 @@
-<div class="dashboard-content">
+<div class="dashboard-content gestionar-personal">
 
-  <div class="py-4">
-    <h1>Personal</h1>
-  </div>
+  <app-list-toolbar
+    [title]="'Personal'"
+    [showSearch]="true"
+    [searchPlaceholder]="'Buscar: código, nombre, documento…'"
+    [searchValue]="searchTerm"
+    [showCreateButton]="true"
+    [createButtonLabel]="'Registrar empleado'"
+    (searchChange)="onToolbarSearch($event)"
+    (createClick)="navigateToCreate()">
+  </app-list-toolbar>
 
   <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
-      searchPlaceholder="Buscar: código, nombre, documento…" emptyText="Sin personal registrado"
+      emptyText="Sin personal registrado"
        (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
-      [showCreateButton]="true" createButtonLabel="Registrar empleado" (createClick)="navigateToCreate()">
+      [showCreateButton]="false" [showSearch]="false"
+      [externalSearchTerm]="searchTerm">
 
       <ng-template appCell="codigoEmpleado" let-row>
         {{ row.codigoEmpleado || ('EMP-' + row.idEmpleado) }}

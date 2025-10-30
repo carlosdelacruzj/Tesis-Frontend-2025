@@ -1,17 +1,23 @@
-<div class="dashboard-content">
+<div class="dashboard-content gestionar-perfiles">
 
-  <div class="py-4">
-    <h1>Perfiles</h1>
-  </div>
+  <app-list-toolbar
+    [title]="'Perfiles'"
+    [showSearch]="true"
+    [searchPlaceholder]="'Buscar: rol, nombre, documento…'"
+    [searchValue]="searchTerm"
+    [showCreateButton]="true"
+    [createButtonLabel]="'Registrar perfil'"
+    (searchChange)="onToolbarSearch($event)"
+    (createClick)="navigateToCreate()">
+  </app-list-toolbar>
 
   <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="25"
-      searchPlaceholder="Buscar: rol, nombre, documento…"
       emptyText="Sin perfiles registrados" (rowClick)="editarPerfil($event)" (sortChange)="onSortChange($event)"
-      (pageChange)="onPageChange($event)" [showCreateButton]="true" createButtonLabel="Registrar perfil"
-      (createClick)="navigateToCreate()">
+      (pageChange)="onPageChange($event)" [showCreateButton]="false" [showSearch]="false"
+      [externalSearchTerm]="searchTerm">
 
       <ng-template appCell="ID" let-row>
         {{ row.ID || '—' }}

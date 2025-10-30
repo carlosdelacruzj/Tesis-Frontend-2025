@@ -1,16 +1,23 @@
-<div class="dashboard-content">
-  <div class="py-4">
-    <h1>Cotizaciones</h1>
-  </div>
+<div class="dashboard-content gestionar-cotizaciones">
+  <app-list-toolbar
+    [title]="'Cotizaciones'"
+    [showSearch]="true"
+    [searchPlaceholder]="'Buscar: cliente, código, evento…'"
+    [searchValue]="searchTerm"
+    [showCreateButton]="true"
+    [createButtonLabel]="'Registrar cotización'"
+    (searchChange)="onToolbarSearch($event)"
+    (createClick)="navigateToCreate()">
+  </app-list-toolbar>
 
   <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10,25,50]" [pageSize]="10"
-      searchPlaceholder="Buscar: cliente, código, evento…"
       emptyText="Sin resultados" (rowClick)="ver($event)" (sortChange)="onSortChange($event)"
-      createButtonLabel="Registrar cotización" [showCreateButton]="true" (createClick)="navigateToCreate()"
-      (pageChange)="onPageChange($event)">
+      (pageChange)="onPageChange($event)"
+      [showCreateButton]="false" [showSearch]="false"
+      [externalSearchTerm]="searchTerm">
       <!-- código: muestra codigo o fallback COT-{id} -->
       <ng-template appCell="codigo" let-row>
         {{ row.codigo || ('COT-' + row.id) }}

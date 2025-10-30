@@ -29,6 +29,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   ];
 
   rows: ClienteRow[] = [];
+  searchTerm = '';
   loadingList = false;
   error: string | null = null;
 
@@ -70,6 +71,10 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   navigateToCreate(): void {
     this.modalRegistroError = null;
     this.modalRegistroOpen = true;
+  }
+
+  onToolbarSearch(term: string): void {
+    this.searchTerm = term ?? '';
   }
 
   editarCliente(row: ClienteRow): void {

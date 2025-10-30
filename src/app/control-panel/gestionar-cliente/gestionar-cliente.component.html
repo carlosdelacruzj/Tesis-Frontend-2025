@@ -1,16 +1,24 @@
-<div class="dashboard-content">
+<div class="dashboard-content gestionar-clientes">
 
-  <div class="py-4">
-    <h1>Clientes</h1>
-  </div>
+  <app-list-toolbar
+    [title]="'Clientes'"
+    [showSearch]="true"
+    [searchPlaceholder]="'Buscar: nombre, documento, correo…'"
+    [searchValue]="searchTerm"
+    [showCreateButton]="true"
+    [createButtonLabel]="'Registrar cliente'"
+    (searchChange)="onToolbarSearch($event)"
+    (createClick)="navigateToCreate()">
+  </app-list-toolbar>
 
   <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
-      searchPlaceholder="Buscar: nombre, documento, correo…" emptyText="Sin resultados"
+      emptyText="Sin resultados"
       (rowClick)="editarCliente($event)" (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
-      [showCreateButton]="true" createButtonLabel="Registrar cliente" (createClick)="navigateToCreate()">
+      [showCreateButton]="false" [showSearch]="false"
+      [externalSearchTerm]="searchTerm">
 
       <ng-template appCell="codigoCliente" let-row>
         {{ row.codigoCliente || ('CLI-' + row.idCliente) }}

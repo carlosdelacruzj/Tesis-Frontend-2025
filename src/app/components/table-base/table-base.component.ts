@@ -88,6 +88,15 @@ export class TableBaseComponent<T = any> implements AfterContentInit, OnChanges,
     @Input() showPagination = true;
     @Input() showPageSizeSelector = true;
     @Output() createClick = new EventEmitter<void>();
+    @Input()
+    set externalSearchTerm(value: string | null | undefined) {
+        const normalized = (value ?? '').toString();
+        if (this._externalSearchTerm !== normalized) {
+            this._externalSearchTerm = normalized;
+            this.searchTerm.set(normalized);
+            this.currentPage.set(1);
+        }
+    }
 
     /** Plantillas proyectadas */
     @ContentChildren(CellTemplateDirective) cellTpls!: QueryList<CellTemplateDirective>;
@@ -99,6 +108,7 @@ export class TableBaseComponent<T = any> implements AfterContentInit, OnChanges,
     sortDirection = signal<SortDirection>('');
     currentPage = signal<number>(this.page);
     currentPageSize = signal<number>(this.pageSize);
+    private _externalSearchTerm = '';
 
     /** Mapa de plantillas por columnKey */
     cellTemplateMap = new Map<string, TemplateRef<any>>();
