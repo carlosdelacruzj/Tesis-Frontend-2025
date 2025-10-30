@@ -1,0 +1,50 @@
+<section class="client-portal">
+  <div class="client-portal__summary">
+    <h2>Hola{{ clienteNombre ? ' ' + clienteNombre : '' }} 👋</h2>
+    <p>Revisa el estado de las cotizaciones asociadas a tu cuenta.</p>
+  </div>
+</section>
+
+<section class="client-portal client-portal--cards">
+  <div class="section__header">
+    <h2>Mis cotizaciones</h2>
+    <p>Seguimiento de tus solicitudes en curso.</p>
+  </div>
+
+  <div *ngIf="loading" class="client-portal__status">Cargando cotizaciones...</div>
+  <div *ngIf="!loading && error" class="client-portal__status client-portal__status--error">{{ error }}</div>
+  <div *ngIf="!loading && !error && !cotizaciones.length" class="client-portal__status">
+    Aún no registramos cotizaciones activas para tu cuenta.
+  </div>
+
+  <div *ngIf="!loading && !error && cotizaciones.length" class="client-data-grid">
+    <article class="client-data-card" *ngFor="let cotizacion of cotizaciones">
+      <header class="client-data-card__header">
+        <span class="client-data-card__badge">{{ cotizacion.estado }}</span>
+        <h3>{{ cotizacion.tipoEvento }}</h3>
+        <p>{{ cotizacion.lugar }}</p>
+      </header>
+      <dl class="client-data-card__details">
+        <div>
+          <dt>Fecha del evento</dt>
+          <dd>{{ cotizacion.fechaEvento | date: 'dd/MM/yyyy' }}</dd>
+        </div>
+        <div>
+          <dt>Creada el</dt>
+          <dd>{{ cotizacion.fechaCreacion | date: 'dd/MM/yyyy' }}</dd>
+        </div>
+        <div>
+          <dt>Horas estimadas</dt>
+          <dd>{{ cotizacion.horasEstimadas }}</dd>
+        </div>
+        <div>
+          <dt>Total estimado</dt>
+          <dd>S/ {{ cotizacion.total }}</dd>
+        </div>
+      </dl>
+      <p class="client-data-card__message" *ngIf="cotizacion.mensaje">
+        {{ cotizacion.mensaje }}
+      </p>
+    </article>
+  </div>
+</section>

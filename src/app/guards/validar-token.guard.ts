@@ -13,28 +13,29 @@ export class ValidarTokenGuard  {
   constructor(private authService: AuthService, private router: Router) {
   }
   canActivate(): Observable<boolean> | boolean {
-    console.log('CanActivate');
-
     return this.authService.verificaAuteticacion()
       .pipe(
         tap(estaAutenticado => {
           if (!estaAutenticado) {
-            this.router.navigate(['./auth']);
-            console.log('se activo esta huevada can activate');
+            if (this.authService.esCliente()) {
+              this.router.navigate(['/']);
+            } else {
+              this.router.navigate(['./auth']);
+            }
           }
         })
       );
   }
   canLoad(): Observable<boolean> | boolean {
-    console.log('CanLoad');
-
     return this.authService.verificaAuteticacion()
     .pipe(
       tap(estaAutenticado => {
         if (!estaAutenticado) {
-          this.router.navigate(['./auth']);
-          console.log('se activo esta huevada');
-          
+          if (this.authService.esCliente()) {
+            this.router.navigate(['/']);
+          } else {
+            this.router.navigate(['./auth']);
+          }
         }
       })
     );

@@ -1,33 +1,7 @@
 <div class="schema" [innerHTML]="localBusinessSchema"></div>
 <div class="schema" [innerHTML]="faqSchema"></div>
 
-<section class="landing">
-  <nav class="site-header">
-    <div class="site-header__inner">
-      <a class="site-header__brand" href="#inicio" aria-label="D' La Cruz inicio">
-        <img src="assets/images/logo.png" alt="D' La Cruz video y fotografía" />
-      </a>
-      <ul class="site-header__nav" aria-label="Navegación principal">
-        <li><a href="#servicios">Servicios</a></li>
-        <li><a href="#portafolio">Portafolio</a></li>
-        <li><a href="#paquetes">Paquetes</a></li>
-        <li><a href="#nosotros">Nosotros</a></li>
-        <li><a href="#faq">FAQ</a></li>
-        <li>
-          <button mat-stroked-button color="primary" (click)="scrollToSection('cotizacion')">
-            Cotización
-          </button>
-        </li>
-        <li>
-          <a class="site-header__login" routerLink="/auth/login">
-            Login
-          </a>
-        </li>
-
-      </ul>
-    </div>
-  </nav>
-
+<section>
   <header class="hero" id="inicio">
     <div class="hero__content">
       <p class="hero__eyebrow">Fotografía y video en Lima</p>

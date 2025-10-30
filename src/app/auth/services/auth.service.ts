@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
-import { catchError, map, tap } from "rxjs/operators";
+import { map, tap } from "rxjs/operators";
 
 import { AuthResponse, Usuario } from '../interfaces/auth.interface';
 import { Observable, of } from 'rxjs';
@@ -13,32 +13,32 @@ export class AuthService {
 
   constructor(private http: HttpClient) { }
   private baseUrl: string = environment.baseUrl;
-  private _usuario: Usuario;
+  private _usuario: Usuario | null = this.getUsuarioFromStorage();
 
   get usuario() {
-    return { ...this._usuario };
+    return this._usuario ? { ...this._usuario } : null;
   }
 
-  login(correo: string, pass: string) {
+  esCliente(): boolean {
+    const usuario = this.ensureUsuario();
+    return !!usuario && usuario.clienteId != null;
+  }
+
+  esEmpleado(): boolean {
+    const usuario = this.ensureUsuario();
+    return !!usuario && usuario.empleadoId != null;
+  }
+
+  login(correo: string, contrasena: string): Observable<AuthResponse> {
     const url = `${this.baseUrl}/auth/login`;
-    return this.http.post<AuthResponse>(url, { email: correo, password: pass })
+    return this.http.post<AuthResponse>(url, { correo, contrasena })
       .pipe(
         tap(resp => {
-          if (resp?.token) {
-            localStorage.setItem('token', resp.token);
-            localStorage.setItem('correo', correo);
-            this._usuario = {
-              nombre: resp.nombre ?? '',
-              apellido: resp.apellido ?? '',
-              ID: resp.ID ?? 0,
-              documento: resp.documento ?? 0,
-              rol: resp.rol ?? '',
-              token: resp.token
-            }
-          }
-        }),
-        map(resp => resp?.token ?? null),
-        catchError(err => of(false))
+          localStorage.setItem('token', resp.token);
+          localStorage.setItem('correo', resp.usuario.correo);
+          localStorage.setItem('usuario', JSON.stringify(resp.usuario));
+          this._usuario = resp.usuario;
+        })
       );
   }
   validacion(correo: string, codigo: number) {
@@ -53,12 +53,33 @@ export class AuthService {
     if (!token) {
       return of(false);
     }
-    return of(true);
+    const usuario = this.ensureUsuario();
+    return of(!!usuario && usuario.empleadoId != null);
   }
   logout(){
  
     localStorage.clear();
+    this._usuario = null;
 
+  }
+
+  private getUsuarioFromStorage(): Usuario | null {
+    const rawUsuario = localStorage.getItem('usuario');
+    if (!rawUsuario) {
+      return null;
+    }
+    try {
+      return JSON.parse(rawUsuario) as Usuario;
+    } catch {
+      return null;
+    }
+  }
+
+  private ensureUsuario(): Usuario | null {
+    if (!this._usuario) {
+      this._usuario = this.getUsuarioFromStorage();
+    }
+    return this._usuario;
   }
 
 }

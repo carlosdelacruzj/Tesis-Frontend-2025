@@ -2,12 +2,12 @@ import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, Validators, FormGroupDirective, ValidationErrors } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, take, takeUntil } from 'rxjs/operators';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE, DateAdapter, MatDateFormats, NativeDateAdapter } from '@angular/material/core';
 import { formatDisplayDate, formatIsoDate } from '../shared/utils/date-utils';
-
-import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload } from './services/landing-cotizacion.service';
+import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload } from './services';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 // Landing copy decks for cards and sections
 interface LandingServiceCard {
@@ -347,7 +347,8 @@ export class LandingComponent implements OnInit, OnDestroy {
     private readonly fb: FormBuilder,
     private readonly snackBar: MatSnackBar,
     private readonly sanitizer: DomSanitizer,
-    private readonly cotizacionService: LandingCotizacionService
+    private readonly cotizacionService: LandingCotizacionService,
+    private readonly route: ActivatedRoute
   ) {
     const today = this.startOfToday();
     this.minQuoteDate = this.addDays(today, 1);
@@ -412,9 +413,15 @@ export class LandingComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Fetches country dial codes from the public REST Countries API
   ngOnInit(): void {
     this.loadEventOptions();
+    this.route.fragment
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(fragment => {
+        if (fragment) {
+          setTimeout(() => this.scrollToSection(fragment), 0);
+        }
+      });
   }
 
   get filteredPortfolio(): PortfolioItem[] {
@@ -448,6 +455,9 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   scrollToSection(anchor: string): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
     document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 

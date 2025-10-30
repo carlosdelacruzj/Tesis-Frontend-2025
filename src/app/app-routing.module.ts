@@ -1,25 +1,11 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
-import { LandingComponent } from './landing/landing.component';
 import { ValidarTokenGuard } from './guards/validar-token.guard';
-/* 
 const routes: Routes = [
   {
-    path: 'auth',
-    loadChildren:() => import('./auth/auth.module').then(m => m.AuthModule)
+    path: '',
+    loadChildren: () => import('./landing/landing.module').then(m => m.LandingModule)
   },
-  {
-    path: 'home',loadChildren:() => import('./control-panel/control-panel.module').then(m => m.ControlPanelModule),
-    /*canActivate:[ValidarTokenGuard],
-    canLoad: [ValidarTokenGuard] 
-  },
-  {
-    path: '**', redirectTo: 'auth'
-  }
-]; */
-const routes: Routes = [
-  { path: '', component: LandingComponent },
-  { path: 'inicio', component: LandingComponent },
   {
     path: 'auth',
     loadChildren: () => import('./auth/auth.module').then(m => m.AuthModule)

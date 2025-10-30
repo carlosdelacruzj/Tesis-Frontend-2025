@@ -1,7 +1,10 @@
 import { Component } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { AuthService } from '../../services/auth.service';
+import { AuthResponse } from '../../interfaces/auth.interface';
 
 @Component({
   selector: 'app-login',
@@ -11,27 +14,42 @@ import { AuthService } from '../../services/auth.service';
 export class LoginComponent {
   hide = true;
   miFormulario: UntypedFormGroup = this.fb.group({
-    email: ['delacruzcarlos1405@gmail.com', [Validators.required, Validators.email]],
-    password: ['12345678', [Validators.required, Validators.minLength(6)]],
-    // email: ['developerricardovillanueva18@gmail.com', [Validators.required, Validators.email]],
-    // password: ['12345678', [Validators.required, Validators.minLength(6)]],
+    correo: ['', [Validators.required, Validators.email]],
+    contrasena: ['', [Validators.required, Validators.minLength(6)]],
   });
   constructor(private fb: UntypedFormBuilder, private router: Router, private authService: AuthService) { }
   login() {
-    console.log(this.miFormulario.value);
-    const { email, password } = this.miFormulario.value;
-    this.authService.login(email, password)
-      .subscribe(resp => {
-        console.log(resp);
-        // if (resp === false) {
-
-        //   Swal.fire('Error', 'El Correo o la contraseña son incorrectas', 'error')
-
-        // } else {
-          this.router.navigateByUrl('/home')
-        // }
+    if (this.miFormulario.invalid) {
+      this.miFormulario.markAllAsTouched();
+      return;
+    }
+    const { correo, contrasena } = this.miFormulario.value;
+    this.authService.login(correo, contrasena)
+      .subscribe({
+        next: (_resp: AuthResponse) => {
+          if (this.authService.esEmpleado()) {
+            void this.router.navigateByUrl('/home');
+            return;
+          }
+          if (this.authService.esCliente()) {
+            void this.router.navigateByUrl('/cotizaciones');
+            return;
+          }
+          void Swal.fire({
+            icon: 'info',
+            title: 'Perfil no asignado',
+            text: 'Tu usuario no tiene un perfil activo. Contacta al administrador.'
+          });
+        },
+        error: (error: HttpErrorResponse) => {
+          const message = error?.error?.message ?? 'No se pudo iniciar sesión. Inténtalo nuevamente.';
+          void Swal.fire({
+            icon: 'error',
+            title: 'Inicio de sesión',
+            text: message
+          });
+        }
       });
-
   }
 
 

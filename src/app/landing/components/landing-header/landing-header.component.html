@@ -1,0 +1,47 @@
+<nav class="site-header">
+  <div class="site-header__inner">
+    <a
+      class="site-header__brand"
+      routerLink="/inicio"
+      aria-label="D' La Cruz inicio"
+    >
+      <img src="assets/images/logo.png" alt="D' La Cruz video y fotografía" />
+    </a>
+    <ul class="site-header__nav" aria-label="Navegación principal">
+      <li>
+        <a href="#" (click)="navigateToSection($event, 'servicios')">Servicios</a>
+      </li>
+      <li>
+        <a href="#" (click)="navigateToSection($event, 'portafolio')">Portafolio</a>
+      </li>
+      <li>
+        <a href="#" (click)="navigateToSection($event, 'paquetes')">Paquetes</a>
+      </li>
+      <li>
+        <a href="#" (click)="navigateToSection($event, 'nosotros')">Nosotros</a>
+      </li>
+      <li>
+        <a href="#" (click)="navigateToSection($event, 'faq')">FAQ</a>
+      </li>
+      <li *ngIf="isCliente">
+        <a routerLink="/cotizaciones">Mis cotizaciones</a>
+      </li>
+      <li *ngIf="isCliente">
+        <a routerLink="/pedidos">Mis pedidos</a>
+      </li>
+      <li>
+        <button mat-stroked-button color="primary" type="button" (click)="handleCotizacion()">
+          Cotización
+        </button>
+      </li>
+      <li *ngIf="!isAuthenticated">
+        <button class="site-header__login" type="button" (click)="openLogin()">Login</button>
+      </li>
+      <li *ngIf="isAuthenticated">
+        <button class="site-header__login" type="button" (click)="logout()">
+          Salir
+        </button>
+      </li>
+    </ul>
+  </div>
+</nav>

@@ -1,16 +1,19 @@
-export interface AuthResponse {
-    apellido: string,
-    nombre: string,
-    documento: number,
-    rol: string,
-    ID: number,
-    token: string
+export interface Usuario {
+    id: number;
+    clienteId: number | null;
+    correo: string;
+    nombres: string;
+    apellidos: string;
+    empleadoId: number | null;
+    tipoEmpleado: string;
 }
-export interface Usuario{
-    apellido: string,
-    nombre: string,
-    documento: number,
-    rol: string,
-    ID: number,
-    token: string
+
+export interface AuthResponse {
+    token: string;
+    usuario: Usuario;
+}
+
+export interface AuthErrorResponse {
+    success: false;
+    message: string;
 }
