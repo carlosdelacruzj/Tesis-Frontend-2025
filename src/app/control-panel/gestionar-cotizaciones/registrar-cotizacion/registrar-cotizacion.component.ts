@@ -182,8 +182,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  onServicioChange(servicioId: number): void {
-    this.selectedServicioId = servicioId ?? null;
+  onServicioChange(servicioId: number | null | undefined): void {
+    const parsed = this.parseNumber(servicioId);
+    this.selectedServicioId = parsed ?? null;
     if (this.selectedServicioId == null) {
       this.selectedServicioNombre = '';
     } else {
@@ -191,6 +192,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedServicioNombre = this.getServicioNombre(selected);
     }
     this.loadEventosServicio();
+  }
+
+  onServicioDropdownChange(rawValue: string): void {
+    this.onServicioChange(this.parseNumber(rawValue));
   }
 
   onEventoDropdownChange(rawValue: string): void {

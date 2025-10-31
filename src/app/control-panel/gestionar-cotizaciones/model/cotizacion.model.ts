@@ -39,6 +39,7 @@ export interface Cotizacion {
   notas?: string;
   pdfUrl?: string;
   items?: CotizacionItemPayload[];
+  eventos?: CotizacionEventoPayload[];
   raw?: unknown;
   lugar?: string;
   createdAt?: string;
@@ -103,6 +104,7 @@ export interface CotizacionApiResponse {
     items?: Array<Record<string, unknown>> | null;
   }) | null;
   items?: Array<Record<string, unknown>> | null;
+  eventos?: Array<Record<string, unknown>> | null;
 }
 
 export interface CotizacionItemPayload {
@@ -124,6 +126,16 @@ export interface CotizacionItemPayload {
   filmMin?: number | null;
 }
 
+export interface CotizacionEventoPayload {
+  id?: number;
+  fecha?: string;
+  hora?: string;
+  ubicacion?: string;
+  direccion?: string;
+  notas?: string;
+  esPrincipal?: boolean;
+}
+
 export interface CotizacionContextoPayload {
   clienteId?: number;
   servicioId?: number;
@@ -137,6 +149,7 @@ export interface CotizacionPayload {
   contacto: CotizacionContactoPayload;
   cotizacion: CotizacionDetallePayload;
   items: CotizacionItemPayload[];
+  eventos?: CotizacionEventoPayload[];
   contexto?: CotizacionContextoPayload;
 }
 

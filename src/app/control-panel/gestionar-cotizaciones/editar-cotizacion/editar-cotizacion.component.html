@@ -1,6 +1,10 @@
-<div class="dashboard-ecommerce" *ngIf="!loading; else loadingState">
-  <div class="container-fluid dashboard-content">
-    <h1>Editar cotización</h1>
+<ng-container *ngIf="!loading; else loadingState">
+  <div class="dashboard-content editar-cotizacion">
+    <app-list-toolbar
+      [title]="'Editar cotización'"
+      [showSearch]="false"
+      [showCreateButton]="false">
+    </app-list-toolbar>
 
     <form class="cotizacion-form" [formGroup]="form" (ngSubmit)="update()">
       <div class="row g-3 card-grid">
@@ -77,6 +81,76 @@
       </div>
 
       <mat-card class="card mb-3">
+        <mat-card-header class="programacion-header">
+          <mat-card-title>Programación del evento</mat-card-title>
+          <mat-card-subtitle>
+            Define las locaciones clave y los horarios estimados. Siempre considera al menos {{ programacionMinimaRecomendada }} puntos principales.
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="text-muted small mb-3">
+            Vista previa sin funcionalidad: más adelante podrás agregar, ordenar y marcar prioridades.
+          </p>
+
+          <div formArrayName="programacion" class="programacion-list">
+            <div class="programacion-item" *ngFor="let grupo of programacion.controls; let i = index" [formGroupName]="i">
+              <div class="programacion-item__header d-flex align-items-center justify-content-between">
+                <h6 class="mb-0">
+                  {{ grupo.get('nombre')?.value || ('Locación ' + (i + 1)) }}
+                </h6>
+                <span class="badge" [ngClass]="grupo.get('esPrincipal')?.value ? 'bg-primary' : 'bg-secondary'">
+                  {{ grupo.get('esPrincipal')?.value ? 'Principal' : 'Opcional' }}
+                </span>
+              </div>
+
+              <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label">Nombre de la locación</label>
+                    <input type="text" class="form-control" formControlName="nombre" placeholder="Ej. Recepción en casona">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label">Dirección o punto de encuentro</label>
+                    <input type="text" class="form-control" formControlName="direccion" placeholder="Ej. Av. La Marina 1234">
+                  </div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                  <div class="form-group">
+                    <label class="col-form-label">Fecha</label>
+                    <input type="date" class="form-control" formControlName="fecha">
+                  </div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                  <div class="form-group">
+                    <label class="col-form-label">Hora</label>
+                    <input type="time" class="form-control" formControlName="hora" min="06:00" max="22:00">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group mb-0">
+                    <label class="col-form-label">Notas internas</label>
+                    <textarea class="form-control" rows="2" formControlName="notas" placeholder="Detalles adicionales para el equipo (opcional)"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <p class="text-muted small mb-0 mt-3">
+                Este bloque es solo referencial. Las acciones reales (agregar, quitar o reordenar) se activarán más adelante.
+              </p>
+            </div>
+          </div>
+
+          <div class="text-end mt-3">
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="addProgramacionItem()">
+              Agregar otra locación
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="card mb-3">
         <mat-card-header>
           <mat-card-title>Mensaje del solicitante</mat-card-title>
         </mat-card-header>
@@ -93,27 +167,32 @@
         <mat-card-content>
           <div class="row g-3 mb-3">
             <div class="col-sm-6">
-              <mat-form-field appearance="outline" class="w-100">
-                <mat-label>Tipo de evento</mat-label>
-                <mat-select [value]="selectedEventoId" (selectionChange)="onEventoChange($event.value)"
-                  [disabled]="!eventos.length">
-
-                  <mat-option *ngFor="let evento of eventos" [value]="evento.id ?? evento.ID ?? evento.PK_E_Cod">
+              <div class="form-group">
+                <label class="col-form-label">Tipo de evento</label>
+                <select class="form-control"
+                        [value]="selectedEventoId ?? ''"
+                        (change)="onEventoDropdownChange($any($event.target).value)"
+                        [disabled]="!eventos.length">
+                  <option value="" disabled>Selecciona un tipo de evento</option>
+                  <option *ngFor="let evento of eventos" [value]="getId(evento) ?? ''">
                     {{ evento.nombre ?? evento.Evento ?? evento.E_Nombre ?? 'Evento' }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
+                  </option>
+                </select>
+              </div>
             </div>
             <div class="col-md-6">
-              <mat-form-field appearance="outline" class="w-100">
-                <mat-label>Servicio</mat-label>
-                <mat-select [value]="selectedServicioId" (selectionChange)="onServicioChange($event.value)"
-                  [disabled]="!servicios.length">
-                  <mat-option *ngFor="let servicio of servicios" [value]="servicio.id ?? servicio.ID">
+              <div class="form-group">
+                <label class="col-form-label">Servicio</label>
+                <select class="form-control"
+                        [value]="selectedServicioId ?? ''"
+                        (change)="onServicioDropdownChange($any($event.target).value)"
+                        [disabled]="!servicios.length">
+                  <option value="" disabled>Selecciona un servicio</option>
+                  <option *ngFor="let servicio of servicios" [value]="(servicio.id ?? servicio.ID) ?? ''">
                     {{ servicio.nombre ?? servicio.Servicio ?? 'Servicio' }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
+                  </option>
+                </select>
+              </div>
             </div>
 
 
@@ -282,7 +361,7 @@
       </div>
     </form>
   </div>
-</div>
+</ng-container>
 
 <ng-template #loadingState>
   <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">

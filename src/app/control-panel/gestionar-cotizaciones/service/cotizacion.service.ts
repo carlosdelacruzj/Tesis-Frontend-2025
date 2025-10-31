@@ -12,6 +12,7 @@ import {
   CotizacionContactoPayload,
   CotizacionContextoPayload,
   CotizacionDetallePayload,
+  CotizacionEventoPayload,
   CotizacionApiContacto,
   CotizacionApiResponse,
   ClienteBusquedaResultado,
@@ -450,6 +451,7 @@ downloadPdf(
       notas: detalle.mensaje,
       pdfUrl: undefined,
       items,
+      eventos: normalizedPayload.eventos ?? [],
       raw: {
         ...normalizedPayload,
         cotizacion: {
@@ -491,6 +493,7 @@ downloadPdf(
     };
 
     const items = Array.isArray(payload?.items) ? payload.items.filter(Boolean) : [];
+    const eventos = Array.isArray(payload?.eventos) ? payload.eventos.filter(Boolean) : [];
 
     const horasTexto = contexto.horasEstimadasTexto ?? this.formatHoras(detalle.horasEstimadas);
 
@@ -498,6 +501,7 @@ downloadPdf(
       contacto,
       cotizacion: detalle,
       items,
+      eventos,
       contexto: {
         ...contexto,
         horasEstimadasTexto: horasTexto ?? undefined
@@ -546,6 +550,7 @@ downloadPdf(
       contacto: { ...base?.contacto, ...updates?.contacto },
       cotizacion: { ...base?.cotizacion, ...updates?.cotizacion },
       items: Array.isArray(updates?.items) ? updates.items : base?.items ?? [],
+      eventos: Array.isArray(updates?.eventos) ? updates.eventos : base?.eventos ?? [],
       contexto: { ...base?.contexto, ...updates?.contexto }
     };
 
@@ -582,10 +587,17 @@ downloadPdf(
       horasEstimadasTexto: cotizacion.horasEstimadas
     };
 
+    const eventos: CotizacionEventoPayload[] = Array.isArray((cotizacion as any)?.eventos)
+      ? ((cotizacion as any).eventos as Array<Record<string, unknown>>)
+          .map((evento, index) => this.extractEventoFromApi(evento, index))
+          .filter((evento): evento is CotizacionEventoPayload => evento != null)
+      : [];
+
     return {
       contacto,
       cotizacion: detalle,
       items: Array.isArray(cotizacion.items) ? cotizacion.items.map((item, index) => this.normalizeItem(item, index)) : [],
+      eventos,
       contexto
     };
   }
@@ -932,12 +944,101 @@ downloadPdf(
       horasEstimadasTexto: horasTexto ?? undefined
     };
 
+    const eventosFuente = Array.isArray(api.eventos) ? api.eventos : [];
+    const eventos = eventosFuente
+      .map((evento: any, index: number) => this.extractEventoFromApi(evento, index))
+      .filter(evento => evento != null);
+
     return {
       contacto,
       cotizacion: detalle,
       items,
+      eventos,
       contexto
     };
+  }
+
+  private extractEventoFromApi(raw: Record<string, unknown> | null | undefined, index: number): CotizacionEventoPayload | null {
+    if (!raw) {
+      return null;
+    }
+
+    const nombre = this.toOptionalString(
+      raw['ubicacion'] ?? raw['nombre'] ?? raw['locacion'] ?? raw['lugar'] ?? raw['titulo']
+    );
+    const direccion = this.toOptionalString(
+      raw['direccion'] ?? raw['direccionExacta'] ?? raw['address']
+    );
+    const fecha = this.normalizeProgramacionFecha(
+      this.toOptionalString(
+        raw['fecha'] ?? raw['fechaEvento'] ?? raw['Fecha'] ?? raw['date']
+      )
+    );
+    const hora = this.normalizeProgramacionHora(
+      this.toOptionalString(
+        raw['hora'] ?? raw['horaEvento'] ?? raw['Hora'] ?? raw['time']
+      )
+    );
+    const notas = this.toOptionalString(
+      raw['notas'] ?? raw['Notas'] ?? raw['comentarios'] ?? raw['observaciones']
+    );
+
+    if (!nombre && !direccion && !fecha && !hora && !notas) {
+      return null;
+    }
+
+    return this.cleanObject({
+      id: this.parseNumberNullable(raw['id'] ?? raw['ID'] ?? raw['idEvento']),
+      fecha,
+      hora,
+      ubicacion: nombre ?? undefined,
+      direccion: direccion ?? undefined,
+      notas: notas ?? undefined,
+      esPrincipal: index < 2
+    }) as CotizacionEventoPayload;
+  }
+
+  private normalizeProgramacionFecha(valor?: string | null): string | undefined {
+    if (valor == null) {
+      return undefined;
+    }
+    const raw = String(valor).trim();
+    if (!raw) {
+      return undefined;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return raw;
+    }
+    const dash = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (dash) {
+      return `${dash[3]}-${dash[2]}-${dash[1]}`;
+    }
+    const slash = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (slash) {
+      return `${slash[3]}-${slash[2]}-${slash[1]}`;
+    }
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.valueOf())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+    return undefined;
+  }
+
+  private normalizeProgramacionHora(valor?: string | null): string | undefined {
+    if (valor == null) {
+      return undefined;
+    }
+    const raw = String(valor).trim();
+    if (!raw) {
+      return undefined;
+    }
+    if (/^\d{2}:\d{2}$/.test(raw)) {
+      return raw;
+    }
+    if (/^\d{2}:\d{2}:\d{2}$/.test(raw)) {
+      return raw.slice(0, 5);
+    }
+    return undefined;
   }
 
   private extractItemFromApi(item: Record<string, unknown>, index: number): CotizacionItemPayload {

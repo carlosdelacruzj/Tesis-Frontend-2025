@@ -240,23 +240,25 @@
         </mat-card-content>
       </mat-card>
 
-      <mat-card class="card mb-3">
-        <mat-card-header>
-          <mat-card-title>Servicios y paquetes</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <mat-card-title>Servicios y paquetes</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
           <div class="row g-3 mb-3">
             <div class="col-md-6">
-              <mat-form-field appearance="outline" class="w-100">
-                <mat-label>Servicio</mat-label>
-                <mat-select [value]="selectedServicioId"
-                            (selectionChange)="onServicioChange($event.value)"
-                            [disabled]="!servicios.length">
-                  <mat-option *ngFor="let servicio of servicios" [value]="servicio.id ?? servicio.ID">
+              <div class="form-group">
+                <label class="col-form-label">Servicio</label>
+                <select class="form-control"
+                        [value]="selectedServicioId ?? ''"
+                        (change)="onServicioDropdownChange($any($event.target).value)"
+                        [disabled]="!servicios.length">
+                  <option value="" disabled>Selecciona un servicio</option>
+                  <option *ngFor="let servicio of servicios" [value]="(servicio.id ?? servicio.ID) ?? ''">
                     {{ servicio.nombre ?? servicio.Servicio ?? 'Servicio' }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
+                  </option>
+                </select>
+              </div>
             </div>
           </div>
 

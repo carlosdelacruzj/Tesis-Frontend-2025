@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, finalize, switchMap, takeUntil } from 'rxjs';
@@ -41,6 +41,17 @@ interface PaqueteRow {
   raw: any;
 }
 
+interface ProgramacionEventoItemConfig {
+  nombre?: string;
+  direccion?: string;
+  fecha?: string;
+  hora?: string;
+  notas?: string;
+  esPrincipal?: boolean;
+}
+
+type ProgramacionEventoItem = ProgramacionEventoItemConfig & { esPrincipal: boolean };
+
 @Component({
   selector: 'app-editar-cotizacion',
   templateUrl: './editar-cotizacion.component.html',
@@ -55,7 +66,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     ubicacion: [{ value: '', disabled: true }, Validators.required],
     horasEstimadas: [{ value: '', disabled: true }],
     descripcion: [{ value: '', disabled: true }],
-    totalEstimado: [0, Validators.min(0)]
+    totalEstimado: [0, Validators.min(0)],
+    programacion: this.fb.array([])
   });
 
   servicios: any[] = [];
@@ -87,6 +99,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private fechaEventoOriginal: string | null = null;
 
   private readonly destroy$ = new Subject<void>();
+  readonly programacionMinimaRecomendada = 2;
 
   constructor(
     private readonly fb: UntypedFormBuilder,
@@ -107,6 +120,18 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  get programacion(): UntypedFormArray {
+    return this.form.get('programacion') as UntypedFormArray;
+  }
+
+  addProgramacionItem(): void {
+    const siguienteIndice = this.programacion.length + 1;
+    const nombreAuto = `Locación ${siguienteIndice}`;
+    const fechaRef = this.normalizeProgramacionFecha(this.fechaEventoOriginal) ?? '';
+    this.programacion.push(this.createProgramacionItem({ nombre: nombreAuto, fecha: fechaRef, esPrincipal: siguienteIndice <= this.programacionMinimaRecomendada }));
+    this.syncProgramacionFechas(this.fechaEventoOriginal);
+  }
+
   get totalSeleccion(): number {
     return this.selectedPaquetes.reduce((acc, item) => {
       const precio = Number(item.precio) || 0;
@@ -115,8 +140,13 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  onServicioChange(servicioId: number): void {
-    this.selectedServicioId = servicioId ?? null;
+  onServicioDropdownChange(rawValue: string): void {
+    this.onServicioChange(this.parseNumber(rawValue));
+  }
+
+  onServicioChange(servicioId: number | null | undefined): void {
+    const parsed = this.parseNumber(servicioId);
+    this.selectedServicioId = parsed ?? null;
     if (this.selectedServicioId == null) {
       this.selectedServicioNombre = '';
     } else {
@@ -126,8 +156,13 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.loadEventosServicio();
   }
 
-  onEventoChange(eventoId: number): void {
-    this.selectedEventoId = eventoId ?? null;
+  onEventoDropdownChange(rawValue: string): void {
+    this.onEventoChange(this.parseNumber(rawValue));
+  }
+
+  onEventoChange(eventoId: number | null | undefined): void {
+    const parsed = this.parseNumber(eventoId);
+    this.selectedEventoId = parsed ?? null;
     if (this.selectedEventoId == null) {
       this.selectedEventoNombre = '';
     } else {
@@ -514,6 +549,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       };
     });
 
+    const programacionEventos = this.extractProgramacionEventos(cotizacion, raw);
+    this.populateProgramacion(programacionEventos);
+
     this.pendingServicioId = contexto?.servicioId && contexto.servicioId > 0 ? contexto.servicioId : null;
     this.pendingEventoId = detalle?.eventoId && detalle.eventoId > 0 ? detalle.eventoId : (cotizacion.eventoId ?? null);
     this.selectedServicioNombre = contexto?.servicioNombre ?? cotizacion.servicio ?? '';
@@ -521,6 +559,226 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
     this.syncTotalEstimado();
     this.applyPendingSelections();
+  }
+
+  private populateProgramacion(eventos: ProgramacionEventoItemConfig[]): void {
+    const array = this.programacion;
+    this.clearFormArray(array);
+
+    let configs: ProgramacionEventoItem[] = eventos.map((config, index) => ({
+      ...config,
+      esPrincipal: config.esPrincipal ?? index < this.programacionMinimaRecomendada
+    })).filter(config => this.hasProgramacionContent(config));
+
+    if (!configs.length) {
+      configs = this.buildFallbackProgramacion();
+    } else if (configs.length < this.programacionMinimaRecomendada) {
+      configs = [
+        ...configs,
+        ...this.buildFallbackProgramacion().slice(configs.length)
+      ];
+    }
+
+    configs.forEach(config => {
+      array.push(this.createProgramacionItem(config));
+    });
+
+    this.syncProgramacionFechas(this.fechaEventoOriginal);
+  }
+
+  private extractProgramacionEventos(cotizacion: Cotizacion, raw?: CotizacionPayload | null): ProgramacionEventoItem[] {
+    const candidates: unknown[] = [
+      (raw as any)?.cotizacion?.eventos,
+      (raw as any)?.eventos,
+      (cotizacion as any)?.eventos,
+      (cotizacion.raw as any)?.eventos
+    ];
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate) && candidate.length) {
+        return candidate
+          .map((evento: any, index: number) => this.mapEventoToConfig(evento, index))
+          .filter(config => this.hasProgramacionContent(config));
+      }
+    }
+
+    return [];
+  }
+
+  private mapEventoToConfig(evento: Record<string, any>, index: number): ProgramacionEventoItem {
+    if (!evento) {
+      return { esPrincipal: index < this.programacionMinimaRecomendada };
+    }
+
+    const nombre = this.pickFirstString(
+      evento.ubicacion,
+      evento.nombre,
+      evento.locacion,
+      evento.lugar,
+      evento.titulo,
+      evento.descripcion
+    );
+
+    const direccion = this.pickFirstString(
+      evento.direccion,
+      evento.direccionExacta,
+      evento.address
+    );
+
+    const fecha = this.normalizeProgramacionFecha(
+      this.pickFirstString(
+        evento.fecha,
+        evento.fechaEvento,
+        evento.Fecha,
+        evento.date
+      )
+    );
+
+    const hora = this.normalizeProgramacionHora(
+      this.pickFirstString(
+        evento.hora,
+        evento.horaEvento,
+        evento.Hora,
+        evento.time
+      )
+    );
+
+    const notas = this.pickFirstString(
+      evento.notas,
+      evento.comentarios,
+      evento.observaciones,
+      evento.descripcion
+    );
+
+    const esPrincipal = Boolean(
+      evento.esPrincipal ??
+      evento.principal ??
+      (index < this.programacionMinimaRecomendada)
+    );
+
+    return {
+      nombre: nombre || undefined,
+      direccion: direccion || undefined,
+      fecha,
+      hora,
+      notas: notas || undefined,
+      esPrincipal
+    };
+  }
+
+  private createProgramacionItem(config: ProgramacionEventoItem): UntypedFormGroup {
+    return this.fb.group({
+      nombre: [config.nombre ?? ''],
+      direccion: [config.direccion ?? ''],
+      fecha: [{ value: config.fecha ?? '', disabled: true }],
+      hora: [config.hora ?? ''],
+      notas: [config.notas ?? ''],
+      esPrincipal: [config.esPrincipal ?? false]
+    });
+  }
+
+  private buildFallbackProgramacion(): ProgramacionEventoItem[] {
+    const fecha = this.normalizeProgramacionFecha(this.fechaEventoOriginal);
+    const principal = this.pickFirstString(
+      this.form.get('ubicacion')?.value,
+      this.form.get('eventoSolicitado')?.value,
+      this.cotizacion?.lugar,
+      'Locación principal'
+    ) || 'Locación principal';
+
+    return [
+      { nombre: principal, fecha, esPrincipal: true },
+      { nombre: 'Locación adicional', fecha, esPrincipal: false }
+    ];
+  }
+
+  private hasProgramacionContent(config: ProgramacionEventoItemConfig): boolean {
+    return Boolean(
+      (config.nombre && config.nombre.trim()) ||
+      (config.direccion && config.direccion.trim()) ||
+      (config.fecha && config.fecha.trim()) ||
+      (config.hora && config.hora.trim()) ||
+      (config.notas && config.notas.trim())
+    );
+  }
+
+  private syncProgramacionFechas(fecha?: string | null): void {
+    const referencia = this.normalizeProgramacionFecha(fecha) ?? null;
+    this.programacion.controls.forEach(control => {
+      const grupo = control as UntypedFormGroup;
+      const fechaControl = grupo.get('fecha');
+      if (!fechaControl) {
+        return;
+      }
+      const actual = this.normalizeProgramacionFecha(fechaControl.value);
+      const nuevoValor = actual ?? referencia ?? '';
+      fechaControl.setValue(nuevoValor, { emitEvent: false });
+      if (!fechaControl.disabled) {
+        fechaControl.disable({ emitEvent: false });
+      }
+    });
+  }
+
+  private normalizeProgramacionFecha(valor: unknown): string | undefined {
+    if (valor == null) {
+      return undefined;
+    }
+    const raw = String(valor).trim();
+    if (!raw) {
+      return undefined;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return raw;
+    }
+    const dash = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (dash) {
+      return `${dash[3]}-${dash[2]}-${dash[1]}`;
+    }
+    const slash = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (slash) {
+      return `${slash[3]}-${slash[2]}-${slash[1]}`;
+    }
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.valueOf())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+    return undefined;
+  }
+
+  private normalizeProgramacionHora(valor: unknown): string | undefined {
+    if (valor == null) {
+      return undefined;
+    }
+    const raw = String(valor).trim();
+    if (!raw) {
+      return undefined;
+    }
+    if (/^\d{2}:\d{2}$/.test(raw)) {
+      return raw;
+    }
+    if (/^\d{2}:\d{2}:\d{2}$/.test(raw)) {
+      return raw.slice(0, 5);
+    }
+    return undefined;
+  }
+
+  private clearFormArray(array: UntypedFormArray): void {
+    for (let i = array.length - 1; i >= 0; i--) {
+      array.removeAt(i);
+    }
+  }
+
+  private pickFirstString(...values: Array<unknown>): string {
+    for (const value of values) {
+      if (value == null) {
+        continue;
+      }
+      const texto = String(value).trim();
+      if (texto) {
+        return texto;
+      }
+    }
+    return '';
   }
 
   private applyPendingSelections(): void {
@@ -591,7 +849,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.refreshSelectedPaquetesColumns();
   }
 
-  private getId(item: any): number | null {
+  getId(item: any): number | null {
     if (!item) return null;
     const raw = item?.id ?? item?.ID ?? item?.pk ?? item?.PK_E_Cod;
     if (raw == null) return null;
