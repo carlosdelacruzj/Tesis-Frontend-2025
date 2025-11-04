@@ -838,9 +838,20 @@ downloadPdf(
       filmMin: item.filmMin
     }));
 
+    const eventosOutbound = (normalized.eventos ?? []).map(evento => this.cleanObject({
+      id: evento.id,
+      fecha: evento.fecha,
+      hora: evento.hora,
+      ubicacion: evento.ubicacion,
+      direccion: evento.direccion,
+      notas: evento.notas,
+      esPrincipal: evento.esPrincipal
+    }));
+
     const outbound: Record<string, any> = {
       cotizacion: cotizacionOutbound,
-      items: itemsOutbound
+      items: itemsOutbound,
+      eventos: eventosOutbound
     };
 
     if (includeLead && this.hasContactoContent(normalized.contacto)) {
@@ -1037,6 +1048,10 @@ downloadPdf(
     }
     if (/^\d{2}:\d{2}:\d{2}$/.test(raw)) {
       return raw.slice(0, 5);
+    }
+    const match = raw.match(/(\d{2}):(\d{2})/);
+    if (match) {
+      return `${match[1]}:${match[2]}`;
     }
     return undefined;
   }

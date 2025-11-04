@@ -1,11 +1,17 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { UntypedFormArray, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
-import { CotizacionItemPayload, CotizacionPayload, ClienteBusquedaResultado, CotizacionContextoPayload } from '../model/cotizacion.model';
+import {
+  CotizacionItemPayload,
+  CotizacionPayload,
+  ClienteBusquedaResultado,
+  CotizacionContextoPayload,
+  CotizacionEventoPayload
+} from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
@@ -28,6 +34,8 @@ interface PaqueteSeleccionado {
   recargo?: number | null;
   notas?: string;
   eventoServicioId?: number;
+  servicioId?: number | null;
+  servicioNombre?: string;
   origen?: any;
   precioOriginal: number;
   editandoPrecio?: boolean;
@@ -56,12 +64,14 @@ interface ProgramacionEventoItemConfig {
   styleUrls: ['./registrar-cotizacion.component.css']
 })
 export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
+  readonly fechaMinimaEvento = RegistrarCotizacionComponent.computeFechaMinimaEvento();
+  readonly fechaMaximaEvento = RegistrarCotizacionComponent.computeFechaMaximaEvento();
   form: UntypedFormGroup = this.fb.group({
     clienteNombre: ['Cliente Demo', [Validators.required, Validators.minLength(2)]],
     clienteContacto: ['999999999', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
-    fechaEvento: [RegistrarCotizacionComponent.getTodayIsoDate(), Validators.required],
+    fechaEvento: [RegistrarCotizacionComponent.computeFechaMinimaEvento(), [Validators.required, this.fechaEventoEnRangoValidator()]],
     departamento: ['Lima', Validators.required],
-    horasEstimadas: ['6', [Validators.pattern(/^\d+$/)]],
+    horasEstimadas: [6, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
     descripcion: ['Cobertura completa para evento demo'],
     totalEstimado: [0, Validators.min(0)],
     programacion: this.fb.array([
@@ -76,6 +86,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   selectedServicioNombre = '';
   selectedEventoId: number | null = null;
   selectedEventoNombre = '';
+  eventoSelectTouched = false;
   readonly departamentos: string[] = [
     'Amazonas',
     'Ancash',
@@ -199,6 +210,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   onEventoDropdownChange(rawValue: string): void {
+    this.eventoSelectTouched = true;
     this.onEventoChange(this.parseNumber(rawValue));
   }
 
@@ -220,6 +232,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       return;
     }
     const eventoServicioId = this.getEventoServicioId(element);
+    const servicioId = this.getPaqueteServicioId(element);
+    const servicioNombre = this.getPaqueteServicioNombre(element);
     const horas = this.getHoras(element);
     const personal = this.getPersonal(element);
     const fotosImpresas = this.getFotosImpresas(element);
@@ -233,8 +247,21 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const descuento = this.getDescuento(element);
     const recargo = this.getRecargo(element);
     const precioBase = Number(element?.precio ?? element?.Precio ?? 0) || 0;
+
+    let restantes: PaqueteSeleccionado[];
+    if (servicioId != null) {
+      restantes = this.selectedPaquetes.filter(item => (item.servicioId ?? null) !== servicioId);
+    } else {
+      const servicioNombreActual = (servicioNombre ?? this.selectedServicioNombre ?? '').toLowerCase();
+      restantes = this.selectedPaquetes.filter(item =>
+        (item.servicioId ?? null) != null
+          ? true
+          : (item.servicioNombre ?? '').toLowerCase() !== servicioNombreActual
+      );
+    }
+
     this.selectedPaquetes = [
-      ...this.selectedPaquetes,
+      ...restantes,
       {
         key,
         titulo,
@@ -253,6 +280,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         recargo: recargo,
         notas: '',
         eventoServicioId: eventoServicioId ?? undefined,
+        servicioId: servicioId,
+        servicioNombre: servicioNombre ?? this.selectedServicioNombre,
         origen: element,
         precioOriginal: precioBase,
         editandoPrecio: false
@@ -400,6 +429,25 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return this.selectedPaquetes.some(p => p.key === key);
   }
 
+  hasOtroPaqueteDelServicio(element: any): boolean {
+    const servicioId = this.getPaqueteServicioId(element);
+    if (servicioId == null) {
+      const servicioNombre = this.getPaqueteServicioNombre(element);
+      if (!servicioNombre) {
+        return false;
+      }
+      const key = this.getPkgKey(element);
+      const nombreComparacion = servicioNombre.toLowerCase();
+      return this.selectedPaquetes.some(p =>
+        (p.servicioId ?? null) == null &&
+        (p.servicioNombre ?? '').toLowerCase() === nombreComparacion &&
+        p.key !== key
+      );
+    }
+    const key = this.getPkgKey(element);
+    return this.selectedPaquetes.some(p => (p.servicioId ?? null) === servicioId && p.key !== key);
+  }
+
   shouldShowPrecioOriginal(): boolean {
     return this.selectedPaquetes.some(item => this.isPrecioModificado(item));
   }
@@ -482,9 +530,28 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   submit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.snackBar.open('Revisa los campos obligatorios.', 'Cerrar', { duration: 4000 });
+    const formInvalido = this.form.invalid;
+    const eventoInvalido = this.selectedEventoId == null;
+    const programacionInvalida = this.programacion.invalid;
+
+    if (formInvalido || eventoInvalido || programacionInvalida) {
+      if (formInvalido) {
+        this.form.markAllAsTouched();
+      }
+      if (programacionInvalida) {
+        this.programacion.markAllAsTouched();
+      }
+      if (eventoInvalido) {
+        this.eventoSelectTouched = true;
+      }
+
+      const mensaje = eventoInvalido
+        ? 'Selecciona un tipo de evento.'
+        : programacionInvalida
+          ? 'Completa la programación del evento.'
+          : 'Revisa los campos obligatorios.';
+
+      this.snackBar.open(mensaje, 'Cerrar', { duration: 4000 });
       return;
     }
 
@@ -503,6 +570,27 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotizacion de ${clienteNombre}` : 'Solicitud de cotizacion');
     const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas);
     const totalEstimado = Number(raw.totalEstimado ?? this.totalSeleccion) || this.totalSeleccion;
+    const programacionRaw = this.programacion.getRawValue() as Array<Record<string, unknown>>;
+    const eventos: CotizacionEventoPayload[] = programacionRaw
+      .map((config, index) => {
+        const fecha = ((config['fecha'] ?? fechaEvento) || '').toString().trim();
+        const hora = (config['hora'] ?? '').toString().trim();
+        const ubicacion = (config['nombre'] ?? '').toString().trim();
+        const direccion = (config['direccion'] ?? '').toString().trim();
+        const notas = (config['notas'] ?? '').toString().trim();
+        if (!fecha && !hora && !ubicacion && !direccion && !notas) {
+          return null;
+        }
+        return {
+          fecha: fecha || undefined,
+          hora: hora || undefined,
+          ubicacion: ubicacion || undefined,
+          direccion: direccion || undefined,
+          notas: notas || undefined,
+          esPrincipal: Boolean(config['esPrincipal']) || index < this.programacionMinimaRecomendada
+        } as CotizacionEventoPayload;
+      })
+      .filter((evento): evento is CotizacionEventoPayload => evento != null);
 
     const items: CotizacionItemPayload[] = this.selectedPaquetes.map((item, index) => ({
       idEventoServicio: item.eventoServicioId ?? this.getEventoServicioId(item.origen) ?? undefined,
@@ -554,6 +642,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         totalEstimado
       },
       items,
+      ...(eventos.length ? { eventos } : {}),
       ...(Object.keys(contexto).length ? { contexto } : {})
     };
 
@@ -601,10 +690,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   private createProgramacionItem(config: ProgramacionEventoItemConfig = {}): UntypedFormGroup {
     return this.fb.group({
-      nombre: [config.nombre ?? ''],
-      direccion: [config.direccion ?? ''],
+      nombre: [config.nombre ?? '', Validators.required],
+      direccion: [config.direccion ?? '', Validators.required],
       fecha: [{ value: config.fecha ?? '', disabled: true }],
-      hora: [config.hora ?? ''],
+      hora: [config.hora ?? '', [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/)]],
       notas: [config.notas ?? ''],
       esPrincipal: [config.esPrincipal ?? false]
     });
@@ -652,18 +741,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           if (!this.eventos.length) {
             this.selectedEventoId = null;
             this.selectedEventoNombre = '';
-          } else {
-            if (this.selectedEventoId == null) {
-              const firstValido = this.eventos.find(item => this.getId(item) != null) || null;
-              if (firstValido) {
-                const id = this.getId(firstValido)!;
-                this.selectedEventoId = id;
-                this.selectedEventoNombre = this.getEventoNombre(firstValido);
-              }
-            } else {
-              const selected = this.eventos.find(e => this.getId(e) === this.selectedEventoId);
-              this.selectedEventoNombre = this.getEventoNombre(selected);
-            }
+          } else if (this.selectedEventoId != null) {
+            const selected = this.eventos.find(e => this.getId(e) === this.selectedEventoId);
+            this.selectedEventoNombre = this.getEventoNombre(selected);
           }
           this.loadEventosServicio();
         },
@@ -730,6 +810,46 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const day = String(today.getDate()).padStart(2, '0');
     return `${today.getFullYear()}-${month}-${day}`;
   }
+  private static computeFechaMinimaEvento(): string {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return RegistrarCotizacionComponent.formatIsoDate(date);
+  }
+
+  private static computeFechaMaximaEvento(): string {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 6);
+    return RegistrarCotizacionComponent.formatIsoDate(date);
+  }
+
+  private static formatIsoDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private fechaEventoEnRangoValidator(): ValidatorFn {
+    return control => {
+      const raw = control.value;
+      if (!raw) {
+        return null;
+      }
+      const date = new Date(raw);
+      if (Number.isNaN(date.valueOf())) {
+        return { fechaEventoInvalida: true };
+      }
+      const min = new Date(this.fechaMinimaEvento);
+      const max = new Date(this.fechaMaximaEvento);
+      if (date < min) {
+        return { fechaEventoAnterior: true };
+      }
+      if (date > max) {
+        return { fechaEventoPosterior: true };
+      }
+      return null;
+    };
+  }
 
   private getId(item: any): number | null {
     if (!item) return null;
@@ -795,6 +915,42 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   private getGrupo(item: any): string | null {
     const raw = item?.grupo ?? item?.Grupo ?? item?.categoria ?? item?.Categoria ?? null;
     return raw != null ? String(raw) : null;
+  }
+
+  private getPaqueteServicioId(item: any): number | null {
+    if (!item) {
+      return this.selectedServicioId;
+    }
+    const raw =
+      item?.servicioId ??
+      item?.idServicio ??
+      item?.ID_Servicio ??
+      item?.servicio_id ??
+      item?.ServicioId ??
+      null;
+    const parsed = this.parseNumber(raw);
+    if (parsed != null) {
+      return parsed;
+    }
+    return this.selectedServicioId;
+  }
+
+  private getPaqueteServicioNombre(item: any): string | undefined {
+    const baseNombre =
+      item?.servicioNombre ??
+      item?.ServicioNombre ??
+      item?.servicio ??
+      item?.Servicio ??
+      item?.nombreServicio ??
+      item?.NombreServicio ??
+      null;
+    if (baseNombre != null) {
+      const texto = String(baseNombre).trim();
+      if (texto) {
+        return texto;
+      }
+    }
+    return this.selectedServicioNombre || undefined;
   }
 
   private deriveGrupo(): string | null {

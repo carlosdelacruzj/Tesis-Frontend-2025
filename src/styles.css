@@ -35,3 +35,24 @@ span.mat-radio-outer-circle{
   margin: 0 !important;
   max-height: none !important;
 }
+
+.btn-primary {
+  background-color: #0f1c30;
+  border-color: #0f1c30;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.show > .btn-primary.dropdown-toggle {
+  background-color: #0f1c30;
+  border-color: #0f1c30;
+  box-shadow: 0 0 0 0.25rem rgba(15, 28, 48, 0.35);
+}
+
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-color: #0f1c30;
+  border-color: #0f1c30;
+}

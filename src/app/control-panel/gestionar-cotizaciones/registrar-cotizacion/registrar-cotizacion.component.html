@@ -68,9 +68,14 @@
                 <input type="text"
                        class="form-control"
                        formControlName="clienteNombre"
-                       placeholder="Nombre y apellidos">
+                       placeholder="Nombre y apellidos"
+                       [class.is-invalid]="form.get('clienteNombre')?.invalid && form.get('clienteNombre')?.touched">
                 <small class="text-danger"
-                       *ngIf="form.get('clienteNombre')?.invalid && form.get('clienteNombre')?.touched">
+                       *ngIf="form.get('clienteNombre')?.hasError('required') && form.get('clienteNombre')?.touched">
+                  Ingresa el nombre del solicitante.
+                </small>
+                <small class="text-danger"
+                       *ngIf="form.get('clienteNombre')?.hasError('minlength') && form.get('clienteNombre')?.touched">
                   Ingresa al menos 2 caracteres.
                 </small>
               </div>
@@ -80,10 +85,15 @@
                 <input type="tel"
                        class="form-control"
                        formControlName="clienteContacto"
-                       placeholder="Ej. 999 999 999">
+                       placeholder="Ej. 999 999 999"
+                       [class.is-invalid]="form.get('clienteContacto')?.invalid && form.get('clienteContacto')?.touched">
                 <small class="text-danger"
                        *ngIf="form.get('clienteContacto')?.hasError('required') && form.get('clienteContacto')?.touched">
                   Ingresa un número de contacto.
+                </small>
+                <small class="text-danger"
+                       *ngIf="form.get('clienteContacto')?.hasError('minlength') && form.get('clienteContacto')?.touched">
+                  Debe tener al menos 6 dígitos.
                 </small>
                 <small class="text-danger"
                        *ngIf="form.get('clienteContacto')?.hasError('pattern') && form.get('clienteContacto')?.touched">
@@ -105,9 +115,26 @@
                 <div class="col-sm-6">
                   <div class="form-group">
                     <label class="col-form-label">Fecha del evento</label>
-                    <input type="date" class="form-control" formControlName="fechaEvento">
+                <input type="date"
+                       class="form-control"
+                       formControlName="fechaEvento"
+                       [min]="fechaMinimaEvento"
+                       [max]="fechaMaximaEvento"
+                       [class.is-invalid]="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
+                <small class="text-danger"
+                      *ngIf="form.get('fechaEvento')?.hasError('required') && form.get('fechaEvento')?.touched">
+                      Selecciona una fecha.
+                    </small>
+                <small class="text-danger"
+                      *ngIf="form.get('fechaEvento')?.hasError('fechaEventoAnterior') && form.get('fechaEvento')?.touched">
+                      La fecha debe ser al menos un día después de hoy.
+                    </small>
                     <small class="text-danger"
-                      *ngIf="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
+                      *ngIf="form.get('fechaEvento')?.hasError('fechaEventoPosterior') && form.get('fechaEvento')?.touched">
+                      La fecha no puede superar los 6 meses desde hoy.
+                    </small>
+                    <small class="text-danger"
+                      *ngIf="form.get('fechaEvento')?.hasError('fechaEventoInvalida') && form.get('fechaEvento')?.touched">
                       Selecciona una fecha válida.
                     </small>
                   </div>
@@ -119,12 +146,21 @@
                            class="form-control"
                            formControlName="horasEstimadas"
                            placeholder="Ej. 6"
-                           min="0"
+                           min="1"
                            step="1"
-                           inputmode="numeric">
+                           inputmode="numeric"
+                           [class.is-invalid]="form.get('horasEstimadas')?.invalid && form.get('horasEstimadas')?.touched">
+                    <small class="text-danger"
+                           *ngIf="form.get('horasEstimadas')?.hasError('required') && form.get('horasEstimadas')?.touched">
+                      Ingresa las horas estimadas.
+                    </small>
                     <small class="text-danger"
                            *ngIf="form.get('horasEstimadas')?.hasError('pattern') && form.get('horasEstimadas')?.touched">
                       Usa solo números enteros.
+                    </small>
+                    <small class="text-danger"
+                           *ngIf="form.get('horasEstimadas')?.hasError('min') && form.get('horasEstimadas')?.touched">
+                      Ingresa un número mayor a 0.
                     </small>
                   </div>
                 </div>
@@ -132,7 +168,9 @@
 
               <div class="form-group">
                 <label class="col-form-label">Departamento</label>
-                <select class="form-control" formControlName="departamento">
+                <select class="form-control"
+                        formControlName="departamento"
+                        [class.is-invalid]="form.get('departamento')?.invalid && form.get('departamento')?.touched">
                   <option value="">Selecciona un departamento</option>
                   <option *ngFor="let dep of departamentos" [value]="dep">{{ dep }}</option>
                 </select>
@@ -146,12 +184,17 @@
                 <select class="form-control"
                         [value]="selectedEventoId ?? ''"
                         (change)="onEventoDropdownChange($any($event.target).value)"
-                        [disabled]="!eventos.length">
+                        [disabled]="!eventos.length"
+                        [ngClass]="{'is-invalid': eventoSelectTouched && !selectedEventoId}">
                   <option value="" disabled>Selecciona un tipo de evento</option>
                   <option *ngFor="let evento of eventos" [value]="(evento.id ?? evento.ID ?? evento.PK_E_Cod) ?? ''">
                     {{ evento.nombre ?? evento.Evento ?? evento.E_Nombre ?? 'Evento' }}
                   </option>
                 </select>
+                <small class="text-danger"
+                       *ngIf="eventoSelectTouched && !selectedEventoId">
+                  Selecciona un tipo de evento.
+                </small>
               </div>
             </mat-card-content>
           </mat-card>
@@ -186,13 +229,29 @@
                 <div class="col-md-6">
                   <div class="form-group">
                     <label class="col-form-label">Nombre de la locación</label>
-                    <input type="text" class="form-control" formControlName="nombre" placeholder="Ej. Recepción en casona">
+                    <input type="text"
+                           class="form-control"
+                           formControlName="nombre"
+                           placeholder="Ej. Recepción en casona"
+                           [class.is-invalid]="grupo.get('nombre')?.invalid && grupo.get('nombre')?.touched">
+                    <small class="text-danger"
+                           *ngIf="grupo.get('nombre')?.hasError('required') && grupo.get('nombre')?.touched">
+                      Ingresa la locación.
+                    </small>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="form-group">
                     <label class="col-form-label">Dirección o punto de encuentro</label>
-                    <input type="text" class="form-control" formControlName="direccion" placeholder="Ej. Av. La Marina 1234">
+                    <input type="text"
+                           class="form-control"
+                           formControlName="direccion"
+                           placeholder="Ej. Av. La Marina 1234"
+                           [class.is-invalid]="grupo.get('direccion')?.invalid && grupo.get('direccion')?.touched">
+                    <small class="text-danger"
+                           *ngIf="grupo.get('direccion')?.hasError('required') && grupo.get('direccion')?.touched">
+                      Ingresa la dirección.
+                    </small>
                   </div>
                 </div>
                 <div class="col-sm-6 col-md-3">
@@ -204,7 +263,20 @@
                 <div class="col-sm-6 col-md-3">
                   <div class="form-group">
                     <label class="col-form-label">Hora</label>
-                    <input type="time" class="form-control" formControlName="hora" min="06:00" max="22:00">
+                    <input type="time"
+                           class="form-control"
+                           formControlName="hora"
+                           min="06:00"
+                           max="22:00"
+                           [class.is-invalid]="grupo.get('hora')?.invalid && grupo.get('hora')?.touched">
+                    <small class="text-danger"
+                           *ngIf="grupo.get('hora')?.hasError('required') && grupo.get('hora')?.touched">
+                      Ingresa la hora.
+                    </small>
+                    <small class="text-danger"
+                           *ngIf="grupo.get('hora')?.hasError('pattern') && grupo.get('hora')?.touched">
+                      Usa el formato HH:MM.
+                    </small>
                   </div>
                 </div>
                 <div class="col-md-6">
@@ -293,10 +365,12 @@
 
               <ng-template appCell="acciones" let-row>
                 <div class="d-flex justify-content-center">
-                  <button type="button" class="btn btn-outline-primary btn-sm"
+                  <button type="button"
+                          class="btn btn-outline-primary btn-sm"
+                          [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
                           *ngIf="!isInSeleccion(row.raw); else quitarBtn"
                           (click)="addPaquete(row.raw)">
-                    Agregar
+                    {{ hasOtroPaqueteDelServicio(row.raw) ? 'Reemplazar' : 'Agregar' }}
                   </button>
                   <ng-template #quitarBtn>
                     <button type="button" class="btn btn-outline-danger btn-sm"
