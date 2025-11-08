@@ -109,6 +109,8 @@ export interface CotizacionApiResponse {
 
 export interface CotizacionItemPayload {
   idEventoServicio?: number;
+  eventoId?: number;
+  servicioId?: number;
   grupo?: string | null;
   opcion?: number | null;
   titulo: string;
@@ -153,7 +155,64 @@ export interface CotizacionPayload {
   contexto?: CotizacionContextoPayload;
 }
 
-export interface CotizacionUpdatePayload extends Partial<CotizacionPayload> {}
+export interface CotizacionAdminClientePayload {
+  id: number;
+}
+
+export interface CotizacionAdminLeadPayload {
+  nombre?: string;
+  celular?: string;
+  origen?: string;
+  correo?: string;
+}
+
+export interface CotizacionAdminItemPayload {
+  idEventoServicio?: number;
+  eventoId?: number;
+  servicioId?: number;
+  titulo: string;
+  descripcion?: string;
+  moneda?: string;
+  precioUnitario: number;
+  cantidad: number;
+  notas?: string;
+  horas?: number;
+  personal?: number;
+  fotosImpresas?: number;
+  trailerMin?: number;
+  filmMin?: number;
+}
+
+export interface CotizacionAdminEventoPayload {
+  fecha?: string;
+  hora?: string;
+  ubicacion?: string;
+  direccion?: string;
+  notas?: string | null;
+}
+
+export interface CotizacionAdminBasePayload {
+  cotizacion: {
+    idTipoEvento?: number | null;
+    tipoEvento?: string;
+    fechaEvento?: string;
+    lugar?: string;
+    horasEstimadas?: number | null;
+    mensaje?: string;
+    estado?: string;
+  };
+  items: CotizacionAdminItemPayload[];
+  eventos?: CotizacionAdminEventoPayload[];
+  cliente?: CotizacionAdminClientePayload;
+}
+
+export interface CotizacionAdminCreatePayload extends CotizacionAdminBasePayload {
+  lead?: CotizacionAdminLeadPayload;
+}
+
+export type CotizacionAdminUpdatePayload = CotizacionAdminBasePayload;
+
+export type CotizacionUpdatePayload = CotizacionAdminUpdatePayload;
 
 export interface LeadConvertPayload {
   correo: string;

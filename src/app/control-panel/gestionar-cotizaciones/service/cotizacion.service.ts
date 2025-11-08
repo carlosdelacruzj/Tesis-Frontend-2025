@@ -7,7 +7,6 @@ import {
   Cotizacion,
   CotizacionItemPayload,
   CotizacionPayload,
-  CotizacionUpdatePayload,
   CotizacionContacto,
   CotizacionContactoPayload,
   CotizacionContextoPayload,
@@ -21,7 +20,9 @@ import {
   CotizacionPublicResult,
   LeadConvertPayload,
   CotizacionPedidoPayload,
-  CotizacionPedidoResponse
+  CotizacionPedidoResponse,
+  CotizacionAdminCreatePayload,
+  CotizacionAdminUpdatePayload
 } from '../model/cotizacion.model';
 import { PedidoService } from '../../gestionar-pedido/service/pedido.service';
 import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
@@ -129,9 +130,8 @@ export class CotizacionService {
   }
 
 
-  createCotizacion(payload: CotizacionPayload): Observable<Cotizacion> {
-    const outbound = this.toBackendPayload(payload);
-    return this.http.post<CotizacionApiResponse>(`${this.baseUrl}/admin`, outbound).pipe(
+  createCotizacion(payload: CotizacionAdminCreatePayload): Observable<Cotizacion> {
+    return this.http.post<CotizacionApiResponse>(`${this.baseUrl}/admin`, payload).pipe(
       map(item => this.normalizeApiCotizacion(item)),
       tap(cotizacion => this.upsertCotizacion(cotizacion, true)),
       map(cotizacion => this.cloneCotizacion(cotizacion)),
@@ -142,19 +142,13 @@ export class CotizacionService {
     );
   }
 
-  updateCotizacion(id: number | string, payload: CotizacionUpdatePayload): Observable<Cotizacion> {
+  updateCotizacion(id: number | string, payload: CotizacionAdminUpdatePayload): Observable<Cotizacion> {
     const numericId = Number(id);
-    const index = this.cotizaciones.findIndex(cot => cot.id === numericId);
-    if (index === -1) {
-      return throwError(() => new Error('Cotización no encontrada'));
+    if (!Number.isFinite(numericId)) {
+      return throwError(() => new Error('Identificador de cotización inválido'));
     }
 
-    const base = this.cotizaciones[index];
-    const basePayload = (base.raw as CotizacionPayload | undefined) ?? this.buildFallbackPayloadFromCotizacion(base);
-    const mergedPayload = this.mergePayload(basePayload, payload);
-    const outbound = this.toBackendPayload(mergedPayload, { includeLead: false });
-
-    return this.http.put<CotizacionApiResponse>(`${this.baseUrl}/${numericId}`, outbound).pipe(
+    return this.http.put<CotizacionApiResponse>(`${this.baseUrl}/${numericId}`, payload).pipe(
       map(item => this.normalizeApiCotizacion({ ...item, id: item?.id ?? numericId })),
       tap(cotizacion => this.upsertCotizacion(cotizacion)),
       map(cotizacion => this.cloneCotizacion(cotizacion)),
@@ -520,9 +514,14 @@ downloadPdf(
 
     const cantidad = Number(item.cantidad ?? 1);
     const precio = Number(item.precioUnitario ?? 0);
+    const eventoId = this.parseNumberNullable(item.eventoId);
+    const servicioId = this.parseNumberNullable(item.servicioId);
+    const idEventoServicio = this.parseNumberNullable(item.idEventoServicio);
 
     return {
-      idEventoServicio: item.idEventoServicio ?? item.idEventoServicio,
+      idEventoServicio: idEventoServicio ?? undefined,
+      eventoId: eventoId ?? undefined,
+      servicioId: servicioId ?? undefined,
       grupo: item.grupo ?? null,
       opcion: item.opcion ?? index + 1,
       titulo: item.titulo ?? item.descripcion ?? `Item ${index + 1}`,
@@ -538,67 +537,6 @@ downloadPdf(
       fotosImpresas: this.parseNumberNullable(item.fotosImpresas),
       trailerMin: this.parseNumberNullable(item.trailerMin),
       filmMin: this.parseNumberNullable(item.filmMin)
-    };
-  }
-
-  private mergePayload(base: CotizacionPayload, updates: CotizacionUpdatePayload): CotizacionPayload {
-    if (!updates) {
-      return this.preparePayload(base, base?.cotizacion?.idCotizacion ?? 0);
-    }
-
-    const merged: CotizacionPayload = {
-      contacto: { ...base?.contacto, ...updates?.contacto },
-      cotizacion: { ...base?.cotizacion, ...updates?.cotizacion },
-      items: Array.isArray(updates?.items) ? updates.items : base?.items ?? [],
-      eventos: Array.isArray(updates?.eventos) ? updates.eventos : base?.eventos ?? [],
-      contexto: { ...base?.contexto, ...updates?.contexto }
-    };
-
-    return this.preparePayload(merged, merged.cotizacion?.idCotizacion ?? 0);
-  }
-
-  private buildFallbackPayloadFromCotizacion(cotizacion: Cotizacion): CotizacionPayload {
-    const contacto: CotizacionPayload['contacto'] = {
-      nombre: cotizacion.contacto?.nombre ?? cotizacion.cliente,
-      celular: cotizacion.contacto?.celular ?? cotizacion.contactoResumen ?? undefined,
-      origen: cotizacion.contacto?.origen,
-      correo: cotizacion.contacto?.correo
-    };
-
-    const detalle: CotizacionPayload['cotizacion'] = {
-      idCotizacion: cotizacion.id,
-      eventoId: cotizacion.eventoId,
-      idTipoEvento: cotizacion.eventoId,
-      tipoEvento: cotizacion.evento ?? cotizacion.eventoSolicitado ?? cotizacion.servicio,
-      fechaEvento: cotizacion.fecha ?? new Date().toISOString(),
-      lugar: cotizacion.lugar,
-      horasEstimadas: this.parseHorasToNumber(cotizacion.horasEstimadas),
-      mensaje: cotizacion.notas,
-      estado: cotizacion.estado,
-      totalEstimado: cotizacion.total ?? undefined
-    };
-
-    const contexto: CotizacionPayload['contexto'] = {
-      clienteId: undefined,
-      servicioId: cotizacion.servicioId,
-      servicioNombre: cotizacion.servicio,
-      eventoNombre: cotizacion.evento,
-      horaEvento: cotizacion.hora,
-      horasEstimadasTexto: cotizacion.horasEstimadas
-    };
-
-    const eventos: CotizacionEventoPayload[] = Array.isArray((cotizacion as any)?.eventos)
-      ? ((cotizacion as any).eventos as Array<Record<string, unknown>>)
-          .map((evento, index) => this.extractEventoFromApi(evento, index))
-          .filter((evento): evento is CotizacionEventoPayload => evento != null)
-      : [];
-
-    return {
-      contacto,
-      cotizacion: detalle,
-      items: Array.isArray(cotizacion.items) ? cotizacion.items.map((item, index) => this.normalizeItem(item, index)) : [],
-      eventos,
-      contexto
     };
   }
 
@@ -796,77 +734,6 @@ downloadPdf(
 
     if (contactoOutbound && Object.keys(contactoOutbound).length) {
       outbound.lead = contactoOutbound;
-    }
-
-    return outbound;
-  }
-
-  private toBackendPayload(payload: CotizacionPayload, options: { includeLead?: boolean } = {}): Record<string, any> {
-    const includeLead = options.includeLead ?? true;
-    const normalized = this.preparePayload(payload, payload?.cotizacion?.idCotizacion ?? 0);
-    const detalle = (normalized.cotizacion ?? {}) as CotizacionDetallePayload;
-
-    const cotizacionOutbound = this.cleanObject({
-      idCotizacion: detalle.idCotizacion,
-      eventoId: detalle.eventoId,
-      idTipoEvento: detalle.idTipoEvento ?? detalle.eventoId,
-      tipoEvento: detalle.tipoEvento,
-      fechaEvento: this.formatDateForBackend(detalle.fechaEvento),
-      lugar: detalle.lugar,
-      horasEstimadas: detalle.horasEstimadas,
-      mensaje: detalle.mensaje,
-      estado: detalle.estado,
-      totalEstimado: detalle.totalEstimado
-    });
-
-    const itemsOutbound = (normalized.items ?? []).map(item => this.cleanObject({
-      idEventoServicio: item.idEventoServicio,
-      grupo: item.grupo ?? undefined,
-      opcion: item.opcion ?? undefined,
-      titulo: item.titulo,
-      descripcion: item.descripcion,
-      moneda: item.moneda,
-      precioUnitario: item.precioUnitario,
-      cantidad: item.cantidad,
-      descuento: item.descuento,
-      recargo: item.recargo,
-      notas: item.notas,
-      horas: item.horas,
-      personal: item.personal,
-      fotosImpresas: item.fotosImpresas,
-      trailerMin: item.trailerMin,
-      filmMin: item.filmMin
-    }));
-
-    const eventosOutbound = (normalized.eventos ?? []).map(evento => this.cleanObject({
-      id: evento.id,
-      fecha: evento.fecha,
-      hora: evento.hora,
-      ubicacion: evento.ubicacion,
-      direccion: evento.direccion,
-      notas: evento.notas,
-      esPrincipal: evento.esPrincipal
-    }));
-
-    const outbound: Record<string, any> = {
-      cotizacion: cotizacionOutbound,
-      items: itemsOutbound,
-      eventos: eventosOutbound
-    };
-
-    if (includeLead && this.hasContactoContent(normalized.contacto)) {
-      outbound.lead = this.cleanObject({
-        id: normalized.contacto?.id,
-        nombre: normalized.contacto?.nombre,
-        celular: normalized.contacto?.celular,
-        origen: normalized.contacto?.origen,
-        correo: normalized.contacto?.correo
-      });
-    }
-
-    const clienteId = this.parseNumberNullable((normalized.contexto as CotizacionContextoPayload | undefined)?.clienteId ?? (normalized.contacto?.id ?? null));
-    if (clienteId != null) {
-      outbound.cliente = { id: clienteId };
     }
 
     return outbound;
@@ -1072,6 +939,12 @@ downloadPdf(
     const idEventoServicio = this.parseNumberNullable(
       item['idEventoServicio'] ?? item['eventoServicioId'] ?? item['idCotizacionServicio']
     );
+    const eventoId = this.parseNumberNullable(
+      item['eventoId'] ?? item['idEvento'] ?? item['evento_id']
+    );
+    const servicioId = this.parseNumberNullable(
+      item['servicioId'] ?? item['idServicio'] ?? item['servicio_id']
+    );
 
     const titulo = this.toOptionalString(item['titulo'])
       ?? this.toOptionalString(item['nombre'])
@@ -1101,7 +974,9 @@ downloadPdf(
       personal,
       fotosImpresas,
       trailerMin,
-      filmMin
+      filmMin,
+      eventoId: eventoId ?? undefined,
+      servicioId: servicioId ?? undefined
     };
   }
 

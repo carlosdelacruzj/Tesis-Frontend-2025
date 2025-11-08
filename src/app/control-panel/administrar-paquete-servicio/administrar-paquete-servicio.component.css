@@ -1,44 +1,47 @@
-.example-card {
-    max-width: 200px;
-  }
-.ecommerce-widget{
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
-    margin: 10px 0;
-}
-.example-card img {
-    padding: auto;
-    display: block;
-    margin: auto;
-    width: 100px;
-    height: 100px;
+/* Layout styles provided globally via .dashboard-content */
+
+.administrar-paquetes {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 32px;
 }
 
-.example-card button {
-    margin: auto;
-    display: block;
-    padding-top: 20px;
+.administrar-paquetes .toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
 }
 
-h3{
-    font-size: 20px;
-    margin: auto;
+.administrar-paquetes .toolbar-actions button mat-icon {
+  margin-right: 6px;
 }
 
-.boton-action{
-    padding: 10px;
-    margin: auto;
-}
-.addservice{
-    font-size: 12px;
-    padding: 10px 15px;
-    display: left;
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
 }
 
-.registrarPaquete{
-    padding: 4px 6px;
-    margin: auto;
-    display: inline-block;   
-    font-size: 12px;
+.event-grid app-event-card {
+  width: 100%;
+}
+
+.empty-state {
+  margin: 64px auto;
+  max-width: 360px;
+  text-align: center;
+  color: #5c6a82;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.empty-state mat-icon {
+  font-size: 56px;
+  width: 56px;
+  height: 56px;
+  color: #c7d4ea;
 }

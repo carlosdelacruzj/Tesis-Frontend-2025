@@ -1,14 +1,21 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, finalize, switchMap, takeUntil } from 'rxjs';
 
-import { Cotizacion, CotizacionItemPayload, CotizacionPayload } from '../model/cotizacion.model';
+import {
+  Cotizacion,
+  CotizacionPayload,
+  CotizacionAdminItemPayload,
+  CotizacionAdminUpdatePayload,
+  CotizacionAdminEventoPayload
+} from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { formatIsoDate } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
+
+type AlertIcon = 'success' | 'error' | 'warning' | 'info' | 'question';
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -111,7 +118,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
   readonly programacionMinimaRecomendada = 2;
-  private readonly serviciosSeleccionados = new Set<string>();
   readonly departamentos: string[] = [
     'Amazonas',
     'Ancash',
@@ -145,8 +151,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     private readonly fb: UntypedFormBuilder,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly cotizacionService: CotizacionService,
-    private readonly snackBar: MatSnackBar
+    private readonly cotizacionService: CotizacionService
   ) {}
 
   ngOnInit(): void {
@@ -176,7 +181,43 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const nombreAuto = `Locación ${siguienteIndice}`;
     const fechaRef = this.form.get('fechaEvento')?.value ?? this.fechaEventoOriginal ?? '';
     this.programacion.push(this.createProgramacionItem({ nombre: nombreAuto, fecha: fechaRef, esPrincipal: siguienteIndice <= this.programacionMinimaRecomendada }));
+    this.ensureProgramacionPrincipales();
     this.syncProgramacionFechas(fechaRef);
+    this.programacion.markAsDirty();
+    this.programacion.updateValueAndValidity();
+  }
+
+  removeProgramacionItem(index: number): void {
+    if (index < 0 || index >= this.programacion.length) {
+      return;
+    }
+    if (this.programacion.length <= 1) {
+      this.showAlert('warning', 'Acción no permitida', 'Debes mantener al menos una locación en la programación.');
+      return;
+    }
+
+    const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+    const nombre = (grupo?.get('nombre')?.value ?? '').toString().trim() || `Locación ${index + 1}`;
+
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Eliminar locación',
+      text: `¿Quieres eliminar "${nombre}" de la programación?`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545'
+    }).then(result => {
+      if (!result.isConfirmed) {
+        return;
+      }
+      this.programacion.removeAt(index);
+      this.ensureProgramacionPrincipales();
+      this.syncProgramacionFechas();
+      this.programacion.markAsDirty();
+      this.programacion.updateValueAndValidity();
+      this.showToast('success', 'Locación eliminada', 'Se eliminó la locación seleccionada.');
+    });
   }
 
   get totalSeleccion(): number {
@@ -227,17 +268,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       return;
     }
     const eventoServicioId = this.getEventoServicioId(element);
-    const servicioIdReal = this.getPaqueteServicioId(element, false);
-    const servicioNombreReal = this.getPaqueteServicioNombre(element, false);
-    const servicioId = servicioIdReal ?? this.selectedServicioId ?? null;
-    const servicioNombreDisplay = servicioIdReal != null
-      ? servicioNombreReal ?? undefined
-      : (servicioNombreReal ?? this.selectedServicioNombre ?? undefined);
-    const servicioKey = this.buildServicioKey(servicioId, servicioNombreDisplay);
-    if (servicioKey && this.serviciosSeleccionados.has(servicioKey)) {
-      this.snackBar.open('Ya seleccionaste una opción para este servicio.', 'Cerrar', { duration: 4000 });
-      return;
-    }
+    const servicioId = this.getPaqueteServicioId(element);
+    const servicioNombre = this.getPaqueteServicioNombre(element);
     const horas = this.getHoras(element);
     const personal = this.getPersonal(element);
     const fotosImpresas = this.getFotosImpresas(element);
@@ -251,8 +283,21 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const descuento = this.getDescuento(element);
     const recargo = this.getRecargo(element);
     const precioBase = Number(element?.precio ?? element?.Precio ?? 0) || 0;
+
+    let restantes: PaqueteSeleccionado[];
+    if (servicioId != null) {
+      restantes = this.selectedPaquetes.filter(item => (item.servicioId ?? null) !== servicioId);
+    } else {
+      const servicioNombreActual = (servicioNombre ?? this.selectedServicioNombre ?? '').toLowerCase();
+      restantes = this.selectedPaquetes.filter(item =>
+        (item.servicioId ?? null) != null
+          ? true
+          : (item.servicioNombre ?? '').toLowerCase() !== servicioNombreActual
+      );
+    }
+
     this.selectedPaquetes = [
-      ...this.selectedPaquetes,
+      ...restantes,
       {
         key,
         titulo,
@@ -271,32 +316,18 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         recargo,
         notas: '',
         eventoServicioId: eventoServicioId ?? undefined,
-        servicioId,
-        servicioNombre: servicioNombreDisplay,
+        servicioId: servicioId ?? undefined,
+        servicioNombre: servicioNombre ?? this.selectedServicioNombre ?? undefined,
         origen: element,
         precioOriginal: precioBase,
         editandoPrecio: false
       }
     ];
-    if (servicioKey) {
-      this.serviciosSeleccionados.add(servicioKey);
-    }
     this.syncTotalEstimado();
   }
 
   removePaquete(key: string | number): void {
-    const paquete = this.selectedPaquetes.find(p => p.key === key);
-    if (!paquete) {
-      return;
-    }
-    const clave = this.buildServicioKey(
-      paquete.servicioId ?? this.getPaqueteServicioId(paquete.origen, false),
-      paquete.servicioNombre ?? this.getPaqueteServicioNombre(paquete.origen, false)
-    );
     this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
-    if (clave) {
-      this.serviciosSeleccionados.delete(clave);
-    }
     this.syncTotalEstimado();
   }
 
@@ -305,6 +336,25 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   isInSeleccion(element: any): boolean {
     const key = this.getPkgKey(element);
     return this.selectedPaquetes.some(p => p.key === key);
+  }
+
+  hasOtroPaqueteDelServicio(element: any): boolean {
+    const servicioId = this.getPaqueteServicioId(element);
+    if (servicioId == null) {
+      const servicioNombre = this.getPaqueteServicioNombre(element);
+      if (!servicioNombre) {
+        return false;
+      }
+      const key = this.getPkgKey(element);
+      const nombreComparacion = servicioNombre.toLowerCase();
+      return this.selectedPaquetes.some(p =>
+        (p.servicioId ?? null) == null &&
+        (p.servicioNombre ?? '').toLowerCase() === nombreComparacion &&
+        p.key !== key
+      );
+    }
+    const key = this.getPkgKey(element);
+    return this.selectedPaquetes.some(p => (p.servicioId ?? null) === servicioId && p.key !== key);
   }
 
   shouldShowPrecioOriginal(): boolean {
@@ -356,9 +406,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const minimo = this.getPrecioMinimo(current);
     if (value < minimo) {
       value = minimo;
-      this.snackBar.open('Solo puedes reducir el precio hasta un 5% respecto al valor base.', 'Cerrar', {
-        duration: 3000
-      });
+      this.showAlert('info', 'Ajuste no permitido', 'Solo puedes reducir el precio hasta un 5% respecto al valor base.');
     }
 
     this.selectedPaquetes = this.selectedPaquetes.map(item =>
@@ -393,27 +441,31 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.form.invalid) {
+    const programacionInvalida = this.programacion.invalid;
+    if (this.form.invalid || programacionInvalida) {
       this.form.markAllAsTouched();
-      this.snackBar.open('Revisa los campos obligatorios.', 'Cerrar', { duration: 4000 });
+      this.programacion.markAllAsTouched();
+      const mensaje = programacionInvalida
+        ? 'Completa la programación del evento.'
+        : 'Revisa los campos obligatorios.';
+      this.showAlert('warning', 'Falta información', mensaje);
       return;
     }
 
     if (!this.selectedPaquetes.length) {
-      this.snackBar.open('Selecciona al menos un paquete para la cotización.', 'Cerrar', { duration: 4000 });
+      this.showAlert('warning', 'Agrega paquetes', 'Selecciona al menos un paquete para la cotización.');
       return;
     }
 
     const raw = this.form.getRawValue();
     console.log('Raw form data:', raw);
     const rawPayload = (this.cotizacion.raw as CotizacionPayload | undefined);
-    const rawContacto = rawPayload?.contacto;
     const rawDetalle = rawPayload?.cotizacion;
     const rawContexto = rawPayload?.contexto;
     const eventoSeleccionadoId = this.selectedEventoId ?? rawDetalle?.eventoId ?? this.cotizacion?.eventoId ?? null;
     this.eventoSelectTouched = eventoSeleccionadoId == null;
     if (this.eventoSelectTouched) {
-      this.snackBar.open('Selecciona un tipo de evento.', 'Cerrar', { duration: 4000 });
+      this.showAlert('warning', 'Selecciona un evento', 'Elige un tipo de evento para continuar.');
       return;
     }
 
@@ -421,84 +473,82 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotización de ${clienteNombre}` : 'Solicitud de cotización');
-    const clienteContacto = (raw.clienteContacto ?? '').toString().trim();
     const fechaEvento = this.normalizeDateForPayload(raw.fechaEvento) ??
       this.normalizeDateForPayload(this.fechaEventoOriginal);
     if (!fechaEvento) {
-      this.snackBar.open('No pudimos interpretar la fecha del evento.', 'Cerrar', { duration: 4000 });
+      this.showAlert('error', 'Fecha inválida', 'No pudimos interpretar la fecha del evento.');
       return;
     }
     const departamento = (raw.departamento ?? '').toString().trim();
     const clienteId = rawContexto?.clienteId;
     const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas ?? rawContexto?.horasEstimadasTexto);
-    const totalEstimado = Number(raw.totalEstimado ?? this.totalSeleccion) || this.totalSeleccion;
 
-    const items: CotizacionItemPayload[] = this.selectedPaquetes.map((item, index) => ({
-      idEventoServicio: item.eventoServicioId ?? this.getEventoServicioId(item.origen) ?? undefined,
-      grupo: item.grupo ?? this.getGrupo(item.origen) ?? this.deriveGrupo(),
-      opcion: item.opcion ?? index + 1,
-      titulo: item.titulo,
-      descripcion: item.descripcion,
-      moneda: item.moneda ?? this.getMoneda(item.origen) ?? 'USD',
-      precioUnitario: Number(item.precio) || 0,
-      cantidad: Number(item.cantidad ?? 1) || 1,
-      descuento: item.descuento ?? this.getDescuento(item.origen) ?? undefined,
-      recargo: item.recargo ?? this.getRecargo(item.origen) ?? undefined,
-      notas: item.notas,
-      horas: item.horas ?? this.getHoras(item.origen),
-      personal: item.personal ?? this.getPersonal(item.origen),
-      fotosImpresas: item.fotosImpresas ?? this.getFotosImpresas(item.origen),
-      trailerMin: item.trailerMin ?? this.getTrailerMin(item.origen),
-      filmMin: item.filmMin ?? this.getFilmMin(item.origen)
-    }));
+    const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map((item) => {
+      const notas = (item.notas ?? '').toString().trim();
+      const eventoServicioId = this.getEventoServicioId(item) ?? this.getEventoServicioId(item.origen);
+      const servicioId = this.getPaqueteServicioId(item);
+      const horasItem = this.parseNumber(item.horas ?? this.getHoras(item.origen));
+      const personalItem = this.parseNumber(item.personal ?? this.getPersonal(item.origen));
+      const fotosImpresas = this.parseNumber(item.fotosImpresas ?? this.getFotosImpresas(item.origen));
+      const trailerMin = this.parseNumber(item.trailerMin ?? this.getTrailerMin(item.origen));
+      const filmMin = this.parseNumber(item.filmMin ?? this.getFilmMin(item.origen));
 
-    const eventos = this.programacion.controls
-      .map(control => (control.value ?? {}) as Record<string, unknown>)
+      return {
+        idEventoServicio: eventoServicioId ?? undefined,
+        eventoId: eventoSeleccionadoId ?? undefined,
+        servicioId: servicioId ?? undefined,
+        titulo: item.titulo,
+        descripcion: item.descripcion || undefined,
+        moneda: item.moneda ?? this.getMoneda(item.origen) ?? 'USD',
+        precioUnitario: Number(item.precio) || 0,
+        cantidad: Number(item.cantidad ?? 1) || 1,
+        notas: notas || undefined,
+        horas: horasItem ?? undefined,
+        personal: personalItem ?? undefined,
+        fotosImpresas: fotosImpresas ?? undefined,
+        trailerMin: trailerMin ?? undefined,
+        filmMin: filmMin ?? undefined
+      } as CotizacionAdminItemPayload;
+    });
+
+    const programacionRaw = this.programacion.getRawValue() as ProgramacionEventoItemConfig[];
+    const eventos: CotizacionAdminEventoPayload[] = programacionRaw
       .filter(config => this.hasProgramacionContent(config))
       .map(config => {
-        const fechaNormalizada = this.normalizeProgramacionFecha(config['fecha']) ?? fechaEvento;
-        const horaNormalizada = this.normalizeProgramacionHora(config['hora']);
-        const ubicacion = String(config['nombre'] ?? '').trim();
-        const direccion = String(config['direccion'] ?? '').trim();
-        const notas = String(config['notas'] ?? '').trim();
+        const fechaNormalizada = this.normalizeProgramacionFecha(config.fecha) ?? fechaEvento;
+        const horaBase = this.normalizeProgramacionHora(config.hora);
+        const horaSalida = horaBase
+          ? (/^\d{2}:\d{2}$/.test(horaBase) ? `${horaBase}:00` : horaBase)
+          : undefined;
+        const ubicacion = (config.nombre ?? '').toString().trim();
+        const direccion = (config.direccion ?? '').toString().trim();
+        const notasTexto = (config.notas ?? '').toString().trim();
         return {
           fecha: fechaNormalizada ?? undefined,
-          hora: horaNormalizada ?? undefined,
+          hora: horaSalida,
           ubicacion: ubicacion || undefined,
           direccion: direccion || undefined,
-          notas: notas || undefined
-        };
+          notas: notasTexto ? notasTexto : null
+        } as CotizacionAdminEventoPayload;
       });
 
-    const payload: CotizacionPayload = {
-      contacto: {
-        nombre: clienteNombre,
-        celular: clienteContacto,
-        origen: rawContacto?.origen ?? 'Backoffice',
-        correo: rawContacto?.correo
-      },
+    const payload: CotizacionAdminUpdatePayload = {
       cotizacion: {
-        idCotizacion: this.cotizacion.id,
-        eventoId: eventoSeleccionadoId ?? undefined,
+        idTipoEvento: eventoSeleccionadoId ?? undefined,
         tipoEvento: this.selectedEventoNombre || rawContexto?.eventoNombre || rawDetalle?.tipoEvento || this.selectedServicioNombre,
         fechaEvento,
         lugar: departamento || rawDetalle?.lugar,
-        horasEstimadas: horasEstimadasNumero,
+        horasEstimadas: horasEstimadasNumero ?? undefined,
         mensaje: descripcion,
-        estado: rawDetalle?.estado ?? this.cotizacion.estado ?? 'Enviada',
-        totalEstimado
+        estado: rawDetalle?.estado ?? this.cotizacion?.estado ?? 'Borrador'
       },
       items,
-      eventos,
-      contexto: {
-        clienteId,
-        servicioId: this.selectedServicioId ?? rawContexto?.servicioId,
-        servicioNombre: this.selectedServicioNombre || rawContexto?.servicioNombre,
-        eventoNombre: this.selectedEventoNombre || rawContexto?.eventoNombre || rawDetalle?.tipoEvento,
-        horaEvento: rawContexto?.horaEvento,
-        horasEstimadasTexto: horasEstimadas || rawContexto?.horasEstimadasTexto
-      }
+      eventos: eventos.length ? eventos : undefined
     };
+
+    if (clienteId != null) {
+      payload.cliente = { id: clienteId };
+    }
 
     this.saving = true;
     this.cotizacionService.updateCotizacion(this.cotizacion.id, payload)
@@ -516,7 +566,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('[cotizacion] update', err);
-          this.snackBar.open('No pudimos actualizar la cotización.', 'Cerrar', { duration: 5000 });
+          this.showAlert('error', 'Error al actualizar', 'No pudimos actualizar la cotización.');
         }
       });
   }
@@ -592,7 +642,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('[cotizacion] load', err);
-          this.snackBar.open('No pudimos cargar la cotización.', 'Cerrar', { duration: 5000 });
+          this.showAlert('error', 'Error al cargar', 'No pudimos cargar la cotización.');
           this.router.navigate(['/home/gestionar-cotizaciones']);
         }
       });
@@ -652,8 +702,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const filmMin = this.getFilmMin(item);
       const precioUnitario = Number((item as any)?.precio ?? item.precioUnitario ?? 0) || 0;
       const cantidad = Number(item.cantidad ?? 1) || 1;
-      const paqueteServicioId = this.getPaqueteServicioId(item, false);
-      const paqueteServicioNombre = this.getPaqueteServicioNombre(item, false);
+    const paqueteServicioId = this.getPaqueteServicioId(item);
+    const paqueteServicioNombre = this.getPaqueteServicioNombre(item);
       return {
         key: this.getPkgKey(item),
         titulo: this.getTitulo(item),
@@ -683,7 +733,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const programacionEventos = this.extractProgramacionEventos(cotizacion, raw);
     this.populateProgramacion(programacionEventos);
 
-    this.rebuildServiciosSeleccionados();
     this.syncTotalEstimado();
     this.applyPendingSelections();
     this.programacion.markAsPristine();
@@ -714,7 +763,40 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       array.push(this.createProgramacionItem(config));
     });
 
+    this.ensureProgramacionPrincipales();
     this.syncProgramacionFechas(this.form.get('fechaEvento')?.value ?? this.fechaEventoOriginal);
+  }
+
+  private ensureProgramacionPrincipales(): void {
+    this.programacion.controls.forEach((control, index) => {
+      const grupo = control as UntypedFormGroup;
+      const objetivo = index < this.programacionMinimaRecomendada;
+      if (grupo.get('esPrincipal')?.value !== objetivo) {
+        grupo.get('esPrincipal')?.setValue(objetivo, { emitEvent: false });
+      }
+    });
+  }
+
+  private showAlert(icon: AlertIcon, title: string, text?: string): void {
+    void Swal.fire({
+      icon,
+      title,
+      text,
+      confirmButtonText: 'Entendido'
+    });
+  }
+
+  private showToast(icon: AlertIcon, title: string, text?: string, timer = 2200): void {
+    void Swal.fire({
+      icon,
+      title,
+      text,
+      toast: true,
+      position: 'top-end',
+      timer,
+      timerProgressBar: true,
+      showConfirmButton: false
+    });
   }
 
   private extractProgramacionEventos(cotizacion: Cotizacion, raw?: CotizacionPayload | null): ProgramacionEventoItem[] {
@@ -799,10 +881,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private createProgramacionItem(config: ProgramacionEventoItem): UntypedFormGroup {
     return this.fb.group({
-      nombre: [config.nombre ?? ''],
-      direccion: [config.direccion ?? ''],
+      nombre: [config.nombre ?? '', Validators.required],
+      direccion: [config.direccion ?? '', Validators.required],
       fecha: [{ value: config.fecha ?? '', disabled: true }],
-      hora: [config.hora ?? '', [Validators.pattern(/^\d{2}:\d{2}$/)]],
+      hora: [config.hora ?? '', [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/)]],
       notas: [config.notas ?? ''],
       esPrincipal: [config.esPrincipal ?? false]
     });
@@ -1158,45 +1240,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       }
     }
     return fallbackToSelected ? (this.selectedServicioNombre || undefined) : undefined;
-  }
-
-  private buildServicioKey(servicioId: number | null | undefined, servicioNombre?: string | null): string | null {
-    if (servicioId != null && Number.isFinite(servicioId)) {
-      return `id:${servicioId}`;
-    }
-    const nombre = this.normalizeServicioNombre(servicioNombre);
-    if (nombre) {
-      return `nombre:${nombre}`;
-    }
-    return null;
-  }
-
-  private normalizeServicioNombre(nombre: string | undefined | null): string | null {
-    const texto = (nombre ?? '').toString().trim();
-    return texto ? texto.toLowerCase() : null;
-  }
-
-  private rebuildServiciosSeleccionados(): void {
-    this.serviciosSeleccionados.clear();
-    this.selectedPaquetes.forEach(item => {
-      const clave = this.buildServicioKey(
-        item.servicioId ?? this.getPaqueteServicioId(item.origen, false),
-        item.servicioNombre ?? this.getPaqueteServicioNombre(item.origen, false)
-      );
-      if (clave) {
-        this.serviciosSeleccionados.add(clave);
-      }
-    });
-  }
-
-  private deriveGrupo(): string | null {
-    if (this.selectedServicioNombre) {
-      return this.selectedServicioNombre.toUpperCase();
-    }
-    if (this.selectedEventoNombre) {
-      return this.selectedEventoNombre.toUpperCase();
-    }
-    return null;
   }
 
   private getOpcion(item: any): number | null {

@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { PaqueteServicioService } from 'src/app/control-panel/administrar-paquete-servicio/service/paquete-servicio.service';
+import { EventoServicioDataService } from 'src/app/control-panel/administrar-paquete-servicio/service/evento-servicio-data.service';
 
 @Component({
   selector: 'app-add-evento',
@@ -18,7 +18,7 @@ export class AddEventoComponent {
   constructor(
     private fb: FormBuilder,
     private snack: MatSnackBar,
-    private svc: PaqueteServicioService,
+    private svc: EventoServicioDataService,
     private dialogRef: MatDialogRef<AddEventoComponent>
   ) {}
 
@@ -52,7 +52,7 @@ export class AddEventoComponent {
     this.loading = true;
     const nombre = (this.form.value.nombre || '').trim();
 
-  this.svc.createEvento(nombre).subscribe({
+    this.svc.crearEvento(nombre).subscribe({
 
       next: () => {
         this.snack.open('Evento creado correctamente', 'OK', { duration: 2500 });

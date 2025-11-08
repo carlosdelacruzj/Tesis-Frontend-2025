@@ -1,10 +1,80 @@
-export class Servicio {
-    constructor(
-      public ID: number,
-      public Evento: string,
-      public Servicio: string,
-      public Precio: number,
-      public Descripcion: string,
-      public Titulo: string
-    ) {}
-  }
+export interface Evento {
+  id: number;
+  nombre: string;
+  /**
+   * URL del icono representativo. Se mantiene opcional mientras se evalúa su deprecación.
+   */
+  iconUrl?: string | null;
+}
+
+export interface Servicio {
+  id: number;
+  nombre: string;
+}
+
+export interface EventoServicioStaff {
+  rol: string;
+  cantidad: number;
+}
+
+export interface EventoServicioEquipo {
+  tipoEquipoId: number;
+  tipoEquipo: string;
+  cantidad: number;
+  notas: string | null;
+}
+
+export interface EventoServicioDetalle {
+  id: number;
+  titulo: string;
+  categoria: string | null;
+  evento: {
+    id: number;
+    nombre: string;
+  };
+  servicio: {
+    id: number;
+    nombre: string;
+  };
+  precio: number | null;
+  descripcion: string | null;
+  horas: number | null;
+  fotosImpresas: number | null;
+  trailerMin: number | null;
+  filmMin: number | null;
+  staff: {
+    total: number;
+    detalle: EventoServicioStaff[];
+  } | null;
+  equipos: EventoServicioEquipo[];
+}
+
+export interface CrearEventoServicioRequest {
+  servicio: number;
+  evento: number;
+  titulo: string;
+  categoria?: string | null;
+  precio?: number;
+  descripcion?: string | null;
+  horas?: number | null;
+  fotosImpresas?: number | null;
+  trailerMin?: number | null;
+  filmMin?: number | null;
+  staff?: EventoServicioStaff[];
+  equipos?: Array<{ tipoEquipoId: number; cantidad: number; notas?: string | null }>;
+}
+
+export interface ActualizarEventoServicioRequest {
+  servicio?: number;
+  evento?: number;
+  titulo?: string;
+  categoria?: string | null;
+  precio?: number;
+  descripcion?: string | null;
+  horas?: number | null;
+  fotosImpresas?: number | null;
+  trailerMin?: number | null;
+  filmMin?: number | null;
+  staff?: EventoServicioStaff[] | null;
+  equipos?: Array<{ tipoEquipoId: number; cantidad: number; notas?: string | null }> | null;
+}

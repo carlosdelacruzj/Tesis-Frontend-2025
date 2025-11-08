@@ -1,4 +1,4 @@
-<div class="dashboard-content cotizacion-content">
+<div class="dashboard-content">
   <app-list-toolbar
     [title]="'Registrar cotización'"
     [showSearch]="false"
@@ -210,19 +210,30 @@
         </mat-card-header>
         <mat-card-content>
           <p class="text-muted small mb-3">
-            Vista previa sin funcionalidad: más adelante podrás agregar, ordenar y marcar prioridades.
+            Agrega o quita locaciones según necesites. Más adelante podrás reordenarlas y marcar prioridades.
           </p>
 
           <div formArrayName="programacion" class="programacion-list">
             <div class="programacion-item" *ngFor="let grupo of programacion.controls; let i = index" [formGroupName]="i">
-              <div class="programacion-item__header d-flex align-items-center justify-content-between">
-                <h6 class="mb-0">
-                  {{ grupo.get('nombre')?.value || ('Locación ' + (i + 1)) }}
-                </h6>
-                <span class="badge"
-                      [ngClass]="grupo.get('esPrincipal')?.value ? 'bg-primary' : 'bg-secondary'">
-                  {{ grupo.get('esPrincipal')?.value ? 'Principal' : 'Opcional' }}
-                </span>
+              <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <h6 class="mb-0">
+                    {{ grupo.get('nombre')?.value || ('Locación ' + (i + 1)) }}
+                  </h6>
+                  <span class="badge"
+                        [ngClass]="grupo.get('esPrincipal')?.value ? 'bg-primary' : 'bg-secondary'">
+                    {{ grupo.get('esPrincipal')?.value ? 'Principal' : 'Opcional' }}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm text-danger"
+                  (click)="removeProgramacionItem(i)"
+                  [disabled]="programacion.length <= 1"
+                  [attr.aria-label]="'Eliminar locación ' + (grupo.get('nombre')?.value || ('Locación ' + (i + 1)))"
+                  [attr.title]="programacion.length <= 1 ? 'Mantén al menos una locación' : 'Eliminar locación'">
+                  Eliminar
+                </button>
               </div>
 
               <div class="row g-3 mt-2">
@@ -289,7 +300,7 @@
               </div>
 
               <p class="text-muted small mb-0 mt-3">
-                Este bloque es solo referencial. Las acciones reales (agregar, quitar o reordenar) se activarán más adelante.
+                Aún no es posible reordenar las locaciones o cambiar prioridades. Próximamente se habilitará.
               </p>
             </div>
           </div>

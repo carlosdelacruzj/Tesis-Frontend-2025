@@ -1,20 +1,20 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 import {
-  CotizacionItemPayload,
-  CotizacionPayload,
   ClienteBusquedaResultado,
-  CotizacionContextoPayload,
-  CotizacionEventoPayload
+  CotizacionAdminCreatePayload,
+  CotizacionAdminItemPayload,
+  CotizacionAdminEventoPayload
 } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
+
+type AlertIcon = 'success' | 'error' | 'warning' | 'info' | 'question';
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -152,7 +152,6 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   constructor(
     private readonly fb: UntypedFormBuilder,
     private readonly cotizacionService: CotizacionService,
-    private readonly snackBar: MatSnackBar,
     private readonly router: Router
   ) {}
 
@@ -182,7 +181,39 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       nombre: nombreAuto,
       fecha: this.form.get('fechaEvento')?.value ?? ''
     }));
+    this.ensureProgramacionPrincipales();
     this.syncProgramacionFechas();
+  }
+
+  removeProgramacionItem(index: number): void {
+    if (index < 0 || index >= this.programacion.length) {
+      return;
+    }
+    if (this.programacion.length <= 1) {
+      this.showAlert('warning', 'Acción no permitida', 'Debes mantener al menos una locación en la programación.');
+      return;
+    }
+
+    const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+    const nombre = (grupo?.get('nombre')?.value ?? '').toString().trim() || `Locación ${index + 1}`;
+
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Eliminar locación',
+      text: `¿Quieres eliminar "${nombre}" de la programación?`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545'
+    }).then(result => {
+      if (!result.isConfirmed) {
+        return;
+      }
+      this.programacion.removeAt(index);
+      this.ensureProgramacionPrincipales();
+      this.syncProgramacionFechas();
+      this.showToast('success', 'Locación eliminada', 'Se eliminó la locación seleccionada.');
+    });
   }
 
   get totalSeleccion(): number {
@@ -360,6 +391,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
             console.error('[cotizacion] buscarClientes', err);
             this.clienteSearchError = 'No pudimos cargar clientes.';
             this.clienteSearchLoading = false;
+            this.showAlert('error', 'No pudimos cargar clientes.', 'Inténtalo nuevamente.');
             return of([]);
           })
         )
@@ -497,9 +529,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const minimo = this.getPrecioMinimo(current);
     if (value < minimo) {
       value = minimo;
-      this.snackBar.open('Solo puedes reducir el precio hasta un 5% respecto al valor base.', 'Cerrar', {
-        duration: 3000
-      });
+      this.showAlert('info', 'Ajuste no permitido', 'Solo puedes reducir el precio hasta un 5% respecto al valor base.');
     }
 
     this.selectedPaquetes = this.selectedPaquetes.map(item =>
@@ -551,12 +581,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           ? 'Completa la programación del evento.'
           : 'Revisa los campos obligatorios.';
 
-      this.snackBar.open(mensaje, 'Cerrar', { duration: 4000 });
+      this.showAlert('warning', 'Falta información', mensaje);
       return;
     }
 
     if (!this.selectedPaquetes.length) {
-      this.snackBar.open('Selecciona al menos un paquete para la cotizacion.', 'Cerrar', { duration: 4000 });
+      this.showAlert('warning', 'Agrega paquetes', 'Selecciona al menos un paquete para la cotización.');
       return;
     }
 
@@ -569,82 +599,84 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotizacion de ${clienteNombre}` : 'Solicitud de cotizacion');
     const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas);
-    const totalEstimado = Number(raw.totalEstimado ?? this.totalSeleccion) || this.totalSeleccion;
     const programacionRaw = this.programacion.getRawValue() as Array<Record<string, unknown>>;
-    const eventos: CotizacionEventoPayload[] = programacionRaw
-      .map((config, index) => {
+    const eventos: CotizacionAdminEventoPayload[] = programacionRaw
+      .map((config) => {
         const fecha = ((config['fecha'] ?? fechaEvento) || '').toString().trim();
         const hora = (config['hora'] ?? '').toString().trim();
         const ubicacion = (config['nombre'] ?? '').toString().trim();
         const direccion = (config['direccion'] ?? '').toString().trim();
-        const notas = (config['notas'] ?? '').toString().trim();
-        if (!fecha && !hora && !ubicacion && !direccion && !notas) {
+        const notasTexto = (config['notas'] ?? '').toString().trim();
+        if (!fecha && !hora && !ubicacion && !direccion && !notasTexto) {
           return null;
         }
-        return {
+        const horaNormalizada = hora
+          ? (/^\d{2}:\d{2}$/.test(hora) ? `${hora}:00` : hora)
+          : undefined;
+        const evento: CotizacionAdminEventoPayload = {
           fecha: fecha || undefined,
-          hora: hora || undefined,
+          hora: horaNormalizada,
           ubicacion: ubicacion || undefined,
           direccion: direccion || undefined,
-          notas: notas || undefined,
-          esPrincipal: Boolean(config['esPrincipal']) || index < this.programacionMinimaRecomendada
-        } as CotizacionEventoPayload;
+          notas: notasTexto ? notasTexto : null
+        };
+        return evento;
       })
-      .filter((evento): evento is CotizacionEventoPayload => evento != null);
+      .filter((evento): evento is CotizacionAdminEventoPayload => evento != null);
 
-    const items: CotizacionItemPayload[] = this.selectedPaquetes.map((item, index) => ({
-      idEventoServicio: item.eventoServicioId ?? this.getEventoServicioId(item.origen) ?? undefined,
-      titulo: item.titulo,
-      descripcion: item.descripcion,
-      moneda: item.moneda ?? this.getMoneda(item.origen) ?? 'USD',
-      precioUnitario: Number(item.precio) || 0,
-      cantidad: Number(item.cantidad ?? 1) || 1,
-      descuento: item.descuento ?? this.getDescuento(item.origen) ?? undefined,
-      recargo: item.recargo ?? this.getRecargo(item.origen) ?? undefined,
-      notas: item.notas,
-      horas: item.horas ?? this.getHoras(item.origen),
-      personal: item.personal ?? this.getPersonal(item.origen),
-      fotosImpresas: item.fotosImpresas ?? this.getFotosImpresas(item.origen),
-      trailerMin: item.trailerMin ?? this.getTrailerMin(item.origen),
-      filmMin: item.filmMin ?? this.getFilmMin(item.origen)
-    }));
-
-    const contexto: CotizacionContextoPayload = {};
     const clienteIdSeleccionado = this.parseNumber(this.clienteSeleccionado?.id);
-    if (clienteIdSeleccionado != null) {
-      contexto.clienteId = clienteIdSeleccionado;
-    }
-    if (this.selectedServicioId != null) {
-      contexto.servicioId = this.selectedServicioId;
-    }
-    if (this.selectedServicioNombre) {
-      contexto.servicioNombre = this.selectedServicioNombre;
-    }
-    if (this.selectedEventoNombre) {
-      contexto.eventoNombre = this.selectedEventoNombre;
-    }
+    const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map((item) => {
+      const notas = (item.notas ?? '').toString().trim();
+      const eventoServicioId = this.getEventoServicioId(item) ?? this.getEventoServicioId(item.origen);
+      const servicioId = this.getPaqueteServicioId(item);
+      const horas = this.parseNumber(item.horas ?? this.getHoras(item.origen));
+      const personal = this.parseNumber(item.personal ?? this.getPersonal(item.origen));
+      const fotosImpresas = this.parseNumber(item.fotosImpresas ?? this.getFotosImpresas(item.origen));
+      const trailerMin = this.parseNumber(item.trailerMin ?? this.getTrailerMin(item.origen));
+      const filmMin = this.parseNumber(item.filmMin ?? this.getFilmMin(item.origen));
 
-    const payload: CotizacionPayload = {
-      contacto: {
-        nombre: clienteNombre,
-        celular: clienteContacto,
-        origen: 'Backoffice',
-        correo: undefined
-      },
-      cotizacion: {
+      const payloadItem: CotizacionAdminItemPayload = {
+        idEventoServicio: eventoServicioId ?? undefined,
         eventoId: this.selectedEventoId ?? undefined,
+        servicioId: servicioId ?? undefined,
+        titulo: item.titulo,
+        descripcion: item.descripcion || undefined,
+        moneda: item.moneda ?? this.getMoneda(item.origen) ?? 'USD',
+        precioUnitario: Number(item.precio) || 0,
+        cantidad: Number(item.cantidad ?? 1) || 1,
+        notas: notas || undefined,
+        horas: horas ?? undefined,
+        personal: personal ?? undefined,
+        fotosImpresas: fotosImpresas ?? undefined,
+        trailerMin: trailerMin ?? undefined,
+        filmMin: filmMin ?? undefined
+      };
+
+      return payloadItem;
+    });
+
+    const payload: CotizacionAdminCreatePayload = {
+      cotizacion: {
+        idTipoEvento: this.selectedEventoId ?? undefined,
         tipoEvento: this.selectedEventoNombre || this.selectedServicioNombre || 'Evento',
         fechaEvento,
         lugar: departamento || undefined,
-        horasEstimadas: horasEstimadasNumero,
+        horasEstimadas: horasEstimadasNumero ?? undefined,
         mensaje: descripcion,
-        estado: 'Borrador',
-        totalEstimado
+        estado: 'Borrador'
+      },
+      lead: {
+        nombre: clienteNombre || undefined,
+        celular: clienteContacto || undefined,
+        origen: 'Backoffice'
       },
       items,
-      ...(eventos.length ? { eventos } : {}),
-      ...(Object.keys(contexto).length ? { contexto } : {})
+      eventos: eventos.length ? eventos : undefined
     };
+
+    if (clienteIdSeleccionado != null) {
+      payload.cliente = { id: clienteIdSeleccionado };
+    }
 
     console.log('[cotizacion] payload listo para enviar', payload);
 
@@ -664,7 +696,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('[cotizacion] create', err);
-          this.snackBar.open('No pudimos registrar la cotizacion. Intentalo nuevamente.', 'Cerrar', { duration: 5000 });
+          this.showAlert('error', 'Error al registrar', 'No pudimos registrar la cotización. Inténtalo nuevamente.');
         }
       });
   }
@@ -696,6 +728,38 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       hora: [config.hora ?? '', [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/)]],
       notas: [config.notas ?? ''],
       esPrincipal: [config.esPrincipal ?? false]
+    });
+  }
+
+  private ensureProgramacionPrincipales(): void {
+    this.programacion.controls.forEach((control, index) => {
+      const grupo = control as UntypedFormGroup;
+      const objetivo = index < this.programacionMinimaRecomendada;
+      if (grupo.get('esPrincipal')?.value !== objetivo) {
+        grupo.get('esPrincipal')?.setValue(objetivo, { emitEvent: false });
+      }
+    });
+  }
+
+  private showAlert(icon: AlertIcon, title: string, text?: string): void {
+    void Swal.fire({
+      icon,
+      title,
+      text,
+      confirmButtonText: 'Entendido'
+    });
+  }
+
+  private showToast(icon: AlertIcon, title: string, text?: string, timer = 2200): void {
+    void Swal.fire({
+      icon,
+      title,
+      text,
+      toast: true,
+      position: 'top-end',
+      timer,
+      timerProgressBar: true,
+      showConfirmButton: false
     });
   }
 

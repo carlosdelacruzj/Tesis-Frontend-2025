@@ -1,5 +1,4 @@
-<ng-container *ngIf="!loading; else loadingState">
-  <div class="dashboard-content editar-cotizacion">
+<div *ngIf="!loading; else loadingState" class="dashboard-content">
     <app-list-toolbar
       [title]="'Editar cotización'"
       [showSearch]="false"
@@ -148,31 +147,58 @@
         </mat-card-header>
         <mat-card-content>
           <p class="text-muted small mb-3">
-            Vista previa sin funcionalidad: más adelante podrás agregar, ordenar y marcar prioridades.
+            Agrega o quita locaciones según necesites. Más adelante podrás reordenarlas y marcar prioridades.
           </p>
 
           <div formArrayName="programacion" class="programacion-list">
             <div class="programacion-item" *ngFor="let grupo of programacion.controls; let i = index" [formGroupName]="i">
-              <div class="programacion-item__header d-flex align-items-center justify-content-between">
-                <h6 class="mb-0">
-                  {{ grupo.get('nombre')?.value || ('Locación ' + (i + 1)) }}
-                </h6>
-                <span class="badge" [ngClass]="grupo.get('esPrincipal')?.value ? 'bg-primary' : 'bg-secondary'">
-                  {{ grupo.get('esPrincipal')?.value ? 'Principal' : 'Opcional' }}
-                </span>
+              <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <h6 class="mb-0">
+                    {{ grupo.get('nombre')?.value || ('Locación ' + (i + 1)) }}
+                  </h6>
+                  <span class="badge" [ngClass]="grupo.get('esPrincipal')?.value ? 'bg-primary' : 'bg-secondary'">
+                    {{ grupo.get('esPrincipal')?.value ? 'Principal' : 'Opcional' }}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm text-danger"
+                  (click)="removeProgramacionItem(i)"
+                  [disabled]="programacion.length <= 1"
+                  [attr.aria-label]="'Eliminar locación ' + (grupo.get('nombre')?.value || ('Locación ' + (i + 1)))"
+                  [attr.title]="programacion.length <= 1 ? 'Mantén al menos una locación' : 'Eliminar locación'">
+                  Eliminar
+                </button>
               </div>
 
               <div class="row g-3 mt-2">
                 <div class="col-md-6">
                   <div class="form-group">
                     <label class="col-form-label">Nombre de la locación</label>
-                    <input type="text" class="form-control" formControlName="nombre" placeholder="Ej. Recepción en casona">
+                    <input type="text"
+                           class="form-control"
+                           formControlName="nombre"
+                           placeholder="Ej. Recepción en casona"
+                           [class.is-invalid]="grupo.get('nombre')?.invalid && grupo.get('nombre')?.touched">
+                    <small class="text-danger"
+                           *ngIf="grupo.get('nombre')?.hasError('required') && grupo.get('nombre')?.touched">
+                      Ingresa la locación.
+                    </small>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="form-group">
                     <label class="col-form-label">Dirección o punto de encuentro</label>
-                    <input type="text" class="form-control" formControlName="direccion" placeholder="Ej. Av. La Marina 1234">
+                    <input type="text"
+                           class="form-control"
+                           formControlName="direccion"
+                           placeholder="Ej. Av. La Marina 1234"
+                           [class.is-invalid]="grupo.get('direccion')?.invalid && grupo.get('direccion')?.touched">
+                    <small class="text-danger"
+                           *ngIf="grupo.get('direccion')?.hasError('required') && grupo.get('direccion')?.touched">
+                      Ingresa la dirección.
+                    </small>
                   </div>
                 </div>
                 <div class="col-sm-6 col-md-3">
@@ -184,7 +210,16 @@
                 <div class="col-sm-6 col-md-3">
                   <div class="form-group">
                     <label class="col-form-label">Hora</label>
-                    <input type="time" class="form-control" formControlName="hora" min="06:00" max="22:00">
+                    <input type="time"
+                           class="form-control"
+                           formControlName="hora"
+                           min="06:00"
+                           max="22:00"
+                           [class.is-invalid]="grupo.get('hora')?.invalid && grupo.get('hora')?.touched">
+                    <small class="text-danger"
+                           *ngIf="grupo.get('hora')?.hasError('required') && grupo.get('hora')?.touched">
+                      Ingresa la hora.
+                    </small>
                     <small class="text-danger"
                            *ngIf="grupo.get('hora')?.hasError('pattern') && grupo.get('hora')?.touched">
                       Usa el formato HH:MM.
@@ -200,7 +235,7 @@
               </div>
 
               <p class="text-muted small mb-0 mt-3">
-                Este bloque es solo referencial. Las acciones reales (agregar, quitar o reordenar) se activarán más adelante.
+                Aún no es posible reordenar las locaciones o cambiar prioridades. Próximamente se habilitará.
               </p>
             </div>
           </div>
@@ -280,9 +315,10 @@
                 <div class="d-flex justify-content-center">
                   <button type="button"
                           class="btn btn-outline-primary btn-sm"
+                          [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
                           *ngIf="!isInSeleccion(row.raw); else quitarBtn"
                           (click)="addPaquete(row.raw)">
-                    Agregar
+                    {{ hasOtroPaqueteDelServicio(row.raw) ? 'Reemplazar' : 'Agregar' }}
                   </button>
                   <ng-template #quitarBtn>
                     <button type="button" class="btn btn-outline-danger btn-sm"
@@ -411,8 +447,7 @@
         </button>
       </div>
     </form>
-  </div>
-</ng-container>
+</div>
 
 <ng-template #loadingState>
   <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">

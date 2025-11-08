@@ -56,3 +56,10 @@ span.mat-radio-outer-circle{
   background-color: #0f1c30;
   border-color: #0f1c30;
 }
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 32px;
+}

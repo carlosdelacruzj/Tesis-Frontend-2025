@@ -1,96 +1,100 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { PaqueteServicioService } from 'src/app/control-panel/administrar-paquete-servicio/service/paquete-servicio.service';
-import { EventoServicioService } from 'src/app/control-panel/administrar-paquete-servicio/service/evento-servicio.service';
-import { EventoAllServiciosService } from 'src/app/control-panel/administrar-paquete-servicio/service/detalle-servicios.service';
-import { DetalleServiciosComponent } from './components/detalle-servicios/detalle-servicios.component';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
+import { finalize } from 'rxjs/operators';
 import { AddEventoComponent } from 'src/app/components/add-evento/add-evento.component';
-//C:\tesis\frontend-backup\src\app\components\add-evento\add-evento.component.ts
+import { Evento } from './model/evento-servicio.model';
+import { EventoServicioDataService } from './service/evento-servicio-data.service';
 
 @Component({
   selector: 'app-administrar-paquete-servicio',
   templateUrl: './administrar-paquete-servicio.component.html',
-  styleUrls: ['./administrar-paquete-servicio.component.css']
+  styleUrls: ['./administrar-paquete-servicio.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdministrarPaqueteServicioComponent implements OnInit {
-
-  base: boolean = true;
-  servicioId: number = 0;
-  servicioNombre: string = '';
-  paquete: any[] = [];
-  servicio: any[] = [];
-  serviciosf: any[] = [];
-  tempDialog: boolean = false;
-
-  columnsToDisplay = ['ID', 'nombre', 'enlace'];
+  eventos: Evento[] = [];
+  eventosFiltrados: Evento[] = [];
+  loadingEventos = false;
+  searchTerm = '';
 
   constructor(
-    private service: PaqueteServicioService,
-    private service2: EventoServicioService,
-    public dialog: MatDialog,
-    private allserivicios: EventoAllServiciosService,
-    private cdRef: ChangeDetectorRef
+    private readonly dataService: EventoServicioDataService,
+    private readonly cdr: ChangeDetectorRef,
+    private readonly dialog: MatDialog,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    this.getPaquete();
-    this.getServicio();
-    this.getAllService();
+    this.cargarEventos();
   }
 
-  getPaquete() {
-    this.service.getAllNombres().subscribe((response) => {
-      this.paquete = response;
-    });
+  seleccionarEventoPorId(id: number): void {
+    this.router.navigate(['/home/administrar-paquete-servicio', id]);
   }
 
-  getServicio() {
-    this.service2.getAllNombres2().subscribe((response) => {
-      this.servicio = response;
-    });
+  onBuscarEventos(term: string): void {
+    this.searchTerm = term ?? '';
+    this.aplicarFiltroEventos();
   }
 
-  openDialog() {
-    const dialogPaq = this.dialog.open(DetalleServiciosComponent, { data: this.servicioId });
-    dialogPaq.afterClosed().subscribe(() => {
-      this.tempDialog = true;
-      this.cdRef.detectChanges();
-    });
-  }
-
-  getAllService() {
-    this.allserivicios.getAllServicios().subscribe((response) => {
-      this.serviciosf = response;
-    });
-  }
-
-  prueba(event: number) {
-    this.base = false;
-    this.servicioId = event;
-    this.servicioNombre = event.toString();
-  }
-
-  // ⬇️ agrega este import (ajusta la ruta si tu carpeta cambia)\
-  // ...dentro de la clase
-  openCreateDialog(): void {
-    const dlg = this.dialog.open(AddEventoComponent, { width: '420px' });
-    dlg.afterClosed().subscribe((ok) => {
-      if (ok) {
-        this.getPaquete();        // refresca la lista
+  abrirRegistroEvento(): void {
+    const dialogRef = this.dialog.open(AddEventoComponent, { width: '420px' });
+    dialogRef.afterClosed().subscribe((shouldReload) => {
+      if (shouldReload) {
+        this.cargarEventos();
       }
     });
   }
 
-
-  // 🔹 NUEVO: función para asignar imagen según el nombre del evento
   imagenDe(nombre: string): string {
     const slug = (nombre || '')
       .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita acentos
-      .replace(/\s+/g, '-')                             // espacios -> guion
-      .replace(/[^a-z0-9\-]/g, '');                     // limpia caracteres raros
-    return `assets/images/${slug}.jpg`;                 // ✅ usa /images/
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9\-]/g, '');
+    return `assets/images/${slug || 'default'}.jpg`;
   }
 
+  private cargarEventos(): void {
+    this.loadingEventos = true;
+    this.dataService.getEventos()
+      .pipe(finalize(() => {
+        this.loadingEventos = false;
+        this.cdr.markForCheck();
+      }))
+      .subscribe({
+        next: (eventos) => {
+          this.eventos = eventos ?? [];
+          this.aplicarFiltroEventos();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error cargando eventos', err);
+          this.eventos = [];
+          this.eventosFiltrados = [];
+          this.cdr.markForCheck();
+        }
+      });
+  }
 
+  private aplicarFiltroEventos(): void {
+    const term = this.normalizarTexto(this.searchTerm);
+
+    if (!term) {
+      this.eventosFiltrados = [...this.eventos];
+    } else {
+      this.eventosFiltrados = this.eventos.filter(evento =>
+        this.normalizarTexto(evento.nombre).includes(term)
+      );
+    }
+    this.cdr.markForCheck();
+  }
+
+  private normalizarTexto(valor: string): string {
+    return (valor || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
 }

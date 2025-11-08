@@ -6,13 +6,6 @@
   box-shadow: 0 0 0 0.2rem rgba(25, 118, 210, 0.25);
 }
 
-.gestionar-cotizaciones {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding-bottom: 32px;
-}
-
 @keyframes spin {
   from {
     transform: rotate(0deg);

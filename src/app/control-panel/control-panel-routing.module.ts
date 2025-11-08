@@ -4,7 +4,7 @@ import { AdministrarEquiposComponent } from './administrar-equipos/administrar-e
 import { DetalleEquiposComponent } from './administrar-equipos/detalle-equipos/detalle-equipos.component';
 import { EquipoDetalleComponent } from './administrar-equipos/equipo-detalle/equipo-detalle.component';
 import { AdministrarPaqueteServicioComponent } from './administrar-paquete-servicio/administrar-paquete-servicio.component';
-import { EditarServicioComponent } from './administrar-paquete-servicio/components/editar-servicio/editar-servicio.component';
+import { DetallePaqueteServicioComponent } from './administrar-paquete-servicio/detalle-paquete-servicio/detalle-paquete-servicio.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ContratoComponent } from './generar-contrato/contrato/contrato.component';
 import { GenerarContratoComponent } from './generar-contrato/generar-contrato.component';
@@ -40,7 +40,8 @@ const routes: Routes = [
       { path: 'administrar-equipos/detalle', component: DetalleEquiposComponent },
       { path: 'administrar-equipos/equipos', component: EquipoDetalleComponent },
       { path: 'administrar-paquete-servicio', component: AdministrarPaqueteServicioComponent },
-      { path: 'administrar-paquete-servicio/editar-servicio', component: EditarServicioComponent },
+      { path: 'administrar-paquete-servicio/:eventoId', component: DetallePaqueteServicioComponent },
+      { path: 'administrar-paquete-servicio-2', pathMatch: 'full', redirectTo: 'administrar-paquete-servicio' },
       { path: 'gestionar-pedido', component: GestionarPedidoComponent },
       { path: 'gestionar-pedido/agregar', component: AgregarPedidoComponent },
       { path: 'gestionar-pedido/actualizar/:id', component: ActualizarPedidoComponent },

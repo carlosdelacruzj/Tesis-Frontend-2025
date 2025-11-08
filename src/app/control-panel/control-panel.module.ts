@@ -6,6 +6,11 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 import { ControlPanelRoutingModule } from './control-panel-routing.module';
 import { AngularMaterialModule } from '../shared/angular-material/angular-material.module';
+import { MatSelectModule } from '@angular/material/select';
+import { MatOptionModule } from '@angular/material/core';
+import { MatTableModule } from '@angular/material/table';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { CellTemplateDirective, TableBaseComponent } from '../components/table-base/table-base.component';
 import { ListToolbarComponent } from '../components/list-toolbar/list-toolbar.component';
 import { ModalBaseComponent } from '../components/modal-base/modal-base.component';
@@ -20,9 +25,7 @@ import { GestionarProyectoComponent } from './gestionar-proyecto/listar-proyecto
 import { AgregarProyectoComponent } from './gestionar-proyecto/agregar-proyecto/agregar-proyecto.component';
 import { AdministrarPaqueteServicioComponent } from './administrar-paquete-servicio/administrar-paquete-servicio.component';
 import { EventCardComponent } from './administrar-paquete-servicio/components/event-card/event-card.component';
-import { EventServiceComponent } from './administrar-paquete-servicio/components/event-service/event-service.component';
-import { DetalleServiciosComponent } from './administrar-paquete-servicio/components/detalle-servicios/detalle-servicios.component';
-import { EditarServicioComponent } from './administrar-paquete-servicio/components/editar-servicio/editar-servicio.component';
+import { DetallePaqueteServicioComponent } from './administrar-paquete-servicio/detalle-paquete-servicio/detalle-paquete-servicio.component';
 import { AddEventoComponent } from '../components/add-evento/add-evento.component';
 import { GestionarPedidoComponent } from './gestionar-pedido/gestionar-pedido.component';
 import { AgregarPedidoComponent } from './gestionar-pedido/agregar-pedido/agregar-pedido.component';
@@ -64,9 +67,7 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     DetallePedidoComponent,
     AdministrarPaqueteServicioComponent,
     EventCardComponent,
-    EventServiceComponent,
-    DetalleServiciosComponent,
-    EditarServicioComponent,
+    DetallePaqueteServicioComponent,
     AddEventoComponent,
     GestionarPersonalComponent,
     RegistrarPagoComponent,
@@ -86,6 +87,11 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     ReactiveFormsModule,
     ControlPanelRoutingModule,
     AngularMaterialModule,
+    MatSelectModule,
+    MatOptionModule,
+    MatTableModule,
+    MatFormFieldModule,
+    MatInputModule,
     DragDropModule,
     NgbModule,
     TableBaseComponent,
