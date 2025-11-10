@@ -9,6 +9,7 @@ import {
   CrearEventoServicioRequest,
   ActualizarEventoServicioRequest
 } from '../model/evento-servicio.model';
+import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 
 @Injectable({ providedIn: 'root' })
 export class EventoServicioDataService {
@@ -78,6 +79,10 @@ export class EventoServicioDataService {
 
   actualizarEventoServicio(id: number, payload: ActualizarEventoServicioRequest): Observable<any> {
     return this.http.put(`${this.baseUrl}/eventos_servicios/${id}`, payload);
+  }
+
+  getTiposEquipo(): Observable<TipoEquipo[]> {
+    return this.http.get<TipoEquipo[]>(`${this.baseUrl}/inventario/tipos-equipo`);
   }
 
   crearServicio(nombre: string): Observable<any> {

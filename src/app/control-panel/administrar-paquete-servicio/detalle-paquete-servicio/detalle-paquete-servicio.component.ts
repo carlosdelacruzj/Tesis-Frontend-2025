@@ -1,10 +1,17 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { finalize, takeUntil } from 'rxjs/operators';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
-import { Evento, EventoServicioDetalle, Servicio } from '../model/evento-servicio.model';
+import {
+  Evento,
+  EventoServicioDetalle,
+  EventoServicioEquipo,
+  EventoServicioStaff,
+  Servicio
+} from '../model/evento-servicio.model';
+import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 import { EventoServicioDataService } from '../service/evento-servicio-data.service';
 
 @Component({
@@ -18,6 +25,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   paquetes: EventoServicioDetalle[] = [];
   selectedPaquete: EventoServicioDetalle | null = null;
   servicios: Servicio[] = [];
+  tipoEquipos: TipoEquipo[] = [];
   searchTerm = '';
 
   loadingEvento = false;
@@ -40,7 +48,9 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     horas: [null as number | null],
     fotosImpresas: [null as number | null],
     trailerMin: [null as number | null],
-    filmMin: [null as number | null]
+    filmMin: [null as number | null],
+    staff: this.fb.array([], Validators.minLength(1)),
+    equipos: this.fb.array([], Validators.minLength(1))
   });
 
   columns: TableColumn<EventoServicioDetalle>[] = [
@@ -53,6 +63,14 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, class: 'text-center', width: '120px' }
   ];
 
+  get staffArray(): FormArray {
+    return this.form.get('staff') as FormArray;
+  }
+
+  get equiposArray(): FormArray {
+    return this.form.get('equipos') as FormArray;
+  }
+
   private readonly destroy$ = new Subject<void>();
 
   constructor(
@@ -61,7 +79,10 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     private readonly dataService: EventoServicioDataService,
     private readonly cdr: ChangeDetectorRef,
     private readonly fb: FormBuilder
-  ) {}
+  ) {
+    this.resetStaffForm();
+    this.resetEquiposForm();
+  }
 
   ngOnInit(): void {
     this.route.paramMap
@@ -72,6 +93,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
           this.cargarEvento(eventoId);
           this.cargarPaquetes(eventoId);
           this.cargarServicios();
+          this.cargarTiposEquipo();
         } else {
           this.router.navigate(['/home/administrar-paquete-servicio']);
         }
@@ -103,6 +125,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       trailerMin: null,
       filmMin: null
     });
+    this.resetStaffForm();
+    this.resetEquiposForm();
     this.form.markAsPristine();
     this.form.markAsUntouched();
     this.modalOpen = true;
@@ -123,6 +147,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       trailerMin: paquete.trailerMin,
       filmMin: paquete.filmMin
     });
+    this.resetStaffForm(paquete.staff?.detalle ?? []);
+    this.resetEquiposForm(paquete.equipos ?? []);
     this.form.markAsPristine();
     this.form.markAsUntouched();
     this.modalOpen = true;
@@ -146,8 +172,27 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   guardarPaquete(): void {
     if (this.form.invalid || !this.evento?.id) {
       this.form.markAllAsTouched();
+      this.staffArray.markAllAsTouched();
+      this.equiposArray.markAllAsTouched();
       return;
     }
+
+    const staffPayload: EventoServicioStaff[] = this.staffArray.controls.map(control => {
+      const value = control.value;
+      return {
+        rol: (value.rol || '').trim(),
+        cantidad: Number(value.cantidad) || 0
+      };
+    });
+
+    const equiposPayload = this.equiposArray.controls.map(control => {
+      const value = control.value;
+      return {
+        tipoEquipoId: Number(value.tipoEquipoId),
+        cantidad: Number(value.cantidad) || 0,
+        notas: value.notas?.trim() || null
+      };
+    });
 
     const payload = {
       servicio: this.form.value.servicio!,
@@ -159,7 +204,9 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       horas: this.form.value.horas ?? null,
       fotosImpresas: this.form.value.fotosImpresas ?? null,
       trailerMin: this.form.value.trailerMin ?? null,
-      filmMin: this.form.value.filmMin ?? null
+      filmMin: this.form.value.filmMin ?? null,
+      staff: staffPayload,
+      equipos: equiposPayload
     };
 
     this.modalSaving = true;
@@ -185,6 +232,35 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       });
   }
 
+  agregarStaff(): void {
+    this.staffArray.push(this.crearStaffFormGroup());
+    this.cdr.markForCheck();
+  }
+
+  eliminarStaff(index: number): void {
+    if (this.staffArray.length <= 1) return;
+    this.staffArray.removeAt(index);
+    this.cdr.markForCheck();
+  }
+
+  agregarEquipo(): void {
+    const nuevo = this.crearEquipoFormGroup();
+    this.ensureTipoEquipoDefault(nuevo);
+    this.equiposArray.push(nuevo);
+    this.cdr.markForCheck();
+  }
+
+  eliminarEquipo(index: number): void {
+    if (this.equiposArray.length <= 1) return;
+    this.equiposArray.removeAt(index);
+    this.cdr.markForCheck();
+  }
+
+  onTipoEquipoSeleccionado(index: number): void {
+    const control = this.equiposArray.at(index) as FormGroup;
+    this.syncEquipoNombre(control);
+  }
+
   private cargarEvento(id: number): void {
     this.loadingEvento = true;
     this.dataService.getEventoPorId(id)
@@ -203,6 +279,53 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         }
       });
+  }
+
+  private crearStaffFormGroup(miembro?: EventoServicioStaff): FormGroup {
+    return this.fb.group({
+      rol: [miembro?.rol ?? '', [Validators.required, Validators.minLength(2)]],
+      cantidad: [miembro?.cantidad ?? 1, [Validators.required, Validators.min(1)]]
+    });
+  }
+
+  private crearEquipoFormGroup(equipo?: EventoServicioEquipo): FormGroup {
+    return this.fb.group({
+      tipoEquipoId: [equipo?.tipoEquipoId ?? null, [Validators.required, Validators.min(1)]],
+      tipoEquipo: [equipo?.tipoEquipo ?? ''],
+      cantidad: [equipo?.cantidad ?? 1, [Validators.required, Validators.min(1)]],
+      notas: [equipo?.notas ?? '']
+    });
+  }
+
+  private resetStaffForm(miembros?: EventoServicioStaff[]): void {
+    const staffArray = this.staffArray;
+    while (staffArray.length) {
+      staffArray.removeAt(0);
+    }
+    if (miembros?.length) {
+      miembros.forEach(miembro => staffArray.push(this.crearStaffFormGroup(miembro)));
+    } else {
+      staffArray.push(this.crearStaffFormGroup());
+    }
+    staffArray.markAsPristine();
+    staffArray.markAsUntouched();
+  }
+
+  private resetEquiposForm(equipos?: EventoServicioEquipo[]): void {
+    const equiposArray = this.equiposArray;
+    while (equiposArray.length) {
+      equiposArray.removeAt(0);
+    }
+    if (equipos?.length) {
+      equipos.forEach(item => equiposArray.push(this.crearEquipoFormGroup(item)));
+    } else {
+      const grupo = this.crearEquipoFormGroup();
+      this.ensureTipoEquipoDefault(grupo);
+      equiposArray.push(grupo);
+    }
+    this.equiposArray.controls.forEach(ctrl => this.syncEquipoNombre(ctrl as FormGroup));
+    equiposArray.markAsPristine();
+    equiposArray.markAsUntouched();
   }
 
   private cargarPaquetes(eventoId: number): void {
@@ -252,5 +375,40 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         }
       });
+  }
+
+  private cargarTiposEquipo(): void {
+    this.dataService.getTiposEquipo()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (tipos) => {
+          this.tipoEquipos = tipos ?? [];
+          this.equiposArray.controls.forEach(ctrl => this.syncEquipoNombre(ctrl as FormGroup));
+          this.equiposArray.controls.forEach(ctrl => this.ensureTipoEquipoDefault(ctrl as FormGroup));
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error cargando tipos de equipo', err);
+          this.tipoEquipos = [];
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  private ensureTipoEquipoDefault(control: FormGroup): void {
+    const controlId = control.get('tipoEquipoId');
+    if (controlId && !controlId.value && this.tipoEquipos.length) {
+      controlId.setValue(this.tipoEquipos[0].idTipoEquipo);
+      this.syncEquipoNombre(control);
+    }
+  }
+
+  private syncEquipoNombre(control: FormGroup): void {
+    const tipoId = Number(control.get('tipoEquipoId')?.value);
+    if (!tipoId) return;
+    const tipo = this.tipoEquipos.find(item => item.idTipoEquipo === tipoId);
+    if (tipo) {
+      control.get('tipoEquipo')?.setValue(tipo.nombre);
+    }
   }
 }

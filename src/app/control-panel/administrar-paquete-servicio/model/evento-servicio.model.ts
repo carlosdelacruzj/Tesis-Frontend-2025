@@ -60,8 +60,8 @@ export interface CrearEventoServicioRequest {
   fotosImpresas?: number | null;
   trailerMin?: number | null;
   filmMin?: number | null;
-  staff?: EventoServicioStaff[];
-  equipos?: Array<{ tipoEquipoId: number; cantidad: number; notas?: string | null }>;
+  staff: EventoServicioStaff[];
+  equipos: Array<{ tipoEquipoId: number; cantidad: number; notas?: string | null }>;
 }
 
 export interface ActualizarEventoServicioRequest {
@@ -75,6 +75,6 @@ export interface ActualizarEventoServicioRequest {
   fotosImpresas?: number | null;
   trailerMin?: number | null;
   filmMin?: number | null;
-  staff?: EventoServicioStaff[] | null;
-  equipos?: Array<{ tipoEquipoId: number; cantidad: number; notas?: string | null }> | null;
+  staff: EventoServicioStaff[];
+  equipos: Array<{ tipoEquipoId: number; cantidad: number; notas?: string | null }>;
 }

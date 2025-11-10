@@ -38,6 +38,10 @@
 .modal-sm { max-width: 300px; }
 .modal-lg { max-width: 900px; }
 .modal-xl { max-width: 1140px; }
+.modal-xxl {
+  max-width: 1320px;
+  width: min(1320px, 98vw);
+}
 
 .modal-content {
   background-color: #fff;
@@ -45,6 +49,9 @@
   border-radius: .5rem;
   box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
   overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Transiciones sutiles */
@@ -74,6 +81,12 @@ body.modal-open {
 }
 .modal-footer {
   border-top: 1px solid rgba(0,0,0,.1);
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Botón cerrar */

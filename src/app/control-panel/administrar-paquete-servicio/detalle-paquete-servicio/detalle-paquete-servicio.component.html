@@ -1,143 +1,143 @@
 <div class="dashboard-content">
 
-    <app-list-toolbar [title]="evento?.nombre || 'Detalle de evento'"
-      [description]="evento ? 'Configura los paquetes disponibles para este evento.' : 'Cargando evento…'"
-      [showSearch]="true" [searchPlaceholder]="'Buscar: título, servicio, categoría…'" [searchValue]="searchTerm"
-      [showCreateButton]="false" (searchChange)="onToolbarSearch($event)">
-      <div actions class="d-flex flex-wrap gap-2">
-        <button mat-button type="button" class="back-button" (click)="regresarAlListado()">
-          <mat-icon>arrow_back</mat-icon>
-          Volver al listado
-        </button>
-        <button mat-stroked-button color="primary" type="button" (click)="abrirModalCrear()"
-          [disabled]="loadingPaquetes || !evento">
-          <mat-icon>add</mat-icon>
-          Registrar paquete
-        </button>
+  <app-list-toolbar [title]="evento?.nombre || 'Detalle de evento'"
+    [description]="evento ? 'Configura los paquetes disponibles para este evento.' : 'Cargando evento…'"
+    [showSearch]="true" [searchPlaceholder]="'Buscar: título, servicio, categoría…'" [searchValue]="searchTerm"
+    [showCreateButton]="false" (searchChange)="onToolbarSearch($event)">
+    <div actions class="d-flex flex-wrap gap-2">
+      <button mat-button type="button" class="back-button" (click)="regresarAlListado()">
+        <mat-icon>arrow_back</mat-icon>
+        Volver al listado
+      </button>
+      <button mat-stroked-button color="primary" type="button" (click)="abrirModalCrear()"
+        [disabled]="loadingPaquetes || !evento">
+        <mat-icon>add</mat-icon>
+        Registrar paquete
+      </button>
+    </div>
+  </app-list-toolbar>
+
+  <app-table-base [columns]="columns" [data]="paquetes" [pageSize]="10" [pageSizeOptions]="[10, 25, 50]"
+    [showCreateButton]="false" [showSearch]="false" [externalSearchTerm]="searchTerm"
+    [emptyText]="'No existen paquetes configurados para este evento.'" (rowClick)="onRowClick($event)">
+
+    <ng-template appCell="precio" let-row>
+      USD {{ (row.precio ?? 0) | number: '1.0-0' }}
+    </ng-template>
+
+    <ng-template appCell="horas" let-row>
+      {{ row.horas ?? '—' }}
+    </ng-template>
+
+    <ng-template appCell="staff.total" let-row>
+      {{ row.staff?.total ?? '—' }}
+    </ng-template>
+
+    <ng-template appCell="acciones" let-row>
+      <button mat-icon-button color="primary" type="button" (click)="abrirModalEditar(row); $event.stopPropagation()"
+        matTooltip="Editar paquete">
+        <mat-icon>edit</mat-icon>
+      </button>
+    </ng-template>
+  </app-table-base>
+
+  <div class="card mt-4" *ngIf="selectedPaquete">
+    <div class="card-header bg-white">
+      <h5 class="mb-0">Detalle del paquete</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="detail-box">
+            <span class="label">Título</span>
+            <p class="value">{{ selectedPaquete.titulo }}</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="detail-box">
+            <span class="label">Precio</span>
+            <p class="value">USD {{ (selectedPaquete.precio ?? 0) | number: '1.0-0' }}</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="detail-box">
+            <span class="label">Horas estimadas</span>
+            <p class="value">{{ selectedPaquete.horas ?? '—' }}</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="detail-box">
+            <span class="label">Servicio</span>
+            <p class="value">{{ selectedPaquete.servicio?.nombre || 'Sin servicio' }}</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="detail-box">
+            <span class="label">Categoría</span>
+            <p class="value">{{ selectedPaquete.categoria || 'Sin categoría' }}</p>
+          </div>
+        </div>
       </div>
-    </app-list-toolbar>
 
-    <app-table-base [columns]="columns" [data]="paquetes" [pageSize]="10" [pageSizeOptions]="[10, 25, 50]"
-      [showCreateButton]="false" [showSearch]="false" [externalSearchTerm]="searchTerm"
-      [emptyText]="'No existen paquetes configurados para este evento.'" (rowClick)="onRowClick($event)">
-
-      <ng-template appCell="precio" let-row>
-        USD {{ (row.precio ?? 0) | number: '1.0-0' }}
-      </ng-template>
-
-      <ng-template appCell="horas" let-row>
-        {{ row.horas ?? '—' }}
-      </ng-template>
-
-      <ng-template appCell="staff.total" let-row>
-        {{ row.staff?.total ?? '—' }}
-      </ng-template>
-
-      <ng-template appCell="acciones" let-row>
-        <button mat-icon-button color="primary" type="button" (click)="abrirModalEditar(row); $event.stopPropagation()"
-          matTooltip="Editar paquete">
-          <mat-icon>edit</mat-icon>
-        </button>
-      </ng-template>
-    </app-table-base>
-
-    <div class="card mt-4" *ngIf="selectedPaquete">
-      <div class="card-header bg-white">
-        <h5 class="mb-0">Detalle del paquete</h5>
+      <div class="row g-3 mt-2" *ngIf="selectedPaquete.descripcion">
+        <div class="col-12">
+          <div class="detail-box">
+            <span class="label">Descripción</span>
+            <p class="value value--multiline">{{ selectedPaquete.descripcion }}</p>
+          </div>
+        </div>
       </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="detail-box">
-              <span class="label">Título</span>
-              <p class="value">{{ selectedPaquete.titulo }}</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="detail-box">
-              <span class="label">Precio</span>
-              <p class="value">USD {{ (selectedPaquete.precio ?? 0) | number: '1.0-0' }}</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="detail-box">
-              <span class="label">Horas estimadas</span>
-              <p class="value">{{ selectedPaquete.horas ?? '—' }}</p>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="detail-box">
-              <span class="label">Servicio</span>
-              <p class="value">{{ selectedPaquete.servicio?.nombre || 'Sin servicio' }}</p>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="detail-box">
-              <span class="label">Categoría</span>
-              <p class="value">{{ selectedPaquete.categoria || 'Sin categoría' }}</p>
-            </div>
+
+      <div class="row g-3 mt-2">
+        <div class="col-md-4">
+          <div class="detail-box">
+            <span class="label">Fotos impresas</span>
+            <p class="value">{{ selectedPaquete.fotosImpresas ?? '—' }}</p>
           </div>
         </div>
-
-        <div class="row g-3 mt-2" *ngIf="selectedPaquete.descripcion">
-          <div class="col-12">
-            <div class="detail-box">
-              <span class="label">Descripción</span>
-              <p class="value value--multiline">{{ selectedPaquete.descripcion }}</p>
-            </div>
+        <div class="col-md-4">
+          <div class="detail-box">
+            <span class="label">Trailer (min)</span>
+            <p class="value">{{ selectedPaquete.trailerMin ?? '—' }}</p>
           </div>
         </div>
-
-        <div class="row g-3 mt-2">
-          <div class="col-md-4">
-            <div class="detail-box">
-              <span class="label">Fotos impresas</span>
-              <p class="value">{{ selectedPaquete.fotosImpresas ?? '—' }}</p>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="detail-box">
-              <span class="label">Trailer (min)</span>
-              <p class="value">{{ selectedPaquete.trailerMin ?? '—' }}</p>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="detail-box">
-              <span class="label">Filmación (min)</span>
-              <p class="value">{{ selectedPaquete.filmMin ?? '—' }}</p>
-            </div>
+        <div class="col-md-4">
+          <div class="detail-box">
+            <span class="label">Filmación (min)</span>
+            <p class="value">{{ selectedPaquete.filmMin ?? '—' }}</p>
           </div>
         </div>
+      </div>
 
-        <div class="row g-3 mt-3">
-          <div class="col-md-6" *ngIf="selectedPaquete.staff?.detalle?.length">
-            <div class="detail-box">
-              <span class="label">Staff requerido</span>
-              <ul class="list-unstyled mb-0">
-                <li *ngFor="let miembro of selectedPaquete.staff.detalle">
-                  {{ miembro.rol }} · {{ miembro.cantidad }}
-                </li>
-              </ul>
-            </div>
+      <div class="row g-3 mt-3">
+        <div class="col-md-6" *ngIf="selectedPaquete.staff?.detalle?.length">
+          <div class="detail-box">
+            <span class="label">Staff requerido</span>
+            <ul class="list-unstyled mb-0">
+              <li *ngFor="let miembro of selectedPaquete.staff.detalle">
+                {{ miembro.rol }} · {{ miembro.cantidad }}
+              </li>
+            </ul>
           </div>
-          <div class="col-md-6" *ngIf="selectedPaquete.equipos?.length">
-            <div class="detail-box">
-              <span class="label">Equipamiento</span>
-              <ul class="list-unstyled mb-0">
-                <li *ngFor="let equipo of selectedPaquete.equipos">
-                  {{ equipo.tipoEquipo }} · {{ equipo.cantidad }}
-                  <span class="text-muted" *ngIf="equipo.notas">({{ equipo.notas }})</span>
-                </li>
-              </ul>
-            </div>
+        </div>
+        <div class="col-md-6" *ngIf="selectedPaquete.equipos?.length">
+          <div class="detail-box">
+            <span class="label">Equipamiento</span>
+            <ul class="list-unstyled mb-0">
+              <li *ngFor="let equipo of selectedPaquete.equipos">
+                {{ equipo.tipoEquipo }} · {{ equipo.cantidad }}
+                <span class="text-muted" *ngIf="equipo.notas">({{ equipo.notas }})</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
 
   <app-modal-base [open]="modalOpen" [disableClose]="modalSaving" [loading]="modalSaving" [useDefaultFooter]="false"
-    [title]="modalModo === 'crear' ? 'Registrar paquete' : 'Editar paquete'" (closed)="cerrarModal()">
+    size="xxl" [title]="modalModo === 'crear' ? 'Registrar paquete' : 'Editar paquete'" (closed)="cerrarModal()">
 
     <app-formulario-base [open]="modalOpen" [loading]="false" [error]="modalError">
 
@@ -195,6 +195,87 @@
             <input type="number" class="form-control" formControlName="filmMin" min="0" step="1">
           </div>
         </div>
+
+        <div class="form-section mt-4" formArrayName="staff">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label mb-0">Staff requerido</label>
+            <button type="button" class="btn btn-link btn-sm px-0" (click)="agregarStaff()">
+              <mat-icon>add</mat-icon>
+              Agregar rol
+            </button>
+          </div>
+
+          <div class="row g-3 align-items-end mb-3" *ngFor="let staffGroup of staffArray.controls; let i = index"
+            [formGroupName]="i">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Rol</label>
+              <input type="text" class="form-control" formControlName="rol">
+              <div class="invalid-feedback d-block"
+                *ngIf="staffGroup.get('rol')?.invalid && staffGroup.get('rol')?.touched">
+                Ingresa un rol (mínimo 2 caracteres).
+              </div>
+            </div>
+            <div class="col-8 col-md-4">
+              <label class="form-label">Cantidad</label>
+              <input type="number" class="form-control" formControlName="cantidad" min="1" step="1"
+                [ngClass]="{ 'is-invalid': staffGroup.get('cantidad')?.invalid && staffGroup.get('cantidad')?.touched }">
+            </div>
+            <div class="col-4 col-md-2 d-flex align-items-end">
+              <button type="button" class="btn btn-outline-danger w-100" (click)="eliminarStaff(i)"
+                [disabled]="staffArray.length <= 1">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+          <div class="invalid-feedback d-block" *ngIf="staffArray.hasError('minlength') && staffArray.touched">
+            Agrega al menos un rol de staff.
+          </div>
+        </div>
+
+        <div class="form-section mt-4" formArrayName="equipos">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label mb-0">Equipamiento requerido</label>
+            <button type="button" class="btn btn-link btn-sm px-0" (click)="agregarEquipo()">
+              <mat-icon>add</mat-icon>
+              Agregar equipo
+            </button>
+          </div>
+
+          <div class="row g-3 align-items-end mb-3" *ngFor="let equipoGroup of equiposArray.controls; let i = index"
+            [formGroupName]="i">
+            <div class="col-12 col-md-5">
+              <label class="form-label">Tipo de equipo</label>
+              <select class="form-select" formControlName="tipoEquipoId" (change)="onTipoEquipoSeleccionado(i)">
+                <option [ngValue]="null" disabled>Selecciona un tipo</option>
+                <option *ngFor="let tipo of tipoEquipos" [ngValue]="tipo.idTipoEquipo">{{ tipo.nombre }}</option>
+              </select>
+              <div class="invalid-feedback d-block"
+                *ngIf="equipoGroup.get('tipoEquipoId')?.invalid && equipoGroup.get('tipoEquipoId')?.touched">
+                Selecciona un tipo válido.
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-2">
+              <label class="form-label">Cantidad</label>
+              <input type="number" class="form-control" formControlName="cantidad" min="1" step="1"
+                [ngClass]="{ 'is-invalid': equipoGroup.get('cantidad')?.invalid && equipoGroup.get('cantidad')?.touched }">
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Notas</label>
+              <input type="text" class="form-control" formControlName="notas">
+            </div>
+            <div class="col-6 col-sm-4 col-md-1 d-flex align-items-end">
+              <button type="button" class="btn btn-outline-danger w-100" (click)="eliminarEquipo(i)"
+                [disabled]="equiposArray.length <= 1">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+          <div class="invalid-feedback d-block" *ngIf="equiposArray.hasError('minlength') && equiposArray.touched">
+            Agrega al menos un equipo.
+          </div>
+        </div>
+
       </form>
     </app-formulario-base>
 

@@ -15,7 +15,7 @@ import {
 } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 
-type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
+type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 type CloseReason = 'confirm' | 'cancel' | 'close' | 'backdrop' | 'esc';
 
 @Component({
@@ -97,6 +97,7 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
       case 'sm': return 'modal-sm';
       case 'lg': return 'modal-lg';
       case 'xl': return 'modal-xl';
+      case 'xxl': return 'modal-xxl';
       default:   return '';
     }
   }
