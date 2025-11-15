@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import {
   Evento,
   EventoServicioDetalle,
+  EventoServicioCategoria,
   Servicio,
   CrearEventoServicioRequest,
   ActualizarEventoServicioRequest
@@ -79,6 +80,10 @@ export class EventoServicioDataService {
 
   actualizarEventoServicio(id: number, payload: ActualizarEventoServicioRequest): Observable<any> {
     return this.http.put(`${this.baseUrl}/eventos_servicios/${id}`, payload);
+  }
+
+  getCategoriasEventoServicio(): Observable<EventoServicioCategoria[]> {
+    return this.http.get<EventoServicioCategoria[]>(`${this.baseUrl}/eventos_servicios/categorias`);
   }
 
   getTiposEquipo(): Observable<TipoEquipo[]> {

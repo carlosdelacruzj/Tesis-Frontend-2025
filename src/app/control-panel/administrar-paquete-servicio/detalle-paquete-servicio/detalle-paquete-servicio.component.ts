@@ -6,6 +6,7 @@ import { finalize, takeUntil } from 'rxjs/operators';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import {
   Evento,
+  EventoServicioCategoria,
   EventoServicioDetalle,
   EventoServicioEquipo,
   EventoServicioStaff,
@@ -26,6 +27,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   selectedPaquete: EventoServicioDetalle | null = null;
   servicios: Servicio[] = [];
   tipoEquipos: TipoEquipo[] = [];
+  categorias: EventoServicioCategoria[] = [];
   searchTerm = '';
 
   loadingEvento = false;
@@ -38,14 +40,16 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   modalError: string | null = null;
   modalModo: 'crear' | 'editar' = 'crear';
   paqueteEditando: EventoServicioDetalle | null = null;
+  detalleModalAbierto = false;
 
   form = this.fb.group({
     titulo: ['', [Validators.required, Validators.minLength(3)]],
     servicio: [null as number | null, Validators.required],
-    categoria: [''],
-    precio: [null as number | null],
+    categoriaId: [null as number | null, Validators.required],
+    esAddon: [false],
+    precio: [null as number | null, [Validators.required, Validators.min(1)]],
     descripcion: [''],
-    horas: [null as number | null],
+    horas: [null as number | null, [Validators.required, Validators.min(0)]],
     fotosImpresas: [null as number | null],
     trailerMin: [null as number | null],
     filmMin: [null as number | null],
@@ -56,7 +60,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   columns: TableColumn<EventoServicioDetalle>[] = [
     { key: 'titulo', header: 'Título', sortable: true },
     { key: 'servicio.nombre', header: 'Servicio', sortable: true },
-    { key: 'categoria', header: 'Categoría', sortable: true },
+    { key: 'categoriaNombre', header: 'Categoría', sortable: true },
     { key: 'precio', header: 'Precio', sortable: true, class: 'text-end', width: '130px' },
     { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '90px' },
     { key: 'staff.total', header: 'Staff', sortable: true, class: 'text-center', width: '110px' },
@@ -98,6 +102,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
           this.router.navigate(['/home/administrar-paquete-servicio']);
         }
       });
+    this.cargarCategorias();
   }
 
   ngOnDestroy(): void {
@@ -117,7 +122,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     this.form.reset({
       titulo: '',
       servicio: this.servicios.length === 1 ? this.servicios[0].id : null,
-      categoria: '',
+      categoriaId: this.categorias.length === 1 ? this.categorias[0].id : null,
+      esAddon: false,
       precio: null,
       descripcion: '',
       horas: null,
@@ -139,7 +145,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     this.form.reset({
       titulo: paquete.titulo,
       servicio: paquete.servicio?.id ?? null,
-      categoria: paquete.categoria,
+      categoriaId: paquete.categoriaId ?? null,
+      esAddon: paquete.esAddon ?? false,
       precio: paquete.precio,
       descripcion: paquete.descripcion,
       horas: paquete.horas,
@@ -154,10 +161,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     this.modalOpen = true;
   }
 
-  onRowClick(paquete: EventoServicioDetalle): void {
-    this.selectedPaquete = paquete;
-  }
-
   onToolbarSearch(term: string): void {
     this.searchTerm = term ?? '';
   }
@@ -167,6 +170,18 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     this.modalOpen = false;
     this.modalError = null;
     this.paqueteEditando = null;
+  }
+
+  abrirModalDetalle(paquete: EventoServicioDetalle): void {
+    this.selectedPaquete = paquete;
+    this.detalleModalAbierto = true;
+    this.cdr.markForCheck();
+  }
+
+  cerrarModalDetalle(): void {
+    this.detalleModalAbierto = false;
+    this.selectedPaquete = null;
+    this.cdr.markForCheck();
   }
 
   guardarPaquete(): void {
@@ -198,8 +213,9 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       servicio: this.form.value.servicio!,
       evento: this.evento.id,
       titulo: (this.form.value.titulo || '').trim(),
-      categoria: this.form.value.categoria?.trim() || null,
-      precio: this.form.value.precio ?? null,
+      categoriaId: this.form.value.categoriaId ?? null,
+      esAddon: !!this.form.value.esAddon,
+      precio: Number(this.form.value.precio),
       descripcion: this.form.value.descripcion?.trim() || null,
       horas: this.form.value.horas ?? null,
       fotosImpresas: this.form.value.fotosImpresas ?? null,
@@ -343,11 +359,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
             (acc, item) => acc + (item.staff?.detalle?.reduce((sum, st) => sum + st.cantidad, 0) ?? 0),
             0
           );
-          if (this.paquetes.length) {
-            this.selectedPaquete = this.paquetes[0];
-          } else {
-            this.selectedPaquete = null;
-          }
+          this.selectedPaquete = null;
           this.cdr.markForCheck();
         },
         error: (err) => {
@@ -372,6 +384,22 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error cargando servicios', err);
           this.servicios = [];
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  private cargarCategorias(): void {
+    this.dataService.getCategoriasEventoServicio()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (categorias) => {
+          this.categorias = categorias ?? [];
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error cargando categorías de paquete', err);
+          this.categorias = [];
           this.cdr.markForCheck();
         }
       });

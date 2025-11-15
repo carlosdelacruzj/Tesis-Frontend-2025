@@ -24,10 +24,19 @@ export interface EventoServicioEquipo {
   notas: string | null;
 }
 
+export interface EventoServicioCategoria {
+  id: number;
+  nombre: string;
+  tipo: string;
+}
+
 export interface EventoServicioDetalle {
   id: number;
   titulo: string;
-  categoria: string | null;
+  categoriaId: number | null;
+  categoriaNombre: string | null;
+  categoriaTipo: string | null;
+  esAddon: boolean;
   evento: {
     id: number;
     nombre: string;
@@ -53,7 +62,8 @@ export interface CrearEventoServicioRequest {
   servicio: number;
   evento: number;
   titulo: string;
-  categoria?: string | null;
+  categoriaId?: number | null;
+  esAddon?: boolean;
   precio?: number;
   descripcion?: string | null;
   horas?: number | null;
@@ -68,7 +78,8 @@ export interface ActualizarEventoServicioRequest {
   servicio?: number;
   evento?: number;
   titulo?: string;
-  categoria?: string | null;
+  categoriaId?: number | null;
+  esAddon?: boolean;
   precio?: number;
   descripcion?: string | null;
   horas?: number | null;
