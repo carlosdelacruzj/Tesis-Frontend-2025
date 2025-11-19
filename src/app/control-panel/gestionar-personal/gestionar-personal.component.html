@@ -27,7 +27,7 @@
       <ng-template appCell="nombreCompleto" let-row>
         <div class="d-flex flex-column">
           <span>{{ row.nombre }} {{ row.apellido }}</span>
-          <small class="text-muted">{{ row.autonomo === 2 ? 'Autónomo' : 'Dependiente' }}</small>
+          <small class="text-muted">{{ row.autonomo === 2 || row.autonomo === 'SI' ? 'Autónomo' : 'Dependiente' }}</small>
         </div>
       </ng-template>
 
@@ -42,7 +42,7 @@
       <ng-template appCell="estado" let-row>
         <span class="badge" [class.bg-success]="row.estado === 'DISPONIBLE'"
           [class.bg-danger]="row.estado === 'NO_DISPONIBLE'" [class.bg-secondary]="!row.estado">
-          {{ row.estado || (row.autonomo === 2 ? 'Autónomo' : 'Dependiente') }}
+          {{ row.estado || (row.autonomo === 2 || row.autonomo === 'SI' ? 'Autónomo' : 'Dependiente') }}
         </span>
       </ng-template>
 
@@ -263,7 +263,8 @@
 
         <div class="col-12 col-md-6">
           <label class="form-label">Autónomo</label>
-          <input type="text" class="form-control" name="Autonomo" [ngModel]="selected?.autonomo === 2 ? 'Sí' : 'No'"
+          <input type="text" class="form-control" name="Autonomo"
+            [ngModel]="selected?.autonomo === 2 || selected?.autonomo === 'SI' ? 'Sí' : 'No'"
             disabled>
         </div>
 
@@ -341,11 +342,12 @@
         <div class="col-12 col-md-6">
           <label class="form-label">Estado</label>
           <input type="text" class="form-control" name="Estado"
-            [ngModel]="selected.estado || (selected?.autonomo === 2 ? 'Autónomo' : 'Dependiente')" disabled>
+            [ngModel]="selected.estado || (selected?.autonomo === 2 || selected?.autonomo === 'SI' ? 'Autónomo' : 'Dependiente')" disabled>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">Autónomo</label>
-          <input type="text" class="form-control" name="Autonomo" [ngModel]="selected?.autonomo === 2 ? 'Sí' : 'No'"
+          <input type="text" class="form-control" name="Autonomo"
+            [ngModel]="selected?.autonomo === 2 || selected?.autonomo === 'SI' ? 'Sí' : 'No'"
             disabled>
         </div>
         <div class="col-12 col-md-6">

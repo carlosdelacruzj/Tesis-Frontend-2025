@@ -9,15 +9,12 @@ import { Empleado, EmpleadoUpdateDto } from '../model/personal.model';
 export interface Cargo {
   idCargo: number;
   cargoNombre: string;
+  esOperativoCampo: 0 | 1;
 }
 export type EmpleadoDisponible = Pick<
   Empleado,
   'idEmpleado' | 'codigoEmpleado' | 'nombre' | 'apellido' | 'idCargo' | 'cargo'
 >;
-export interface EmpleadoOption {
-  idEmpleado: number;
-  label: string; // si tu API usa otro nombre (p.ej. 'texto'), ajusta aquí
-}
 
 @Injectable({ providedIn: 'root' })
 export class PersonalService {
@@ -57,8 +54,4 @@ export class PersonalService {
     return this.http.get<EmpleadoDisponible[]>(`${this.base}/disponibles/${idProyecto}`);
   }
 
-  // GET /empleados/lista  (opcional: para selects)
-  getEmpleadosLista(): Observable<EmpleadoOption[]> {
-    return this.http.get<EmpleadoOption[]>(`${this.base}/lista`);
-  }
 }

@@ -14,6 +14,7 @@ import {
 } from '../model/evento-servicio.model';
 import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 import { EventoServicioDataService } from '../service/evento-servicio-data.service';
+import { Cargo, PersonalService } from '../../gestionar-personal/service/personal.service';
 
 @Component({
   selector: 'app-paquete-servicio-detalle',
@@ -28,6 +29,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   servicios: Servicio[] = [];
   tipoEquipos: TipoEquipo[] = [];
   categorias: EventoServicioCategoria[] = [];
+  cargos: Cargo[] = [];
   searchTerm = '';
 
   loadingEvento = false;
@@ -82,7 +84,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly dataService: EventoServicioDataService,
     private readonly cdr: ChangeDetectorRef,
-    private readonly fb: FormBuilder
+    private readonly fb: FormBuilder,
+    private readonly personalService: PersonalService
   ) {
     this.resetStaffForm();
     this.resetEquiposForm();
@@ -103,6 +106,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
         }
       });
     this.cargarCategorias();
+    this.cargarCargos();
   }
 
   ngOnDestroy(): void {
@@ -195,7 +199,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     const staffPayload: EventoServicioStaff[] = this.staffArray.controls.map(control => {
       const value = control.value;
       return {
-        rol: (value.rol || '').trim(),
+        rol: (value.cargo || '').trim(),
         cantidad: Number(value.cantidad) || 0
       };
     });
@@ -299,7 +303,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
 
   private crearStaffFormGroup(miembro?: EventoServicioStaff): FormGroup {
     return this.fb.group({
-      rol: [miembro?.rol ?? '', [Validators.required, Validators.minLength(2)]],
+      cargo: [miembro?.rol ?? '', [Validators.required]],
       cantidad: [miembro?.cantidad ?? 1, [Validators.required, Validators.min(1)]]
     });
   }
@@ -405,6 +409,22 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       });
   }
 
+  private cargarCargos(): void {
+    this.personalService.getCargos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (cargos) => {
+          this.cargos = (cargos ?? []).filter(cargo => cargo.esOperativoCampo === 1);
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error cargando cargos', err);
+          this.cargos = [];
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
   private cargarTiposEquipo(): void {
     this.dataService.getTiposEquipo()
       .pipe(takeUntil(this.destroy$))
@@ -438,5 +458,12 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     if (tipo) {
       control.get('tipoEquipo')?.setValue(tipo.nombre);
     }
+  }
+
+  mostrarCargoFueraCatalogo(valor: string | null | undefined): boolean {
+    if (!valor) {
+      return false;
+    }
+    return !this.cargos.some(item => item.cargoNombre === valor);
   }
 }

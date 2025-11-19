@@ -53,11 +53,12 @@ export interface Empleado {
   celular: string;
   documento: string;
   direccion: string;
-  autonomo: 1 | 2;
+  autonomo: 1 | 2 | 'SI' | 'NO';
   idCargo: number;
   cargo: string;
-  idEstado: number;                                   // ← NUEVO
-  estado: 'DISPONIBLE' | 'NO_DISPONIBLE';            // ← NUEVO
+  esOperativoCampo: 0 | 1;
+  idEstado: number;
+  estado: 'DISPONIBLE' | 'NO_DISPONIBLE';
 }
 
 export type EmpleadoUpdateDto = Pick<

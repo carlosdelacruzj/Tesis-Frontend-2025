@@ -219,17 +219,25 @@
             <label class="form-label mb-0">Staff requerido</label>
             <button type="button" class="btn btn-link btn-sm px-0" (click)="agregarStaff()">
               <mat-icon>add</mat-icon>
-              Agregar rol
+              Agregar cargo
             </button>
           </div>
 
           <div class="row g-3 align-items-end mb-3" *ngFor="let staffGroup of staffArray.controls; let i = index"
             [formGroupName]="i">
             <div class="col-12 col-md-6">
-              <label class="form-label">Rol</label>
-              <input type="text" class="form-control" formControlName="rol"
-                [class.is-invalid]="staffGroup.get('rol')?.invalid && staffGroup.get('rol')?.touched"
-                [attr.title]="staffGroup.get('rol')?.invalid && staffGroup.get('rol')?.touched ? 'Ingresa un rol (mínimo 2 caracteres).' : null">
+              <label class="form-label">Cargo</label>
+              <select class="form-select" formControlName="cargo"
+                [class.is-invalid]="staffGroup.get('cargo')?.invalid && staffGroup.get('cargo')?.touched"
+                [attr.title]="staffGroup.get('cargo')?.invalid && staffGroup.get('cargo')?.touched ? 'Selecciona un cargo.' : null">
+                <option [ngValue]="null" disabled>Selecciona un cargo</option>
+                <option *ngFor="let cargo of cargos" [ngValue]="cargo.cargoNombre">{{ cargo.cargoNombre }}</option>
+                <option
+                  *ngIf="mostrarCargoFueraCatalogo(staffGroup.get('cargo')?.value)"
+                  [ngValue]="staffGroup.get('cargo')?.value">
+                  {{ staffGroup.get('cargo')?.value }}
+                </option>
+              </select>
             </div>
             <div class="col-8 col-md-4">
               <label class="form-label">Cantidad</label>
