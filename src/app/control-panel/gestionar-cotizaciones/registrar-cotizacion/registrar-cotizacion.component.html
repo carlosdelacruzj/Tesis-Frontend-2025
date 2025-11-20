@@ -358,8 +358,8 @@
               [pageSizeOptions]="[paquetesRows.length || 10]"
               emptyText="Sin paquetes disponibles">
 
-              <ng-template appCell="descripcion" let-row>
-                {{ row.descripcion || '—' }}
+              <ng-template appCell="titulo" let-row>
+                {{ row.titulo || '—' }}
               </ng-template>
 
               <ng-template appCell="precio" let-row>
@@ -375,7 +375,12 @@
               </ng-template>
 
               <ng-template appCell="acciones" let-row>
-                <div class="d-flex justify-content-center">
+                <div class="d-flex justify-content-center gap-2">
+                  <button type="button"
+                          class="btn btn-outline-secondary btn-sm"
+                          (click)="mostrarDetallePaquete(row)">
+                    Mostrar
+                  </button>
                   <button type="button"
                           class="btn btn-outline-primary btn-sm"
                           [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
@@ -417,10 +422,6 @@
 
               <ng-template appCell="titulo" let-row>
                 {{ row.titulo }}
-              </ng-template>
-
-              <ng-template appCell="cantidad" let-row>
-                <div class="text-center">{{ row.cantidad }}</div>
               </ng-template>
 
               <ng-template appCell="precioUnit" let-row>
@@ -520,3 +521,85 @@
     <span class="mt-2">Cargando paquetes…</span>
   </div>
 </ng-template>
+
+<app-modal-base
+  [open]="detallePaqueteAbierto"
+  [disableClose]="false"
+  [loading]="false"
+  [useDefaultFooter]="true"
+  size="lg"
+  title="Detalle del paquete"
+  (closed)="cerrarDetallePaquete()">
+
+  <ng-container *ngIf="detallePaqueteSeleccionado; else sinPaqueteDetalle">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Título</label>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.titulo || detallePaqueteSeleccionado?.Titulo || '—'" disabled>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Precio</label>
+        <input class="form-control" [value]="(detallePaqueteSeleccionado?.precio ?? detallePaqueteSeleccionado?.Precio ?? 0) | number:'1.0-0'" disabled>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Horas</label>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.horas ?? detallePaqueteSeleccionado?.Horas ?? '—'" disabled>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Servicio</label>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.servicioNombre ?? detallePaqueteSeleccionado?.servicio?.nombre ?? '—'" disabled>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Categoría</label>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.categoriaNombre ?? detallePaqueteSeleccionado?.categoriaTipo ?? '—'" disabled>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Tipo de paquete</label>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'" disabled>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Descripción</label>
+        <textarea class="form-control" rows="3" [value]="detallePaqueteSeleccionado?.descripcion || detallePaqueteSeleccionado?.Descripcion || '—'" disabled></textarea>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Staff</label>
+        <div class="form-control" style="height: auto;" disabled>
+          {{ (detallePaqueteSeleccionado?.staff?.total ?? detallePaqueteSeleccionado?.eventoServicio?.staff?.total ?? detallePaqueteSeleccionado?.personal ?? '—') }}
+          <div class="small text-muted" *ngIf="getDetalleStaffLista(detallePaqueteSeleccionado).length">
+            <div *ngFor="let miembro of getDetalleStaffLista(detallePaqueteSeleccionado)">
+              {{ (miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? 'Rol') }} <span *ngIf="miembro?.cantidad">({{ miembro?.cantidad }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Fotos impresas</label>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.fotosImpresas ?? '—'" disabled>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Trailer (min)</label>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.trailerMin ?? '—'" disabled>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Filmación (min)</label>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.filmMin ?? '—'" disabled>
+      </div>
+      <div class="col-12" *ngIf="getEquiposLista(detallePaqueteSeleccionado).length">
+        <label class="form-label">Equipamiento requerido</label>
+        <ul class="list-group">
+          <li class="list-group-item py-2" *ngFor="let eq of getEquiposLista(detallePaqueteSeleccionado)">
+            <div class="fw-semibold">{{ eq?.tipoEquipo ?? eq?.tipo }}</div>
+            <div class="small text-muted">
+              <span *ngIf="eq?.cantidad">Cantidad: {{ eq?.cantidad }}</span>
+              <span *ngIf="eq?.notas" class="ms-2">({{ eq?.notas }})</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #sinPaqueteDetalle>
+    <p class="text-muted mb-0">Selecciona un paquete para ver el detalle.</p>
+  </ng-template>
+</app-modal-base>

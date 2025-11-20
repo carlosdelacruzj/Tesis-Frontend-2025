@@ -42,10 +42,12 @@ interface PaqueteSeleccionado {
 }
 
 interface PaqueteRow {
+  titulo: string;
   descripcion: string;
   precio: number | null;
   staff: number | null;
   horas: number | null;
+  staffDetalle?: string;
   raw: any;
 }
 
@@ -133,11 +135,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   };
 
   paquetesColumns: TableColumn<PaqueteRow>[] = [
-    { key: 'descripcion', header: 'Descripción', sortable: true },
+    { key: 'titulo', header: 'Título', sortable: true },
     { key: 'precio', header: 'Precio', sortable: true, class: 'text-end text-nowrap', width: '120px' },
     { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
     { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
-    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '140px' }
+    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '160px' }
   ];
   paquetesRows: PaqueteRow[] = [];
   selectedPaquetes: PaqueteSeleccionado[] = [];
@@ -146,6 +148,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   loadingCatalogos = false;
   loadingPaquetes = false;
   loading = false;
+  detallePaqueteAbierto = false;
+  detallePaqueteSeleccionado: any = null;
 
   private readonly destroy$ = new Subject<void>();
 
@@ -324,6 +328,26 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   removePaquete(key: string | number): void {
     this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
     this.syncTotalEstimado();
+  }
+
+  mostrarDetallePaquete(row: PaqueteRow): void {
+    this.detallePaqueteSeleccionado = row?.raw ?? null;
+    this.detallePaqueteAbierto = !!this.detallePaqueteSeleccionado;
+  }
+
+  cerrarDetallePaquete(): void {
+    this.detallePaqueteAbierto = false;
+    this.detallePaqueteSeleccionado = null;
+  }
+
+  getDetalleStaffLista(paquete: any): Array<any> {
+    const lista = paquete?.staff?.detalle ?? paquete?.eventoServicio?.staff ?? paquete?.staff ?? [];
+    return Array.isArray(lista) ? lista : [];
+  }
+
+  getEquiposLista(paquete: any): Array<any> {
+    const lista = paquete?.equipos ?? paquete?.eventoServicio?.equipos ?? [];
+    return Array.isArray(lista) ? lista : [];
   }
 
   onClienteSelected(cliente: ClienteBusquedaResultado): void {
@@ -1041,9 +1065,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   private normalizePaqueteRow(item: any): PaqueteRow {
     const precio = this.parseNumber(item?.precio ?? item?.Precio);
-    const staff = this.getPersonal(item);
+    const staffTotal = this.parseNumber(item?.staff?.total ?? item?.eventoServicio?.staff?.total ?? item?.staff);
+    const staff = staffTotal ?? this.getPersonal(item);
     const horas = this.getHoras(item) ?? this.parseHorasToNumber(item?.horasTexto ?? item?.HorasTexto);
     return {
+      titulo: this.getTitulo(item),
       descripcion: this.getDescripcion(item),
       precio: precio != null ? precio : null,
       staff: staff != null ? staff : null,
@@ -1101,7 +1127,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   private refreshSelectedPaquetesColumns(): void {
     const base: TableColumn<PaqueteSeleccionado>[] = [
       { key: 'titulo', header: 'Título', sortable: false },
-      { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '110px' },
+      // { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '110px' },
       { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-end text-nowrap', width: '140px' }
     ];
 

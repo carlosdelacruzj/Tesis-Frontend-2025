@@ -1303,7 +1303,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private refreshSelectedPaquetesColumns(): void {
     const base: TableColumn<PaqueteSeleccionado>[] = [
       { key: 'titulo', header: 'Título', sortable: false },
-      { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '110px' },
+      // { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '110px' },
       { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-end text-nowrap', width: '140px' }
     ];
 
