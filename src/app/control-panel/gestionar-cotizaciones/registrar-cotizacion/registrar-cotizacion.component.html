@@ -187,8 +187,8 @@
                         [disabled]="!eventos.length"
                         [ngClass]="{'is-invalid': eventoSelectTouched && !selectedEventoId}">
                   <option value="" disabled>Selecciona un tipo de evento</option>
-                  <option *ngFor="let evento of eventos" [value]="(evento.id ?? evento.ID ?? evento.PK_E_Cod) ?? ''">
-                    {{ evento.nombre ?? evento.Evento ?? evento.E_Nombre ?? 'Evento' }}
+                  <option *ngFor="let evento of eventos" [value]="evento.id ?? ''">
+                    {{ evento.nombre ?? 'Evento' }}
                   </option>
                 </select>
                 <small class="text-danger"
@@ -337,8 +337,8 @@
                         (change)="onServicioDropdownChange($any($event.target).value)"
                         [disabled]="!servicios.length">
                   <option value="" disabled>Selecciona un servicio</option>
-                  <option *ngFor="let servicio of servicios" [value]="(servicio.id ?? servicio.ID) ?? ''">
-                    {{ servicio.nombre ?? servicio.Servicio ?? 'Servicio' }}
+                  <option *ngFor="let servicio of servicios" [value]="servicio.id ?? ''">
+                    {{ servicio.nombre ?? 'Servicio' }}
                   </option>
                 </select>
               </div>
@@ -461,8 +461,8 @@
                 <div class="text-center">{{ row.horas ?? '—' }}</div>
               </ng-template>
 
-              <ng-template appCell="personal" let-row>
-                <div class="text-center">{{ row.personal ?? '—' }}</div>
+              <ng-template appCell="staff" let-row>
+                <div class="text-center">{{ row.staff ?? '—' }}</div>
               </ng-template>
 
               <ng-template appCell="subtotal" let-row>
@@ -535,15 +535,15 @@
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label">Título</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.titulo || detallePaqueteSeleccionado?.Titulo || '—'" disabled>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.titulo ?? '—'" disabled>
       </div>
       <div class="col-md-3">
         <label class="form-label">Precio</label>
-        <input class="form-control" [value]="(detallePaqueteSeleccionado?.precio ?? detallePaqueteSeleccionado?.Precio ?? 0) | number:'1.0-0'" disabled>
+        <input class="form-control" [value]="(detallePaqueteSeleccionado?.precio ?? 0) | number:'1.0-0'" disabled>
       </div>
       <div class="col-md-3">
         <label class="form-label">Horas</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.horas ?? detallePaqueteSeleccionado?.Horas ?? '—'" disabled>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.horas ?? '—'" disabled>
       </div>
       <div class="col-md-6">
         <label class="form-label">Servicio</label>

@@ -272,8 +272,8 @@
                         (change)="onServicioDropdownChange($any($event.target).value)"
                         [disabled]="!servicios.length">
                   <option value="" disabled>Selecciona un servicio</option>
-                  <option *ngFor="let servicio of servicios" [value]="(servicio.id ?? servicio.ID) ?? ''">
-                    {{ servicio.nombre ?? servicio.Servicio ?? 'Servicio' }}
+                  <option *ngFor="let servicio of servicios" [value]="servicio.id ?? ''">
+                    {{ servicio.nombre ?? 'Servicio' }}
                   </option>
                 </select>
               </div>
@@ -295,8 +295,8 @@
               [pageSizeOptions]="[paquetesRows.length || 10]"
               emptyText="Sin paquetes disponibles">
 
-              <ng-template appCell="descripcion" let-row>
-                {{ row.descripcion || '—' }}
+              <ng-template appCell="titulo" let-row>
+                {{ row.titulo || '—' }}
               </ng-template>
 
               <ng-template appCell="precio" let-row>
@@ -312,7 +312,7 @@
               </ng-template>
 
               <ng-template appCell="acciones" let-row>
-                <div class="d-flex justify-content-center">
+                <div class="d-flex justify-content-center gap-2">
                   <button type="button"
                           class="btn btn-outline-primary btn-sm"
                           [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
@@ -396,8 +396,8 @@
                 <div class="text-center">{{ row.horas ?? '—' }}</div>
               </ng-template>
 
-              <ng-template appCell="personal" let-row>
-                <div class="text-center">{{ row.personal ?? '—' }}</div>
+              <ng-template appCell="staff" let-row>
+                <div class="text-center">{{ row.staff ?? '—' }}</div>
               </ng-template>
 
               <ng-template appCell="subtotal" let-row>

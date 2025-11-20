@@ -25,7 +25,7 @@ interface PaqueteSeleccionado {
   moneda?: string;
   grupo?: string | null;
   opcion?: number | null;
-  personal?: number | null;
+  staff?: number | null;
   horas?: number | null;
   fotosImpresas?: number | null;
   trailerMin?: number | null;
@@ -69,17 +69,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   readonly fechaMinimaEvento = RegistrarCotizacionComponent.computeFechaMinimaEvento();
   readonly fechaMaximaEvento = RegistrarCotizacionComponent.computeFechaMaximaEvento();
   form: UntypedFormGroup = this.fb.group({
-    clienteNombre: ['Cliente Demo', [Validators.required, Validators.minLength(2)]],
-    clienteContacto: ['999999999', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
+    clienteNombre: ['', [Validators.required, Validators.minLength(2)]],
+    clienteContacto: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
     fechaEvento: [RegistrarCotizacionComponent.computeFechaMinimaEvento(), [Validators.required, this.fechaEventoEnRangoValidator()]],
     departamento: ['Lima', Validators.required],
     horasEstimadas: [6, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
-    descripcion: ['Cobertura completa para evento demo'],
+    descripcion: [''],
     totalEstimado: [0, Validators.min(0)],
-    programacion: this.fb.array([
-      this.createProgramacionItem({ nombre: 'Lugar de recepcion', esPrincipal: true }),
-      this.createProgramacionItem({ nombre: 'Ceremonia / iglesia', esPrincipal: true })
-    ])
+    programacion: this.fb.array([])
   });
 
   servicios: any[] = [];
@@ -116,7 +113,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     'Tumbes',
     'Ucayali'
   ];
-  readonly programacionMinimaRecomendada = 2;
+  readonly programacionMinimaRecomendada = 1;
   clienteSearchControl = new UntypedFormControl('');
   clienteResultados: ClienteBusquedaResultado[] = [];
   clienteSearchLoading = false;
@@ -135,11 +132,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   };
 
   paquetesColumns: TableColumn<PaqueteRow>[] = [
-    { key: 'titulo', header: 'Título', sortable: true },
-    { key: 'precio', header: 'Precio', sortable: true, class: 'text-end text-nowrap', width: '120px' },
-    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'titulo', header: 'Título', sortable: true, width: '45%' },
+    { key: 'precio', header: 'Precio', sortable: true, class: 'text-center', width: '120px' },
     { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
-    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '160px' }
+    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '200px' }
   ];
   paquetesRows: PaqueteRow[] = [];
   selectedPaquetes: PaqueteSeleccionado[] = [];
@@ -157,7 +154,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     private readonly fb: UntypedFormBuilder,
     private readonly cotizacionService: CotizacionService,
     private readonly router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadCatalogos();
@@ -191,10 +188,6 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   removeProgramacionItem(index: number): void {
     if (index < 0 || index >= this.programacion.length) {
-      return;
-    }
-    if (this.programacion.length <= 1) {
-      this.showAlert('warning', 'Acción no permitida', 'Debes mantener al menos una locación en la programación.');
       return;
     }
 
@@ -235,7 +228,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedServicioNombre = '';
     } else {
       const selected = this.servicios.find(s => this.getId(s) === this.selectedServicioId);
-      this.selectedServicioNombre = this.getServicioNombre(selected);
+      this.selectedServicioNombre = selected?.nombre ?? '';
     }
     this.loadEventosServicio();
   }
@@ -256,7 +249,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedEventoNombre = '';
     } else {
       const selected = this.eventos.find(e => this.getId(e) === this.selectedEventoId);
-      this.selectedEventoNombre = this.getEventoNombre(selected);
+      this.selectedEventoNombre = selected?.nombre ?? '';
     }
     this.loadEventosServicio();
   }
@@ -270,7 +263,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const servicioId = this.getPaqueteServicioId(element);
     const servicioNombre = this.getPaqueteServicioNombre(element);
     const horas = this.getHoras(element);
-    const personal = this.getPersonal(element);
+    const staff = this.getStaff(element);
     const fotosImpresas = this.getFotosImpresas(element);
     const trailerMin = this.getTrailerMin(element);
     const filmMin = this.getFilmMin(element);
@@ -306,7 +299,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         moneda: moneda ?? undefined,
         grupo: grupo,
         opcion: opcion,
-        personal: personal ?? undefined,
+        staff: staff ?? undefined,
         horas: horas ?? undefined,
         fotosImpresas: fotosImpresas ?? undefined,
         trailerMin: trailerMin ?? undefined,
@@ -341,12 +334,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   getDetalleStaffLista(paquete: any): Array<any> {
-    const lista = paquete?.staff?.detalle ?? paquete?.eventoServicio?.staff ?? paquete?.staff ?? [];
+    const lista = paquete?.staff?.detalle ?? paquete?.staff ?? [];
     return Array.isArray(lista) ? lista : [];
   }
 
   getEquiposLista(paquete: any): Array<any> {
-    const lista = paquete?.equipos ?? paquete?.eventoServicio?.equipos ?? [];
+    const lista = paquete?.equipos ?? [];
     return Array.isArray(lista) ? lista : [];
   }
 
@@ -469,7 +462,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     });
   }
 
-   resolveClienteNombre(cliente: ClienteBusquedaResultado): string {
+  resolveClienteNombre(cliente: ClienteBusquedaResultado): string {
     return (cliente.nombreCompleto
       ?? cliente.nombre
       ?? cliente.razonSocial
@@ -587,12 +580,13 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const formInvalido = this.form.invalid;
     const eventoInvalido = this.selectedEventoId == null;
     const programacionInvalida = this.programacion.invalid;
+    const programacionVacia = this.programacion.length === 0;
 
-    if (formInvalido || eventoInvalido || programacionInvalida) {
+    if (formInvalido || eventoInvalido || programacionInvalida || programacionVacia) {
       if (formInvalido) {
         this.form.markAllAsTouched();
       }
-      if (programacionInvalida) {
+      if (programacionInvalida || programacionVacia) {
         this.programacion.markAllAsTouched();
       }
       if (eventoInvalido) {
@@ -601,9 +595,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
       const mensaje = eventoInvalido
         ? 'Selecciona un tipo de evento.'
-        : programacionInvalida
-          ? 'Completa la programación del evento.'
-          : 'Revisa los campos obligatorios.';
+        : programacionVacia
+          ? 'Agrega al menos una locación.'
+          : programacionInvalida
+            ? 'Completa la programación del evento.'
+            : 'Revisa los campos obligatorios.';
 
       this.showAlert('warning', 'Falta información', mensaje);
       return;
@@ -654,7 +650,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       const eventoServicioId = this.getEventoServicioId(item) ?? this.getEventoServicioId(item.origen);
       const servicioId = this.getPaqueteServicioId(item);
       const horas = this.parseNumber(item.horas ?? this.getHoras(item.origen));
-      const personal = this.parseNumber(item.personal ?? this.getPersonal(item.origen));
+      const staff = this.parseNumber(item.staff ?? this.getStaff(item.origen));
       const fotosImpresas = this.parseNumber(item.fotosImpresas ?? this.getFotosImpresas(item.origen));
       const trailerMin = this.parseNumber(item.trailerMin ?? this.getTrailerMin(item.origen));
       const filmMin = this.parseNumber(item.filmMin ?? this.getFilmMin(item.origen));
@@ -670,7 +666,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         cantidad: Number(item.cantidad ?? 1) || 1,
         notas: notas || undefined,
         horas: horas ?? undefined,
-        personal: personal ?? undefined,
+        personal: staff ?? undefined,
         fotosImpresas: fotosImpresas ?? undefined,
         trailerMin: trailerMin ?? undefined,
         filmMin: filmMin ?? undefined
@@ -703,6 +699,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     console.log('[cotizacion] payload listo para enviar', payload);
+    // Detener envío real para pruebas: solo mostramos el payload.
 
     this.loading = true;
     this.cotizacionService.createCotizacion(payload)
@@ -882,14 +879,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (!item) {
       return '';
     }
-    return item?.nombre ?? item?.Servicio ?? item?.descripcion ?? item?.Nombre ?? '';
+    return item?.nombre ?? '';
   }
 
   private getEventoNombre(item: any): string {
     if (!item) {
       return '';
     }
-    return item?.nombre ?? item?.Evento ?? item?.E_Nombre ?? item?.descripcion ?? item?.Nombre ?? '';
+    return item?.nombre ?? '';
   }
 
   private static getTodayIsoDate(): string {
@@ -940,68 +937,58 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private getId(item: any): number | null {
-    if (!item) return null;
-    const raw = item?.id ?? item?.ID ?? item?.pk ?? item?.PK_E_Cod;
-    if (raw == null) return null;
-    const num = Number(raw);
-    return Number.isFinite(num) && num > 0 ? num : null;
+    return this.parseNumber(item?.id);
   }
 
   private getPkgKey(el: any): string {
     const eventoServicioId = this.getEventoServicioId(el);
-    if (eventoServicioId != null) {
-      return String(eventoServicioId);
-    }
-    return String(el?.ID ?? el?.PK_ExS_Cod ?? `${el?.descripcion}|${el?.precio}`);
+    return eventoServicioId != null ? String(eventoServicioId) : '';
   }
 
   private getEventoServicioId(item: any): number | null {
     if (!item) {
       return null;
     }
-    const raw = item?.eventoServicioId ?? item?.idEventoServicio ?? item?.ID_EventoServicio ?? item?.ID ?? item?.PK_ExS_Cod ?? item?.pkEventoServicio;
-    if (raw == null || (typeof raw === 'string' && raw.trim() === '')) {
-      return null;
-    }
-    const num = Number(raw);
-    return Number.isFinite(num) && num > 0 ? num : null;
+    const num = this.parseNumber(item?.eventoServicioId ?? item?.idEventoServicio ?? item?.eventoServicio?.id ?? item?.id);
+    return num != null && num > 0 ? num : null;
   }
 
   private getHoras(item: any): number | null {
-    return this.parseNumber(item?.horas ?? item?.Horas ?? item?.duration ?? item?.Duracion);
+    return this.parseNumber(item?.horas);
   }
 
-  private getPersonal(item: any): number | null {
-    return this.parseNumber(item?.personal ?? item?.Personal ?? item?.staff ?? item?.Staff);
+  private getStaff(item: any): number | null {
+    const staffTotal = item?.staff?.total;
+    return this.parseNumber(staffTotal ?? item?.staff);
   }
 
   private getFotosImpresas(item: any): number | null {
-    return this.parseNumber(item?.fotosImpresas ?? item?.FotosImpresas ?? item?.fotos_impresas);
+    return this.parseNumber(item?.fotosImpresas);
   }
 
   private getTrailerMin(item: any): number | null {
-    return this.parseNumber(item?.trailerMin ?? item?.TrailerMin ?? item?.minTrailer ?? item?.Trailer);
+    return this.parseNumber(item?.trailerMin);
   }
 
   private getFilmMin(item: any): number | null {
-    return this.parseNumber(item?.filmMin ?? item?.FilmMin ?? item?.minFilm ?? item?.Film);
+    return this.parseNumber(item?.filmMin);
   }
 
   private getTitulo(item: any): string {
-    return item?.titulo ?? item?.Titulo ?? item?.nombre ?? item?.Nombre ?? item?.descripcion ?? item?.Descripcion ?? 'Paquete';
+    return item?.titulo ?? 'Paquete';
   }
 
   private getDescripcion(item: any): string {
-    return item?.descripcion ?? item?.Descripcion ?? item?.detalle ?? item?.Detalle ?? this.getTitulo(item);
+    return item?.descripcion ?? this.getTitulo(item);
   }
 
   private getMoneda(item: any): string | undefined {
-    const raw = item?.moneda ?? item?.Moneda ?? item?.currency ?? item?.Currency;
+    const raw = item?.moneda;
     return raw ? String(raw).toUpperCase() : undefined;
   }
 
   private getGrupo(item: any): string | null {
-    const raw = item?.grupo ?? item?.Grupo ?? item?.categoria ?? item?.Categoria ?? null;
+    const raw = item?.grupo ?? null;
     return raw != null ? String(raw) : null;
   }
 
@@ -1009,14 +996,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (!item) {
       return this.selectedServicioId;
     }
-    const raw =
-      item?.servicioId ??
-      item?.idServicio ??
-      item?.ID_Servicio ??
-      item?.servicio_id ??
-      item?.ServicioId ??
-      null;
-    const parsed = this.parseNumber(raw);
+    const parsed = this.parseNumber(item?.servicio?.id ?? item?.servicioId);
     if (parsed != null) {
       return parsed;
     }
@@ -1024,19 +1004,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private getPaqueteServicioNombre(item: any): string | undefined {
-    const baseNombre =
-      item?.servicioNombre ??
-      item?.ServicioNombre ??
-      item?.servicio ??
-      item?.Servicio ??
-      item?.nombreServicio ??
-      item?.NombreServicio ??
-      null;
-    if (baseNombre != null) {
+    const baseNombre = item?.servicio?.nombre ?? item?.servicioNombre;
+    if (baseNombre) {
       const texto = String(baseNombre).trim();
-      if (texto) {
-        return texto;
-      }
+      if (texto) return texto;
     }
     return this.selectedServicioNombre || undefined;
   }
@@ -1052,21 +1023,21 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private getOpcion(item: any): number | null {
-    return this.parseNumber(item?.opcion ?? item?.Opcion ?? item?.Option ?? item?.option);
+    return this.parseNumber(item?.opcion);
   }
 
   private getDescuento(item: any): number | null {
-    return this.parseNumber(item?.descuento ?? item?.Descuento ?? item?.discount ?? item?.Discount ?? null);
+    return this.parseNumber(item?.descuento ?? null);
   }
 
   private getRecargo(item: any): number | null {
-    return this.parseNumber(item?.recargo ?? item?.Recargo ?? item?.surcharge ?? item?.Surcharge ?? null);
+    return this.parseNumber(item?.recargo ?? null);
   }
 
   private normalizePaqueteRow(item: any): PaqueteRow {
-    const precio = this.parseNumber(item?.precio ?? item?.Precio);
-    const staffTotal = this.parseNumber(item?.staff?.total ?? item?.eventoServicio?.staff?.total ?? item?.staff);
-    const staff = staffTotal ?? this.getPersonal(item);
+    const precio = this.parseNumber(item?.precio);
+    const staffTotal = this.parseNumber(item?.staff?.total ?? item?.staff);
+    const staff = staffTotal ?? this.getStaff(item);
     const horas = this.getHoras(item) ?? this.parseHorasToNumber(item?.horasTexto ?? item?.HorasTexto);
     return {
       titulo: this.getTitulo(item),
@@ -1128,17 +1099,17 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const base: TableColumn<PaqueteSeleccionado>[] = [
       { key: 'titulo', header: 'Título', sortable: false },
       // { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '110px' },
-      { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-end text-nowrap', width: '140px' }
+      { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-center', width: '140px' }
     ];
 
     if (this.shouldShowPrecioOriginal()) {
-      base.push({ key: 'precioOriginal', header: 'Original', sortable: false, class: 'text-end text-nowrap', width: '140px' });
+      base.push({ key: 'precioOriginal', header: 'Original', sortable: false, class: 'text-center', width: '140px' });
     }
 
     base.push(
       { key: 'horas', header: 'Horas', sortable: false, class: 'text-center', width: '100px' },
-      { key: 'personal', header: 'Personal', sortable: false, class: 'text-center', width: '110px' },
-      { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-end text-nowrap', width: '140px' },
+      { key: 'staff', header: 'Staff', sortable: false, class: 'text-center', width: '110px' },
+      { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-center', width: '140px' },
       { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
       { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
     );

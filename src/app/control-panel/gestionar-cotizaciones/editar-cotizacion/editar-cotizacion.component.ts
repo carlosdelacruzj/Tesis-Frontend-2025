@@ -26,7 +26,7 @@ interface PaqueteSeleccionado {
   moneda?: string;
   grupo?: string | null;
   opcion?: number | null;
-  personal?: number | null;
+  staff?: number | null;
   horas?: number | null;
   fotosImpresas?: number | null;
   trailerMin?: number | null;
@@ -43,6 +43,7 @@ interface PaqueteSeleccionado {
 }
 
 interface PaqueteRow {
+  titulo: string;
   descripcion: string;
   precio: number | null;
   staff: number | null;
@@ -96,11 +97,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   selectedEventoIdValue = '';
 
   paquetesColumns: TableColumn<PaqueteRow>[] = [
-    { key: 'descripcion', header: 'Descripción', sortable: true },
-    { key: 'precio', header: 'Precio', sortable: true, class: 'text-end text-nowrap', width: '120px' },
-    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'titulo', header: 'Título', sortable: true, width: '45%' },
+    { key: 'precio', header: 'Precio', sortable: true, class: 'text-center', width: '120px' },
     { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
-    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '140px' }
+    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '200px' }
   ];
   paquetesRows: PaqueteRow[] = [];
   selectedPaquetes: PaqueteSeleccionado[] = [];
@@ -117,7 +118,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private fechaEventoOriginal: string | null = null;
 
   private readonly destroy$ = new Subject<void>();
-  readonly programacionMinimaRecomendada = 2;
+  readonly programacionMinimaRecomendada = 1;
   readonly departamentos: string[] = [
     'Amazonas',
     'Ancash',
@@ -191,11 +192,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (index < 0 || index >= this.programacion.length) {
       return;
     }
-    if (this.programacion.length <= 1) {
-      this.showAlert('warning', 'Acción no permitida', 'Debes mantener al menos una locación en la programación.');
-      return;
-    }
-
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
     const nombre = (grupo?.get('nombre')?.value ?? '').toString().trim() || `Locación ${index + 1}`;
 
@@ -239,7 +235,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedServicioNombre = '';
     } else {
       const selected = this.servicios.find(s => this.getId(s) === this.selectedServicioId);
-      this.selectedServicioNombre = selected?.nombre ?? selected?.Servicio ?? selected?.descripcion ?? '';
+      this.selectedServicioNombre = selected?.nombre ?? '';
     }
     this.loadEventosServicio();
   }
@@ -271,7 +267,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const servicioId = this.getPaqueteServicioId(element);
     const servicioNombre = this.getPaqueteServicioNombre(element);
     const horas = this.getHoras(element);
-    const personal = this.getPersonal(element);
+    const staff = this.getStaff(element);
     const fotosImpresas = this.getFotosImpresas(element);
     const trailerMin = this.getTrailerMin(element);
     const filmMin = this.getFilmMin(element);
@@ -307,7 +303,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         moneda: moneda ?? undefined,
         grupo,
         opcion,
-        personal: personal ?? undefined,
+        staff: staff ?? undefined,
         horas: horas ?? undefined,
         fotosImpresas: fotosImpresas ?? undefined,
         trailerMin: trailerMin ?? undefined,
@@ -442,12 +438,15 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     const programacionInvalida = this.programacion.invalid;
-    if (this.form.invalid || programacionInvalida) {
+    const programacionVacia = this.programacion.length === 0;
+    if (this.form.invalid || programacionInvalida || programacionVacia) {
       this.form.markAllAsTouched();
       this.programacion.markAllAsTouched();
-      const mensaje = programacionInvalida
-        ? 'Completa la programación del evento.'
-        : 'Revisa los campos obligatorios.';
+      const mensaje = programacionVacia
+        ? 'Agrega al menos una locación.'
+        : programacionInvalida
+          ? 'Completa la programación del evento.'
+          : 'Revisa los campos obligatorios.';
       this.showAlert('warning', 'Falta información', mensaje);
       return;
     }
@@ -458,7 +457,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     const raw = this.form.getRawValue();
-    console.log('Raw form data:', raw);
     const rawPayload = (this.cotizacion.raw as CotizacionPayload | undefined);
     const rawDetalle = rawPayload?.cotizacion;
     const rawContexto = rawPayload?.contexto;
@@ -488,7 +486,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const eventoServicioId = this.getEventoServicioId(item) ?? this.getEventoServicioId(item.origen);
       const servicioId = this.getPaqueteServicioId(item);
       const horasItem = this.parseNumber(item.horas ?? this.getHoras(item.origen));
-      const personalItem = this.parseNumber(item.personal ?? this.getPersonal(item.origen));
+      const staffItem = this.parseNumber(item.staff ?? this.getStaff(item.origen));
       const fotosImpresas = this.parseNumber(item.fotosImpresas ?? this.getFotosImpresas(item.origen));
       const trailerMin = this.parseNumber(item.trailerMin ?? this.getTrailerMin(item.origen));
       const filmMin = this.parseNumber(item.filmMin ?? this.getFilmMin(item.origen));
@@ -504,7 +502,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         cantidad: Number(item.cantidad ?? 1) || 1,
         notas: notas || undefined,
         horas: horasItem ?? undefined,
-        personal: personalItem ?? undefined,
+        personal: staffItem ?? undefined,
         fotosImpresas: fotosImpresas ?? undefined,
         trailerMin: trailerMin ?? undefined,
         filmMin: filmMin ?? undefined
@@ -549,6 +547,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (clienteId != null) {
       payload.cliente = { id: clienteId };
     }
+
+    console.log('[cotizacion] payload listo para enviar', payload);
 
     this.saving = true;
     this.cotizacionService.updateCotizacion(this.cotizacion.id, payload)
@@ -696,7 +696,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
     this.selectedPaquetes = (raw?.items ?? cotizacion.items ?? []).map((item, index) => {
       const horas = this.getHoras(item);
-      const personal = this.getPersonal(item);
+      const staff = this.getStaff(item);
       const fotosImpresas = this.getFotosImpresas(item);
       const trailerMin = this.getTrailerMin(item);
       const filmMin = this.getFilmMin(item);
@@ -716,7 +716,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         eventoServicioId: this.getEventoServicioId(item) ?? undefined,
         notas: item.notas,
         horas: horas ?? undefined,
-        personal: personal ?? undefined,
+        staff: staff ?? undefined,
         fotosImpresas: fotosImpresas ?? undefined,
         trailerMin: trailerMin ?? undefined,
         filmMin: filmMin ?? undefined,
@@ -749,15 +749,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       ...config,
       esPrincipal: config.esPrincipal ?? index < this.programacionMinimaRecomendada
     })).filter(config => this.hasProgramacionContent(config));
-
-    if (!configs.length) {
-      configs = this.buildFallbackProgramacion();
-    } else if (configs.length < this.programacionMinimaRecomendada) {
-      configs = [
-        ...configs,
-        ...this.buildFallbackProgramacion().slice(configs.length)
-      ];
-    }
 
     configs.forEach(config => {
       array.push(this.createProgramacionItem(config));
@@ -888,22 +879,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       notas: [config.notas ?? ''],
       esPrincipal: [config.esPrincipal ?? false]
     });
-  }
-
-  private buildFallbackProgramacion(): ProgramacionEventoItem[] {
-    const fecha = this.normalizeProgramacionFecha(this.fechaEventoOriginal);
-    const principal = this.pickFirstString(
-      this.form.get('departamento')?.value,
-      this.selectedEventoNombre,
-      this.cotizacion?.lugar,
-      this.cotizacion?.eventoSolicitado,
-      'Locación principal'
-    ) || 'Locación principal';
-
-    return [
-      { nombre: principal, fecha, esPrincipal: true },
-      { nombre: 'Locación adicional', fecha, esPrincipal: false }
-    ];
   }
 
   private hasProgramacionContent(config: ProgramacionEventoItemConfig): boolean {
@@ -1045,11 +1020,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private normalizeEventoCatalogo(evento: any): EventoCatalogo | null {
-    const id = this.parseNumber(evento?.PK_E_Cod ?? evento?.id ?? evento?.ID);
+    const id = this.parseNumber(evento?.id);
     if (id == null || id <= 0) {
       return null;
     }
-    const nombre = this.pickFirstString(evento?.E_Nombre, evento?.nombre, evento?.Evento) || 'Evento';
+    const nombre = this.pickFirstString(evento?.nombre) || 'Evento';
     return { id, nombre, raw: evento };
   }
 
@@ -1058,7 +1033,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const servicio = this.servicios.find(s => this.getId(s) === this.pendingServicioId);
       if (servicio) {
         this.selectedServicioId = this.pendingServicioId;
-        this.selectedServicioNombre = servicio?.nombre ?? servicio?.Servicio ?? servicio?.descripcion ?? '';
+        this.selectedServicioNombre = servicio?.nombre ?? '';
       }
     } else if (!this.selectedServicioId && this.servicios.length && !this.selectedServicioNombre) {
       // Mantiene la lista vacía hasta que se vincule un servicio manualmente
@@ -1125,11 +1100,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   getId(item: any): number | null {
-    if (!item) return null;
-    const raw = item?.id ?? item?.ID ?? item?.pk ?? item?.PK_E_Cod;
-    if (raw == null) return null;
-    const num = Number(raw);
-    return Number.isFinite(num) && num > 0 ? num : null;
+    return this.parseNumber(item?.id);
   }
 
   private getPkgKey(el: any): string {
@@ -1137,49 +1108,47 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (eventoServicioId != null) {
       return String(eventoServicioId);
     }
-    return String(el?.ID ?? el?.PK_ExS_Cod ?? `${el?.descripcion}|${el?.precio}`);
+    return String(el?.id ?? `${el?.descripcion}|${el?.precio}`);
   }
 
   private getEventoServicioId(item: any): number | null {
     if (!item) {
       return null;
     }
-    const raw = item?.eventoServicioId ?? item?.idEventoServicio ?? item?.ID_EventoServicio ?? item?.ID ?? item?.PK_ExS_Cod ?? item?.pkEventoServicio;
-    if (raw == null) {
-      return null;
-    }
-    if (typeof raw === 'string' && raw.trim() === '') {
-      return null;
-    }
-    const num = Number(raw);
-    return Number.isFinite(num) && num > 0 ? num : null;
+    const num = this.parseNumber(item?.eventoServicioId ?? item?.idEventoServicio ?? item?.eventoServicio?.id ?? item?.id);
+    return num != null && num > 0 ? num : null;
   }
 
   private getHoras(item: any): number | null {
-    return this.parseNumber(item?.horas ?? item?.Horas ?? item?.duration ?? item?.Duracion);
+    return this.parseNumber(item?.horas);
   }
 
-  private getPersonal(item: any): number | null {
-    return this.parseNumber(item?.personal ?? item?.Personal ?? item?.staff ?? item?.Staff);
+  private getStaff(item: any): number | null {
+    if (item?.personal != null) {
+      return this.parseNumber(item.personal);
+    }
+    const staffTotal = item?.staff?.total;
+    return this.parseNumber(staffTotal ?? item?.staff);
   }
 
   private getFotosImpresas(item: any): number | null {
-    return this.parseNumber(item?.fotosImpresas ?? item?.FotosImpresas ?? item?.fotos_impresas);
+    return this.parseNumber(item?.fotosImpresas);
   }
 
   private getTrailerMin(item: any): number | null {
-    return this.parseNumber(item?.trailerMin ?? item?.TrailerMin ?? item?.minTrailer ?? item?.Trailer);
+    return this.parseNumber(item?.trailerMin);
   }
 
   private getFilmMin(item: any): number | null {
-    return this.parseNumber(item?.filmMin ?? item?.FilmMin ?? item?.minFilm ?? item?.Film);
+    return this.parseNumber(item?.filmMin);
   }
 
   private normalizePaqueteRow(item: any): PaqueteRow {
-    const precio = this.parseNumber(item?.precio ?? item?.Precio);
-    const staff = this.getPersonal(item);
-    const horas = this.getHoras(item) ?? this.parseHorasToNumber(item?.horasTexto ?? item?.HorasTexto);
+    const precio = this.parseNumber(item?.precio);
+    const staff = this.getStaff(item);
+    const horas = this.getHoras(item);
     return {
+      titulo: this.getTitulo(item),
       descripcion: this.getDescripcion(item),
       precio: precio != null ? precio : null,
       staff: staff != null ? staff : null,
@@ -1189,20 +1158,20 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private getTitulo(item: any): string {
-    return item?.titulo ?? item?.Titulo ?? item?.nombre ?? item?.Nombre ?? item?.descripcion ?? item?.Descripcion ?? 'Paquete';
+    return item?.titulo ?? 'Paquete';
   }
 
   private getDescripcion(item: any): string {
-    return item?.descripcion ?? item?.Descripcion ?? item?.detalle ?? item?.Detalle ?? this.getTitulo(item);
+    return item?.descripcion ?? this.getTitulo(item);
   }
 
   private getMoneda(item: any): string | undefined {
-    const raw = item?.moneda ?? item?.Moneda ?? item?.currency ?? item?.Currency;
+    const raw = item?.moneda;
     return raw ? String(raw).toUpperCase() : undefined;
   }
 
   private getGrupo(item: any): string | null {
-    const raw = item?.grupo ?? item?.Grupo ?? item?.categoria ?? item?.Categoria ?? null;
+    const raw = item?.grupo ?? null;
     return raw != null ? String(raw) : null;
   }
 
@@ -1210,14 +1179,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (!item) {
       return this.selectedServicioId;
     }
-    const raw =
-      item?.servicioId ??
-      item?.idServicio ??
-      item?.ID_Servicio ??
-      item?.servicio_id ??
-      item?.ServicioId ??
-      null;
-    const parsed = this.parseNumber(raw);
+    const parsed = this.parseNumber(item?.servicio?.id ?? item?.servicioId);
     if (parsed != null) {
       return parsed;
     }
@@ -1225,33 +1187,24 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private getPaqueteServicioNombre(item: any, fallbackToSelected = true): string | undefined {
-    const baseNombre =
-      item?.servicioNombre ??
-      item?.ServicioNombre ??
-      item?.servicio ??
-      item?.Servicio ??
-      item?.nombreServicio ??
-      item?.NombreServicio ??
-      null;
-    if (baseNombre != null) {
+    const baseNombre = item?.servicio?.nombre ?? item?.servicioNombre;
+    if (baseNombre) {
       const texto = String(baseNombre).trim();
-      if (texto) {
-        return texto;
-      }
+      if (texto) return texto;
     }
     return fallbackToSelected ? (this.selectedServicioNombre || undefined) : undefined;
   }
 
   private getOpcion(item: any): number | null {
-    return this.parseNumber(item?.opcion ?? item?.Opcion ?? item?.Option ?? item?.option);
+    return this.parseNumber(item?.opcion);
   }
 
   private getDescuento(item: any): number | null {
-    return this.parseNumber(item?.descuento ?? item?.Descuento ?? item?.discount ?? item?.Discount ?? null);
+    return this.parseNumber(item?.descuento ?? null);
   }
 
   private getRecargo(item: any): number | null {
-    return this.parseNumber(item?.recargo ?? item?.Recargo ?? item?.surcharge ?? item?.Surcharge ?? null);
+    return this.parseNumber(item?.recargo ?? null);
   }
 
   private parseHorasToNumber(value: string | null | undefined): number | undefined {
@@ -1304,17 +1257,17 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const base: TableColumn<PaqueteSeleccionado>[] = [
       { key: 'titulo', header: 'Título', sortable: false },
       // { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '110px' },
-      { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-end text-nowrap', width: '140px' }
+      { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-center', width: '140px' }
     ];
 
     if (this.shouldShowPrecioOriginal()) {
-      base.push({ key: 'precioOriginal', header: 'Original', sortable: false, class: 'text-end text-nowrap', width: '140px' });
+      base.push({ key: 'precioOriginal', header: 'Original', sortable: false, class: 'text-center', width: '140px' });
     }
 
     base.push(
       { key: 'horas', header: 'Horas', sortable: false, class: 'text-center', width: '100px' },
-      { key: 'personal', header: 'Personal', sortable: false, class: 'text-center', width: '110px' },
-      { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-end text-nowrap', width: '140px' },
+      { key: 'staff', header: 'Staff', sortable: false, class: 'text-center', width: '110px' },
+      { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-center', width: '140px' },
       { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
       { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
     );
