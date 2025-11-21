@@ -11,8 +11,6 @@ import { GenerarContratoComponent } from './generar-contrato/generar-contrato.co
 import { GestionarEquiposComponent } from './gestionar-equipos/gestionar-equipos.component';
 import { GestionarPedidoComponent } from './gestionar-pedido/gestionar-pedido.component';
 import { GestionarPersonalComponent } from './gestionar-personal/gestionar-personal.component';
-import { AgregarProyectoComponent } from './gestionar-proyecto/agregar-proyecto/agregar-proyecto.component';
-import { GestionarProyectoComponent } from './gestionar-proyecto/listar-proyecto/gestionar-proyecto.component';
 import { HomeComponent } from './home/home.component';
 import { RegistrarPagoComponent } from './registrar-pago/registrar-pago.component';
 import { DetallePedidoComponent } from './gestionar-pedido/detalle-pedido/detalle-pedido.component';
@@ -25,6 +23,7 @@ import { EditarPerfilComponent } from './gestionar-perfiles/editar-perfil/editar
 import { GestionarCotizacionesComponent } from './gestionar-cotizaciones/gestionar-cotizaciones.component';
 import { RegistrarCotizacionComponent } from './gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
 import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
+import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proyecto.component';
 
 const routes: Routes = [
   {
@@ -34,8 +33,6 @@ const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'gestionar-equipos', component: GestionarEquiposComponent },
-      { path: 'gestionar-proyecto', component: GestionarProyectoComponent },
-      { path: 'gestionar-proyecto/agregar-proyecto', component: AgregarProyectoComponent },
       { path: 'administrar-equipos', component: AdministrarEquiposComponent },
       { path: 'administrar-equipos/detalle', component: DetalleEquiposComponent },
       { path: 'administrar-equipos/equipos', component: EquipoDetalleComponent },
@@ -57,6 +54,7 @@ const routes: Routes = [
       { path: 'gestionar-cotizaciones', component: GestionarCotizacionesComponent },
       { path: 'gestionar-cotizaciones/registrar', component: RegistrarCotizacionComponent },
       { path: 'gestionar-cotizaciones/editar/:id', component: EditarCotizacionComponent },
+      { path: 'gestionar-proyecto', component: GestionarProyectoComponent },
       { path: '**', redirectTo: 'dashboard' },
     ]
   }

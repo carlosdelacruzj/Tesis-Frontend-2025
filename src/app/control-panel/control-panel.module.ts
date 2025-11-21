@@ -21,8 +21,6 @@ import { HeaderComponent } from '../shared/header/header.component';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { GestionarEquiposComponent } from './gestionar-equipos/gestionar-equipos.component';
-import { GestionarProyectoComponent } from './gestionar-proyecto/listar-proyecto/gestionar-proyecto.component';
-import { AgregarProyectoComponent } from './gestionar-proyecto/agregar-proyecto/agregar-proyecto.component';
 import { AdministrarPaqueteServicioComponent } from './administrar-paquete-servicio/administrar-paquete-servicio.component';
 import { EventCardComponent } from './administrar-paquete-servicio/components/event-card/event-card.component';
 import { DetallePaqueteServicioComponent } from './administrar-paquete-servicio/detalle-paquete-servicio/detalle-paquete-servicio.component';
@@ -31,7 +29,6 @@ import { GestionarPedidoComponent } from './gestionar-pedido/gestionar-pedido.co
 import { AgregarPedidoComponent } from './gestionar-pedido/agregar-pedido/agregar-pedido.component';
 import { ActualizarPedidoComponent } from './gestionar-pedido/actualizar-pedido/actualizar-pedido.component';
 import { DetallePedidoComponent } from './gestionar-pedido/detalle-pedido/detalle-pedido.component';
-import { ActualizarProyectoComponent } from './gestionar-proyecto/actualizar-proyecto/actualizar-proyecto.component';
 import { AdministrarEquiposComponent } from './administrar-equipos/administrar-equipos.component';
 import { DetalleEquiposComponent } from './administrar-equipos/detalle-equipos/detalle-equipos.component';
 import { EquipoDetalleComponent } from './administrar-equipos/equipo-detalle/equipo-detalle.component';
@@ -46,6 +43,7 @@ import { EditarPerfilComponent } from './gestionar-perfiles/editar-perfil/editar
 import { GestionarCotizacionesComponent } from './gestionar-cotizaciones/gestionar-cotizaciones.component';
 import { RegistrarCotizacionComponent } from './gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
 import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
+import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proyecto.component';
 
 @NgModule({
   declarations: [
@@ -58,9 +56,6 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     AdministrarEquiposComponent,
     DetalleEquiposComponent,
     EquipoDetalleComponent,
-    GestionarProyectoComponent,
-    AgregarProyectoComponent,
-    ActualizarProyectoComponent,
     GestionarPedidoComponent,
     AgregarPedidoComponent,
     ActualizarPedidoComponent,
@@ -79,7 +74,8 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
     EditarPerfilComponent,
     GestionarCotizacionesComponent,
     RegistrarCotizacionComponent,
-    EditarCotizacionComponent
+    EditarCotizacionComponent,
+    GestionarProyectoComponent
   ],
   imports: [
     CommonModule,

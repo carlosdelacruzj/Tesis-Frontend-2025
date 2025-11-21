@@ -41,6 +41,7 @@ interface ModalPagoState {
   error: string | null;
   fileName: string | null;
   faltanteDeposito: number;
+  esPrimerPago: boolean;
 }
 
 @Component({
@@ -150,13 +151,15 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
             ? this.parseMonto(resumenValido.SaldoPendiente)
             : Math.max(total - abonado, 0);
           const faltanteDeposito = Math.max(total * 0.5 - abonado, 0);
+          const esPrimerPago = abonado <= 0;
 
           this.modalPago = {
             ...this.modalPago,
             cargando: false,
             resumen: { ...resumenValido, SaldoPendiente: saldo },
             metodos,
-            faltanteDeposito
+            faltanteDeposito,
+            esPrimerPago
           };
         },
         error: (err) => {
@@ -222,6 +225,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
 
     const monto = this.parseMonto(this.modalPago.monto);
     const saldoPrevio = this.obtenerSaldoPendiente();
+    const esPrimerPago = this.modalPago.esPrimerPago;
 
     this.modalPago.guardando = true;
     this.modalPago.error = null;
@@ -233,6 +237,32 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
         metodoPagoId: this.modalPago.metodoId ?? 0,
         fecha: this.modalPago.fecha || undefined
       });
+
+      if (esPrimerPago) {
+        const proyectoNombre =
+          (this.modalPago.pedido as any)?.Nombre ??
+          (this.modalPago.pedido as any)?.NombrePedido ??
+          this.modalPago.pedido.Cliente ??
+          `Pedido ${this.modalPago.pedido.ID}`;
+
+        try {
+          await this.registrarPagoService.crearProyecto({
+            proyectoNombre,
+            pedidoId: this.modalPago.pedido.ID,
+            estadoId: 1
+          });
+        } catch (err) {
+          console.error('[proyecto] crear', err);
+          void Swal.fire({
+            icon: 'warning',
+            title: 'Pago registrado',
+            text: 'El proyecto no pudo crearse automáticamente. Intenta crearlo manualmente.',
+            confirmButtonText: 'Entendido',
+            buttonsStyling: false,
+            customClass: { confirmButton: 'btn btn-warning' }
+          });
+        }
+      }
 
       const saldoRestante = Math.max(saldoPrevio - monto, 0);
       void Swal.fire({
@@ -298,7 +328,8 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       file: null,
       error: null,
       fileName: null,
-      faltanteDeposito: 0
+      faltanteDeposito: 0,
+      esPrimerPago: false
     };
   }
 

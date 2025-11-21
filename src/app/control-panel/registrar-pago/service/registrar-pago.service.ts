@@ -92,5 +92,18 @@ export class RegistrarPagoService {
     return this.http.post(`${this.API}/pagos`, fd).toPromise();
   }
 
+  crearProyecto(payload: {
+    proyectoNombre: string;
+    pedidoId: number;
+    fechaInicioEdicion?: string;
+    fechaFinEdicion?: string;
+    estadoId?: number;
+    responsableId?: number;
+    notas?: string;
+    enlace?: string;
+  }): Promise<any> {
+    return this.http.post(`${this.API}/proyecto`, payload).toPromise();
+  }
+
 
 }

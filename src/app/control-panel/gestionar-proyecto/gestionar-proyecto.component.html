@@ -1,36 +1,135 @@
 <div class="dashboard-content">
-  <div class="dashboard-ecommerce">
-    <div class="container-fluid">
-        <div class="ecommerce-widget">
+  <app-list-toolbar
+    [title]="'Proyectos'"
+    [showSearch]="true"
+    [searchPlaceholder]="'Buscar: nombre, pedido, responsable…'"
+    [searchValue]="searchTerm"
+    [showCreateButton]="true"
+    [createButtonLabel]="'Nuevo proyecto'"
+    (searchChange)="onSearchChange($event)"
+    (createClick)="abrirCrear()">
+  </app-list-toolbar>
 
-            <table mat-table [dataSource]="proyectos" class="mat-elevation-z8">
+  <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
-                <!--- Nota: cambio de prueba en rama ricardo a -->
+  <ng-container *ngIf="!loading; else loadingState">
+    <app-table-base
+      [columns]="columns"
+      [data]="proyectos"
+      [showCreateButton]="false"
+      [showSearch]="false"
+      [externalSearchTerm]="searchTerm"
+      emptyText="Sin proyectos registrados">
 
-                <!-- Position Column -->
-                <ng-container matColumnDef="ID">
-                    <th mat-header-cell *matHeaderCellDef> ID </th>
-                    <td mat-cell *matCellDef="let element"> {{element.PK_Pro_Cod}} </td>
-                </ng-container>
+      <ng-template appCell="proyectoNombre" let-row>
+        <div class="fw-semibold">{{ row.proyectoNombre || '—' }}</div>
+        <div class="text-muted small" *ngIf="row.enlace">{{ row.enlace }}</div>
+      </ng-template>
 
-                <!-- Name Column -->
-                <ng-container matColumnDef="nombre">
-                    <th mat-header-cell *matHeaderCellDef> nombre </th>
-                    <td mat-cell *matCellDef="let element"> {{element.Pro_Nombre}} </td>
-                </ng-container>
+      <ng-template appCell="pedidoId" let-row>
+        <div class="text-center">{{ row.pedidoId || '—' }}</div>
+      </ng-template>
 
-                <!-- Weight Column -->
-                <ng-container matColumnDef="fecha">
-                    <th mat-header-cell *matHeaderCellDef> fecha </th>
-                    <td mat-cell *matCellDef="let element"> {{element.EPro_Fecha_Inicio_Edicion}} </td>
-                </ng-container>
+      <ng-template appCell="estadoNombre" let-row>
+        <span class="badge bg-secondary">{{ row.estadoNombre || getEstadoNombre(row.estadoId) }}</span>
+      </ng-template>
 
+      <ng-template appCell="responsableId" let-row>
+        <div class="text-center">{{ row.responsableId ?? '—' }}</div>
+      </ng-template>
 
-                <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
-                <tr mat-row *matRowDef="let row; columns: columnsToDisplay;"></tr>
-            </table>
+      <ng-template appCell="fechas" let-row>
+        <div *ngIf="row.fechaInicioEdicion" class="d-block">Inicio: {{ row.fechaInicioEdicion | date:'yyyy-MM-dd' }}</div>
+        <div *ngIf="row.fechaFinEdicion" class="d-block">Fin: {{ row.fechaFinEdicion | date:'yyyy-MM-dd' }}</div>
+        <div *ngIf="!row.fechaInicioEdicion && !row.fechaFinEdicion" class="text-muted">—</div>
+      </ng-template>
 
+      <ng-template appCell="acciones" let-row>
+        <div class="d-flex justify-content-center gap-1">
+          <button mat-icon-button color="primary" type="button" (click)="abrirEditar(row)" matTooltip="Editar proyecto">
+            <mat-icon>edit</mat-icon>
+          </button>
         </div>
-    </div>
-  </div>
+      </ng-template>
+    </app-table-base>
+  </ng-container>
 </div>
+
+<app-modal-base
+  [open]="modal.open"
+  [title]="modal.titulo"
+  [disableClose]="modal.guardando"
+  [useDefaultFooter]="false"
+  [loading]="modal.guardando"
+  (closed)="cerrarModal()">
+
+  <form [formGroup]="form" class="row g-3" (ngSubmit)="guardar()">
+    <div class="col-12">
+      <label class="col-form-label">Nombre del proyecto</label>
+      <input type="text" class="form-control" formControlName="proyectoNombre" required>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label">Pedido asociado</label>
+      <input type="number" class="form-control" formControlName="pedidoId" min="1" required>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label">Estado</label>
+      <select class="form-select" formControlName="estadoId" required>
+        <option [ngValue]="null" disabled>Selecciona estado</option>
+        <option *ngFor="let est of estados" [ngValue]="est.estadoId">{{ est.estadoNombre }}</option>
+      </select>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label">Responsable</label>
+      <input type="number" class="form-control" formControlName="responsableId">
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label">Enlace</label>
+      <input type="url" class="form-control" formControlName="enlace" placeholder="https://...">
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label">Inicio edición</label>
+      <input type="date" class="form-control" formControlName="fechaInicioEdicion">
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label">Fin edición</label>
+      <input type="date" class="form-control" formControlName="fechaFinEdicion">
+    </div>
+
+    <div class="col-12">
+      <label class="col-form-label">Notas</label>
+      <textarea class="form-control" rows="2" formControlName="notas"></textarea>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label">Multimedia</label>
+      <input type="number" class="form-control" formControlName="multimedia" min="0">
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label">Edición</label>
+      <input type="number" class="form-control" formControlName="edicion" min="0">
+    </div>
+
+    <div class="text-end">
+      <button type="button" class="btn btn-outline-secondary me-2" (click)="cerrarModal()" [disabled]="modal.guardando">Cancelar</button>
+      <button type="submit" class="btn btn-primary" [disabled]="modal.guardando || form.invalid">
+        <span *ngIf="!modal.guardando">Guardar</span>
+        <span *ngIf="modal.guardando" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      </button>
+    </div>
+  </form>
+</app-modal-base>
+
+<ng-template #loadingState>
+  <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p class="mt-3 mb-0">Cargando proyectos…</p>
+  </div>
+</ng-template>
