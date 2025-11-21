@@ -20,7 +20,6 @@ import { FooterComponent } from '../shared/footer/footer.component';
 import { HeaderComponent } from '../shared/header/header.component';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
-import { GestionarEquiposComponent } from './gestionar-equipos/gestionar-equipos.component';
 import { AdministrarPaqueteServicioComponent } from './administrar-paquete-servicio/administrar-paquete-servicio.component';
 import { EventCardComponent } from './administrar-paquete-servicio/components/event-card/event-card.component';
 import { DetallePaqueteServicioComponent } from './administrar-paquete-servicio/detalle-paquete-servicio/detalle-paquete-servicio.component';
@@ -34,8 +33,6 @@ import { DetalleEquiposComponent } from './administrar-equipos/detalle-equipos/d
 import { EquipoDetalleComponent } from './administrar-equipos/equipo-detalle/equipo-detalle.component';
 import { GestionarPersonalComponent } from './gestionar-personal/gestionar-personal.component';
 import { RegistrarPagoComponent } from './registrar-pago/registrar-pago.component';
-import { GenerarContratoComponent } from './generar-contrato/generar-contrato.component';
-import { ContratoComponent } from './generar-contrato/contrato/contrato.component';
 import { GestionarClienteComponent } from './gestionar-cliente/gestionar-cliente.component';
 import { GestionarPerfilesComponent } from './gestionar-perfiles/gestionar-perfiles.component';
 import { RegistrarPerfilComponent } from './gestionar-perfiles/registrar-perfil/registrar-perfil.component';
@@ -52,7 +49,6 @@ import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proye
     HeaderComponent,
     SidebarComponent,
     DashboardComponent,
-    GestionarEquiposComponent,
     AdministrarEquiposComponent,
     DetalleEquiposComponent,
     EquipoDetalleComponent,
@@ -66,8 +62,6 @@ import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proye
     AddEventoComponent,
     GestionarPersonalComponent,
     RegistrarPagoComponent,
-    GenerarContratoComponent,
-    ContratoComponent,
     GestionarClienteComponent,
     GestionarPerfilesComponent,
     RegistrarPerfilComponent,

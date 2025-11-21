@@ -6,9 +6,6 @@ import { EquipoDetalleComponent } from './administrar-equipos/equipo-detalle/equ
 import { AdministrarPaqueteServicioComponent } from './administrar-paquete-servicio/administrar-paquete-servicio.component';
 import { DetallePaqueteServicioComponent } from './administrar-paquete-servicio/detalle-paquete-servicio/detalle-paquete-servicio.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
-import { ContratoComponent } from './generar-contrato/contrato/contrato.component';
-import { GenerarContratoComponent } from './generar-contrato/generar-contrato.component';
-import { GestionarEquiposComponent } from './gestionar-equipos/gestionar-equipos.component';
 import { GestionarPedidoComponent } from './gestionar-pedido/gestionar-pedido.component';
 import { GestionarPersonalComponent } from './gestionar-personal/gestionar-personal.component';
 import { HomeComponent } from './home/home.component';
@@ -32,7 +29,6 @@ const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
-      { path: 'gestionar-equipos', component: GestionarEquiposComponent },
       { path: 'administrar-equipos', component: AdministrarEquiposComponent },
       { path: 'administrar-equipos/detalle', component: DetalleEquiposComponent },
       { path: 'administrar-equipos/equipos', component: EquipoDetalleComponent },
@@ -45,8 +41,6 @@ const routes: Routes = [
       { path: 'gestionar-pedido/detalle/:id', component: DetallePedidoComponent },
       { path: 'gestionar-personal', component: GestionarPersonalComponent },
       { path: 'registrar-pago', component: RegistrarPagoComponent },
-      { path: 'generar-contrato', component: GenerarContratoComponent },
-      { path: 'generar-contrato/contrato', component: ContratoComponent },
       { path: 'gestionar-cliente', component: GestionarClienteComponent },
       { path: 'gestionar-perfiles', component: GestionarPerfilesComponent },
       { path: 'gestionar-perfiles/registrar-perfil', component: RegistrarPerfilComponent },
