@@ -24,7 +24,7 @@
 /* Sizing baseline with responsive clamp */
 .modal-dialog {
   margin: 0;
-  width: min(600px, 90vw);
+  width: auto;
   max-width: 600px; /* md default */
   min-width: 320px;
   max-height: 90vh;
@@ -35,13 +35,10 @@
 }
 
 /* Tamaños */
-.modal-sm { max-width: 300px; }
-.modal-lg { max-width: 900px; }
-.modal-xl { max-width: 1140px; }
-.modal-xxl {
-  max-width: 1320px;
-  width: min(1320px, 98vw);
-}
+.modal-sm { max-width: 300px; width: min(300px, 92vw); }
+.modal-lg { max-width: 900px; width: min(900px, 96vw); }
+.modal-xl { max-width: 1140px; width: min(1140px, 96vw); }
+.modal-xxl { max-width: 1320px; width: min(1320px, 98vw); }
 
 .modal-content {
   background-color: #fff;

@@ -21,6 +21,7 @@ import { GestionarCotizacionesComponent } from './gestionar-cotizaciones/gestion
 import { RegistrarCotizacionComponent } from './gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
 import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
 import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proyecto.component';
+import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/detalle-proyecto.component';
 
 const routes: Routes = [
   {
@@ -49,6 +50,7 @@ const routes: Routes = [
       { path: 'gestionar-cotizaciones/registrar', component: RegistrarCotizacionComponent },
       { path: 'gestionar-cotizaciones/editar/:id', component: EditarCotizacionComponent },
       { path: 'gestionar-proyecto', component: GestionarProyectoComponent },
+      { path: 'gestionar-proyecto/:id', component: DetalleProyectoComponent },
       { path: '**', redirectTo: 'dashboard' },
     ]
   }

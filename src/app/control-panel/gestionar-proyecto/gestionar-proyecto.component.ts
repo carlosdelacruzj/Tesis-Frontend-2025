@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
@@ -53,7 +54,8 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly fb: UntypedFormBuilder,
-    private readonly proyectoService: ProyectoService
+    private readonly proyectoService: ProyectoService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -105,6 +107,11 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
   cerrarModal(): void {
     if (this.modal.guardando) return;
     this.modal = { ...this.modal, open: false, editId: null };
+  }
+
+  irADetalle(row: Proyecto): void {
+    if (!row?.proyectoId) return;
+    void this.router.navigate(['/home/gestionar-proyecto', row.proyectoId]);
   }
 
   guardar(): void {

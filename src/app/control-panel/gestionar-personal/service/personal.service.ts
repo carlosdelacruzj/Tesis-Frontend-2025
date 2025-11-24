@@ -1,7 +1,7 @@
 // src/app/gestionar-personal/service/personal.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { Empleado, EmpleadoUpdateDto } from '../model/personal.model';
 
@@ -11,14 +11,23 @@ export interface Cargo {
   cargoNombre: string;
   esOperativoCampo: 0 | 1;
 }
-export type EmpleadoDisponible = Pick<
-  Empleado,
-  'idEmpleado' | 'codigoEmpleado' | 'nombre' | 'apellido' | 'idCargo' | 'cargo'
->;
+
+export interface EmpleadoOperativo {
+  empleadoId: number;
+  usuarioId: number;
+  nombre: string;
+  apellido: string;
+  cargoId: number;
+  cargo: string;
+  estadoId: number;
+  estado: string;
+  operativoCampo: boolean;
+}
 
 @Injectable({ providedIn: 'root' })
 export class PersonalService {
   private readonly base = `${environment.baseUrl}/empleados`;
+  private readonly baseOperativos = `${environment.baseUrl}/empleados/operativos`;
 
   constructor(private http: HttpClient) {}
 
@@ -34,9 +43,7 @@ export class PersonalService {
 
   // GET /empleados/{id}
   getEmpleadoById(id: number): Observable<Empleado> {
-    return this.http.get<Empleado | Empleado[]>(`${this.base}/${id}`).pipe(
-      map(r => Array.isArray(r) ? r[0] : r) // por si el backend retorna array
-    );
+    return this.http.get<Empleado>(`${this.base}/${id}`);
   }
 
   // PUT /empleados/{id}
@@ -49,9 +56,8 @@ export class PersonalService {
     return this.http.get<Cargo[]>(`${this.base}/cargos`);
   }
 
-  // GET /empleados/disponibles/{idProyecto}  (opcional)
-  getDisponiblesPorProyecto(idProyecto: number): Observable<EmpleadoDisponible[]> {
-    return this.http.get<EmpleadoDisponible[]>(`${this.base}/disponibles/${idProyecto}`);
+  // GET /empleados/operativos
+  getOperativos(): Observable<EmpleadoOperativo[]> {
+    return this.http.get<EmpleadoOperativo[]>(this.baseOperativos);
   }
-
 }

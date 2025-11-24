@@ -1,0 +1,276 @@
+<div class="dashboard-content">
+  <app-list-toolbar
+    [title]="proyecto?.proyectoNombre || 'Proyecto'"
+    [showSearch]="false"
+    [showCreateButton]="false">
+  </app-list-toolbar>
+
+  <ng-container *ngIf="loading; else loaded">
+    <div class="estado-centro">
+      <ng-container *ngTemplateOutlet="loadingState"></ng-container>
+    </div>
+  </ng-container>
+
+  <ng-template #loaded>
+    <ng-container *ngIf="proyecto; else errorState">
+      <section class="card">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Proyecto #{{ proyecto.proyectoId }}</p>
+            <h2>{{ proyecto.proyectoNombre }}</h2>
+          </div>
+          <div class="estado">
+            <span class="label">Estado</span>
+            <span class="pill">{{ proyecto.estadoNombre || '—' }}</span>
+          </div>
+        </header>
+
+        <div class="info-grid">
+          <div>
+            <p class="label">Pedido</p>
+            <p class="value">#{{ proyecto.pedidoId }}</p>
+          </div>
+          <div>
+            <p class="label">Responsable</p>
+            <p class="value">{{ proyecto.responsableNombre || '—' }}</p>
+          </div>
+          <div>
+            <p class="label">Inicio edición</p>
+            <p class="value">{{ proyecto.fechaInicioEdicion || '—' }}</p>
+          </div>
+          <div>
+            <p class="label">Fin edición</p>
+            <p class="value">{{ proyecto.fechaFinEdicion || '—' }}</p>
+          </div>
+          <div>
+            <p class="label">Enlace</p>
+            <p class="value">{{ proyecto.enlace || '—' }}</p>
+          </div>
+          <div>
+            <p class="label">Notas</p>
+            <p class="value">{{ proyecto.notas || '—' }}</p>
+          </div>
+          <div>
+            <p class="label">Edición</p>
+            <p class="value">{{ proyecto.edicion ?? '—' }}</p>
+          </div>
+          <div>
+            <p class="label">Multimedia</p>
+            <p class="value">{{ proyecto.multimedia ?? '—' }}</p>
+          </div>
+          <div>
+            <p class="label">Creado</p>
+            <p class="value">{{ proyecto.createdAt || '—' }}</p>
+          </div>
+          <div>
+            <p class="label">Actualizado</p>
+            <p class="value">{{ proyecto.updatedAt || '—' }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Recursos asignados</p>
+            <h3>{{ proyecto.recursos?.length || 0 }} recurso(s)</h3>
+          </div>
+          <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
+            Asignar recursos
+          </button>
+        </header>
+
+        <ng-container *ngIf="proyecto.recursos?.length; else sinRecursos">
+          <table class="recursos-table">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Equipo</th>
+                <th>Serie</th>
+                <th>Tipo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let recurso of proyecto.recursos">
+                <td>{{ recurso.empleadoNombre }}</td>
+                <td>{{ recurso.modelo }}</td>
+                <td>{{ recurso.equipoSerie }}</td>
+                <td>{{ recurso.tipoEquipo }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </ng-container>
+      </section>
+    </ng-container>
+  </ng-template>
+</div>
+
+<app-modal-base
+  [open]="modalAsignarAbierto"
+  title="Asignar personal y equipos"
+  [useDefaultFooter]="false"
+  size="xl"
+  (closed)="cerrarModalAsignar()">
+
+  <div class="stepper">
+    <div class="step" [class.active]="stepIndex === 0">1. Personal</div>
+    <div class="step" [class.active]="stepIndex === 1">2. Equipos</div>
+    <div class="step" [class.active]="stepIndex === 2">3. Asignación</div>
+  </div>
+
+  <div class="modal-content-grid">
+    <div *ngIf="stepIndex === 0">
+      <p class="eyebrow">Personal operativo</p>
+      <div class="req-resumen" *ngIf="requerimientos?.totales?.personal?.length">
+        <div class="req-pill" *ngFor="let req of requerimientos.totales.personal"
+             [class.req-completo]="getSeleccionadosPorRol(req.rol) >= req.cantidad">
+          <div class="fw-semibold">{{ req.rol }}</div>
+          <div class="muted small">{{ getSeleccionadosPorRol(req.rol) }}/{{ req.cantidad }} requeridos</div>
+        </div>
+      </div>
+      <div class="dual-panel">
+        <div class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="label d-block">Disponibles</span>
+              </div>
+              <select class="form-select form-select-sm" [(ngModel)]="filtroRol">
+                <option [ngValue]="null">Todos los roles</option>
+                <option *ngFor="let rol of rolesOperativos" [ngValue]="rol">
+                  {{ rol }}
+                </option>
+              </select>
+            </div>
+          <div class="lista">
+            <label *ngFor="let p of getPersonalFiltrado()" class="item-selectable">
+              <input type="checkbox" [checked]="seleccionados.includes(p.empleadoId)" (change)="toggleSeleccionEmpleado(p.empleadoId)" [disabled]="isEmpleadoDisabled(p)">
+              <div>
+                <div class="fw-semibold">{{ p.nombre }} {{ p.apellido }}</div>
+                <div class="text-muted small">{{ p.cargo }}</div>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="label d-block">Seleccionados</span>
+                <span class="muted small">Total: {{ seleccionados.length }}</span>
+              </div>
+          </div>
+          <div class="lista">
+            <div class="item-selectable selected-item" *ngFor="let id of seleccionados">
+              <div>
+                <div class="fw-semibold">{{ getNombreEmpleado(id) }}</div>
+                <div class="text-muted small">
+                  {{ getCargoEmpleado(id) }}
+                </div>
+              </div>
+              <button type="button" class="remove-btn" (click)="quitarSeleccion(id)">Quitar</button>
+            </div>
+            <p class="muted" *ngIf="!seleccionados.length">Aún no seleccionas personal.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="stepIndex === 1">
+      <p class="eyebrow">Equipos requeridos</p>
+      <div class="req-resumen" *ngIf="requerimientos?.totales?.equipos?.length">
+        <div class="req-pill" *ngFor="let req of requerimientos.totales.equipos"
+             [class.req-completo]="getSeleccionadosEquipoPorTipo(req.tipoEquipoId) >= req.cantidad">
+          <div class="fw-semibold">{{ req.tipoEquipo }}</div>
+          <div class="muted small">{{ getSeleccionadosEquipoPorTipo(req.tipoEquipoId) }}/{{ req.cantidad }} requeridos</div>
+        </div>
+      </div>
+
+      <div class="dual-panel">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <span class="label d-block">Disponibles</span>
+            </div>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroTipoEquipoId">
+              <option [ngValue]="null">Todos los tipos</option>
+              <option *ngFor="let tipo of tiposEquipo" [ngValue]="tipo.idTipoEquipo">
+                {{ tipo.nombre }}
+              </option>
+            </select>
+          </div>
+          <div class="lista">
+            <label *ngFor="let e of getEquiposFiltrados()" class="item-selectable">
+              <input type="checkbox" [checked]="selectedEquipos.includes(e.idEquipo)" (change)="toggleSeleccionEquipo(e.idEquipo)" [disabled]="isEquipoDisabled(e)">
+              <div>
+                <div class="fw-semibold">{{ e.nombreModelo }} ({{ e.nombreTipoEquipo }})</div>
+                <div class="text-muted small">Serie: {{ e.serie }}</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <span class="label d-block">Seleccionados</span>
+              <span class="muted small">Total: {{ selectedEquipos.length }}</span>
+            </div>
+          </div>
+          <div class="lista">
+            <div class="item-selectable selected-item" *ngFor="let id of selectedEquipos">
+              <div>
+                <div class="fw-semibold">{{ getEquipoLabel(id) }}</div>
+                <div class="text-muted small">
+                  {{ getTipoEquipoNombre(id) }}
+                </div>
+              </div>
+              <button type="button" class="remove-btn" (click)="toggleSeleccionEquipo(id)">Quitar</button>
+            </div>
+            <p class="muted" *ngIf="!selectedEquipos.length">Aún no seleccionas equipos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="stepIndex === 2">
+      <p class="eyebrow">Asignar equipo a empleado</p>
+      <div class="lista">
+        <div class="item-asignacion" *ngFor="let idEmpleado of seleccionados">
+          <div class="fw-semibold">{{ getNombreEmpleado(idEmpleado) }}</div>
+          <select class="form-select" multiple
+                  [ngModel]="asignacionEquipos[idEmpleado] || []"
+                  (ngModelChange)="setEquiposParaEmpleado(idEmpleado, $event)">
+            <option *ngFor="let e of getEquiposSeleccionados()" [ngValue]="e.idEquipo">
+              {{ e.nombreModelo }} ({{ e.nombreTipoEquipo }}) — {{ e.serie }}
+            </option>
+          </select>
+          <div class="muted small" *ngIf="!(asignacionEquipos[idEmpleado]?.length)">Sin equipo asignado</div>
+        </div>
+      </div>
+      <div class="alert alert-warning mt-2" *ngIf="faltanAsignaciones()">
+        Asigna un equipo a cada empleado seleccionado para continuar.
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer-actions">
+    <button mat-button type="button" (click)="cerrarModalAsignar()">Cancelar</button>
+    <button mat-button type="button" (click)="retrocederPaso()" *ngIf="stepIndex > 0">Atrás</button>
+    <button mat-flat-button color="primary" type="button" *ngIf="stepIndex < 2" (click)="avanzarPaso()" [disabled]="(stepIndex === 0 && !seleccionados.length) || (stepIndex === 1 && !selectedEquipos.length)">
+      Siguiente
+    </button>
+    <button mat-flat-button color="primary" type="button" *ngIf="stepIndex === 2" (click)="guardarAsignacionesEnModal()" [disabled]="faltanAsignaciones()">Guardar</button>
+  </div>
+</app-modal-base>
+
+<ng-template #loadingState>
+  <mat-spinner diameter="40"></mat-spinner>
+  <p>Cargando proyecto…</p>
+</ng-template>
+
+<ng-template #sinRecursos>
+  <p class="muted">Sin recursos asignados.</p>
+</ng-template>
+
+<ng-template #errorState>
+  <p class="estado-centro" *ngIf="error">{{ error }}</p>
+</ng-template>

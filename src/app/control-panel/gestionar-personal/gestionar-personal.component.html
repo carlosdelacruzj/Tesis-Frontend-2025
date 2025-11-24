@@ -40,9 +40,9 @@
       </ng-template>
 
       <ng-template appCell="estado" let-row>
-        <span class="badge" [class.bg-success]="row.estado === 'DISPONIBLE'"
-          [class.bg-danger]="row.estado === 'NO_DISPONIBLE'" [class.bg-secondary]="!row.estado">
-          {{ row.estado || (row.autonomo === 2 || row.autonomo === 'SI' ? 'Autónomo' : 'Dependiente') }}
+        <span class="badge" [class.bg-success]="row.idEstado === 1"
+          [class.bg-danger]="row.idEstado === 2" [class.bg-secondary]="!row.idEstado">
+          {{ getEstadoTexto(row.estado, row.idEstado) }}
         </span>
       </ng-template>
 
@@ -151,8 +151,8 @@
         <div class="col-12 col-md-6">
           <label class="form-label">Estado</label>
           <select class="form-select" name="idEstado" [(ngModel)]="nuevoEmpleado.idEstado" required>
-            <option [ngValue]="1">Disponible</option>
-            <option [ngValue]="2">No disponible</option>
+            <option [ngValue]="1">Activo</option>
+            <option [ngValue]="2">Inactivo</option>
           </select>
         </div>
 
@@ -253,8 +253,8 @@
         <div class="col-12 col-md-6">
           <label class="form-label">Estado</label>
           <select class="form-select" name="Estado" #Estado="ngModel" [(ngModel)]="selected.idEstado" required>
-            <option [ngValue]="1">Disponible</option>
-            <option [ngValue]="2">No disponible</option>
+            <option [ngValue]="1">Activo</option>
+            <option [ngValue]="2">Inactivo</option>
           </select>
           <div class="invalid-feedback d-block" *ngIf="Estado.invalid && (Estado.dirty || Estado.touched)">
             <span>Campo requerido</span>
@@ -342,7 +342,7 @@
         <div class="col-12 col-md-6">
           <label class="form-label">Estado</label>
           <input type="text" class="form-control" name="Estado"
-            [ngModel]="selected.estado || (selected?.autonomo === 2 || selected?.autonomo === 'SI' ? 'Autónomo' : 'Dependiente')" disabled>
+            [ngModel]="getEstadoTexto(selected?.estado, selected?.idEstado)" disabled>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">Autónomo</label>

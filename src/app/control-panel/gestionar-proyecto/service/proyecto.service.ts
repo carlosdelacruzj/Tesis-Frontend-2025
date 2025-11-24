@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Proyecto, ProyectoPayload } from '../model/proyecto.model';
+import { Proyecto, ProyectoDetalle, ProyectoPayload } from '../model/proyecto.model';
+import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProyectoService {
@@ -14,8 +15,12 @@ export class ProyectoService {
     return this.http.get<Proyecto[]>(this.API);
   }
 
-  getProyecto(id: number): Observable<Proyecto> {
-    return this.http.get<Proyecto>(`${this.API}/${id}`);
+  getProyecto(id: number): Observable<ProyectoDetalle> {
+    return this.http.get<ProyectoDetalle>(`${this.API}/${id}`);
+  }
+
+  getPedidoRequerimientos(pedidoId: number): Observable<PedidoRequerimientos> {
+    return this.http.get<PedidoRequerimientos>(`${environment.baseUrl}/pedido/${pedidoId}/requerimientos`);
   }
 
   crearProyecto(payload: ProyectoPayload): Observable<Proyecto> {

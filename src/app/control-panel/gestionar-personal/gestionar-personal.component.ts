@@ -43,6 +43,13 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
   apellidoPattern = '^[a-zA-Z ]{2,30}$';
   docPattern = '^[0-9]{1}[0-9]{7}$';
 
+  getEstadoTexto(estado?: string, idEstado?: number): string {
+    if (estado) return estado;
+    if (idEstado === 1) return 'Activo';
+    if (idEstado === 2) return 'Inactivo';
+    return '—';
+  }
+
   private readonly destroy$ = new Subject<void>();
 
   @ViewChild('createForm') createForm?: NgForm;
@@ -150,7 +157,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       correo: v.Correo ?? this.selected.correo,
       celular: v.Celular ?? this.selected.celular,
       direccion: v.Direccion ?? this.selected.direccion,
-      idEstado: v.Estado !== undefined && v.Estado !== null ? Number(v.Estado) : this.selected.idEstado
+      idEstado: v.Estado !== undefined && v.Estado !== null ? Number(v.Estado) as 1 | 2 : this.selected.idEstado
     };
 
     if (empleadoForm.invalid) {
@@ -338,7 +345,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
     const payload: Partial<Empleado> = {
       ...this.nuevoEmpleado,
       idCargo: Number(this.nuevoEmpleado.idCargo),
-      idEstado: this.nuevoEmpleado.idEstado !== undefined ? Number(this.nuevoEmpleado.idEstado) : undefined,
+      idEstado: this.nuevoEmpleado.idEstado !== undefined ? Number(this.nuevoEmpleado.idEstado) as 1 | 2 : undefined,
       autonomo: Number(this.nuevoEmpleado.autonomo) as 1 | 2
     };
 

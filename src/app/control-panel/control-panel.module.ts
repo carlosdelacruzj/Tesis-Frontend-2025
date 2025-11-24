@@ -41,6 +41,7 @@ import { GestionarCotizacionesComponent } from './gestionar-cotizaciones/gestion
 import { RegistrarCotizacionComponent } from './gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component';
 import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
 import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proyecto.component';
+import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/detalle-proyecto.component';
 
 @NgModule({
   declarations: [
@@ -69,7 +70,8 @@ import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proye
     GestionarCotizacionesComponent,
     RegistrarCotizacionComponent,
     EditarCotizacionComponent,
-    GestionarProyectoComponent
+    GestionarProyectoComponent,
+    DetalleProyectoComponent
   ],
   imports: [
     CommonModule,
