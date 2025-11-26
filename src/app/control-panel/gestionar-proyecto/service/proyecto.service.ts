@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Proyecto, ProyectoDetalle, ProyectoPayload } from '../model/proyecto.model';
+import { Proyecto, ProyectoDetalle, ProyectoPayload, ProyectoRecurso } from '../model/proyecto.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 
 @Injectable({ providedIn: 'root' })
@@ -33,5 +33,22 @@ export class ProyectoService {
 
   getEstados(): Observable<any[]> {
     return this.http.get<any[]>(`${this.API}/estados`);
+  }
+
+  guardarRecursos(payload: {
+    proyectoId: number;
+    asignaciones: Array<{
+      empleadoId: number | null;
+      equipoId: number;
+      fechaInicio: string;
+      fechaFin: string;
+      notas: string;
+    }>;
+  }): Observable<void> {
+    return this.http.post<void>(`${this.API}/recursos`, payload);
+  }
+
+  getAsignaciones(proyectoId: number): Observable<ProyectoRecurso[]> {
+    return this.http.get<ProyectoRecurso[]>(`${this.API}/${proyectoId}/asignaciones`);
   }
 }

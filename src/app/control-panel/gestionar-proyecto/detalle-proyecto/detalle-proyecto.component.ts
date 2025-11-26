@@ -2,6 +2,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import Swal from 'sweetalert2';
 
 import { ProyectoDetalle } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
@@ -10,6 +12,7 @@ import { AdministrarEquiposService } from '../../administrar-equipos/service/adm
 import { EquipoInventario } from '../../administrar-equipos/models/equipo-inventario.model';
 import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
+import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
 
 @Component({
   selector: 'app-detalle-proyecto',
@@ -21,6 +24,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   error: string | null = null;
   proyecto: ProyectoDetalle | null = null;
   requerimientos: PedidoRequerimientos | null = null;
+  pedidoDetalle: any = null;
 
   formAsignacion: UntypedFormGroup = this.fb.group({
     empleadoId: [null, Validators.required],
@@ -29,16 +33,29 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   disponiblesPersonal: EmpleadoOperativo[] = [];
   equiposDisponibles: EquipoInventario[] = [];
-  asignacionesPendientes: Array<{ empleadoId: number; equipoIds: number[] }> = [];
+  asignacionesPendientes: Array<{
+    empleadoId: number | null;
+    equipoId: number;
+    fechaInicio: string;
+    fechaFin: string;
+    notas: string;
+  }> = [];
   modalAsignarAbierto = false;
   filtroRol: string | null = null;
   filtroTipoEquipoId: number | null = null;
   seleccionados: number[] = [];
-  asignacionEquipos: Record<number, number[]> = {};
   selectedEquipos: number[] = [];
   stepIndex = 0;
   rolesOperativos: string[] = [];
   tiposEquipo: TipoEquipo[] = [];
+  tableroAsignacion: { reserva: number[]; empleados: Record<number, number[]> } = { reserva: [], empleados: {} };
+  recursosColumns = [
+    { key: 'empleadoNombre', header: 'Empleado', sortable: true },
+    { key: 'modelo', header: 'Equipo', sortable: true },
+    { key: 'equipoSerie', header: 'Serie', sortable: true },
+    { key: 'tipoEquipo', header: 'Tipo', sortable: true }
+  ];
+  dropListIds: string[] = [];
 
   private readonly destroy$ = new Subject<void>();
 
@@ -47,6 +64,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     private readonly proyectoService: ProyectoService,
     private readonly personalService: PersonalService,
     private readonly equiposService: AdministrarEquiposService,
+    private readonly visualizarService: VisualizarService,
     private readonly fb: UntypedFormBuilder
   ) { }
 
@@ -68,6 +86,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.proyecto = data;
+          this.loadPedido(data.pedidoId);
+          this.loadAsignaciones(data.proyectoId);
           this.loadDisponiblesPersonal(data.proyectoId);
           this.loadEquipos();
           this.loadRequerimientos(data.pedidoId);
@@ -84,50 +104,149 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   abrirModalAsignar(): void {
     this.modalAsignarAbierto = true;
     this.seleccionados = [];
-    this.asignacionEquipos = {};
     this.filtroRol = null;
     this.filtroTipoEquipoId = null;
     this.selectedEquipos = [];
+    this.tableroAsignacion = { reserva: [], empleados: {} };
+    this.dropListIds = [];
+    this.asignacionesPendientes = [];
     this.stepIndex = 0;
+
+    const recursos = this.proyecto?.recursos ?? [];
+    if (recursos.length) {
+      const empleadosMap: Record<number, number[]> = {};
+      const empleadosSet = new Set<number>();
+      const equiposSet = new Set<number>();
+      const reserva: number[] = [];
+
+      recursos.forEach(r => {
+        equiposSet.add(r.equipoId);
+        if (r.empleadoId) {
+          empleadosSet.add(r.empleadoId);
+          empleadosMap[r.empleadoId] = empleadosMap[r.empleadoId] || [];
+          empleadosMap[r.empleadoId].push(r.equipoId);
+        } else {
+          reserva.push(r.equipoId);
+        }
+      });
+
+      this.seleccionados = Array.from(empleadosSet);
+      this.selectedEquipos = Array.from(equiposSet);
+      const empleadosAsign = Array.from(empleadosSet).reduce<Record<number, number[]>>((acc, id) => {
+        acc[id] = empleadosMap[id] ?? [];
+        return acc;
+      }, {});
+      this.tableroAsignacion = { reserva, empleados: empleadosAsign };
+      this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
+    }
   }
 
   cerrarModalAsignar(): void {
     this.modalAsignarAbierto = false;
   }
 
-  toggleSeleccionEmpleado(idEmpleado: number): void {
+  async toggleSeleccionEmpleado(idEmpleado: number): Promise<void> {
     if (this.seleccionados.includes(idEmpleado)) {
+      const confirm = await Swal.fire({
+        title: 'Quitar empleado',
+        text: '¿Seguro que quieres quitar a este empleado de las asignaciones?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, quitar',
+        cancelButtonText: 'Cancelar',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      });
+      if (!confirm.isConfirmed) return;
+
       this.seleccionados = this.seleccionados.filter(id => id !== idEmpleado);
-      delete this.asignacionEquipos[idEmpleado];
+      if (this.tableroAsignacion.empleados[idEmpleado]?.length) {
+        this.tableroAsignacion.reserva.push(...this.tableroAsignacion.empleados[idEmpleado]);
+      }
+      delete this.tableroAsignacion.empleados[idEmpleado];
+      this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
       return;
     }
     this.seleccionados = [...this.seleccionados, idEmpleado];
-    this.asignacionEquipos[idEmpleado] = [];
   }
 
-  toggleSeleccionEquipo(idEquipo: number): void {
+  async toggleSeleccionEquipo(idEquipo: number): Promise<void> {
     if (this.selectedEquipos.includes(idEquipo)) {
+      const confirm = await Swal.fire({
+        title: 'Quitar equipo',
+        text: '¿Seguro que quieres quitar este equipo de la asignación?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, quitar',
+        cancelButtonText: 'Cancelar',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      });
+      if (!confirm.isConfirmed) return;
+
       this.selectedEquipos = this.selectedEquipos.filter(id => id !== idEquipo);
-      this.clearAsignacionesParaEquipo(idEquipo);
+      this.quitarEquipoDeTablero(idEquipo);
       return;
     }
     this.selectedEquipos = [...this.selectedEquipos, idEquipo];
   }
 
-  setEquiposParaEmpleado(idEmpleado: number, equipos: number[]): void {
-    this.asignacionEquipos = { ...this.asignacionEquipos, [idEmpleado]: equipos || [] };
-  }
-
   guardarAsignacionesEnModal(): void {
-    const asignaciones = this.seleccionados
-      .map(idEmpleado => ({
-        empleadoId: idEmpleado,
-        equipoIds: this.asignacionEquipos[idEmpleado] ?? []
-      }))
-      .filter(p => p.equipoIds.length);
-    if (!asignaciones.length) return;
+    if (!this.proyecto?.proyectoId) {
+      return;
+    }
+
+    this.limpiarEquiposNoSeleccionados();
+
+    const { inicio, fin } = this.getRangoPedido();
+    const asignaciones: Array<{
+      empleadoId: number | null;
+      equipoId: number;
+      fechaInicio: string;
+      fechaFin: string;
+      notas: string;
+    }> = [];
+
+    Object.entries(this.tableroAsignacion.empleados)
+      .filter(([empleadoId]) => this.seleccionados.includes(Number(empleadoId)))
+      .forEach(([empleadoId, lista]) => {
+        lista.forEach(eqId => {
+          if (!this.selectedEquipos.includes(eqId)) return;
+          asignaciones.push({
+            empleadoId: Number(empleadoId),
+            equipoId: eqId,
+            fechaInicio: inicio,
+            fechaFin: fin,
+            notas: ''
+          });
+        });
+      });
+
+    this.tableroAsignacion.reserva.forEach(eqId => {
+      if (!this.selectedEquipos.includes(eqId)) return;
+      asignaciones.push({
+        empleadoId: null,
+        equipoId: eqId,
+        fechaInicio: inicio,
+        fechaFin: fin,
+        notas: 'Reserva'
+      });
+    });
+
     this.asignacionesPendientes = asignaciones;
-    this.cerrarModalAsignar();
+
+    this.proyectoService.guardarRecursos({
+      proyectoId: this.proyecto.proyectoId,
+      asignaciones
+    }).subscribe({
+      next: () => {
+        this.cerrarModalAsignar();
+        this.loadAsignaciones(this.proyecto?.proyectoId ?? 0);
+      },
+      error: (err) => {
+        console.error('[proyecto] guardar recursos', err);
+      }
+    });
   }
 
   getPersonalFiltrado(): EmpleadoOperativo[] {
@@ -161,24 +280,41 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return excedido && !this.seleccionados.includes(p.empleadoId);
   }
 
-  quitarSeleccion(idEmpleado: number): void {
+  async quitarSeleccion(idEmpleado: number): Promise<void> {
+    const confirm = await Swal.fire({
+      title: 'Quitar empleado',
+      text: '¿Seguro que quieres quitar a este empleado de las asignaciones?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, quitar',
+      cancelButtonText: 'Cancelar',
+      allowOutsideClick: false,
+      allowEscapeKey: false
+    });
+    if (!confirm.isConfirmed) return;
+
     this.seleccionados = this.seleccionados.filter(id => id !== idEmpleado);
-    delete this.asignacionEquipos[idEmpleado];
+    if (this.tableroAsignacion.empleados[idEmpleado]?.length) {
+      this.tableroAsignacion.reserva.push(...this.tableroAsignacion.empleados[idEmpleado]);
+    }
+    delete this.tableroAsignacion.empleados[idEmpleado];
+    this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
   }
 
   getEquipoCupo(tipoEquipoId: number | null): number | null {
     if (!tipoEquipoId || !this.requerimientos?.totales?.equipos?.length) return null;
     const found = this.requerimientos.totales.equipos.find(req => req.tipoEquipoId === tipoEquipoId);
-    return found ? found.cantidad : 0;
+    return found ? found.cantidad : 0; // tipos no requeridos quedan con cupo 0
   }
 
   isEquipoDisabled(e: EquipoInventario): boolean {
     const cupo = this.getEquipoCupo(e.idTipoEquipo);
-    if (!cupo) return false;
+    if (cupo === null) return false;
     const seleccionadosTipo = this.selectedEquipos
       .map(id => this.equiposDisponibles.find(eq => eq.idEquipo === id))
       .filter(eq => eq && eq.idTipoEquipo === e.idTipoEquipo).length;
-    return seleccionadosTipo >= cupo && !this.selectedEquipos.includes(e.idEquipo);
+    const excedido = cupo === 0 || seleccionadosTipo >= cupo;
+    return excedido && !this.selectedEquipos.includes(e.idEquipo);
   }
 
   getSeleccionadosEquipoPorTipo(tipoEquipoId: number | null): number {
@@ -188,9 +324,55 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .filter(eq => eq && eq.idTipoEquipo === tipoEquipoId).length;
   }
 
+  irAlPaso(target: number): void {
+    if (target === this.stepIndex) return;
+    if (target < 0 || target > 2) return;
+    if (target === 0) {
+      this.stepIndex = 0;
+      return;
+    }
+    if (target === 1) {
+      if (!this.seleccionados.length) return;
+      this.stepIndex = 1;
+      return;
+    }
+    // target === 2
+    if (!this.seleccionados.length || !this.selectedEquipos.length) return;
+    const yaInicializado = this.dropListIds.length > 0 || this.tableroAsignacion.reserva.length || Object.keys(this.tableroAsignacion.empleados).length;
+    if (!yaInicializado) {
+      this.inicializarTableroAsignacion();
+    }
+    this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
+    this.stepIndex = 2;
+  }
+
   avanzarPaso(): void {
     if (this.stepIndex === 0 && !this.seleccionados.length) return;
     if (this.stepIndex === 1 && !this.selectedEquipos.length) return;
+    if (this.stepIndex === 1) {
+      const empleadosActuales = new Set<number>(this.seleccionados);
+      this.seleccionados.forEach(id => {
+        if (!this.tableroAsignacion.empleados[id]) {
+          this.tableroAsignacion.empleados[id] = [];
+        }
+      });
+
+      const equiposYaUbicados = new Set<number>([
+        ...this.tableroAsignacion.reserva,
+        ...Object.values(this.tableroAsignacion.empleados).flat()
+      ]);
+      this.selectedEquipos.forEach(idEq => {
+        if (!equiposYaUbicados.has(idEq)) {
+          this.tableroAsignacion.reserva.push(idEq);
+        }
+      });
+
+      const yaInicializado = this.dropListIds.length > 0 || this.tableroAsignacion.reserva.length || Object.keys(this.tableroAsignacion.empleados).length;
+      if (!yaInicializado) {
+        this.inicializarTableroAsignacion();
+      }
+      this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
+    }
     this.stepIndex = Math.min(2, this.stepIndex + 1);
   }
 
@@ -276,6 +458,35 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
   }
 
+  private loadPedido(pedidoId: number): void {
+    if (!pedidoId) return;
+    this.visualizarService.getPedidoById(pedidoId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => { this.pedidoDetalle = data; },
+        error: (err) => {
+          console.error('[pedido] detalle', err);
+          this.pedidoDetalle = null;
+        }
+      });
+  }
+
+  private loadAsignaciones(proyectoId: number): void {
+    if (!proyectoId) return;
+    this.proyectoService.getAsignaciones(proyectoId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (lista) => {
+          if (this.proyecto) {
+            this.proyecto = { ...this.proyecto, recursos: lista ?? [] };
+          }
+        },
+        error: (err) => {
+          console.error('[proyecto] asignaciones', err);
+        }
+      });
+  }
+
   getNombreEmpleado(id: number | null): string {
     if (!id) return '';
     const found = this.disponiblesPersonal.find(p => p.empleadoId === id);
@@ -296,8 +507,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   faltanAsignaciones(): boolean {
     if (!this.seleccionados.length) return true;
-    const equiposAsignados = this.seleccionados.filter(id => (this.asignacionEquipos[id] ?? []).length > 0);
-    return equiposAsignados.length !== this.seleccionados.length;
+    return this.seleccionados.some(id => !(this.tableroAsignacion.empleados[id]?.length));
   }
 
   getCargoEmpleado(id: number | null): string {
@@ -306,10 +516,76 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return found?.cargo || '';
   }
 
-  private clearAsignacionesParaEquipo(idEquipo: number): void {
-    Object.keys(this.asignacionEquipos).forEach(key => {
-      const numKey = Number(key);
-      this.asignacionEquipos[numKey] = (this.asignacionEquipos[numKey] ?? []).filter(eqId => eqId !== idEquipo);
+  dropEquipo(event: CdkDragDrop<number[]>, destino: 'reserva' | number): void {
+    const targetList = event.container.data as number[];
+    const prevList = event.previousContainer.data as number[];
+
+    if (event.previousContainer === event.container) {
+      moveItemInArray(targetList, event.previousIndex, event.currentIndex);
+    } else {
+      transferArrayItem(prevList, targetList, event.previousIndex, event.currentIndex);
+    }
+
+    if (destino === 'reserva') {
+      this.tableroAsignacion.reserva = targetList;
+    } else {
+      this.tableroAsignacion.empleados[destino] = targetList;
+    }
+  }
+
+  getListaReserva(): number[] {
+    return this.tableroAsignacion.reserva;
+  }
+
+  getListaEmpleado(idEmpleado: number): number[] {
+    if (!this.tableroAsignacion.empleados[idEmpleado]) {
+      this.tableroAsignacion.empleados[idEmpleado] = [];
+    }
+    return this.tableroAsignacion.empleados[idEmpleado];
+  }
+
+  getDropConnections(targetId: string): string[] {
+    return this.dropListIds.filter(id => id !== targetId);
+  }
+
+  private inicializarTableroAsignacion(): void {
+    const reserva = [...this.selectedEquipos];
+    const empleados: Record<number, number[]> = {};
+    this.seleccionados.forEach(id => { empleados[id] = []; });
+    this.tableroAsignacion = { reserva, empleados };
+    this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
+  }
+
+  private quitarEquipoDeTablero(idEquipo: number): void {
+    this.tableroAsignacion.reserva = this.tableroAsignacion.reserva.filter(id => id !== idEquipo);
+    Object.keys(this.tableroAsignacion.empleados).forEach(key => {
+      const k = Number(key);
+      this.tableroAsignacion.empleados[k] = (this.tableroAsignacion.empleados[k] ?? []).filter(id => id !== idEquipo);
     });
+  }
+
+  private limpiarEquiposNoSeleccionados(): void {
+    const seleccionadosSet = new Set(this.selectedEquipos);
+    this.tableroAsignacion.reserva = (this.tableroAsignacion.reserva ?? []).filter(id => seleccionadosSet.has(id));
+    Object.keys(this.tableroAsignacion.empleados).forEach(key => {
+      const k = Number(key);
+      this.tableroAsignacion.empleados[k] = (this.tableroAsignacion.empleados[k] ?? []).filter(id => seleccionadosSet.has(id));
+    });
+  }
+
+  private getRangoPedido(): { inicio: string; fin: string } {
+    const eventos = (this.pedidoDetalle?.eventos ?? []) as Array<{ fecha?: string | null }>;
+    const fechas = eventos
+      .map(e => e.fecha)
+      .filter(f => !!f)
+      .map(f => f as string);
+    if (!fechas.length) {
+      const hoy = new Date().toISOString().split('T')[0];
+      return { inicio: hoy, fin: hoy };
+    }
+    fechas.sort();
+    const inicio = fechas[0];
+    const fin = fechas[fechas.length - 1];
+    return { inicio, fin };
   }
 }

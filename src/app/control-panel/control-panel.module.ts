@@ -42,6 +42,7 @@ import { RegistrarCotizacionComponent } from './gestionar-cotizaciones/registrar
 import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
 import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proyecto.component';
 import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/detalle-proyecto.component';
+import { OrderByEmpleadoPipe } from '../pipes/order-by-empleado.pipe';
 
 @NgModule({
   declarations: [
@@ -88,6 +89,7 @@ import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/
     NgbModule,
     TableBaseComponent,
     CellTemplateDirective,
+    OrderByEmpleadoPipe,
     ListToolbarComponent,
     ModalBaseComponent,
     FormularioBaseComponent

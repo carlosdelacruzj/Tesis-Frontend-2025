@@ -25,13 +25,21 @@ export type ProyectoPayload = Omit<
 export interface ProyectoRecurso {
   recursoId: number;
   proyectoId: number;
-  empleadoId: number;
-  empleadoNombre: string;
+  empleadoId: number | null;
+  empleadoNombre: string | null;
   equipoId: number;
   equipoSerie: string;
   modelo: string;
   tipoEquipo: string;
   estadoEquipoId: number;
+  empleadoFechaInicio?: string | null;
+  empleadoFechaFin?: string | null;
+  empleadoEstado?: string | null;
+  empleadoNotas?: string | null;
+  equipoFechaInicio?: string | null;
+  equipoFechaFin?: string | null;
+  equipoEstado?: string | null;
+  equipoNotas?: string | null;
 }
 
 export interface ProyectoDetalle extends Proyecto {

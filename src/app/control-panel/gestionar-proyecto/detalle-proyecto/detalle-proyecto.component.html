@@ -81,24 +81,24 @@
         </header>
 
         <ng-container *ngIf="proyecto.recursos?.length; else sinRecursos">
-          <table class="recursos-table">
-            <thead>
-              <tr>
-                <th>Empleado</th>
-                <th>Equipo</th>
-                <th>Serie</th>
-                <th>Tipo</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let recurso of proyecto.recursos">
-                <td>{{ recurso.empleadoNombre }}</td>
-                <td>{{ recurso.modelo }}</td>
-                <td>{{ recurso.equipoSerie }}</td>
-                <td>{{ recurso.tipoEquipo }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <app-table-base
+            [data]="proyecto.recursos | orderByEmpleado"
+            [columns]="recursosColumns"
+            [pageSize]="10"
+            [pageSizeOptions]="[5,10,20]"
+            [showCreateButton]="false"
+            [showFooterInfo]="true"
+            [showSearch]="false"
+            [showPagination]="false">
+            <ng-template appCell="empleadoNombre" let-row>
+              <ng-container *ngIf="row.empleadoNombre; else reservaTag">
+                {{ row.empleadoNombre }}
+              </ng-container>
+              <ng-template #reservaTag>
+                <span class="pill pill-muted">Reserva / Repuesto</span>
+              </ng-template>
+            </ng-template>
+          </app-table-base>
         </ng-container>
       </section>
     </ng-container>
@@ -113,9 +113,9 @@
   (closed)="cerrarModalAsignar()">
 
   <div class="stepper">
-    <div class="step" [class.active]="stepIndex === 0">1. Personal</div>
-    <div class="step" [class.active]="stepIndex === 1">2. Equipos</div>
-    <div class="step" [class.active]="stepIndex === 2">3. Asignación</div>
+    <button type="button" class="step" [class.active]="stepIndex === 0" (click)="irAlPaso(0)">1. Personal</button>
+    <button type="button" class="step" [class.active]="stepIndex === 1" (click)="irAlPaso(1)">2. Equipos</button>
+    <button type="button" class="step" [class.active]="stepIndex === 2" (click)="irAlPaso(2)">3. Asignación</button>
   </div>
 
   <div class="modal-content-grid">
@@ -232,24 +232,57 @@
     </div>
 
     <div *ngIf="stepIndex === 2">
-      <p class="eyebrow">Asignar equipo a empleado</p>
-      <div class="lista">
-        <div class="item-asignacion" *ngFor="let idEmpleado of seleccionados">
-          <div class="fw-semibold">{{ getNombreEmpleado(idEmpleado) }}</div>
-          <select class="form-select" multiple
-                  [ngModel]="asignacionEquipos[idEmpleado] || []"
-                  (ngModelChange)="setEquiposParaEmpleado(idEmpleado, $event)">
-            <option *ngFor="let e of getEquiposSeleccionados()" [ngValue]="e.idEquipo">
-              {{ e.nombreModelo }} ({{ e.nombreTipoEquipo }}) — {{ e.serie }}
-            </option>
-          </select>
-          <div class="muted small" *ngIf="!(asignacionEquipos[idEmpleado]?.length)">Sin equipo asignado</div>
+      <p class="eyebrow">Asignar equipos (Drag & Drop)</p>
+      <div class="kanban-layout">
+        <div class="kanban-column kanban-reserva">
+          <div class="kanban-header">
+            <div class="fw-semibold">Sin asignar / Reserva</div>
+            <div class="muted small">{{ getListaReserva().length }} equipo(s)</div>
+          </div>
+          <div
+            cdkDropList
+            id="reserva"
+            [cdkDropListConnectedTo]="getDropConnections('reserva')"
+            [cdkDropListData]="getListaReserva()"
+            class="kanban-dropzone"
+            (cdkDropListDropped)="dropEquipo($event, 'reserva')">
+            <div class="kanban-card" *ngFor="let eqId of getListaReserva()" cdkDrag>
+              <div class="fw-semibold">{{ getEquipoLabel(eqId) }}</div>
+              <div class="muted small">{{ getTipoEquipoNombre(eqId) }}</div>
+            </div>
+            <p class="muted" *ngIf="!getListaReserva().length">Arrastra equipos aquí para dejarlos en reserva.</p>
+          </div>
+        </div>
+
+        <div class="kanban-empleados-grid">
+          <div class="kanban-column" *ngFor="let id of seleccionados">
+            <div class="kanban-header">
+              <div class="fw-semibold">{{ getNombreEmpleado(id) }}</div>
+              <div class="muted small">{{ getCargoEmpleado(id) }}</div>
+              <div class="muted small">{{ getListaEmpleado(id).length }} equipo(s)</div>
+            </div>
+            <div
+              cdkDropList
+              [id]="'emp-' + id"
+              [cdkDropListConnectedTo]="getDropConnections('emp-' + id)"
+              [cdkDropListData]="getListaEmpleado(id)"
+              class="kanban-dropzone"
+              (cdkDropListDropped)="dropEquipo($event, id)">
+              <div class="kanban-card" *ngFor="let eqId of getListaEmpleado(id)" cdkDrag>
+                <div class="fw-semibold">{{ getEquipoLabel(eqId) }}</div>
+                <div class="muted small">{{ getTipoEquipoNombre(eqId) }}</div>
+              </div>
+              <p class="muted" *ngIf="!getListaEmpleado(id).length">Arrastra equipos aquí para asignarlos.</p>
+            </div>
+          </div>
         </div>
       </div>
+
       <div class="alert alert-warning mt-2" *ngIf="faltanAsignaciones()">
-        Asigna un equipo a cada empleado seleccionado para continuar.
+        Asigna al menos un equipo a cada empleado; los demás pueden quedar en reserva.
       </div>
     </div>
+
   </div>
 
   <div class="modal-footer-actions">
@@ -258,7 +291,9 @@
     <button mat-flat-button color="primary" type="button" *ngIf="stepIndex < 2" (click)="avanzarPaso()" [disabled]="(stepIndex === 0 && !seleccionados.length) || (stepIndex === 1 && !selectedEquipos.length)">
       Siguiente
     </button>
-    <button mat-flat-button color="primary" type="button" *ngIf="stepIndex === 2" (click)="guardarAsignacionesEnModal()" [disabled]="faltanAsignaciones()">Guardar</button>
+    <button mat-flat-button color="primary" type="button" *ngIf="stepIndex === 2" (click)="guardarAsignacionesEnModal()" [disabled]="faltanAsignaciones()">
+      Guardar
+    </button>
   </div>
 </app-modal-base>
 
