@@ -69,11 +69,31 @@
         </div>
       </section>
 
+      <section class="card" *ngIf="getEventosPedido().length">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Locaciones del pedido</p>
+            <h3>Locaciones ({{ getEventosPedido().length }})</h3>
+            <p class="muted small" *ngIf="getPedidoRangoFechas() as rango">
+              Rango: {{ rango.inicio }} → {{ rango.fin }}
+            </p>
+          </div>
+        </header>
+        <app-table-base
+          [data]="getEventosPedido()"
+          [columns]="eventosColumns"
+          [showCreateButton]="false"
+          [showSearch]="false"
+          [showPagination]="false"
+          [showFooterInfo]="false">
+        </app-table-base>
+      </section>
+
       <section class="card">
         <header class="card-header">
           <div>
-            <p class="eyebrow">Recursos asignados</p>
-            <h3>{{ proyecto.recursos?.length || 0 }} recurso(s)</h3>
+            <p class="eyebrow">Recursos y staff</p>
+            <h3>Asignaciones ({{ proyecto.recursos?.length || 0 }})</h3>
           </div>
           <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
             Asignar recursos

@@ -55,6 +55,13 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     { key: 'equipoSerie', header: 'Serie', sortable: true },
     { key: 'tipoEquipo', header: 'Tipo', sortable: true }
   ];
+  eventosColumns = [
+    { key: 'fecha', header: 'Fecha', sortable: true },
+    { key: 'hora', header: 'Hora', sortable: true },
+    { key: 'ubicacion', header: 'Locación', sortable: true },
+    { key: 'direccion', header: 'Dirección', sortable: true },
+    { key: 'notas', header: 'Notas', sortable: false }
+  ];
   dropListIds: string[] = [];
 
   private readonly destroy$ = new Subject<void>();
@@ -548,6 +555,16 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return this.dropListIds.filter(id => id !== targetId);
   }
 
+  getEventosPedido(): any[] {
+    const eventos = this.pedidoDetalle?.eventos;
+    if (!Array.isArray(eventos)) return [];
+    return [...eventos].sort((a, b) => {
+      const fa = (a?.fecha ?? '').toString();
+      const fb = (b?.fecha ?? '').toString();
+      return fa.localeCompare(fb);
+    });
+  }
+
   private inicializarTableroAsignacion(): void {
     const reserva = [...this.selectedEquipos];
     const empleados: Record<number, number[]> = {};
@@ -571,6 +588,17 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       const k = Number(key);
       this.tableroAsignacion.empleados[k] = (this.tableroAsignacion.empleados[k] ?? []).filter(id => seleccionadosSet.has(id));
     });
+  }
+
+  getPedidoRangoFechas(): { inicio: string; fin: string } | null {
+    const eventos = (this.pedidoDetalle?.eventos ?? []) as Array<{ fecha?: string | null }>;
+    const fechas = eventos
+      .map(e => e.fecha)
+      .filter(f => !!f)
+      .map(f => f as string);
+    if (!fechas.length) return null;
+    fechas.sort();
+    return { inicio: fechas[0], fin: fechas[fechas.length - 1] };
   }
 
   private getRangoPedido(): { inicio: string; fin: string } {
