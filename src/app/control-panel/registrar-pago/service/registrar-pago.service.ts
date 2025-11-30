@@ -7,7 +7,7 @@ import { MetodoPago } from '../model/metodopago.model';
 export interface PedidoLite {
   IdPed: number;
   Nombre: string;
-  Fecha: string; // ISO
+  Fecha: string; // YYYY-MM-DD
 }
 export interface ResumenPago {
   CostoTotal: number;

@@ -466,8 +466,8 @@ downloadPdf(
   private preparePayload(payload: CotizacionPayload, id: number): CotizacionPayload {
     const contacto = payload?.contacto ? { ...payload.contacto } : ({} as CotizacionContactoPayload);
     const contexto = payload?.contexto ? { ...payload.contexto } : {};
-    const detalleInput: CotizacionDetallePayload = payload?.cotizacion ?? { fechaEvento: new Date().toISOString() };
-    const fechaEvento = detalleInput.fechaEvento ?? new Date().toISOString();
+    const detalleInput: CotizacionDetallePayload = payload?.cotizacion ?? { fechaEvento: new Date().toISOString().slice(0, 10) };
+    const fechaEvento = this.formatDateForBackend(detalleInput.fechaEvento) ?? new Date().toISOString().slice(0, 10);
     const horasEstimadas = detalleInput.horasEstimadas ?? this.parseHorasToNumber(contexto.horasEstimadasTexto);
     const totalEstimado = detalleInput.totalEstimado != null ? Number(detalleInput.totalEstimado) : undefined;
 
@@ -704,7 +704,7 @@ downloadPdf(
 
   private toPublicBackendPayload(payload: CotizacionPublicPayload): Record<string, unknown> {
     const contactoInput = payload?.contacto ?? {};
-    const cotizacionInput = payload?.cotizacion ?? { fechaEvento: new Date().toISOString() };
+    const cotizacionInput = payload?.cotizacion ?? { fechaEvento: new Date().toISOString().slice(0, 10) };
 
     const contactoOutbound = this.hasContactoContent(contactoInput)
       ? this.cleanObject({
@@ -771,7 +771,7 @@ downloadPdf(
       ?? api.fecha_evento
       ?? detalleApi?.fechaCreacion
       ?? api.fechaCreacion
-      ?? new Date().toISOString();
+      ?? new Date().toISOString().slice(0, 10);
     const fechaEvento = this.normalizeIsoDate(fechaEventoRaw);
 
     const horasRaw = detalleApi?.horasEstimadas
@@ -982,23 +982,27 @@ downloadPdf(
 
   private normalizeIsoDate(value: unknown): string {
     if (value instanceof Date && !Number.isNaN(value.valueOf())) {
-      return value.toISOString();
+      return value.toISOString().slice(0, 10);
     }
     if (typeof value === 'string') {
+      const formatted = this.formatDateForBackend(value);
+      if (formatted) {
+        return formatted;
+      }
       const trimmed = value.trim();
       if (trimmed) {
         const direct = new Date(trimmed);
         if (!Number.isNaN(direct.valueOf())) {
-          return direct.toISOString();
+          return direct.toISOString().slice(0, 10);
         }
         const normalized = trimmed.replace(' ', 'T');
         const parsed = new Date(normalized);
         if (!Number.isNaN(parsed.valueOf())) {
-          return parsed.toISOString();
+          return parsed.toISOString().slice(0, 10);
         }
       }
     }
-    return new Date().toISOString();
+    return new Date().toISOString().slice(0, 10);
   }
 
   private applyFilters(data: Array<Cotizacion & { raw?: CotizacionPayload }>, filters?: Record<string, string | number | null | undefined>): Cotizacion[] {

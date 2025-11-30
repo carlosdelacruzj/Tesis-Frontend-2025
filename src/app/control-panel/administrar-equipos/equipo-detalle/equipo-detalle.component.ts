@@ -1,11 +1,12 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import { AdministrarEquiposService } from '../service/administrar-equipos.service';
 import { EquipoInventario } from '../models/equipo-inventario.model';
 import { Modelo } from '../models/modelo.model';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
+import { ProyectoAfectado } from '../models/proyecto-afectado.model';
 
 interface EstadoInventario {
   idEstado: number;
@@ -28,6 +29,7 @@ interface FiltrosDetalle {
 })
 export class EquipoDetalleComponent implements OnInit, OnDestroy {
   private readonly estadoDisponibleNombre = 'Disponible';
+  private readonly estadoBajaNombre = 'De baja';
   filtros: FiltrosDetalle = {};
   equipos: EquipoInventario[] = [];
   busqueda = '';
@@ -352,10 +354,43 @@ export class EquipoDetalleComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.equipoEstaDeBaja(this.estadoModal.equipo)) {
+      this.estadoModal.error = 'Los equipos dados de baja no pueden cambiar de estado.';
+      return;
+    }
+
+    const estadoDestino = this.estadosDisponibles.find((estado) => estado.idEstado === this.estadoModal.idEstado);
+    let proyectosAfectados: ProyectoAfectado[] = [];
+
+    if (this.esEstadoCritico(estadoDestino)) {
+      this.estadoModal.cargando = true;
+      try {
+        proyectosAfectados = await this.obtenerProyectosAfectados(this.estadoModal.equipo.idEquipo);
+      } catch (error) {
+        console.error('Error al obtener proyectos afectados', error);
+        this.estadoModal.error = 'No se pudieron cargar los proyectos afectados. Intenta nuevamente.';
+        this.estadoModal.cargando = false;
+        return;
+      }
+      this.estadoModal.cargando = false;
+    }
+
+    const advertenciaHtml = proyectosAfectados.length
+      ? `<div class="text-start"><p class="mb-2">Proyectos que podrían verse afectados:</p><ul class="mb-0 ps-3">${proyectosAfectados
+          .map(
+            (proyecto) =>
+              `<li><strong>${proyecto.nombreProyecto}</strong> · ${this.formatearFechaCorta(
+                proyecto.fechaEventoInicio || proyecto.fechaInicio
+              )}</li>`
+          )
+          .join('')}</ul></div>`
+      : '';
+
     const { isConfirmed } = await Swal.fire({
       icon: 'question',
       title: 'Confirmar cambio',
       text: '¿Deseas cambiar el estado del equipo?',
+      html: advertenciaHtml || undefined,
       showCancelButton: true,
       confirmButtonText: 'Sí, cambiar',
       cancelButtonText: 'Cancelar',
@@ -416,5 +451,35 @@ export class EquipoDetalleComponent implements OnInit, OnDestroy {
       (estado) => estado.nombreEstado?.toLowerCase() === this.estadoDisponibleNombre.toLowerCase()
     );
     return encontrado ? encontrado.idEstado : null;
+  }
+
+  get equipoEnBaja(): boolean {
+    return this.equipoEstaDeBaja(this.estadoModal.equipo);
+  }
+
+  private equipoEstaDeBaja(equipo: EquipoInventario | null): boolean {
+    if (!equipo?.nombreEstado) {
+      return false;
+    }
+    return equipo.nombreEstado.toLowerCase() === this.estadoBajaNombre.toLowerCase();
+  }
+
+  private esEstadoCritico(estado?: EstadoInventario): boolean {
+    if (!estado?.nombreEstado) {
+      return false;
+    }
+    const nombre = estado.nombreEstado.toLowerCase();
+    return nombre.includes('baja') || nombre.includes('manten');
+  }
+
+  private async obtenerProyectosAfectados(idEquipo: number): Promise<ProyectoAfectado[]> {
+    return firstValueFrom(this.administrarEquiposService.getProyectosAfectados(idEquipo));
+  }
+
+  private formatearFechaCorta(fechaIso?: string): string {
+    if (!fechaIso) {
+      return '';
+    }
+    return new Date(fechaIso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }

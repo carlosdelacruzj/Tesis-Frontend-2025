@@ -215,7 +215,7 @@
             name="estadoNuevoSelect"
             class="form-select"
             required
-            [disabled]="estadoModal.cargando || !estadosDisponibles.length"
+            [disabled]="estadoModal.cargando || !estadosDisponibles.length || equipoEnBaja"
             [(ngModel)]="estadoModal.idEstado"
           >
             <option [ngValue]="null" disabled>Selecciona un estado</option>
@@ -223,6 +223,9 @@
               {{ estado.nombreEstado }}
             </option>
           </select>
+          <div class="form-text" *ngIf="equipoEnBaja">
+            Un equipo dado de baja no puede cambiar a otro estado.
+          </div>
         </div>
 
         <div class="col-12">
@@ -236,7 +239,12 @@
       <button class="btn btn-outline-secondary" type="button" (click)="cerrarModalEstado()" [disabled]="estadoModal.cargando">
         Cancelar
       </button>
-      <button class="btn btn-primary" type="submit" form="cambiarEstadoForm" [disabled]="estadoModal.cargando || !estadoModal.idEstado">
+      <button
+        class="btn btn-primary"
+        type="submit"
+        form="cambiarEstadoForm"
+        [disabled]="estadoModal.cargando || !estadoModal.idEstado || equipoEnBaja"
+      >
         Guardar cambios
       </button>
     </div>

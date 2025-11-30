@@ -7,12 +7,12 @@ import Swal from 'sweetalert2';
 
 import { ProyectoDetalle } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
-import { PersonalService, EmpleadoOperativo, Cargo } from '../../gestionar-personal/service/personal.service';
+import { PersonalService, Cargo } from '../../gestionar-personal/service/personal.service';
 import { AdministrarEquiposService } from '../../administrar-equipos/service/administrar-equipos.service';
-import { EquipoInventario } from '../../administrar-equipos/models/equipo-inventario.model';
 import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
+import { DisponibilidadEmpleado, DisponibilidadEquipo } from '../model/proyecto-disponibilidad.model';
 
 @Component({
   selector: 'app-detalle-proyecto',
@@ -31,8 +31,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     equipoId: [null, Validators.required]
   });
 
-  disponiblesPersonal: EmpleadoOperativo[] = [];
-  equiposDisponibles: EquipoInventario[] = [];
+  disponiblesPersonal: DisponibilidadEmpleado[] = [];
+  equiposDisponibles: DisponibilidadEquipo[] = [];
   asignacionesPendientes: Array<{
     empleadoId: number | null;
     equipoId: number;
@@ -54,6 +54,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     { key: 'modelo', header: 'Equipo', sortable: true },
     { key: 'equipoSerie', header: 'Serie', sortable: true },
     { key: 'tipoEquipo', header: 'Tipo', sortable: true }
+  ];
+  serviciosColumns = [
+    { key: 'nombre', header: 'Título', sortable: true },
+    { key: 'evento', header: 'Evento', sortable: true },
+    { key: 'precio', header: 'Precio', sortable: true },
+    { key: 'notas', header: 'Notas', sortable: false }
   ];
   eventosColumns = [
     { key: 'fecha', header: 'Fecha', sortable: true },
@@ -95,8 +101,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           this.proyecto = data;
           this.loadPedido(data.pedidoId);
           this.loadAsignaciones(data.proyectoId);
-          this.loadDisponiblesPersonal(data.proyectoId);
-          this.loadEquipos();
           this.loadRequerimientos(data.pedidoId);
           this.loadRolesOperativos();
           this.loadTiposEquipos();
@@ -256,9 +260,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     });
   }
 
-  getPersonalFiltrado(): EmpleadoOperativo[] {
-    if (!this.filtroRol) return this.disponiblesPersonal;
-    return this.disponiblesPersonal.filter(p =>
+  getPersonalFiltrado(): DisponibilidadEmpleado[] {
+    const base = this.disponiblesPersonal.filter(p => p.disponible);
+    if (!this.filtroRol) return base;
+    return base.filter(p =>
       p.cargo?.toLowerCase().includes(this.filtroRol.toLowerCase())
     );
   }
@@ -278,7 +283,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .filter(per => per && per.cargo?.toLowerCase() === rol.toLowerCase()).length;
   }
 
-  isEmpleadoDisabled(p: EmpleadoOperativo): boolean {
+  isEmpleadoDisabled(p: DisponibilidadEmpleado): boolean {
+    if (!p.disponible) return true;
     const rolObjetivo = this.filtroRol ?? p.cargo;
     const cupo = this.getCupoRol(rolObjetivo);
     if (cupo === null) return false;
@@ -314,7 +320,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return found ? found.cantidad : 0; // tipos no requeridos quedan con cupo 0
   }
 
-  isEquipoDisabled(e: EquipoInventario): boolean {
+  isEquipoDisabled(e: DisponibilidadEquipo): boolean {
+    if (!e.disponible) return true;
     const cupo = this.getEquipoCupo(e.idTipoEquipo);
     if (cupo === null) return false;
     const seleccionadosTipo = this.selectedEquipos
@@ -387,13 +394,14 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.stepIndex = Math.max(0, this.stepIndex - 1);
   }
 
-  getEquiposSeleccionados(): EquipoInventario[] {
+  getEquiposSeleccionados(): DisponibilidadEquipo[] {
     return this.equiposDisponibles.filter(e => this.selectedEquipos.includes(e.idEquipo));
   }
 
-  getEquiposFiltrados(): EquipoInventario[] {
-    if (!this.filtroTipoEquipoId) return this.equiposDisponibles;
-    return this.equiposDisponibles.filter(e => e.idTipoEquipo === this.filtroTipoEquipoId);
+  getEquiposFiltrados(): DisponibilidadEquipo[] {
+    const filtrados = this.equiposDisponibles.filter(e => e.disponible);
+    if (!this.filtroTipoEquipoId) return filtrados;
+    return filtrados.filter(e => e.idTipoEquipo === this.filtroTipoEquipoId);
   }
 
   ngOnDestroy(): void {
@@ -401,25 +409,32 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private loadDisponiblesPersonal(_: number): void {
-    this.personalService.getOperativos()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: lista => { this.disponiblesPersonal = Array.isArray(lista) ? lista : []; },
-        error: err => {
-          console.error('[personal] listar', err);
-          this.disponiblesPersonal = [];
-        }
-      });
-  }
+  private loadDisponibilidad(proyectoId: number): void {
+    if (!proyectoId) {
+      this.disponiblesPersonal = [];
+      this.equiposDisponibles = [];
+      return;
+    }
+    const rango = this.getRangoPedido();
+    const fechas = rango ?? (() => {
+      const hoy = new Date().toISOString().split('T')[0];
+      return { inicio: hoy, fin: hoy };
+    })();
 
-  private loadEquipos(): void {
-    this.equiposService.getEquipos()
+    this.proyectoService.getDisponibilidad({
+      fechaInicio: fechas.inicio,
+      fechaFin: fechas.fin,
+      proyectoId
+    })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: lista => { this.equiposDisponibles = Array.isArray(lista) ? lista : []; },
+        next: data => {
+          this.disponiblesPersonal = Array.isArray(data?.empleados) ? data.empleados.filter(e => e.operativoCampo) : [];
+          this.equiposDisponibles = Array.isArray(data?.equipos) ? data.equipos : [];
+        },
         error: err => {
-          console.error('[equipos] inventario', err);
+          console.error('[proyecto] disponibilidad', err);
+          this.disponiblesPersonal = [];
           this.equiposDisponibles = [];
         }
       });
@@ -470,7 +485,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.visualizarService.getPedidoById(pedidoId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (data) => { this.pedidoDetalle = data; },
+        next: (data) => {
+          this.pedidoDetalle = data;
+          if (this.proyecto?.proyectoId) {
+            this.loadDisponibilidad(this.proyecto.proyectoId);
+          }
+        },
         error: (err) => {
           console.error('[pedido] detalle', err);
           this.pedidoDetalle = null;
@@ -615,5 +635,42 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const inicio = fechas[0];
     const fin = fechas[fechas.length - 1];
     return { inicio, fin };
+  }
+
+  getServiciosContratados(): Array<{ nombre: string; evento: string; precio: number; notas: string }> {
+    const items = (this.pedidoDetalle?.items ?? this.pedidoDetalle?.pedido?.items ?? []) as any[];
+    if (!Array.isArray(items)) return [];
+    return items.map(it => ({
+      nombre: it.nombre ?? it.descripcion ?? it.titulo ?? '',
+      evento: it.eventoNombre ?? it.evento ?? it.eventoCodigo ?? '',
+      precio: Number(it.precioUnit ?? it.precio ?? it.costo ?? 0),
+      notas: it.notas ?? ''
+    }));
+  }
+
+  formatFechaDisplay(value: string | Date | null | undefined): string {
+    if (!value) return '—';
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/); // YYYY-MM-DD
+      if (match) {
+        const [, y, m, d] = match;
+        return `${d}-${m}-${y}`;
+      }
+      const parsed = new Date(trimmed);
+      if (!isNaN(parsed.getTime())) {
+        const day = String(parsed.getUTCDate()).padStart(2, '0');
+        const month = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+        const year = parsed.getUTCFullYear();
+        return `${day}-${month}-${year}`;
+      }
+      return '—';
+    }
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '—';
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    return `${day}-${month}-${year}`;
   }
 }

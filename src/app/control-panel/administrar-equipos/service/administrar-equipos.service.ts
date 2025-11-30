@@ -7,6 +7,7 @@ import { EquipoInventario } from '../models/equipo-inventario.model';
 import { TipoEquipo } from '../models/tipo-equipo.model';
 import { Marca } from '../models/marca.model';
 import { Modelo } from '../models/modelo.model';
+import { ProyectoAfectado } from '../models/proyecto-afectado.model';
 
 @Injectable({
   providedIn: 'root'
@@ -115,5 +116,9 @@ export class AdministrarEquiposService {
     return this.http.patch<EquipoInventario>(`${this.inventarioUrl}/${idEquipo}/estado`, {
       idEstado
     });
+  }
+
+  getProyectosAfectados(idEquipo: number): Observable<ProyectoAfectado[]> {
+    return this.http.get<ProyectoAfectado[]>(`${this.inventarioUrl}/${idEquipo}/proyectos-afectados`);
   }
 }
