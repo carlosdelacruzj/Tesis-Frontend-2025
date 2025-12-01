@@ -1,11 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
-import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import Swal from 'sweetalert2';
 
-import { ProyectoDetalle } from '../model/proyecto.model';
+import { ProyectoDetalle, ProyectoRecurso } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
 import { PersonalService, Cargo } from '../../gestionar-personal/service/personal.service';
 import { AdministrarEquiposService } from '../../administrar-equipos/service/administrar-equipos.service';
@@ -25,11 +25,37 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   proyecto: ProyectoDetalle | null = null;
   requerimientos: PedidoRequerimientos | null = null;
   pedidoDetalle: any = null;
+  estados: Array<{ estadoId: number; estadoNombre: string }> = [];
+  guardandoDevoluciones = false;
+  guardandoProyecto = false;
+  devolucionesRegistradas = false;
 
   formAsignacion: UntypedFormGroup = this.fb.group({
     empleadoId: [null, Validators.required],
     equipoId: [null, Validators.required]
   });
+
+  proyectoForm: UntypedFormGroup = this.fb.group({
+    proyectoNombre: ['', Validators.required],
+    fechaInicioEdicion: [''],
+    fechaFinEdicion: [''],
+    estadoId: [null, Validators.required],
+    responsableId: [null],
+    notas: [''],
+    enlace: [''],
+    multimedia: [null],
+    edicion: [null]
+  });
+
+  devolucionForm: UntypedFormGroup = this.fb.group({
+    devoluciones: this.fb.array([])
+  });
+
+  readonly estadosDevolucion = [
+    { value: 'devuelto', label: 'Devuelto' },
+    { value: 'daniado', label: 'Dañado' },
+    { value: 'faltante', label: 'Faltante' }
+  ];
 
   disponiblesPersonal: DisponibilidadEmpleado[] = [];
   equiposDisponibles: DisponibilidadEquipo[] = [];
@@ -99,11 +125,15 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.proyecto = data;
+          this.patchProyectoForm(data);
+          this.buildDevolucionForm(data.recursos ?? []);
+          this.devolucionesRegistradas = this.devolucionesCompletas(data.recursos ?? []);
           this.loadPedido(data.pedidoId);
           this.loadAsignaciones(data.proyectoId);
           this.loadRequerimientos(data.pedidoId);
           this.loadRolesOperativos();
           this.loadTiposEquipos();
+          this.loadEstados();
         },
         error: (err) => {
           console.error('[proyecto] detalle', err);
@@ -113,6 +143,14 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   abrirModalAsignar(): void {
+    if (!this.puedeAsignarRecursos()) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Asignación bloqueada',
+        text: 'En estado Ejecución no se pueden agregar nuevas asignaciones.'
+      });
+      return;
+    }
     this.modalAsignarAbierto = true;
     this.seleccionados = [];
     this.filtroRol = null;
@@ -154,6 +192,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   cerrarModalAsignar(): void {
     this.modalAsignarAbierto = false;
+  }
+
+  get devoluciones(): UntypedFormArray {
+    return this.devolucionForm.get('devoluciones') as UntypedFormArray;
   }
 
   async toggleSeleccionEmpleado(idEmpleado: number): Promise<void> {
@@ -507,9 +549,106 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           if (this.proyecto) {
             this.proyecto = { ...this.proyecto, recursos: lista ?? [] };
           }
+          this.buildDevolucionForm(lista ?? []);
+          this.devolucionesRegistradas = this.devolucionesCompletas(lista ?? []);
         },
         error: (err) => {
           console.error('[proyecto] asignaciones', err);
+        }
+      });
+  }
+
+  guardarProyecto(): void {
+    if (!this.proyecto?.proyectoId) return;
+    if (this.proyectoForm.invalid) {
+      this.proyectoForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.proyectoForm.value;
+    const cambios: Partial<ProyectoDetalle> = {};
+    const estadoActualId = this.proyecto?.estadoId ?? null;
+
+    this.addIfChanged(cambios, 'proyectoNombre', raw.proyectoNombre, this.proyecto?.proyectoNombre, 'string');
+    this.addIfChanged(cambios, 'estadoId', raw.estadoId, this.proyecto?.estadoId, 'number');
+    this.addIfChanged(cambios, 'responsableId', raw.responsableId, this.proyecto?.responsableId, 'number');
+    this.addIfChanged(cambios, 'fechaInicioEdicion', raw.fechaInicioEdicion, this.proyecto?.fechaInicioEdicion, 'date');
+    this.addIfChanged(cambios, 'fechaFinEdicion', raw.fechaFinEdicion, this.proyecto?.fechaFinEdicion, 'date');
+    this.addIfChanged(cambios, 'enlace', raw.enlace, this.proyecto?.enlace, 'string');
+    this.addIfChanged(cambios, 'notas', raw.notas, this.proyecto?.notas, 'string');
+    this.addIfChanged(cambios, 'multimedia', raw.multimedia, this.proyecto?.multimedia, 'number');
+    this.addIfChanged(cambios, 'edicion', raw.edicion, this.proyecto?.edicion, 'number');
+
+    const keysCambios = Object.keys(cambios);
+    if (!keysCambios.length) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Sin cambios',
+        text: 'No hay campos modificados para enviar.'
+      });
+      return;
+    }
+
+    const estadoDestinoId = 'estadoId' in cambios ? (cambios.estadoId ?? null) : estadoActualId;
+    const estadoDestinoNombre = this.getEstadoNombre(estadoDestinoId) ?? this.proyecto?.estadoNombre ?? null;
+    const estadoActualNombre = this.proyecto?.estadoNombre ?? this.getEstadoNombre(estadoActualId) ?? null;
+
+    if (!this.isEstadoPlanificado(estadoActualId, estadoActualNombre) && this.isEstadoPlanificado(estadoDestinoId, estadoDestinoNombre)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No puedes volver a Planificado',
+        text: 'Una vez que sales de Planificado no es posible regresar.'
+      });
+      return;
+    }
+
+    if (!this.isEstadoEjecucion(estadoActualId, estadoActualNombre) && this.isEstadoEjecucion(estadoDestinoId, estadoDestinoNombre) && !this.tieneAsignaciones()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Faltan asignaciones',
+        text: 'Asigna al menos un recurso antes de pasar a Ejecución.'
+      });
+      return;
+    }
+
+    if (this.isEstadoEjecucion(estadoActualId, estadoActualNombre) && !this.isEstadoEjecucion(estadoDestinoId, estadoDestinoNombre)) {
+      const hayEquipos = (this.proyecto?.recursos?.length ?? 0) > 0;
+      if (hayEquipos && !this.devolucionesRegistradas) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Termina las devoluciones',
+          text: 'Registra las devoluciones antes de cambiar a otro estado.'
+        });
+        return;
+      }
+    }
+
+    this.guardandoProyecto = true;
+    this.proyectoService.actualizarProyectoParcial(this.proyecto.proyectoId, cambios)
+      .pipe(finalize(() => { this.guardandoProyecto = false; }))
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Proyecto actualizado',
+            timer: 1600,
+            showConfirmButton: false
+          });
+          this.proyecto = {
+            ...this.proyecto,
+            ...cambios,
+            estadoNombre: this.getEstadoNombre(cambios.estadoId ?? this.proyecto?.estadoId ?? null)
+          } as ProyectoDetalle;
+          const esEjecucionDestino = this.isEstadoEjecucion(estadoDestinoId, estadoDestinoNombre);
+          this.devolucionesRegistradas = esEjecucionDestino ? (this.proyecto?.recursos?.length ?? 0) === 0 : this.devolucionesRegistradas;
+        },
+        error: (err) => {
+          console.error('[proyecto] actualizar parcial', err);
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo actualizar',
+            text: 'Intenta nuevamente.'
+          });
         }
       });
   }
@@ -672,5 +811,252 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const month = String(d.getUTCMonth() + 1).padStart(2, '0');
     const year = d.getUTCFullYear();
     return `${day}-${month}-${year}`;
+  }
+
+  toDateInput(value: string | null): string {
+    if (!value) return '';
+    const trimmed = value.trim();
+    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
+  }
+
+  private getEstadoNombre(id: number | null): string | null {
+    if (!id) return null;
+    const found = this.estados.find(e => e.estadoId === id);
+    return found?.estadoNombre ?? null;
+  }
+
+  private normalizeEstadoNombre(value: string | null): string {
+    if (!value) return '';
+    return value
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/á/g, 'a')
+      .replace(/é/g, 'e')
+      .replace(/í/g, 'i')
+      .replace(/ó/g, 'o')
+      .replace(/ú/g, 'u')
+      .replace(/ü/g, 'u');
+  }
+
+  private isEstadoPlanificado(id: number | null, nombre?: string | null): boolean {
+    const label = nombre ?? this.getEstadoNombre(id) ?? '';
+    return this.normalizeEstadoNombre(label) === 'planificado';
+  }
+
+  private isEstadoEjecucion(id: number | null, nombre?: string | null): boolean {
+    const label = nombre ?? this.getEstadoNombre(id) ?? '';
+    const norm = this.normalizeEstadoNombre(label);
+    return norm === 'ejecucion' || norm === 'en ejecucion';
+  }
+
+  private devolucionesCompletas(recursos: ProyectoRecurso[]): boolean {
+    if (!recursos.length) return true;
+    return recursos.every(r => !!(r.equipoEstadoDevolucion && r.equipoEstadoDevolucion.toString().trim()));
+  }
+
+  private tieneAsignaciones(): boolean {
+    return (this.proyecto?.recursos?.length ?? 0) > 0;
+  }
+
+  esPlanificadoActual(): boolean {
+    return this.isEstadoPlanificado(this.proyecto?.estadoId ?? null, this.proyecto?.estadoNombre ?? null);
+  }
+
+  esEjecucionActual(): boolean {
+    return this.isEstadoEjecucion(this.proyecto?.estadoId ?? null, this.proyecto?.estadoNombre ?? null);
+  }
+
+  puedeAsignarRecursos(): boolean {
+    return !this.esEjecucionActual();
+  }
+
+  puedeRegistrarDevolucion(): boolean {
+    return this.esEjecucionActual();
+  }
+
+  deshabilitarPlanificadoOption(id: number): boolean {
+    return !this.esPlanificadoActual() && this.isEstadoPlanificado(id, this.getEstadoNombre(id));
+  }
+
+  private normalizeValue(value: any, type: 'string' | 'number' | 'date'): any {
+    if (type === 'number') return this.toNumberOrNull(value);
+    if (type === 'date') return this.toDateInput(value);
+    if (value === undefined || value === null) return null;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed === '' ? null : trimmed;
+    }
+    return value;
+  }
+
+  private toNumberOrNull(value: any): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    return isNaN(num) ? null : num;
+  }
+
+  getEquipoAsignadoA(equipoId: number): string {
+    const recurso = this.proyecto?.recursos?.find(r => r.equipoId === equipoId);
+    if (!recurso) return '';
+    if (recurso.empleadoNombre) {
+      return `Asignado a ${recurso.empleadoNombre}`;
+    }
+    return 'Reserva / Repuesto';
+  }
+
+  guardarDevoluciones(): void {
+    if (!this.proyecto?.proyectoId) return;
+    const items = this.devoluciones;
+    if (!items.length) return;
+
+    this.devolucionForm.markAllAsTouched();
+
+    const faltaEstado = items.controls.some(ctrl => !ctrl.get('estadoDevolucion')?.value);
+    if (faltaEstado) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Faltan estados',
+        text: 'Todos los equipos deben tener un estado de devolución.'
+      });
+      return;
+    }
+
+    const requiereNotas = items.controls.some(ctrl => {
+      const estado = ctrl.get('estadoDevolucion')?.value;
+      const notas = (ctrl.get('notas')?.value ?? '').trim();
+      return (estado === 'daniado' || estado === 'faltante') && !notas;
+    });
+
+    if (requiereNotas) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Agrega notas',
+        text: 'Para equipos dañados o faltantes agrega una nota.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+
+    if (!this.isEstadoEjecucion(this.proyecto?.estadoId ?? null, this.proyecto?.estadoNombre)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Fuera de Ejecución',
+        text: 'Solo en estado Ejecución se pueden registrar devoluciones.'
+      });
+      return;
+    }
+
+    const payload = {
+      devoluciones: items.value.map((item: any) => ({
+        equipoId: item.equipoId,
+        estadoDevolucion: item.estadoDevolucion,
+        notas: item.notas ?? ''
+      }))
+    };
+
+    this.guardandoDevoluciones = true;
+    this.proyectoService.registrarDevoluciones(this.proyecto.proyectoId, payload)
+      .pipe(finalize(() => { this.guardandoDevoluciones = false; }))
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Devoluciones registradas',
+            timer: 1800,
+            showConfirmButton: false
+          });
+          this.devolucionesRegistradas = true;
+          const recursosActualizados = (this.proyecto?.recursos ?? []).map(r => {
+            const dev = items.value.find((d: any) => d.equipoId === r.equipoId);
+            if (!dev) return r;
+            return {
+              ...r,
+              equipoEstadoDevolucion: dev.estadoDevolucion,
+              equipoNotasDevolucion: dev.notas,
+              equipoFechaDevolucion: new Date().toISOString(),
+              equipoDevuelto: 1
+            } as ProyectoRecurso;
+          });
+          if (this.proyecto) {
+            this.proyecto = { ...this.proyecto, recursos: recursosActualizados };
+          }
+        },
+        error: (err) => {
+          console.error('[proyecto] devoluciones', err);
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo registrar',
+            text: 'Intenta nuevamente más tarde.'
+          });
+        }
+      });
+  }
+
+  private buildDevolucionForm(recursos: ProyectoRecurso[]): void {
+    const arr = this.fb.array([]);
+    const vistos = new Set<number>();
+
+    (recursos ?? []).forEach(r => {
+      if (vistos.has(r.equipoId)) return;
+      vistos.add(r.equipoId);
+      const estadoInicial = r.equipoEstadoDevolucion && r.equipoEstadoDevolucion.toString().trim()
+        ? r.equipoEstadoDevolucion
+        : 'devuelto';
+      const notasInicial = r.equipoNotasDevolucion ?? '';
+      arr.push(this.fb.group({
+        equipoId: [r.equipoId],
+        estadoDevolucion: [estadoInicial, Validators.required],
+        notas: [notasInicial]
+      }));
+    });
+
+    this.devolucionForm.setControl('devoluciones', arr);
+    this.devolucionesRegistradas = this.devolucionesCompletas(recursos ?? []);
+  }
+
+  private addIfChanged(
+    target: Partial<ProyectoDetalle>,
+    key: keyof ProyectoDetalle,
+    formValue: any,
+    currentValue: any,
+    type: 'string' | 'number' | 'date'
+  ): void {
+    const control = this.proyectoForm.get(key as string);
+    if (!control || !control.dirty) return;
+    const normalizedForm = this.normalizeValue(formValue, type);
+    const normalizedCurrent = this.normalizeValue(currentValue, type);
+    if (normalizedForm !== normalizedCurrent) {
+      (target as Record<string, any>)[key as string] = normalizedForm;
+    }
+  }
+
+  private patchProyectoForm(data: ProyectoDetalle): void {
+    this.proyectoForm.patchValue({
+      proyectoNombre: data.proyectoNombre,
+      fechaInicioEdicion: this.toDateInput(data.fechaInicioEdicion),
+      fechaFinEdicion: this.toDateInput(data.fechaFinEdicion),
+      estadoId: data.estadoId,
+      responsableId: data.responsableId,
+      notas: data.notas,
+      enlace: data.enlace,
+      multimedia: data.multimedia,
+      edicion: data.edicion
+    });
+  }
+
+  private loadEstados(): void {
+    this.proyectoService.getEstados()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (lista) => {
+          this.estados = Array.isArray(lista) ? lista : [];
+        },
+        error: (err) => {
+          console.error('[proyecto] estados', err);
+          this.estados = [];
+        }
+      });
   }
 }

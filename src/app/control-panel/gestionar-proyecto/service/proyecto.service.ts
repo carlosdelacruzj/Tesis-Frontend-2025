@@ -32,6 +32,13 @@ export class ProyectoService {
     return this.http.put<Proyecto>(`${this.API}/${id}`, payload);
   }
 
+  actualizarProyectoParcial(
+    id: number,
+    payload: Partial<ProyectoPayload>
+  ): Observable<{ status: string; proyectoId: number }> {
+    return this.http.patch<{ status: string; proyectoId: number }>(`${this.API}/${id}`, payload);
+  }
+
   getEstados(): Observable<any[]> {
     return this.http.get<any[]>(`${this.API}/estados`);
   }
@@ -63,5 +70,12 @@ export class ProyectoService {
 
   getAsignaciones(proyectoId: number): Observable<ProyectoRecurso[]> {
     return this.http.get<ProyectoRecurso[]>(`${this.API}/${proyectoId}/asignaciones`);
+  }
+
+  registrarDevoluciones(
+    proyectoId: number,
+    payload: { devoluciones: Array<{ equipoId: number; estadoDevolucion: string; notas: string }> }
+  ): Observable<void> {
+    return this.http.post<void>(`${this.API}/${proyectoId}/devolucion`, payload);
   }
 }

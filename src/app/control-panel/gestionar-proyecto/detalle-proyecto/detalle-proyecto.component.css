@@ -336,6 +336,41 @@
   border: 2px dashed #a5b4fc;
 }
 
+.devolucion-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.devolucion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.devolucion-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f9fafb;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.dev-equipo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 @media (max-width: 768px) {
   .card-header {
     flex-direction: column;
@@ -349,4 +384,20 @@
   .kanban-layout {
     grid-template-columns: 1fr;
   }
+
+  .devolucion-item {
+    grid-template-columns: 1fr;
+  }
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edit-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
 }

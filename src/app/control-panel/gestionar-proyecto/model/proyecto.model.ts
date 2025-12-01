@@ -40,6 +40,11 @@ export interface ProyectoRecurso {
   equipoFechaFin?: string | null;
   equipoEstado?: string | null;
   equipoNotas?: string | null;
+  equipoDevuelto?: number | null;
+  equipoFechaDevolucion?: string | null;
+  equipoEstadoDevolucion?: string | null;
+  equipoNotasDevolucion?: string | null;
+  equipoUsuarioDevolucion?: string | null;
 }
 
 export interface ProyectoDetalle extends Proyecto {

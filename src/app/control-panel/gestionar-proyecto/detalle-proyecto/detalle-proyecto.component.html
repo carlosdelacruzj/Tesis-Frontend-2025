@@ -69,6 +69,69 @@
         </div>
       </section>
 
+      <section class="card">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Edición rápida</p>
+            <h3>Actualizar proyecto</h3>
+            <p class="muted small">Cambia el estado, fechas o campos básicos y guarda con PATCH.</p>
+          </div>
+          <button mat-flat-button color="primary" type="button" (click)="guardarProyecto()" [disabled]="guardandoProyecto">
+            Guardar cambios
+          </button>
+        </header>
+        <form class="edit-form" [formGroup]="proyectoForm" (ngSubmit)="guardarProyecto()">
+          <div class="edit-form-grid">
+            <label class="form-field">
+              <span class="label">Nombre</span>
+              <input class="form-control" type="text" formControlName="proyectoNombre" placeholder="Nombre del proyecto">
+            </label>
+            <label class="form-field">
+              <span class="label">Estado</span>
+              <select class="form-select" formControlName="estadoId">
+                <option [ngValue]="null" disabled>Selecciona estado</option>
+                <option *ngFor="let est of estados" [ngValue]="est.estadoId" [disabled]="deshabilitarPlanificadoOption(est.estadoId)">
+                  {{ est.estadoNombre }}
+                </option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span class="label">Responsable (ID)</span>
+              <input class="form-control" type="number" formControlName="responsableId" placeholder="ID o deja vacío">
+            </label>
+            <label class="form-field">
+              <span class="label">Inicio edición</span>
+              <input class="form-control" type="date" formControlName="fechaInicioEdicion">
+            </label>
+            <label class="form-field">
+              <span class="label">Fin edición</span>
+              <input class="form-control" type="date" formControlName="fechaFinEdicion">
+            </label>
+            <label class="form-field">
+              <span class="label">Enlace</span>
+              <input class="form-control" type="url" formControlName="enlace" placeholder="https://">
+            </label>
+            <label class="form-field">
+              <span class="label">Multimedia</span>
+              <input class="form-control" type="number" formControlName="multimedia" placeholder="Ej. 3">
+            </label>
+            <label class="form-field">
+              <span class="label">Edición</span>
+              <input class="form-control" type="number" formControlName="edicion" placeholder="Ej. 2">
+            </label>
+          </div>
+          <label class="form-field">
+            <span class="label">Notas</span>
+            <textarea class="form-control" rows="2" formControlName="notas" placeholder="Observaciones"></textarea>
+          </label>
+          <div class="acciones">
+            <button mat-flat-button color="primary" type="submit" [disabled]="guardandoProyecto">
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+      </section>
+
       <section class="card" *ngIf="getEventosPedido().length">
         <header class="card-header">
           <div>
@@ -118,10 +181,11 @@
             <p class="eyebrow">Recursos y staff</p>
             <h3>Asignaciones ({{ proyecto.recursos?.length || 0 }})</h3>
           </div>
-          <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
+          <button *ngIf="esPlanificadoActual()" mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
             Asignar recursos
           </button>
         </header>
+        <p class="muted small" *ngIf="!esPlanificadoActual()">Las asignaciones solo se gestionan en estado Planificado.</p>
 
         <ng-container *ngIf="proyecto.recursos?.length; else sinRecursos">
           <app-table-base
@@ -143,6 +207,44 @@
             </ng-template>
           </app-table-base>
         </ng-container>
+      </section>
+
+      <section class="card" *ngIf="proyecto.recursos?.length">
+        <header class="card-header">
+          <div>
+            <p class="eyebrow">Seguimiento</p>
+            <h3>Devolución de equipos</h3>
+            <p class="muted small">Marca el estado al cierre del proyecto y agrega notas si falta o está dañado.</p>
+          </div>
+        </header>
+        <p class="muted small" *ngIf="!puedeRegistrarDevolucion()">Solo lectura: la devolución se gestiona en estado Ejecución.</p>
+        <form class="devolucion-form" [formGroup]="devolucionForm" (ngSubmit)="guardarDevoluciones()">
+          <div class="devolucion-grid" formArrayName="devoluciones">
+            <div class="devolucion-item" *ngFor="let devolucion of devoluciones.controls; let i = index" [formGroupName]="i">
+              <div class="dev-equipo">
+                <div class="fw-semibold">{{ getEquipoLabel(devolucion.get('equipoId')?.value) }}</div>
+                <div class="muted small">{{ getEquipoAsignadoA(devolucion.get('equipoId')?.value) }}</div>
+              </div>
+              <div class="form-field">
+                <label class="label">Estado de devolución</label>
+                <select class="form-select" formControlName="estadoDevolucion" [attr.disabled]="!puedeRegistrarDevolucion() ? true : null">
+                  <option *ngFor="let estado of estadosDevolucion" [ngValue]="estado.value">
+                    {{ estado.label }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="label">Notas</label>
+                <textarea class="form-control" rows="2" placeholder="Observaciones (ej. golpe en lente)" formControlName="notas" [readonly]="!puedeRegistrarDevolucion()"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="acciones">
+            <button mat-flat-button color="primary" type="submit" [disabled]="guardandoDevoluciones || !puedeRegistrarDevolucion()">
+              Registrar devoluciones
+            </button>
+          </div>
+        </form>
       </section>
     </ng-container>
   </ng-template>
@@ -351,4 +453,10 @@
 
 <ng-template #errorState>
   <p class="estado-centro" *ngIf="error">{{ error }}</p>
+</ng-template>
+
+<ng-template #devolucionBloqueada>
+  <div>
+    <p class="muted">La devolución solo está disponible cuando el proyecto está en Ejecución.</p>
+  </div>
 </ng-template>
