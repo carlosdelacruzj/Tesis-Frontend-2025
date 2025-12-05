@@ -3,13 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Cliente } from '../model/cliente.model';
-
-export interface ClienteUpdate {
-  correo?: string;
-  celular?: string;
-  direccion?: string;
-}
+import { Cliente, ClienteUpdate, EstadoCliente } from '../model/cliente.model';
 
 @Injectable({ providedIn: 'root' })
 export class ClienteService {
@@ -24,8 +18,7 @@ export class ClienteService {
     celular: '',
     doc: '',
     direccion: '',
-    estado: '',
-    ECli_Nombre: ''
+    estadoCliente: ''
   };
 
   private API_PRUEBA = `${environment.baseUrl}/clientes`;
@@ -33,8 +26,8 @@ export class ClienteService {
   constructor(private http: HttpClient) {}
 
   // Modernizo a firstValueFrom (en Angular/RxJS recientes toPromise está deprecado)
-  public getAllClientes(): Promise<any> {
-    return firstValueFrom(this.http.get(this.API_PRUEBA));
+  public getAllClientes(): Promise<Cliente[]> {
+    return firstValueFrom(this.http.get<Cliente[]>(this.API_PRUEBA));
   }
 
   // POST /clientes
@@ -54,14 +47,24 @@ export class ClienteService {
   }
 
   // GET /clientes/{id}
-  public getByIdCliente(id: number | string): Observable<any> {
-    return this.http.get(`${this.API_PRUEBA}/${id}`);
+  public getByIdCliente(id: number | string): Observable<Cliente> {
+    return this.http.get<Cliente>(`${this.API_PRUEBA}/${id}`);
+  }
+
+  // GET /clientes/estados
+  public getEstadosCliente(): Observable<EstadoCliente[]> {
+    return this.http.get<EstadoCliente[]>(`${this.API_PRUEBA}/estados`);
+  }
+
+  // PATCH /clientes/{id}/estado
+  public actualizarEstadoCliente(id: number | string, estadoClienteId: number): Observable<Cliente> {
+    return this.http.patch<Cliente>(`${this.API_PRUEBA}/${id}/estado`, { estadoClienteId });
   }
 
   // ✅ Mantengo tu firma original para no romper nada:
   // putClienteById(data) donde data contiene idCliente y los cambios.
   // Envía: PUT /clientes/{idCliente} con body {correo?,celular?,direccion?}
-  public putClienteById(data: any): Observable<any> {
+  public putClienteById(data: any): Observable<Cliente> {
     const id =
       data?.idCliente ??
       data?.id ??
@@ -78,14 +81,14 @@ export class ClienteService {
       direccion: data?.direccion,
     });
 
-    return this.http.put<any>(`${this.API_PRUEBA}/${id}`, body);
+    return this.http.put<Cliente>(`${this.API_PRUEBA}/${id}`, body);
   }
 
   // ✅ Versión clara sugerida (cuando migres tus llamados en componentes):
   // updateClienteById(1, { correo: 'a@b.com' })
-  public updateClienteById(id: number, changes: ClienteUpdate): Observable<any> {
+  public updateClienteById(id: number, changes: ClienteUpdate): Observable<Cliente> {
     const body = this.compact(changes);
-    return this.http.put<any>(`${this.API_PRUEBA}/${id}`, body);
+    return this.http.put<Cliente>(`${this.API_PRUEBA}/${id}`, body);
   }
 
   // Utilidad: elimina null/undefined/'' del objeto antes de enviarlo

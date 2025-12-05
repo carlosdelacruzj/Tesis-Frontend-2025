@@ -1,14 +1,24 @@
-export class Cliente {
-    constructor(
-        public idCliente: number,
-        public codigoCliente: string,
-        public nombre: string,
-        public apellido: string,
-        public correo: string,
-        public celular: string,
-        public doc: string,
-        public direccion: string,
-        public estado: string,
-        public ECli_Nombre: string,
-    ) { }
+export interface Cliente {
+  idCliente: number;
+  codigoCliente: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  celular: string;
+  doc: string;
+  direccion: string;
+  idUsuario?: number;
+  tipoCliente?: number;
+  estadoCliente?: string;
+}
+
+export interface ClienteUpdate {
+  correo?: string;
+  celular?: string;
+  direccion?: string;
+}
+
+export interface EstadoCliente {
+  idEstadoCliente: number;
+  nombreEstadoCliente: string;
 }

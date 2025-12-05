@@ -662,13 +662,18 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   getEquipoLabel(id: number | null): string {
     if (!id) return '';
     const found = this.equiposDisponibles.find(e => e.idEquipo === id);
-    return found ? `${found.nombreModelo} (${found.serie})` : '';
+    if (found) return `${found.nombreModelo} (${found.serie})`;
+    const recurso = this.proyecto?.recursos?.find(r => r.equipoId === id);
+    if (recurso) return `${recurso.modelo} (${recurso.equipoSerie})`;
+    return '';
   }
 
   getTipoEquipoNombre(id: number | null): string {
     if (!id) return '';
     const found = this.equiposDisponibles.find(e => e.idEquipo === id);
-    return found?.nombreTipoEquipo || '';
+    if (found?.nombreTipoEquipo) return found.nombreTipoEquipo;
+    const recurso = this.proyecto?.recursos?.find(r => r.equipoId === id);
+    return recurso?.tipoEquipo || '';
   }
 
   faltanAsignaciones(): boolean {
@@ -873,7 +878,29 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   puedeRegistrarDevolucion(): boolean {
-    return this.esEjecucionActual();
+    return this.esEjecucionActual() && !this.devolucionesRegistradas;
+  }
+
+  setEstadoDevolucion(index: number, value: string): void {
+    if (!this.puedeRegistrarDevolucion()) return;
+    const control = this.devoluciones.at(index)?.get('estadoDevolucion');
+    if (!control) return;
+    control.setValue(value);
+    control.markAsDirty();
+    control.markAsTouched();
+  }
+
+  getEstadoLabel(value: string | null | undefined): string {
+    if (!value) return '';
+    return this.estadosDevolucion.find(e => e.value === value)?.label ?? value;
+  }
+
+  getEstadoClass(value: string | null | undefined): string {
+    const v = (value ?? '').toString();
+    if (v === 'daniado') return 'estado-pill pill-warn';
+    if (v === 'faltante') return 'estado-pill pill-danger';
+    if (v === 'devuelto') return 'estado-pill pill-success';
+    return 'estado-pill';
   }
 
   deshabilitarPlanificadoOption(id: number): boolean {
@@ -906,8 +933,16 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return 'Reserva / Repuesto';
   }
 
-  guardarDevoluciones(): void {
+  async guardarDevoluciones(): Promise<void> {
     if (!this.proyecto?.proyectoId) return;
+    if (this.devolucionesRegistradas) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Devoluciones ya registradas',
+        text: 'Las devoluciones de este proyecto ya fueron enviadas y no pueden volver a mandarse.'
+      });
+      return;
+    }
     const items = this.devoluciones;
     if (!items.length) return;
 
@@ -947,6 +982,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
+
+    const confirm = await Swal.fire({
+      icon: 'warning',
+      title: 'Confirmar devoluciones',
+      text: '¿Confirmas que completaste todas las devoluciones? Después de enviarlas no podrás modificarlas.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, registrar',
+      cancelButtonText: 'Revisar',
+      reverseButtons: true,
+      allowOutsideClick: false,
+      allowEscapeKey: false
+    });
+    if (!confirm.isConfirmed) return;
 
     const payload = {
       devoluciones: items.value.map((item: any) => ({

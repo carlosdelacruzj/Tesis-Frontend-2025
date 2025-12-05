@@ -3,7 +3,7 @@ import { NgForm } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
-import { Cliente } from './model/cliente.model';
+import { Cliente, EstadoCliente } from './model/cliente.model';
 import { ClienteService } from './service/cliente.service';
 
 import { from, Subject, takeUntil } from 'rxjs';
@@ -44,6 +44,8 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   selectedCliente: ClienteRow | null = null;
   editFormModel = this.createEmptyEditModel();
   editUiReady = false;
+  estadosCliente: EstadoCliente[] = [];
+  selectedEstadoClienteId: number | null = null;
   nombrePattern = '^[a-zA-Z ]{2,20}$';
   apellidoPattern = '^[a-zA-Z ]{2,30}$';
   docPattern = '^[0-9]{1}[0-9]{7}$';
@@ -60,6 +62,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    this.loadEstados();
     this.loadClientes();
   }
 
@@ -89,6 +92,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
     this.selectedCliente = null;
     this.editFormModel = this.createEmptyEditModel();
     this.editUiReady = false; // <--- NUEVO
+    this.selectedEstadoClienteId = null;
 
     this.clienteService.getByIdCliente(row.idCliente)
       .pipe(takeUntil(this.destroy$))
@@ -97,6 +101,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
           const cliente = (Array.isArray(response) ? response[0] : response) || row;
           this.selectedCliente = cliente as ClienteRow;
           this.editFormModel = this.createEmptyEditModel(this.selectedCliente);
+          this.selectedEstadoClienteId = this.getEstadoIdByName(this.selectedCliente?.estadoCliente ?? null);
           this.modalEditarLoading = false;
 
           // Espera a que se pinte el form y recién habilita la UI
@@ -184,6 +189,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
     this.editFormModel = this.createEmptyEditModel();
     this.editForm?.resetForm();
     this.editUiReady = false; // <--- NUEVO
+    this.selectedEstadoClienteId = null;
   }
 
 
@@ -203,47 +209,74 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.modalEditarSaving = true;
-    this.modalEditarError = null;
+    Swal.fire({
+      title: 'Confirmar actualización',
+      text: '¿Deseas guardar los cambios del cliente?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, actualizar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'btn btn-primary',
+        cancelButton: 'btn btn-outline-secondary'
+      },
+      buttonsStyling: false
+    }).then(result => {
+      if (!result.isConfirmed) {
+        return;
+      }
 
-    const payload = {
-      correo: form.value.correo,
-      celular: form.value.celular,
-      idCliente: this.selectedCliente.idCliente,
-      direccion: form.value.direccion
-    };
+      this.modalEditarSaving = true;
+      this.modalEditarError = null;
 
-    this.clienteService.putClienteById(payload)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (res: any) => {
-          this.modalEditarSaving = false;
-          const isBackendError = res && res.ok === false;
-          const msg = isBackendError
-            ? (res.message || 'Ocurrió un error, volver a intentar.')
-            : 'Actualización exitosa';
+      const payload = {
+        correo: form.value.correo,
+        celular: form.value.celular,
+        idCliente: this.selectedCliente.idCliente,
+        direccion: form.value.direccion
+      };
 
-          Swal.fire({
-            text: msg,
-            icon: isBackendError ? 'warning' : 'success',
-            showCancelButton: false,
-            customClass: {
-              confirmButton: `btn btn-${isBackendError ? 'warning' : 'success'}`
-            },
-            buttonsStyling: false
-          });
+      const currentEstadoId = this.getEstadoIdByName(this.selectedCliente.estadoCliente ?? null);
+      const selectedEstadoId = this.selectedEstadoClienteId ?? currentEstadoId;
+      const debeActualizarEstado = selectedEstadoId !== null && selectedEstadoId !== currentEstadoId;
 
-          if (!isBackendError) {
-            this.modalEditarOpen = false;
-            this.loadClientes();
+      this.clienteService.putClienteById(payload)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (res: any) => {
+            const isBackendError = res && res.ok === false;
+            const msg = isBackendError
+              ? (res.message || 'Ocurrió un error, volver a intentar.')
+              : 'Actualización exitosa';
+
+            if (isBackendError) {
+              this.modalEditarSaving = false;
+              this.modalEditarError = msg;
+              return;
+            }
+
+            if (debeActualizarEstado) {
+              this.clienteService.actualizarEstadoCliente(this.selectedCliente.idCliente, selectedEstadoId as number)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe({
+                  next: () => this.onEditSuccess(msg),
+                  error: (err) => {
+                    this.modalEditarSaving = false;
+                    const estadoMsg = err?.error?.message || 'No pudimos actualizar el estado.';
+                    this.modalEditarError = estadoMsg;
+                  }
+                });
+            } else {
+              this.onEditSuccess(msg);
+            }
+          },
+          error: (err) => {
+            this.modalEditarSaving = false;
+            const msg = err?.error?.message || 'Ocurrió un error, volver a intentar.';
+            this.modalEditarError = msg;
           }
-        },
-        error: (err) => {
-          this.modalEditarSaving = false;
-          const msg = err?.error?.message || 'Ocurrió un error, volver a intentar.';
-          this.modalEditarError = msg;
-        }
-      });
+        });
+    });
   }
 
   private resetCreateFormState(): void {
@@ -260,6 +293,48 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       celular: cliente?.celular || '',
       direccion: cliente?.direccion || ''
     };
+  }
+
+  private onEditSuccess(message: string): void {
+    this.modalEditarSaving = false;
+    Swal.fire({
+      text: message,
+      icon: 'success',
+      showCancelButton: false,
+      customClass: {
+        confirmButton: 'btn btn-success'
+      },
+      buttonsStyling: false
+    });
+    this.modalEditarOpen = false;
+    this.loadClientes();
+  }
+
+  private loadEstados(): void {
+    this.clienteService.getEstadosCliente()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (estados) => {
+          this.estadosCliente = estados ?? [];
+          if (this.selectedCliente?.estadoCliente) {
+            this.selectedEstadoClienteId = this.getEstadoIdByName(this.selectedCliente.estadoCliente);
+          }
+        },
+        error: (err) => {
+          console.error('[clientes] estados', err);
+          this.estadosCliente = [];
+        }
+      });
+  }
+
+  private getEstadoIdByName(nombre: string | null): number | null {
+    if (!nombre) {
+      return null;
+    }
+    const encontrado = this.estadosCliente.find(
+      (estado) => estado.nombreEstadoCliente === nombre
+    );
+    return encontrado ? encontrado.idEstadoCliente : null;
   }
 
   onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {

@@ -222,6 +222,16 @@
             <span>Campo requerido</span>
           </div>
         </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Estado</label>
+          <select class="form-select" name="estadoClienteId"
+            [(ngModel)]="selectedEstadoClienteId">
+            <option *ngFor="let estado of estadosCliente" [ngValue]="estado.idEstadoCliente">
+              {{ estado.nombreEstadoCliente }}
+            </option>
+          </select>
+        </div>
       </div>
     </form>
 

@@ -209,7 +209,7 @@
         </ng-container>
       </section>
 
-      <section class="card" *ngIf="proyecto.recursos?.length">
+      <section class="card" *ngIf="proyecto.recursos?.length && !esPlanificadoActual()">
         <header class="card-header">
           <div>
             <p class="eyebrow">Seguimiento</p>
@@ -217,25 +217,47 @@
             <p class="muted small">Marca el estado al cierre del proyecto y agrega notas si falta o está dañado.</p>
           </div>
         </header>
-        <p class="muted small" *ngIf="!puedeRegistrarDevolucion()">Solo lectura: la devolución se gestiona en estado Ejecución.</p>
+        <div class="alert alert-info" *ngIf="devolucionesRegistradas">
+          Las devoluciones ya fueron registradas y no se pueden volver a enviar.
+        </div>
+        <p class="muted small" *ngIf="!devolucionesRegistradas && !esEjecucionActual()">Solo lectura: la devolución se gestiona en estado Ejecución.</p>
         <form class="devolucion-form" [formGroup]="devolucionForm" (ngSubmit)="guardarDevoluciones()">
           <div class="devolucion-grid" formArrayName="devoluciones">
-            <div class="devolucion-item" *ngFor="let devolucion of devoluciones.controls; let i = index" [formGroupName]="i">
-              <div class="dev-equipo">
-                <div class="fw-semibold">{{ getEquipoLabel(devolucion.get('equipoId')?.value) }}</div>
-                <div class="muted small">{{ getEquipoAsignadoA(devolucion.get('equipoId')?.value) }}</div>
+            <div
+              class="devolucion-card"
+              *ngFor="let devolucion of devoluciones.controls; let i = index"
+              [formGroupName]="i"
+              [class.dev-disabled]="!puedeRegistrarDevolucion()">
+              <div class="dev-card-header">
+                <div>
+                  <div class="dev-title">{{ getEquipoLabel(devolucion.get('equipoId')?.value) }}</div>
+                  <div class="muted small">{{ getEquipoAsignadoA(devolucion.get('equipoId')?.value) }}</div>
+                </div>
+                <span [ngClass]="getEstadoClass(devolucion.get('estadoDevolucion')?.value)">
+                  {{ getEstadoLabel(devolucion.get('estadoDevolucion')?.value) || 'Sin estado' }}
+                </span>
               </div>
-              <div class="form-field">
-                <label class="label">Estado de devolución</label>
-                <select class="form-select" formControlName="estadoDevolucion" [attr.disabled]="!puedeRegistrarDevolucion() ? true : null">
-                  <option *ngFor="let estado of estadosDevolucion" [ngValue]="estado.value">
+              <div class="dev-card-body">
+                <div class="estado-pills" role="group">
+                  <button
+                    type="button"
+                    class="estado-pill"
+                    *ngFor="let estado of estadosDevolucion"
+                    [class.active]="devolucion.get('estadoDevolucion')?.value === estado.value"
+                    [disabled]="!puedeRegistrarDevolucion()"
+                    (click)="setEstadoDevolucion(i, estado.value)">
                     {{ estado.label }}
-                  </option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label class="label">Notas</label>
-                <textarea class="form-control" rows="2" placeholder="Observaciones (ej. golpe en lente)" formControlName="notas" [readonly]="!puedeRegistrarDevolucion()"></textarea>
+                  </button>
+                </div>
+                <div class="form-field">
+                  <label class="label">Notas <span class="muted">(obligatorio si está dañado o faltante)</span></label>
+                  <textarea
+                    class="form-control"
+                    rows="2"
+                    placeholder="Observaciones (ej. golpe en lente)"
+                    formControlName="notas"
+                    [readonly]="!puedeRegistrarDevolucion()"></textarea>
+                </div>
               </div>
             </div>
           </div>

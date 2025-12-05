@@ -107,7 +107,7 @@ export class CotizacionService {
     );
   }
 
-  buscarClientes(query: string, limit = 10): Observable<ClienteBusquedaResultado[]> {
+  buscarClientes(query: string, limit = 15): Observable<ClienteBusquedaResultado[]> {
     const trimmed = (query ?? '').toString().trim();
     if (!trimmed) return of([]);
 

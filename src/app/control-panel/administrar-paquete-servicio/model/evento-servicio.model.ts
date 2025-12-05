@@ -37,6 +37,10 @@ export interface EventoServicioDetalle {
   categoriaNombre: string | null;
   categoriaTipo: string | null;
   esAddon: boolean;
+  estado?: {
+    id: number;
+    nombre: string;
+  } | null;
   evento: {
     id: number;
     nombre: string;
