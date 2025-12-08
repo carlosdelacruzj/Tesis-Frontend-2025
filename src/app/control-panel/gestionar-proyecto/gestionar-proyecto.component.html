@@ -31,7 +31,16 @@
       </ng-template>
 
       <ng-template appCell="estadoNombre" let-row>
-        <span class="badge bg-secondary">{{ row.estadoNombre || getEstadoNombre(row.estadoId) }}</span>
+        <app-estado-badge
+          [estado]="row.estadoNombre || getEstadoNombre(row.estadoId)"
+          [mapaColores]="{
+            'planificado': 'info',
+            'en ejecucion': 'warning',
+            'en ejecución': 'warning',
+            'entregado': 'success-light',
+            'cerrado': 'success'
+          }"
+        ></app-estado-badge>
       </ng-template>
 
       <ng-template appCell="responsableId" let-row>

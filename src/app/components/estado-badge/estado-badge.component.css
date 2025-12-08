@@ -1,0 +1,58 @@
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  text-transform: capitalize;
+  letter-spacing: 0.01em;
+}
+
+.estado-neutral {
+  background-color: #f1f3f5;
+  color: #495057;
+  border-color: #e5e7eb;
+}
+
+.estado-primary {
+  background-color: #e8f0ff;
+  color: #1e4ed8;
+  border-color: #c7d7fe;
+}
+
+.estado-info {
+  background-color: #e5f3ff;
+  color: #0b6cd4;
+  border-color: #beddfb;
+}
+
+.estado-success {
+  background-color: #e6f7ed;
+  color: #2e7d32;
+  border-color: #c3e6cd;
+}
+
+.estado-success-light {
+  background-color: #f0fbf4;
+  color: #1b5e20;
+  border-color: #d6f4df;
+}
+
+.estado-warning {
+  background-color: #fff4e5;
+  color: #c05621;
+  border-color: #fbd1a2;
+}
+
+.estado-danger {
+  background-color: #ffe8e6;
+  color: #c81e1e;
+  border-color: #ffc9c2;
+}
+
+.estado-custom {
+  color: #fff;
+}

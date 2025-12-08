@@ -37,16 +37,9 @@
 
       <!-- estado como badge simple -->
       <ng-template appCell="estado" let-row>
-        <span
-          class="badge"
-          [class.bg-secondary]="!row.borrador && row.estado !== 'Pendiente' && row.estado !== 'Enviada' && row.estado !== 'Aceptada' && row.estado !== 'Rechazada'"
-          [class.bg-warning]="row.estado === 'Pendiente' || row.estado === 'Enviada' || !row.estado"
-          [class.bg-success]="row.estado === 'Aceptada'"
-          [class.bg-danger]="row.estado === 'Rechazada'"
-        >
-          {{ row.estado || 'Pendiente' }}
-        </span>
+        <app-estado-badge [estado]="row.estado || 'Borrador'"></app-estado-badge>
       </ng-template>
+>
 
       <!-- total en USD -->
       <ng-template appCell="total" let-row>

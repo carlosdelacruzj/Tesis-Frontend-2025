@@ -1,14 +1,16 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { finalize, takeUntil } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
+import { finalize, switchMap, takeUntil } from 'rxjs/operators';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import {
   Evento,
   EventoServicioCategoria,
   EventoServicioDetalle,
   EventoServicioEquipo,
+  EstadoEventoServicio,
   EventoServicioStaff,
   Servicio
 } from '../model/evento-servicio.model';
@@ -30,6 +32,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   tipoEquipos: TipoEquipo[] = [];
   categorias: EventoServicioCategoria[] = [];
   cargos: Cargo[] = [];
+  estados: EstadoEventoServicio[] = [];
   searchTerm = '';
 
   loadingEvento = false;
@@ -49,6 +52,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     servicio: [null as number | null, Validators.required],
     categoriaId: [null as number | null, Validators.required],
     esAddon: [false],
+    estadoId: [null as number | null],
     precio: [null as number | null, [Validators.required, Validators.min(1)]],
     descripcion: [''],
     horas: [null as number | null, [Validators.required, Validators.min(0)]],
@@ -102,6 +106,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
           this.cargarPaquetes(eventoId);
           this.cargarServicios();
           this.cargarTiposEquipo();
+          this.cargarEstados();
         } else {
           this.router.navigate(['/home/administrar-paquete-servicio']);
         }
@@ -129,6 +134,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       servicio: this.servicios.length === 1 ? this.servicios[0].id : null,
       categoriaId: this.categorias.length === 1 ? this.categorias[0].id : null,
       esAddon: false,
+      estadoId: this.estados.length === 1 ? this.estados[0].idEstado : null,
       precio: null,
       descripcion: '',
       horas: null,
@@ -152,6 +158,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       servicio: paquete.servicio?.id ?? null,
       categoriaId: paquete.categoriaId ?? null,
       esAddon: paquete.esAddon ?? false,
+      estadoId: paquete.estado?.id ?? null,
       precio: paquete.precio,
       descripcion: paquete.descripcion,
       horas: paquete.horas,
@@ -189,7 +196,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  guardarPaquete(): void {
+  async guardarPaquete(): Promise<void> {
     if (this.form.invalid || !this.evento?.id) {
       this.form.markAllAsTouched();
       this.staffArray.markAllAsTouched();
@@ -230,10 +237,35 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       equipos: equiposPayload
     };
 
+    const estadoSeleccionado = this.form.value.estadoId != null ? Number(this.form.value.estadoId) : null;
+    const estadoOriginal = this.paqueteEditando?.estado?.id ?? null;
+    const debeActualizarEstado = this.modalModo === 'editar' && estadoSeleccionado !== null && estadoSeleccionado !== estadoOriginal;
+    const soloEstadoCambiado = this.modalModo === 'editar' && debeActualizarEstado && this.form.pristine;
+
+    if (this.modalModo === 'editar') {
+      const { isConfirmed } = await Swal.fire({
+        icon: 'question',
+        title: 'Confirmar actualización',
+        text: '¿Deseas guardar los cambios?',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, guardar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!isConfirmed) {
+        return;
+      }
+    }
+
     this.modalSaving = true;
     const request$ = this.modalModo === 'crear'
       ? this.dataService.crearEventoServicio(payload)
-      : this.dataService.actualizarEventoServicio(this.paqueteEditando!.id, payload);
+      : (soloEstadoCambiado
+          ? this.dataService.actualizarEstadoEventoServicio(this.paqueteEditando!.id, estadoSeleccionado!)
+          : this.dataService.actualizarEventoServicio(this.paqueteEditando!.id, payload).pipe(
+              switchMap(() => debeActualizarEstado
+                ? this.dataService.actualizarEstadoEventoServicio(this.paqueteEditando!.id, estadoSeleccionado!)
+                : of(null))
+            ));
 
     request$
       .pipe(finalize(() => {
@@ -242,6 +274,13 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       }))
       .subscribe({
         next: () => {
+          void Swal.fire({
+            icon: 'success',
+            title: 'Guardado',
+            text: this.modalModo === 'crear' ? 'Paquete registrado' : 'Cambios guardados',
+            timer: 1800,
+            showConfirmButton: false
+          });
           this.modalOpen = false;
           this.paqueteEditando = null;
           this.cargarPaquetes(this.evento!.id);
@@ -249,6 +288,11 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error guardando paquete', err);
           this.modalError = 'No pudimos guardar el paquete. Intenta nuevamente.';
+          void Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No pudimos guardar el paquete. Intenta nuevamente.'
+          });
         }
       });
   }
@@ -405,6 +449,22 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error cargando categorías de paquete', err);
           this.categorias = [];
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  private cargarEstados(): void {
+    this.dataService.getEstadosEventoServicio()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (estados) => {
+          this.estados = estados ?? [];
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Error cargando estados de evento-servicio', err);
+          this.estados = [];
           this.cdr.markForCheck();
         }
       });

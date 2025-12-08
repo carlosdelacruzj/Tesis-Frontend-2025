@@ -854,9 +854,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: paquetes => {
-          this.paquetesRows = Array.isArray(paquetes)
-            ? paquetes.map(item => this.normalizePaqueteRow(item))
+          const activos = Array.isArray(paquetes)
+            ? paquetes.filter(item => {
+                const estadoNombre = (item?.estado?.nombre ?? item?.estadoNombre ?? '').toString().toLowerCase();
+                const estadoId = item?.estado?.id ?? item?.estado?.idEstado ?? item?.estadoId;
+                return estadoNombre !== 'inactivo' && estadoId !== 2;
+              })
             : [];
+          this.paquetesRows = activos.map(item => this.normalizePaqueteRow(item));
           this.loadingPaquetes = false;
         },
         error: (err) => {

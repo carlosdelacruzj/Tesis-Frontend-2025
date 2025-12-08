@@ -12,6 +12,11 @@ export interface Servicio {
   nombre: string;
 }
 
+export interface EstadoEventoServicio {
+  idEstado: number;
+  nombreEstado: string;
+}
+
 export interface EventoServicioStaff {
   rol: string;
   cantidad: number;
@@ -92,4 +97,10 @@ export interface ActualizarEventoServicioRequest {
   filmMin?: number | null;
   staff: EventoServicioStaff[];
   equipos: Array<{ tipoEquipoId: number; cantidad: number; notas?: string | null }>;
+}
+
+export interface ActualizarEstadoEventoServicioResponse {
+  Status: string;
+  idEventoServicio: number;
+  estadoId: number;
 }

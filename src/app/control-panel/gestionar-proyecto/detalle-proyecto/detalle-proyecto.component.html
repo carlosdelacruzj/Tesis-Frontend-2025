@@ -21,7 +21,16 @@
           </div>
           <div class="estado">
             <span class="label">Estado</span>
-            <span class="pill">{{ proyecto.estadoNombre || '—' }}</span>
+            <app-estado-badge
+              [estado]="proyecto.estadoNombre || '—'"
+              [mapaColores]="{
+                'planificado': 'info',
+                'en ejecucion': 'warning',
+                'en ejecución': 'warning',
+                'entregado': 'success-light',
+                'cerrado': 'success'
+              }"
+            ></app-estado-badge>
           </div>
         </header>
 

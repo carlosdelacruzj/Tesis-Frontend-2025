@@ -8,7 +8,9 @@ import {
   EventoServicioCategoria,
   Servicio,
   CrearEventoServicioRequest,
-  ActualizarEventoServicioRequest
+  ActualizarEventoServicioRequest,
+  EstadoEventoServicio,
+  ActualizarEstadoEventoServicioResponse
 } from '../model/evento-servicio.model';
 import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 
@@ -61,6 +63,10 @@ export class EventoServicioDataService {
     return this.http.get<EventoServicioDetalle>(`${this.baseUrl}/eventos_servicios/${id}`);
   }
 
+  getEstadosEventoServicio(): Observable<EstadoEventoServicio[]> {
+    return this.http.get<EstadoEventoServicio[]>(`${this.baseUrl}/eventos_servicios/estados`);
+  }
+
   getEventoServiciosFiltrado(eventoId?: number, servicioId?: number): Observable<EventoServicioDetalle[]> {
     const params: Record<string, string> = {};
     if (eventoId !== undefined && eventoId !== null) {
@@ -80,6 +86,13 @@ export class EventoServicioDataService {
 
   actualizarEventoServicio(id: number, payload: ActualizarEventoServicioRequest): Observable<any> {
     return this.http.put(`${this.baseUrl}/eventos_servicios/${id}`, payload);
+  }
+
+  actualizarEstadoEventoServicio(id: number, estadoId: number): Observable<ActualizarEstadoEventoServicioResponse> {
+    return this.http.patch<ActualizarEstadoEventoServicioResponse>(
+      `${this.baseUrl}/eventos_servicios/${id}/estado`,
+      { estadoId }
+    );
   }
 
   getCategoriasEventoServicio(): Observable<EventoServicioCategoria[]> {

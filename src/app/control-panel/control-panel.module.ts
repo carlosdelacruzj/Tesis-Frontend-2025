@@ -15,6 +15,7 @@ import { CellTemplateDirective, TableBaseComponent } from '../components/table-b
 import { ListToolbarComponent } from '../components/list-toolbar/list-toolbar.component';
 import { ModalBaseComponent } from '../components/modal-base/modal-base.component';
 import { FormularioBaseComponent } from '../components/formulario-base/formulario-base.component';
+import { EstadoBadgeComponent } from '../components/estado-badge/estado-badge.component';
 import { HomeComponent } from './home/home.component';
 import { FooterComponent } from '../shared/footer/footer.component';
 import { HeaderComponent } from '../shared/header/header.component';
@@ -92,7 +93,8 @@ import { OrderByEmpleadoPipe } from '../pipes/order-by-empleado.pipe';
     OrderByEmpleadoPipe,
     ListToolbarComponent,
     ModalBaseComponent,
-    FormularioBaseComponent
+    FormularioBaseComponent,
+    EstadoBadgeComponent
   ]
 })
 export class ControlPanelModule { }

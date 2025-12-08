@@ -53,11 +53,9 @@
       </ng-template>
 
       <ng-template appCell="Estado" let-row>
-        <span class="badge" [class.bg-secondary]="!row.Estado" [class.bg-success]="row.Estado === 'Confirmado'"
-          [class.bg-warning]="row.Estado === 'Pendiente'" [class.bg-danger]="row.Estado === 'Cancelado'">
-          {{ row.Estado || 'Sin estado' }}
-        </span>
+        <app-estado-badge [estado]="row.Estado || 'Sin estado'"></app-estado-badge>
       </ng-template>
+>
 
       <ng-template appCell="Pago" let-row>
         {{ row.Pago || '—' }}
