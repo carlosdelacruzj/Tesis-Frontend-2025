@@ -22,7 +22,13 @@
     [emptyText]="'No existen paquetes configurados para este evento.'">
 
     <ng-template appCell="estado.nombre" let-row>
-      {{ row.estado?.nombre || '—' }}
+      <app-estado-badge
+        [estado]="row.estado?.nombre || 'Sin estado'"
+        [mapaColores]="{
+          'activo': 'success',
+          'inactivo': 'danger'
+        }"
+      ></app-estado-badge>
     </ng-template>
 
     <ng-template appCell="precio" let-row>

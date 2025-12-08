@@ -40,10 +40,10 @@
       </ng-template>
 
       <ng-template appCell="estado" let-row>
-        <span class="badge" [class.bg-success]="row.idEstado === 1"
-          [class.bg-danger]="row.idEstado === 2" [class.bg-secondary]="!row.idEstado">
-          {{ getEstadoTexto(row.estado, row.idEstado) }}
-        </span>
+        <app-estado-badge
+          [estado]="getEstadoTexto(row.estado, row.idEstado)"
+          [mapaColores]="{ 'activo': 'success', 'inactivo': 'danger' }"
+        ></app-estado-badge>
       </ng-template>
 
       <ng-template appCell="acciones" let-row>

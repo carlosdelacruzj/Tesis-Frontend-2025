@@ -45,7 +45,19 @@
         [emptyText]="'No hay equipos registrados con estos filtros.'"
       >
         <ng-template appCell="nombreEstado" let-row>
-          <span class="estado-pill">{{ row.nombreEstado }}</span>
+          <app-estado-badge
+            [estado]="row.nombreEstado || 'Sin estado'"
+            [mapaColores]="{
+              'disponible': 'success',
+              'de baja': 'danger',
+              'baja': 'danger',
+              'mantenimiento': 'warning',
+              'en mantenimiento': 'warning',
+              'en uso': 'info',
+              'prestado': 'info',
+              'reservado': 'info'
+            }"
+          ></app-estado-badge>
         </ng-template>
 
         <ng-template appCell="fechaIngreso" let-row>

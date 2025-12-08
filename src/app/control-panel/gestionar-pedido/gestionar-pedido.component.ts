@@ -59,8 +59,8 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     // { key: 'Ubicacion', header: 'Ubicación', sortable: true },
     { key: 'TipoEvento', header: 'Tipo', sortable: true },
     { key: 'TotalLabel', header: 'Total', sortable: true, width: '140px', class: 'text-end text-nowrap' },
-    { key: 'Estado', header: 'Estado', sortable: true, width: '140px', class: 'text-center' },
     { key: 'Pago', header: 'Pago', sortable: true, width: '120px', class: 'text-center' },
+    { key: 'Estado', header: 'Estado', sortable: true, width: '140px', class: 'text-center' },
     { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '160px', class: 'text-center' }
   ];
 

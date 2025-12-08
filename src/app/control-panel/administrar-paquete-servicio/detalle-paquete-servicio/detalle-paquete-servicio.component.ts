@@ -67,10 +67,10 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     { key: 'titulo', header: 'Título', sortable: true },
     { key: 'servicio.nombre', header: 'Servicio', sortable: true },
     { key: 'categoriaNombre', header: 'Categoría', sortable: true },
-    { key: 'estado.nombre', header: 'Estado', sortable: true, class: 'text-center', width: '120px' },
     { key: 'precio', header: 'Precio', sortable: true, class: 'text-end', width: '130px' },
     { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '90px' },
     { key: 'staff.total', header: 'Staff', sortable: true, class: 'text-center', width: '110px' },
+    { key: 'estado.nombre', header: 'Estado', sortable: true, class: 'text-center', width: '120px' },
     { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, class: 'text-center', width: '120px' }
   ];
 

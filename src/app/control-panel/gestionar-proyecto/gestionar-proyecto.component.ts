@@ -24,9 +24,9 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
   columns: TableColumn<Proyecto>[] = [
     { key: 'proyectoNombre', header: 'Proyecto', sortable: true, width: '30%' },
     { key: 'pedidoId', header: 'Pedido', sortable: true, class: 'text-center', width: '120px' },
-    { key: 'estadoNombre', header: 'Estado', sortable: true, class: 'text-center', width: '100px' },
     { key: 'responsableId', header: 'Resp.', sortable: true, class: 'text-center', width: '110px' },
     { key: 'fechas', header: 'Fechas', sortable: false, width: '180px' },
+    { key: 'estadoNombre', header: 'Estado', sortable: true, class: 'text-center', width: '100px' },
     { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, class: 'text-center', width: '120px' }
   ];
 

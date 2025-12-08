@@ -39,8 +39,8 @@ export class EquipoDetalleComponent implements OnInit, OnDestroy {
     { key: 'serie', header: 'N° serie', sortable: true, class: 'text-uppercase' },
     { key: 'nombreMarca', header: 'Marca', sortable: true, class: 'text-capitalize' },
     { key: 'nombreModelo', header: 'Modelo', sortable: true, class: 'text-capitalize' },
-    { key: 'nombreEstado', header: 'Estado', sortable: true, class: 'text-center', width: '160px' },
     { key: 'fechaIngreso', header: 'Fecha ingreso', sortable: true, class: 'text-center', width: '160px' },
+    { key: 'nombreEstado', header: 'Estado', sortable: true, class: 'text-center', width: '160px' },
     { key: 'acciones', header: 'Acciones', sortable: false, class: 'text-center', width: '180px' }
   ];
   modalEquipoOpen = false;
