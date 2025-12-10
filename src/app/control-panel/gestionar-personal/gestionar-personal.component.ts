@@ -21,7 +21,7 @@ type ModalMode = 'view' | 'edit';
 })
 export class GestionarPersonalComponent implements OnInit, OnDestroy {
   columns: TableColumn<EmpleadoRow>[] = [
-    { key: 'codigoEmpleado', header: 'ID', sortable: true, width: '90px', class: 'text-center text-nowrap' },
+    { key: 'codigoEmpleado', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
     { key: 'nombreCompleto', header: 'Nombre', sortable: true },
     { key: 'documento', header: 'DNI', sortable: true, width: '130px', class: 'text-nowrap text-center' },
     { key: 'cargo', header: 'Cargo', sortable: true },

@@ -18,7 +18,7 @@ export interface ClienteRow extends Cliente { }
 export class GestionarClienteComponent implements OnInit, OnDestroy {
 
   columns: TableColumn<ClienteRow>[] = [
-    { key: 'codigoCliente', header: 'ID', sortable: true, width: '100px', class: 'text-center text-nowrap text-uppercase' },
+    { key: 'codigoCliente', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
     { key: 'nombre', header: 'Nombre', sortable: true },
     { key: 'apellido', header: 'Apellido', sortable: true },
     { key: 'correo', header: 'Correo', sortable: true },

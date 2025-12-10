@@ -51,7 +51,7 @@ interface ModalPagoState {
 })
 export class GestionarPedidoComponent implements OnInit, OnDestroy {
   columns: TableColumn<PedidoRow>[] = [
-    { key: 'ID', header: 'ID', sortable: true, width: '90px', class: 'text-center text-nowrap' },
+    { key: 'ID', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
     { key: 'Cliente', header: 'Cliente', sortable: true, class: 'cliente-col text-center' },
     // { key: 'Creado', header: 'Creado', sortable: true, width: '140px' },
     { key: 'ProxFecha', header: 'Próx. fecha', sortable: true, width: '160px' },

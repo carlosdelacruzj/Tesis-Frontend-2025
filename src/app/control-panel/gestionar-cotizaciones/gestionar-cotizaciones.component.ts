@@ -27,7 +27,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private static readonly CORREO_PATTERN = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
 
   columns: TableColumn<Cotizacion>[] = [
-    { key: 'codigo', header: 'Código', sortable: true, width: '120px', class: 'text-nowrap' },
+    { key: 'codigo', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
     { key: 'cliente', header: 'Cliente', sortable: true },
     { key: 'evento', header: 'Evento', sortable: true },
     { key: 'fecha', header: 'Fecha / horas', sortable: true, width: '160px' },

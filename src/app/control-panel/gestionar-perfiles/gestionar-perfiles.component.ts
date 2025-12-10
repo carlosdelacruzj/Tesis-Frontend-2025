@@ -18,7 +18,7 @@ export interface PerfilRow extends Perfil {
 export class GestionarPerfilesComponent implements OnInit, OnDestroy {
 
   columns: TableColumn<PerfilRow>[] = [
-    { key: 'ID', header: 'ID', sortable: true, width: '90px', class: 'text-center text-nowrap' },
+    { key: 'ID', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
     { key: 'ROL', header: 'Rol', sortable: true },
     { key: 'nombreCompleto', header: 'Nombre', sortable: true },
     { key: 'correo', header: 'Correo', sortable: true },
