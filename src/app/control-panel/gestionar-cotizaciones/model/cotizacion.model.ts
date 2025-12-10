@@ -77,6 +77,8 @@ export interface CotizacionApiResponse {
   estado?: string | null;
   fechaCreacion?: string | null;
   fecha_creacion?: string | null;
+  codigo?: string | null;
+  codigoCotizacion?: string | null;
   eventoId?: number | string | null;
   idEvento?: number | string | null;
   idTipoEvento?: number | string | null;

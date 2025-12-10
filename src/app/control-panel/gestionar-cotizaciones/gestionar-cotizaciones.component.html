@@ -20,7 +20,7 @@
       [externalSearchTerm]="searchTerm">
       <!-- código: muestra codigo o fallback COT-{id} -->
       <ng-template appCell="codigo" let-row>
-        {{ row.codigo || ('COT-' + row.id) }}
+        {{ row.codigo }}
       </ng-template>
 
       <!-- cliente + contacto: cliente — contacto -->

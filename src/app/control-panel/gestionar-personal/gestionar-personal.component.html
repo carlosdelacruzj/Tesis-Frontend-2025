@@ -20,8 +20,8 @@
       [showCreateButton]="false" [showSearch]="false"
       [externalSearchTerm]="searchTerm">
 
-      <ng-template appCell="codigoEmpleado" let-row>
-        {{ row.codigoEmpleado || ('EMP-' + row.idEmpleado) }}
+      <ng-template appCell="codigo" let-row>
+        {{ row.codigo }}
       </ng-template>
 
       <ng-template appCell="nombreCompleto" let-row>

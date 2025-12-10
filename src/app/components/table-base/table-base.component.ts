@@ -56,7 +56,7 @@ function getByPath(obj: any, path: string): any {
 @Component({
     selector: 'app-table-base',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatIconModule, CellTemplateDirective],
+    imports: [CommonModule, FormsModule, MatIconModule],
     templateUrl: './table-base.component.html',
     styleUrls: ['./table-base.component.css']
 })

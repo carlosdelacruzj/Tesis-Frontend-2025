@@ -15,6 +15,7 @@ export interface Empleado {
   esOperativoCampo: 0 | 1;
   idEstado: 1 | 2;
   estado?: 'Activo' | 'Inactivo';
+  codigo?: string;
 }
 
 export type EmpleadoUpdateDto = Pick<

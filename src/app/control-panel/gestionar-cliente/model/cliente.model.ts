@@ -10,6 +10,7 @@ export interface Cliente {
   idUsuario?: number;
   tipoCliente?: number;
   estadoCliente?: string;
+  codigo?: string;
 }
 
 export interface ClienteUpdate {

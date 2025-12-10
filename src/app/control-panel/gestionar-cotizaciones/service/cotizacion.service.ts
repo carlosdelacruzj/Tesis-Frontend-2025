@@ -330,7 +330,15 @@ downloadPdf(
     const generatedId = this.sequence + 1;
     const id = (api.id && Number.isFinite(Number(api.id))) ? Number(api.id) : payload.cotizacion.idCotizacion ?? generatedId;
 
-    const normalized = this.buildCotizacion(id, payload);
+    const codigoApi = this.toOptionalString(
+      // Prefer explicit codigo fields coming from the backend.
+      (api as any)?.codigo ??
+      (api as any)?.codigoCotizacion ??
+      (api.cotizacion as any)?.codigo ??
+      (api.cotizacion as any)?.codigoCotizacion
+    );
+
+    const normalized = this.buildCotizacion(id, payload, codigoApi ?? undefined);
 
     const estado = api.estado ?? payload.cotizacion.estado;
     if (estado) {

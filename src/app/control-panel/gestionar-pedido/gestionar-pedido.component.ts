@@ -13,7 +13,8 @@ import { MetodoPago } from '../registrar-pago/model/metodopago.model';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 export interface PedidoRow {
-  ID: number;
+  ID: string | number;
+  id?: number; // id numérico para navegación/API
   Cliente: string;
   Documento?: string;
   Creado?: string;
@@ -96,17 +97,19 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   }
 
   verPedido(row: PedidoRow): void {
-    if (!row?.ID) {
+    const id = this.extractId(row);
+    if (!id) {
       return;
     }
-    this.router.navigate(['/home/gestionar-pedido/detalle', row.ID]);
+    this.router.navigate(['/home/gestionar-pedido/detalle', id]);
   }
 
   editarPedido(row: PedidoRow): void {
-    if (!row?.ID) {
+    const id = this.extractId(row);
+    if (!id) {
       return;
     }
-    this.router.navigate(['/home/gestionar-pedido/actualizar', row.ID]);
+    this.router.navigate(['/home/gestionar-pedido/actualizar', id]);
   }
 
   onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {
@@ -122,7 +125,8 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   }
 
   abrirModalPago(row: PedidoRow): void {
-    if (!row?.ID) {
+    const id = this.extractId(row);
+    if (!id) {
       return;
     }
     this.modalPago = {
@@ -134,7 +138,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     };
 
     forkJoin({
-      resumen: this.registrarPagoService.getResumenPedido(row.ID).pipe(
+      resumen: this.registrarPagoService.getResumenPedido(id).pipe(
         catchError(() => of<ResumenPago | null>(null))
       ),
       metodos: this.registrarPagoService.getMetodosPago().pipe(
@@ -219,7 +223,8 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   }
 
   async registrarPago(): Promise<void> {
-    if (!this.modalPago.pedido?.ID || !this.puedeRegistrarPago) {
+    const id = this.extractId(this.modalPago.pedido as PedidoRow | null);
+    if (!id || !this.puedeRegistrarPago) {
       return;
     }
 
@@ -233,7 +238,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       await this.registrarPagoService.postPago({
         file: this.modalPago.file ?? undefined,
         monto,
-        pedidoId: this.modalPago.pedido.ID,
+        pedidoId: id,
         metodoPagoId: this.modalPago.metodoId ?? 0,
         fecha: this.modalPago.fecha || undefined
       });
@@ -248,7 +253,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
         try {
           await this.registrarPagoService.crearProyecto({
             proyectoNombre,
-            pedidoId: this.modalPago.pedido.ID,
+            pedidoId: id,
             estadoId: 1
           });
         } catch (err) {
@@ -302,7 +307,22 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (rows) => {
-          this.rows = (rows ?? []) as PedidoRow[];
+          this.rows = (rows ?? []).map((raw: any) => {
+            const codigo = this.toOptionalString(
+              raw?.codigo ??
+              raw?.codigoPedido ??
+              raw?.codigo_pedido ??
+              raw?.Codigo ??
+              raw?.CodigoPedido ??
+              raw?.cod_pedido
+            );
+            const id = this.parseNumber(raw?.id ?? raw?.ID ?? raw?.Id ?? raw?.idPedido ?? raw?.pedidoId ?? raw?.id_pedido);
+            return {
+              ...raw,
+              id: id ?? undefined,
+              ID: codigo ?? (id ?? raw?.ID)
+            } as PedidoRow;
+          });
           this.loadingList = false;
         },
         error: (err) => {
@@ -375,5 +395,34 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
 
   get faltanteDepositoTexto(): string {
     return this.formatearMoneda(this.modalPago.faltanteDeposito);
+  }
+
+  private extractId(row: PedidoRow | null | undefined): number | null {
+    if (!row) return null;
+    const id = this.parseNumber((row as any).id ?? row.ID ?? (row as any).idPedido ?? (row as any).pedidoId);
+    return id;
+  }
+
+  private parseNumber(value: unknown): number | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+    const parsed = Number(String(value).trim().replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private toOptionalString(value: unknown): string | undefined {
+    if (value == null) return undefined;
+    if (typeof value === 'string') {
+      const t = value.trim();
+      return t || undefined;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+    return undefined;
   }
 }
