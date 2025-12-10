@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, forkJoin, of, takeUntil } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -14,7 +14,7 @@ import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 export interface PedidoRow {
   ID: string | number;
-  id?: number; // id numérico para navegación/API
+  id?: number; // id numÃ©rico para navegaciÃ³n/API
   Cliente: string;
   Documento?: string;
   Creado?: string;
@@ -51,14 +51,12 @@ interface ModalPagoState {
   styleUrls: ['./gestionar-pedido.component.css'],
 })
 export class GestionarPedidoComponent implements OnInit, OnDestroy {
-  columns: TableColumn<PedidoRow>[] = [
-    { key: 'ID', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
-    { key: 'Cliente', header: 'Cliente', sortable: true, class: 'cliente-col text-center' },
-    // { key: 'Creado', header: 'Creado', sortable: true, width: '140px' },
-    { key: 'ProxFecha', header: 'Próx. fecha', sortable: true, width: '160px' },
-    { key: 'ProxHora', header: 'Próx. hora', sortable: true, width: '120px', class: 'text-center' },
-    // { key: 'Ubicacion', header: 'Ubicación', sortable: true },
-    { key: 'TipoEvento', header: 'Tipo', sortable: true },
+    columns: TableColumn<PedidoRow>[] = [
+    { key: 'ID', header: 'Codigo', sortable: true, width: '120px', class: 'text-center text-nowrap' },
+    { key: 'Cliente', header: 'Cliente', sortable: true, width: '180px', class: 'cliente-col text-center' },
+    { key: 'TipoEvento', header: 'Evento', sortable: true, width: '180px' },
+    { key: 'ProxFecha', header: 'Prox. fecha', sortable: true, width: '180px' },
+    { key: 'ProxHora', header: 'Prox. hora', sortable: true, width: '120px', class: 'text-center' },
     { key: 'TotalLabel', header: 'Total', sortable: true, width: '140px', class: 'text-end text-nowrap' },
     { key: 'Pago', header: 'Pago', sortable: true, width: '120px', class: 'text-center' },
     { key: 'Estado', header: 'Estado', sortable: true, width: '140px', class: 'text-center' },
@@ -113,11 +111,11 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   }
 
   onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {
-    // Hook disponible para telemetría futura
+    // Hook disponible para telemetrÃ­a futura
   }
 
   onPageChange(_: { page: number; pageSize: number }): void {
-    // Hook disponible para telemetría futura
+    // Hook disponible para telemetrÃ­a futura
   }
 
   reload(): void {
@@ -171,7 +169,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
           this.modalPago = {
             ...this.modalPago,
             cargando: false,
-            error: 'No se pudo cargar la información del pedido.'
+            error: 'No se pudo cargar la informaciÃ³n del pedido.'
           };
         }
       });
@@ -261,7 +259,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
           void Swal.fire({
             icon: 'warning',
             title: 'Pago registrado',
-            text: 'El proyecto no pudo crearse automáticamente. Intenta crearlo manualmente.',
+            text: 'El proyecto no pudo crearse automÃ¡ticamente. Intenta crearlo manualmente.',
             confirmButtonText: 'Entendido',
             buttonsStyling: false,
             customClass: { confirmButton: 'btn btn-warning' }
@@ -274,8 +272,8 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
         icon: 'success',
         title: 'Pago registrado',
         text: saldoRestante > 0
-          ? `El pago se registró correctamente. Saldo pendiente: ${this.formatearMoneda(saldoRestante)}`
-          : 'El pago se registró correctamente.',
+          ? `El pago se registrÃ³ correctamente. Saldo pendiente: ${this.formatearMoneda(saldoRestante)}`
+          : 'El pago se registrÃ³ correctamente.',
         confirmButtonText: 'Aceptar',
         buttonsStyling: false,
         customClass: { confirmButton: 'btn btn-success' }
@@ -289,7 +287,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       void Swal.fire({
         icon: 'error',
         title: 'No se pudo registrar',
-        text: 'Ocurrió un problema al registrar el pago.',
+        text: 'OcurriÃ³ un problema al registrar el pago.',
         confirmButtonText: 'Aceptar',
         buttonsStyling: false,
         customClass: { confirmButton: 'btn btn-danger' }
@@ -317,10 +315,23 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
               raw?.cod_pedido
             );
             const id = this.parseNumber(raw?.id ?? raw?.ID ?? raw?.Id ?? raw?.idPedido ?? raw?.pedidoId ?? raw?.id_pedido);
+            const { clienteLabel, clienteSub } = this.buildClienteDisplay(raw);
+            const totalLabel = this.toOptionalString(
+              raw?.TotalLabel ??
+              raw?.Total ??
+              raw?.total ??
+              raw?.Costo_Total ??
+              raw?.costo_total ??
+              raw?.costoTotal ??
+              raw?.total_pedido
+            );
             return {
               ...raw,
               id: id ?? undefined,
-              ID: codigo ?? (id ?? raw?.ID)
+              ID: codigo ?? (id ?? raw?.ID),
+              Cliente: clienteLabel,
+              Documento: clienteSub,
+              TotalLabel: totalLabel ?? undefined
             } as PedidoRow;
           });
           this.loadingList = false;
@@ -350,6 +361,35 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       fileName: null,
       faltanteDeposito: 0,
       esPrimerPago: false
+    };
+  }
+
+  private buildClienteDisplay(raw: any): { clienteLabel: string; clienteSub: string | undefined } {
+    const clienteObj = raw?.cliente ?? {};
+    const nombre = this.toOptionalString(
+      raw?.Cliente ??
+      raw?.cliente ??
+      clienteObj?.nombres ??
+      clienteObj?.nombre
+    );
+    const apellido = this.toOptionalString(clienteObj?.apellidos ?? clienteObj?.apellido);
+    const razonSocial = this.toOptionalString(clienteObj?.razonSocial ?? clienteObj?.razon_social);
+    const doc = this.toOptionalString(
+      raw?.Documento ??
+      raw?.documento ??
+      clienteObj?.documento ??
+      clienteObj?.doc ??
+      clienteObj?.dni
+    );
+    const celular = this.toOptionalString(clienteObj?.celular ?? raw?.celular ?? raw?.Celular);
+
+    const nombreCompuesto = [nombre, apellido].filter(Boolean).join(' ').trim();
+    const etiqueta = nombreCompuesto || razonSocial || nombre || raw?.Cliente || '--';
+    const subtitulo = doc || celular || undefined;
+
+    return {
+      clienteLabel: etiqueta,
+      clienteSub: subtitulo
     };
   }
 
@@ -426,3 +466,4 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     return undefined;
   }
 }
+

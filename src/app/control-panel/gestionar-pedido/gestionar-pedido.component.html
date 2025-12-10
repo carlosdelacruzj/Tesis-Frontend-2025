@@ -1,8 +1,8 @@
-<div class="dashboard-content">
+﻿<div class="dashboard-content">
   <app-list-toolbar
     [title]="'Pedidos'"
     [showSearch]="true"
-    [searchPlaceholder]="'Buscar: cliente, documento, estado…'"
+    [searchPlaceholder]="'Buscar: cliente, documento, estadoâ€¦'"
     [searchValue]="searchTerm"
     [showCreateButton]="true"
     [createButtonLabel]="'Registrar pedido'"
@@ -19,8 +19,8 @@
       [showCreateButton]="false" [showSearch]="false"
       [externalSearchTerm]="searchTerm">
 
-      <ng-template appCell="Cliente" let-row>
-        <span>{{ row.Cliente || '—' }}</span>
+            <ng-template appCell="Cliente" let-row>
+        <span>{{ row.Cliente || '--' }}</span>
         <small class="text-muted" *ngIf="row.Documento"> {{ row.Documento }}</small>
       </ng-template>
 
@@ -33,7 +33,7 @@
           {{ row.ProxFecha | date:'dd-MM-yyyy' }}
           <small class="text-muted" *ngIf="row.ProxDia"> ({{ row.ProxDia }})</small>
         </ng-container>
-        <ng-template #noDate>—</ng-template>
+        <ng-template #noDate>--</ng-template>
       </ng-template>
 
       <ng-template appCell="ProxHora" let-row>
@@ -41,24 +41,23 @@
       </ng-template>
 
       <ng-template appCell="Ubicacion" let-row>
-        {{ row.Ubicacion || '—' }}
+        {{ row.Ubicacion || '--' }}
       </ng-template>
 
       <ng-template appCell="TipoEvento" let-row>
-        {{ row.TipoEvento || '—' }}
+        {{ row.TipoEvento || '--' }}
       </ng-template>
 
       <ng-template appCell="TotalLabel" let-row>
-        {{ row.TotalLabel || '—' }}
+        {{ row.TotalLabel || '--' }}
       </ng-template>
 
       <ng-template appCell="Estado" let-row>
         <app-estado-badge [estado]="row.Estado || 'Sin estado'"></app-estado-badge>
       </ng-template>
->
 
       <ng-template appCell="Pago" let-row>
-        {{ row.Pago || '—' }}
+        {{ row.Pago || '--' }}
       </ng-template>
 
       <ng-template appCell="acciones" let-row>
@@ -92,7 +91,7 @@
 >
   <div *ngIf="modalPago.cargando" class="d-flex flex-column align-items-center justify-content-center p-4 text-muted">
     <mat-spinner diameter="36"></mat-spinner>
-    <p class="mt-3 mb-0">Cargando información…</p>
+    <p class="mt-3 mb-0">Cargando informaciÃ³nâ€¦</p>
   </div>
 
   <ng-container *ngIf="!modalPago.cargando">
@@ -147,7 +146,7 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label" for="metodoPagoSelect">Método de pago</label>
+          <label class="form-label" for="metodoPagoSelect">MÃ©todo de pago</label>
           <select
             id="metodoPagoSelect"
             name="metodoPagoSelect"
@@ -155,7 +154,7 @@
             required
             [(ngModel)]="modalPago.metodoId"
           >
-            <option [ngValue]="null" disabled>Selecciona un método</option>
+            <option [ngValue]="null" disabled>Selecciona un mÃ©todo</option>
             <option *ngFor="let metodo of modalPago.metodos" [ngValue]="metodo.idMetodoPago">
               {{ metodo.nombre }}
             </option>
@@ -210,6 +209,8 @@
 <ng-template #loadingState>
   <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
     <mat-spinner diameter="40"></mat-spinner>
-    <p class="mt-3 mb-0">Cargando pedidos…</p>
+    <p class="mt-3 mb-0">Cargando pedidosâ€¦</p>
   </div>
 </ng-template>
+
+

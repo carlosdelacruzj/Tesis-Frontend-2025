@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgForm } from '@angular/forms';
 import { Subject, takeUntil, firstValueFrom, take } from 'rxjs';
@@ -26,14 +26,14 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private static readonly CELULAR_PATTERN = '^[1-9]{1}[0-9]{6,8}$';
   private static readonly CORREO_PATTERN = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
 
-  columns: TableColumn<Cotizacion>[] = [
-    { key: 'codigo', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
-    { key: 'cliente', header: 'Cliente', sortable: true },
-    { key: 'evento', header: 'Evento', sortable: true },
-    { key: 'fecha', header: 'Fecha / horas', sortable: true, width: '160px' },
-    { key: 'total', header: 'Total', sortable: true, width: '120px', class: 'text-center' },
-    { key: 'estado', header: 'Estado', sortable: true, width: '120px' },
-    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '200px', class: 'text-center' }
+      columns: TableColumn<Cotizacion>[] = [
+    { key: "codigo", header: "Codigo", sortable: true, width: "120px", class: "text-center text-nowrap" },
+    { key: "cliente", header: "Cliente", sortable: true, width: "180px", class: "cliente-col text-center" },
+    { key: "evento", header: "Evento", sortable: true, width: "180px" },
+    { key: "fecha", header: "Fecha / horas", sortable: true, width: "160px" },
+    { key: "total", header: "Total", sortable: true, width: "140px", class: "text-end text-nowrap" },
+    { key: "estado", header: "Estado", sortable: true, width: "140px", class: "text-center" },
+    { key: "acciones", header: "Acciones", sortable: false, filterable: false, width: "160px", class: "text-center" }
   ];
 
   rows: Cotizacion[] = [];
@@ -89,7 +89,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
   editCotizacion(cotizacion: Cotizacion): void {
     if (cotizacion.estado === 'Aceptada' || cotizacion.estado === 'Rechazada') {
-      this.error = 'No puedes editar una cotización que ya fue aceptada o rechazada.';
+      this.error = 'No puedes editar una cotizaciÃ³n que ya fue aceptada o rechazada.';
       return;
     }
     this.router.navigate(['/home/gestionar-cotizaciones/editar', cotizacion.id]);
@@ -139,7 +139,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   openEstadoModal(cotizacion: Cotizacion, destino: 'Enviada' | 'Aceptada' | 'Rechazada'): void {
     this.error = null;
     if (!cotizacion || !cotizacion.total || cotizacion.total <= 0) {
-      this.error = 'La cotización debe tener un total mayor a cero para cambiar de estado.';
+      this.error = 'La cotizaciÃ³n debe tener un total mayor a cero para cambiar de estado.';
       return;
     }
 
@@ -160,7 +160,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     }
 
     if (!this.estadoTarget.total || this.estadoTarget.total <= 0) {
-      this.error = 'La cotización debe tener un total mayor a cero para cambiar de estado.';
+      this.error = 'La cotizaciÃ³n debe tener un total mayor a cero para cambiar de estado.';
       this.closeEstadoModal(); return;
     }
 
@@ -229,13 +229,13 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                 .pipe(takeUntil(this.destroy$))
                 .subscribe({
                   next: ({ pedidoId }) => {
-                    console.debug('[cotizaciones] pedido creado desde cotización', { pedidoId, cotizacionId: actualizada.id });
+                    console.debug('[cotizaciones] pedido creado desde cotizaciÃ³n', { pedidoId, cotizacionId: actualizada.id });
                     const baseTexto = pedidoId
                       ? `Pedido #${pedidoId} creado correctamente.`
                       : 'Pedido creado correctamente.';
                     const texto = this.clienteCreadoEnAceptacion
-                      ? `Nuevo cliente registrado y cotización aceptada. ${baseTexto}`
-                      : `Cotización aceptada. ${baseTexto}`;
+                      ? `Nuevo cliente registrado y cotizaciÃ³n aceptada. ${baseTexto}`
+                      : `CotizaciÃ³n aceptada. ${baseTexto}`;
                     Swal.fire({
                       icon: 'success',
                       title: 'Proceso completado',
@@ -244,26 +244,26 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                     this.clienteCreadoEnAceptacion = false;
                   },
                   error: err => {
-                    console.error('[cotizaciones] migrar a pedido falló', err);
+                    console.error('[cotizaciones] migrar a pedido fallÃ³', err);
                     Swal.fire({
                       icon: 'error',
                       title: 'No pudimos crear el pedido',
-                      text: err?.message ?? 'Intenta nuevamente más tarde.'
+                      text: err?.message ?? 'Intenta nuevamente mÃ¡s tarde.'
                     });
                     this.clienteCreadoEnAceptacion = false;
                   }
                 });
             } else {
               let title = 'Estado actualizado';
-              let text = 'La cotización se actualizó correctamente.';
+              let text = 'La cotizaciÃ³n se actualizÃ³ correctamente.';
               switch (destino) {
                 case 'Enviada':
-                  title = 'Cotización enviada';
-                  text = 'La cotización se marcó como enviada correctamente.';
+                  title = 'CotizaciÃ³n enviada';
+                  text = 'La cotizaciÃ³n se marcÃ³ como enviada correctamente.';
                   break;
                 case 'Rechazada':
-                  title = 'Cotización rechazada';
-                  text = 'La cotización se marcó como rechazada correctamente.';
+                  title = 'CotizaciÃ³n rechazada';
+                  text = 'La cotizaciÃ³n se marcÃ³ como rechazada correctamente.';
                   break;
               }
               Swal.fire({ icon: 'success', title, text });
@@ -301,17 +301,17 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
           this.leadConversionDestino = '';
         }
       });
-    console.log('[cotizaciones] aceptar – target completo', target);
-    console.log('[cotizaciones] aceptar – raw del backend', target.raw);
-    console.log('[cotizaciones] aceptar – contacto normalizado', target.contacto);
-    console.log('[cotizaciones] aceptar – destino', destino);
+    console.log('[cotizaciones] aceptar â€“ target completo', target);
+    console.log('[cotizaciones] aceptar â€“ raw del backend', target.raw);
+    console.log('[cotizaciones] aceptar â€“ contacto normalizado', target.contacto);
+    console.log('[cotizaciones] aceptar â€“ destino', destino);
   }
 
   get estadoModalTitle(): string { return 'Confirmar cambio de estado'; }
 
   get estadoModalMessage(): string {
     if (!this.estadoTarget) return '';
-    const nombre = this.estadoTarget.codigo ?? `Cotización #${this.estadoTarget.id}`;
+    const nombre = this.estadoTarget.codigo ?? `CotizaciÃ³n #${this.estadoTarget.id}`;
     const estadoActual = this.estadoTarget.estado ?? 'Borrador';
     if (estadoActual === 'Borrador') return `Marcar ${nombre} como enviada.`;
     return `Selecciona el nuevo estado para ${nombre}. Estado actual: ${estadoActual}`;
@@ -330,7 +330,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (cotizaciones) => {
-          this.rows = cotizaciones ?? [];
+          this.rows = (cotizaciones ?? []).map(c => this.withClienteDisplay(c));
           this.loadingList = false;
           console.log('[cotizaciones] list', cotizaciones);
         },
@@ -446,7 +446,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     console.debug('[cotizaciones] submitLeadRegistro target', { target });
     const contactoId = target.contacto?.id ?? null;
     if (contactoId == null) {
-      this.registroClienteError = 'No pudimos identificar el lead asociado a la cotización.';
+      this.registroClienteError = 'No pudimos identificar el lead asociado a la cotizaciÃ³n.';
       this.leadConversionPending = false;
       return;
     }
@@ -480,11 +480,11 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
             console.warn('[cotizaciones] convertLeadToCliente con estados inesperados', acciones);
             this.registroClienteLoading = false;
             this.leadConversionPending = false;
-            this.registroClienteError = 'La respuesta del backend no confirma la conversión del lead.';
+            this.registroClienteError = 'La respuesta del backend no confirma la conversiÃ³n del lead.';
             return;
           }
 
-          console.debug('[cotizaciones] conversión de lead exitosa, continuando con updateEstado', {
+          console.debug('[cotizaciones] conversiÃ³n de lead exitosa, continuando con updateEstado', {
             contactoId,
             destino: this.estadoDestino,
             cotizacionId: this.estadoTarget?.id ?? this.leadConversionTarget?.id
@@ -525,12 +525,53 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private mergeCotizacion(base: Cotizacion, actualizada: Cotizacion): Cotizacion {
     const contacto = actualizada.contacto ?? base.contacto;
     const contactoResumen = actualizada.contactoResumen ?? base.contactoResumen;
-    return {
+    return this.withClienteDisplay({
       ...base,
       ...actualizada,
       contacto,
       contactoResumen
+    });
+  }
+
+  private withClienteDisplay(cotizacion: Cotizacion): Cotizacion {
+    const { label, subtitle } = this.buildClienteDisplay(cotizacion);
+
+    return {
+      ...cotizacion,
+      cliente: label,
+      contactoResumen: subtitle || undefined
     };
+  }
+
+  private buildClienteDisplay(cotizacion: Cotizacion): { label: string; subtitle?: string } {
+    const contacto = cotizacion.contacto ?? {};
+    const nombre = this.toOptionalString(contacto.nombre);
+    const clienteBase = this.toOptionalString(cotizacion.cliente);
+    const contactoResumen = this.toOptionalString(cotizacion.contactoResumen);
+    const celular = this.toOptionalString(contacto.celular);
+
+    const etiqueta = nombre
+      || clienteBase
+      || contactoResumen
+      || `Cliente #${contacto.id ?? cotizacion.id}`;
+
+    const subtitulo = contactoResumen
+      || celular
+      || (nombre && clienteBase && nombre !== clienteBase ? clienteBase : undefined);
+
+    return { label: etiqueta, subtitle: subtitulo };
+  }
+
+  private toOptionalString(value: unknown): string | undefined {
+    if (value == null) return undefined;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed || undefined;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+    return undefined;
   }
 }
 
@@ -542,3 +583,5 @@ interface RegistroClienteFormModel {
   celular: string;
   direccion: string;
 }
+
+

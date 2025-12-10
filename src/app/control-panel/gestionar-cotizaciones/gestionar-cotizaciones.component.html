@@ -25,8 +25,8 @@
 
       <!-- cliente + contacto: cliente — contacto -->
       <ng-template appCell="cliente" let-row>
-        <span>{{ row.cliente || '—' }}</span>
-        <small class="text-muted" *ngIf="row.contactoResumen"> — {{ row.contactoResumen }}</small>
+        <span>{{ row.cliente || '--' }}</span>
+        <small class="text-muted" *ngIf="row.contactoResumen"> {{ row.contactoResumen }}</small>
       </ng-template>
 
       <!-- fecha / horas -->
@@ -39,7 +39,6 @@
       <ng-template appCell="estado" let-row>
         <app-estado-badge [estado]="row.estado || 'Borrador'"></app-estado-badge>
       </ng-template>
->
 
       <!-- total en USD -->
       <ng-template appCell="total" let-row>
