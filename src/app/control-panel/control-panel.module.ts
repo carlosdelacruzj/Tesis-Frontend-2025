@@ -33,7 +33,6 @@ import { AdministrarEquiposComponent } from './administrar-equipos/administrar-e
 import { DetalleEquiposComponent } from './administrar-equipos/detalle-equipos/detalle-equipos.component';
 import { EquipoDetalleComponent } from './administrar-equipos/equipo-detalle/equipo-detalle.component';
 import { GestionarPersonalComponent } from './gestionar-personal/gestionar-personal.component';
-import { RegistrarPagoComponent } from './registrar-pago/registrar-pago.component';
 import { GestionarClienteComponent } from './gestionar-cliente/gestionar-cliente.component';
 import { GestionarPerfilesComponent } from './gestionar-perfiles/gestionar-perfiles.component';
 import { RegistrarPerfilComponent } from './gestionar-perfiles/registrar-perfil/registrar-perfil.component';
@@ -65,7 +64,6 @@ import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.componen
     DetallePaqueteServicioComponent,
     AddEventoComponent,
     GestionarPersonalComponent,
-    RegistrarPagoComponent,
     GestionarClienteComponent,
     GestionarPerfilesComponent,
     RegistrarPerfilComponent,

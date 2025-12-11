@@ -9,7 +9,6 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { GestionarPedidoComponent } from './gestionar-pedido/gestionar-pedido.component';
 import { GestionarPersonalComponent } from './gestionar-personal/gestionar-personal.component';
 import { HomeComponent } from './home/home.component';
-import { RegistrarPagoComponent } from './registrar-pago/registrar-pago.component';
 import { DetallePedidoComponent } from './gestionar-pedido/detalle-pedido/detalle-pedido.component';
 import { ActualizarPedidoComponent } from './gestionar-pedido/actualizar-pedido/actualizar-pedido.component';
 import { AgregarPedidoComponent } from './gestionar-pedido/agregar-pedido/agregar-pedido.component';
@@ -42,7 +41,6 @@ const routes: Routes = [
       { path: 'gestionar-pedido/actualizar/:id', component: ActualizarPedidoComponent },
       { path: 'gestionar-pedido/detalle/:id', component: DetallePedidoComponent },
       { path: 'gestionar-personal', component: GestionarPersonalComponent },
-      { path: 'registrar-pago', component: RegistrarPagoComponent },
       { path: 'pagos-estandar', component: PagosEstandarComponent },
       { path: 'gestionar-cliente', component: GestionarClienteComponent },
       { path: 'gestionar-perfiles', component: GestionarPerfilesComponent },
