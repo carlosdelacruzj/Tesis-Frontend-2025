@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+﻿import { Component, Inject, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { catchError } from 'rxjs/operators';
@@ -387,7 +387,7 @@ export class registroComponent { }
           {{ fitToScreen ? '1:1' : 'Ajustar' }}
         </button>
         <button mat-button (click)="rotate()" aria-label="Rotar">↻</button>
-        <button mat-button (click)="openNewTab()" aria-label="Abrir en nueva pestaña">↗</button>
+        <button mat-button (click)="openNewTab()" aria-label="Abrir en nueva pestaña">?</button>
 
         <button mat-button cdkFocusInitial (click)="close()" aria-label="Cerrar">✕</button>
       </div>

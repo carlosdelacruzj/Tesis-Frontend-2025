@@ -57,7 +57,9 @@
       </ng-template>
 
       <ng-template appCell="Pago" let-row>
-        {{ row.Pago || '--' }}
+        <ng-container *ngIf="getPagoPill(row) as pill">
+          <span [ngClass]="pill.className">{{ pill.label }}</span>
+        </ng-container>
       </ng-template>
 
       <ng-template appCell="acciones" let-row>
@@ -91,7 +93,7 @@
 >
   <div *ngIf="modalPago.cargando" class="d-flex flex-column align-items-center justify-content-center p-4 text-muted">
     <mat-spinner diameter="36"></mat-spinner>
-    <p class="mt-3 mb-0">Cargando informaciÃ³nâ€¦</p>
+    <p class="mt-3 mb-0">Cargando información</p>
   </div>
 
   <ng-container *ngIf="!modalPago.cargando">
@@ -126,7 +128,7 @@
 
         <div class="col-12">
           <div class="alert alert-warning" *ngIf="modalPago.faltanteDeposito > 0" role="status">
-            Debes registrar al menos {{ faltanteDepositoTexto }} para cumplir con el 50&nbsp;% del pedido.
+            Debes registrar al menos {{ faltanteDepositoTexto }} para cumplir con el 50% del pedido.
           </div>
         </div>
 
@@ -140,13 +142,15 @@
             min="0"
             step="0.01"
             [(ngModel)]="modalPago.monto"
+            (ngModelChange)="onMontoChange()"
             required
           />
+          <div *ngIf="modalPago.montoError" class="text-danger small mt-1">{{ modalPago.montoError }}</div>
           <div class="form-text">Saldo disponible: {{ saldoPendienteTexto }}</div>
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label" for="metodoPagoSelect">MÃ©todo de pago</label>
+          <label class="form-label" for="metodoPagoSelect">Método de pago</label>
           <select
             id="metodoPagoSelect"
             name="metodoPagoSelect"
@@ -154,7 +158,7 @@
             required
             [(ngModel)]="modalPago.metodoId"
           >
-            <option [ngValue]="null" disabled>Selecciona un mÃ©todo</option>
+            <option [ngValue]="null" disabled>Selecciona un método</option>
             <option *ngFor="let metodo of modalPago.metodos" [ngValue]="metodo.idMetodoPago">
               {{ metodo.nombre }}
             </option>
@@ -209,8 +213,6 @@
 <ng-template #loadingState>
   <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
     <mat-spinner diameter="40"></mat-spinner>
-    <p class="mt-3 mb-0">Cargando pedidosâ€¦</p>
+    <p class="mt-3 mb-0">Cargando pedidos</p>
   </div>
 </ng-template>
-
-

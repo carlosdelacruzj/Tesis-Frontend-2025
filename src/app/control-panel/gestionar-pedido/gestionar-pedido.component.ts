@@ -14,7 +14,7 @@ import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 export interface PedidoRow {
   ID: string | number;
-  id?: number; // id numÃ©rico para navegaciÃ³n/API
+  id?: number; // id numérico para navegación/API
   Cliente: string;
   Documento?: string;
   Creado?: string;
@@ -36,6 +36,7 @@ interface ModalPagoState {
   resumen: ResumenPago | null;
   metodos: MetodoPago[];
   monto: string;
+  montoError: string | null;
   metodoId: number | null;
   fecha: string;
   file: File | null;
@@ -111,11 +112,11 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   }
 
   onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {
-    // Hook disponible para telemetrÃ­a futura
+    // Hook disponible para telemetría futura
   }
 
   onPageChange(_: { page: number; pageSize: number }): void {
-    // Hook disponible para telemetrÃ­a futura
+    // Hook disponible para telemetría futura
   }
 
   reload(): void {
@@ -169,7 +170,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
           this.modalPago = {
             ...this.modalPago,
             cargando: false,
-            error: 'No se pudo cargar la informaciÃ³n del pedido.'
+            error: 'No se pudo cargar la informacion del pedido.'
           };
         }
       });
@@ -196,12 +197,37 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     this.modalPago.fileName = null;
   }
 
+  onMontoChange(): void {
+    const monto = this.parseMonto(this.modalPago.monto);
+    const saldo = this.obtenerSaldoPendiente();
+
+    if (!monto || monto <= 0) {
+      this.modalPago.montoError = 'Ingresa un monto válido.';
+      return;
+    }
+
+    if (saldo > 0 && monto > saldo + 0.01) {
+      this.modalPago.montoError = 'El monto supera el saldo pendiente.';
+      return;
+    }
+
+    if (this.modalPago.faltanteDeposito > 0 && monto < this.modalPago.faltanteDeposito) {
+      this.modalPago.montoError = `Debes pagar al menos ${this.faltanteDepositoTexto} en el primer pago.`;
+      return;
+    }
+
+    this.modalPago.montoError = null;
+  }
+
   get puedeRegistrarPago(): boolean {
     if (this.modalPago.cargando || this.modalPago.guardando) {
       return false;
     }
     const monto = this.parseMonto(this.modalPago.monto);
     if (!monto || monto <= 0) {
+      return false;
+    }
+    if (this.modalPago.montoError) {
       return false;
     }
     if (!this.modalPago.metodoId) {
@@ -247,7 +273,6 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
           (this.modalPago.pedido as any)?.NombrePedido ??
           this.modalPago.pedido.Cliente ??
           `Pedido ${this.modalPago.pedido.ID}`;
-
         try {
           await this.registrarPagoService.crearProyecto({
             proyectoNombre,
@@ -259,7 +284,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
           void Swal.fire({
             icon: 'warning',
             title: 'Pago registrado',
-            text: 'El proyecto no pudo crearse automÃ¡ticamente. Intenta crearlo manualmente.',
+            text: 'El proyecto no pudo crearse automaticamente. Intenta crearlo manualmente.',
             confirmButtonText: 'Entendido',
             buttonsStyling: false,
             customClass: { confirmButton: 'btn btn-warning' }
@@ -272,12 +297,13 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
         icon: 'success',
         title: 'Pago registrado',
         text: saldoRestante > 0
-          ? `El pago se registrÃ³ correctamente. Saldo pendiente: ${this.formatearMoneda(saldoRestante)}`
-          : 'El pago se registrÃ³ correctamente.',
+          ? `El pago se registro correctamente. Saldo pendiente: ${this.formatearMoneda(saldoRestante)}`
+          : 'El pago se registro correctamente.',
         confirmButtonText: 'Aceptar',
         buttonsStyling: false,
         customClass: { confirmButton: 'btn btn-success' }
       });
+
 
       this.modalPago.open = false;
       this.loadPedidos();
@@ -287,7 +313,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       void Swal.fire({
         icon: 'error',
         title: 'No se pudo registrar',
-        text: 'OcurriÃ³ un problema al registrar el pago.',
+        text: 'Ocurrio un problema al registrar el pago.',
         confirmButtonText: 'Aceptar',
         buttonsStyling: false,
         customClass: { confirmButton: 'btn btn-danger' }
@@ -354,6 +380,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       resumen: null,
       metodos: [],
       monto: '',
+      montoError: null,
       metodoId: null,
       fecha: '',
       file: null,
@@ -437,6 +464,24 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     return this.formatearMoneda(this.modalPago.faltanteDeposito);
   }
 
+  getPagoPill(row: PedidoRow | null | undefined): { label: string; className: string } {
+    const label = this.toOptionalString(row?.Pago) || '--';
+    const key = label.trim().toLowerCase();
+    let className = 'badge bg-secondary';
+
+    if (['pagado', 'completo', 'pagado total'].includes(key)) {
+      className = 'badge bg-success';
+    } else if (['parcial', 'parcialmente pagado', 'abono'].includes(key)) {
+      className = 'badge bg-warning text-dark';
+    } else if (['pendiente', 'sin pago', 'no pagado'].includes(key)) {
+      className = 'badge bg-danger';
+    } else if (['deposito', 'adelanto'].includes(key)) {
+      className = 'badge bg-info text-dark';
+    }
+
+    return { label, className };
+  }
+
   private extractId(row: PedidoRow | null | undefined): number | null {
     if (!row) return null;
     const id = this.parseNumber((row as any).id ?? row.ID ?? (row as any).idPedido ?? (row as any).pedidoId);
@@ -466,4 +511,5 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     return undefined;
   }
 }
+
 

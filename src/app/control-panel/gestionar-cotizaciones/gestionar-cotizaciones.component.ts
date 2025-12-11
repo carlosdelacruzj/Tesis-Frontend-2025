@@ -31,7 +31,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     { key: "cliente", header: "Cliente", sortable: true, width: "180px", class: "cliente-col text-center" },
     { key: "evento", header: "Evento", sortable: true, width: "180px" },
     { key: "fecha", header: "Fecha / horas", sortable: true, width: "160px" },
-    { key: "total", header: "Total", sortable: true, width: "140px", class: "text-end text-nowrap" },
+    { key: "total", header: "Total", sortable: true, width: "140px", class: "text-center text-nowrap" },
     { key: "estado", header: "Estado", sortable: true, width: "140px", class: "text-center" },
     { key: "acciones", header: "Acciones", sortable: false, filterable: false, width: "160px", class: "text-center" }
   ];
@@ -89,7 +89,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
   editCotizacion(cotizacion: Cotizacion): void {
     if (cotizacion.estado === 'Aceptada' || cotizacion.estado === 'Rechazada') {
-      this.error = 'No puedes editar una cotizaciÃ³n que ya fue aceptada o rechazada.';
+      this.error = 'No puedes editar una Cotización que ya fue aceptada o rechazada.';
       return;
     }
     this.router.navigate(['/home/gestionar-cotizaciones/editar', cotizacion.id]);
@@ -139,7 +139,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   openEstadoModal(cotizacion: Cotizacion, destino: 'Enviada' | 'Aceptada' | 'Rechazada'): void {
     this.error = null;
     if (!cotizacion || !cotizacion.total || cotizacion.total <= 0) {
-      this.error = 'La cotizaciÃ³n debe tener un total mayor a cero para cambiar de estado.';
+      this.error = 'La Cotización debe tener un total mayor a cero para cambiar de estado.';
       return;
     }
 
@@ -160,7 +160,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     }
 
     if (!this.estadoTarget.total || this.estadoTarget.total <= 0) {
-      this.error = 'La cotizaciÃ³n debe tener un total mayor a cero para cambiar de estado.';
+      this.error = 'La Cotización debe tener un total mayor a cero para cambiar de estado.';
       this.closeEstadoModal(); return;
     }
 
@@ -229,13 +229,13 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                 .pipe(takeUntil(this.destroy$))
                 .subscribe({
                   next: ({ pedidoId }) => {
-                    console.debug('[cotizaciones] pedido creado desde cotizaciÃ³n', { pedidoId, cotizacionId: actualizada.id });
+                    console.debug('[cotizaciones] pedido creado desde Cotización', { pedidoId, cotizacionId: actualizada.id });
                     const baseTexto = pedidoId
                       ? `Pedido #${pedidoId} creado correctamente.`
                       : 'Pedido creado correctamente.';
                     const texto = this.clienteCreadoEnAceptacion
-                      ? `Nuevo cliente registrado y cotizaciÃ³n aceptada. ${baseTexto}`
-                      : `CotizaciÃ³n aceptada. ${baseTexto}`;
+                      ? `Nuevo cliente registrado y Cotización aceptada. ${baseTexto}`
+                      : `Cotización aceptada. ${baseTexto}`;
                     Swal.fire({
                       icon: 'success',
                       title: 'Proceso completado',
@@ -244,7 +244,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                     this.clienteCreadoEnAceptacion = false;
                   },
                   error: err => {
-                    console.error('[cotizaciones] migrar a pedido fallÃ³', err);
+                    console.error('[cotizaciones] migrar a pedido falló', err);
                     Swal.fire({
                       icon: 'error',
                       title: 'No pudimos crear el pedido',
@@ -255,15 +255,15 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                 });
             } else {
               let title = 'Estado actualizado';
-              let text = 'La cotizaciÃ³n se actualizÃ³ correctamente.';
+              let text = 'La Cotización se actualizó correctamente.';
               switch (destino) {
                 case 'Enviada':
-                  title = 'CotizaciÃ³n enviada';
-                  text = 'La cotizaciÃ³n se marcÃ³ como enviada correctamente.';
+                  title = 'Cotización enviada';
+                  text = 'La Cotización se marcó como enviada correctamente.';
                   break;
                 case 'Rechazada':
-                  title = 'CotizaciÃ³n rechazada';
-                  text = 'La cotizaciÃ³n se marcÃ³ como rechazada correctamente.';
+                  title = 'Cotización rechazada';
+                  text = 'La Cotización se marcó como rechazada correctamente.';
                   break;
               }
               Swal.fire({ icon: 'success', title, text });
@@ -311,7 +311,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
   get estadoModalMessage(): string {
     if (!this.estadoTarget) return '';
-    const nombre = this.estadoTarget.codigo ?? `CotizaciÃ³n #${this.estadoTarget.id}`;
+    const nombre = this.estadoTarget.codigo ?? `Cotización #${this.estadoTarget.id}`;
     const estadoActual = this.estadoTarget.estado ?? 'Borrador';
     if (estadoActual === 'Borrador') return `Marcar ${nombre} como enviada.`;
     return `Selecciona el nuevo estado para ${nombre}. Estado actual: ${estadoActual}`;
@@ -446,7 +446,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     console.debug('[cotizaciones] submitLeadRegistro target', { target });
     const contactoId = target.contacto?.id ?? null;
     if (contactoId == null) {
-      this.registroClienteError = 'No pudimos identificar el lead asociado a la cotizaciÃ³n.';
+      this.registroClienteError = 'No pudimos identificar el lead asociado a la Cotización.';
       this.leadConversionPending = false;
       return;
     }
@@ -480,11 +480,11 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
             console.warn('[cotizaciones] convertLeadToCliente con estados inesperados', acciones);
             this.registroClienteLoading = false;
             this.leadConversionPending = false;
-            this.registroClienteError = 'La respuesta del backend no confirma la conversiÃ³n del lead.';
+            this.registroClienteError = 'La respuesta del backend no confirma la conversión del lead.';
             return;
           }
 
-          console.debug('[cotizaciones] conversiÃ³n de lead exitosa, continuando con updateEstado', {
+          console.debug('[cotizaciones] conversión de lead exitosa, continuando con updateEstado', {
             contactoId,
             destino: this.estadoDestino,
             cotizacionId: this.estadoTarget?.id ?? this.leadConversionTarget?.id
