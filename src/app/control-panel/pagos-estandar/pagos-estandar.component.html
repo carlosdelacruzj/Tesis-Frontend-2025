@@ -1,0 +1,216 @@
+<div class="dashboard-content">
+  <app-list-toolbar
+    [title]="'Pagos (nuevo diseño)'"
+    [showSearch]="true"
+    [searchPlaceholder]="'Buscar: cliente, código'"
+    [searchValue]="searchTerm"
+    [showCreateButton]="false"
+    (searchChange)="onSearch($event)"
+  >
+  </app-list-toolbar>
+
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <div class="btn-group" role="group" aria-label="Tabs pagos">
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        [class.active]="selectedTab === tab.key"
+        *ngFor="let tab of tabs"
+        (click)="onTabChange(tab.key)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+    <button type="button" class="btn btn-link btn-sm text-decoration-none" (click)="onRefresh()">
+      <mat-icon class="align-middle">refresh</mat-icon> Actualizar
+    </button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
+
+  <div *ngIf="loading" class="d-flex align-items-center gap-2 text-muted mb-3">
+    <mat-spinner diameter="28"></mat-spinner>
+    <span>Cargando pagos...</span>
+  </div>
+
+  <app-table-base
+    [columns]="columns"
+    [data]="visibleRows"
+    [pageSizeOptions]="[10, 25, 50]"
+    [pageSize]="10"
+    emptyText="Sin resultados"
+    [showCreateButton]="false"
+    [showSearch]="false"
+    (sortChange)="null"
+    (pageChange)="null"
+  >
+    <ng-template appCell="cliente" let-row>
+      <div class="d-flex flex-column">
+        <span class="fw-semibold">{{ row.cliente || '--' }}</span>
+        <small class="text-muted">Código: {{ row.codigo }}</small>
+      </div>
+    </ng-template>
+
+    <ng-template appCell="fecha" let-row>
+      <span>{{ row.fecha ? (row.fecha | date:'dd-MM-yyyy') : '--' }}</span>
+    </ng-template>
+
+    <ng-template appCell="estado" let-row>
+      <ng-container *ngIf="getEstadoPill(row) as pill">
+        <span [ngClass]="pill.className">{{ pill.label }}</span>
+      </ng-container>
+    </ng-template>
+
+    <ng-template appCell="acciones" let-row>
+      <div class="d-flex justify-content-center gap-1">
+        <ng-container *ngIf="isPagado(row); else btnPagar">
+          <button mat-icon-button color="primary" type="button" matTooltip="Ver pagos" (click)="abrirGestionPago(row)">
+            <mat-icon>receipt_long</mat-icon>
+          </button>
+        </ng-container>
+        <ng-template #btnPagar>
+          <button mat-icon-button color="accent" type="button" matTooltip="Gestionar pago" (click)="abrirGestionPago(row)">
+            <mat-icon>request_quote</mat-icon>
+          </button>
+        </ng-template>
+      </div>
+    </ng-template>
+  </app-table-base>
+</div>
+
+<app-modal-base
+  [open]="modal.open"
+  [useDefaultFooter]="false"
+  [disableClose]="modal.guardando"
+  title="Gestionar pago"
+  size="md"
+  (closed)="cerrarGestionPago()"
+>
+  <div *ngIf="modal.loading" class="d-flex align-items-center gap-2 text-muted">
+    <mat-spinner diameter="28"></mat-spinner>
+    <span>Cargando detalle...</span>
+  </div>
+
+  <ng-container *ngIf="!modal.loading">
+    <div *ngIf="modal.error" class="alert alert-danger" role="alert">
+      {{ modal.error }}
+    </div>
+
+    <div *ngIf="modal.resumen" class="card border-0 shadow-sm mb-3">
+      <div class="card-body d-flex flex-wrap gap-3">
+        <div>
+          <h6 class="text-muted mb-1">Total</h6>
+          <p class="fs-5 fw-semibold mb-0">
+            {{ (modal.resumen?.CostoTotal || 0) | currency:'USD':'symbol':'1.2-2':'en-US' }}
+          </p>
+        </div>
+        <div>
+          <h6 class="text-muted mb-1">Abonado</h6>
+          <p class="fs-5 fw-semibold mb-0">
+            {{ (modal.resumen?.MontoAbonado || 0) | currency:'USD':'symbol':'1.2-2':'en-US' }}
+          </p>
+        </div>
+        <div>
+          <h6 class="text-muted mb-1">Saldo</h6>
+          <p class="fs-5 fw-semibold mb-0">
+            {{ (modal.resumen?.SaldoPendiente || 0) | currency:'USD':'symbol':'1.2-2':'en-US' }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <form class="row g-3" (ngSubmit)="registrarPago()" *ngIf="modal.resumen && modal.allowRegistro">
+      <div class="col-12">
+        <div class="alert alert-warning" *ngIf="modal.faltanteDeposito > 0" role="status">
+          Debes registrar al menos {{ (modal.faltanteDeposito) }} para cumplir con el 50% del pedido.
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label" for="montoPago">Monto a pagar</label>
+        <input
+          id="montoPago"
+          name="montoPago"
+          type="number"
+          class="form-control"
+          min="0"
+          step="0.01"
+          [(ngModel)]="modal.monto"
+          (ngModelChange)="onMontoChange()"
+          required
+        />
+        <div *ngIf="modal.montoError" class="text-danger small mt-1">{{ modal.montoError }}</div>
+        <div class="form-text">Saldo disponible: {{ (modal.resumen?.SaldoPendiente || 0) }}</div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label" for="metodoPagoSelect">Método de pago</label>
+        <select
+          id="metodoPagoSelect"
+          name="metodoPagoSelect"
+          class="form-select"
+          required
+          [(ngModel)]="modal.metodoId"
+        >
+          <option [ngValue]="null" disabled>Selecciona un método</option>
+          <option *ngFor="let metodo of modal.metodos" [ngValue]="metodo.idMetodoPago">
+            {{ metodo.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label" for="fechaPago">Fecha del pago</label>
+        <input
+          id="fechaPago"
+          name="fechaPago"
+          type="date"
+          class="form-control"
+          [(ngModel)]="modal.fecha"
+        />
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" for="voucherPago">Comprobante (opcional)</label>
+        <input
+          id="voucherPago"
+          type="file"
+          class="form-control"
+          accept="image/png,image/jpeg,application/pdf"
+          (change)="onFileSelected($event)"
+        />
+        <div class="mt-2 d-flex align-items-center gap-2" *ngIf="modal.fileName">
+          <mat-icon class="text-muted">attach_file</mat-icon>
+          <span class="text-truncate">{{ modal.fileName }}</span>
+          <button type="button" class="btn btn-link btn-sm p-0" (click)="limpiarArchivo()">Quitar</button>
+        </div>
+      </div>
+
+      <div class="col-12 text-end">
+        <button class="btn btn-primary" type="submit" [disabled]="!puedeRegistrar">
+          Registrar pago
+        </button>
+      </div>
+    </form>
+
+    <div class="mt-3">
+      <h6 class="mb-2">Pagos/Vouchers</h6>
+      <div *ngIf="!modal.vouchers.length" class="text-muted">Sin vouchers registrados.</div>
+      <div class="list-group">
+        <div class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let v of modal.vouchers">
+          <div>
+            <div class="fw-semibold">{{ v.Fecha | date:'dd-MM-yyyy' }} · {{ v.MetodoPago }}</div>
+            <div class="text-muted">Monto: {{ v.Monto | currency:'USD':'symbol':'1.2-2':'en-US' }}</div>
+          </div>
+          <a class="btn btn-link btn-sm" [href]="v.Link" target="_blank" rel="noopener">Ver voucher</a>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <div modal-footer class="d-flex justify-content-end">
+    <button class="btn btn-outline-secondary" type="button" (click)="cerrarGestionPago()" [disabled]="modal.guardando">
+      Cerrar
+    </button>
+  </div>
+</app-modal-base>

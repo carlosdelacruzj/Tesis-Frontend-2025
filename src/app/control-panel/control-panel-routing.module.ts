@@ -22,6 +22,7 @@ import { RegistrarCotizacionComponent } from './gestionar-cotizaciones/registrar
 import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component';
 import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proyecto.component';
 import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/detalle-proyecto.component';
+import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.component';
 
 const routes: Routes = [
   {
@@ -42,6 +43,7 @@ const routes: Routes = [
       { path: 'gestionar-pedido/detalle/:id', component: DetallePedidoComponent },
       { path: 'gestionar-personal', component: GestionarPersonalComponent },
       { path: 'registrar-pago', component: RegistrarPagoComponent },
+      { path: 'pagos-estandar', component: PagosEstandarComponent },
       { path: 'gestionar-cliente', component: GestionarClienteComponent },
       { path: 'gestionar-perfiles', component: GestionarPerfilesComponent },
       { path: 'gestionar-perfiles/registrar-perfil', component: RegistrarPerfilComponent },
