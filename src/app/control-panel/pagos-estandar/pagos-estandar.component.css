@@ -1,3 +1,9 @@
 .btn-group .btn.active {
-  color: #fff;
+  color: #fff !important;
+  background-color: #0f1c30 !important;
+  border-color: #0f1c30 !important;
+}
+
+.btn-link{
+  color: #0f1c30;
 }

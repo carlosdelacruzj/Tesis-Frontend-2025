@@ -2,7 +2,7 @@
   <app-list-toolbar
     [title]="'Pedidos'"
     [showSearch]="true"
-    [searchPlaceholder]="'Buscar: cliente, documento, estadoâ€¦'"
+    [searchPlaceholder]="'Buscar: cliente, documento, estado'"
     [searchValue]="searchTerm"
     [showCreateButton]="true"
     [createButtonLabel]="'Registrar pedido'"
@@ -57,9 +57,12 @@
       </ng-template>
 
       <ng-template appCell="Pago" let-row>
-        <ng-container *ngIf="getPagoPill(row) as pill">
-          <span [ngClass]="pill.className">{{ pill.label }}</span>
-        </ng-container>
+        <app-estado-badge [estado]="row.Pago || 'Sin estado'"
+        [mapaColores]="{
+            'Pendiente': 'info',
+            'Parcial': 'warning',
+            'Pagado': 'success-light'
+          }"></app-estado-badge>
       </ng-template>
 
       <ng-template appCell="acciones" let-row>

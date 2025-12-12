@@ -252,8 +252,32 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Revalida antes de enviar por si el usuario no modificó el monto después de abrir el modal
+    this.onMontoChange();
+    if (this.modalPago.montoError) {
+      return;
+    }
+
     const monto = this.parseMonto(this.modalPago.monto);
     const saldoPrevio = this.obtenerSaldoPendiente();
+    const confirm = await Swal.fire({
+      icon: 'question',
+      title: 'Confirmar pago',
+      text: `Registrar pago de ${this.formatearMoneda(monto)}${saldoPrevio ? ` (saldo actual: ${this.formatearMoneda(saldoPrevio)})` : ''}?`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, registrar',
+      cancelButtonText: 'Cancelar',
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'btn btn-primary me-2',
+        cancelButton: 'btn btn-outline-secondary'
+      }
+    });
+
+    if (!confirm.isConfirmed) {
+      return;
+    }
+
     const esPrimerPago = this.modalPago.esPrimerPago;
 
     this.modalPago.guardando = true;
@@ -511,5 +535,3 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     return undefined;
   }
 }
-
-

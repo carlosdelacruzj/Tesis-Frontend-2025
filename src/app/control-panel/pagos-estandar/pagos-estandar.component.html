@@ -13,7 +13,7 @@
     <div class="btn-group" role="group" aria-label="Tabs pagos">
       <button
         type="button"
-        class="btn btn-outline-primary"
+        class="btn btn-primary"
         [class.active]="selectedTab === tab.key"
         *ngFor="let tab of tabs"
         (click)="onTabChange(tab.key)"
@@ -56,9 +56,12 @@
     </ng-template>
 
     <ng-template appCell="estado" let-row>
-      <ng-container *ngIf="getEstadoPill(row) as pill">
-        <span [ngClass]="pill.className">{{ pill.label }}</span>
-      </ng-container>
+      <app-estado-badge [estado]="row.estado || 'Sin estado'"
+      [mapaColores]="{
+            'Pendiente': 'info',
+            'Parcial': 'warning',
+            'Pagado': 'success-light'
+          }"></app-estado-badge>
     </ng-template>
 
     <ng-template appCell="acciones" let-row>
@@ -117,6 +120,18 @@
           </p>
         </div>
       </div>
+    </div>
+
+    <div class="alert alert-success" *ngIf="modal.pagadoCompleto">
+      Pago completado. Saldo en 0.
+      <button
+        class="btn btn-link btn-sm ps-1"
+        type="button"
+        *ngIf="selectedTab !== 'pagados'"
+        (click)="irAPagados()"
+      >
+        Ver en pagados
+      </button>
     </div>
 
     <form class="row g-3" (ngSubmit)="registrarPago()" *ngIf="modal.resumen && modal.allowRegistro">

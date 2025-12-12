@@ -48,6 +48,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     loading: false,
     guardando: false,
     allowRegistro: true,
+    pagadoCompleto: false,
     resumen: null as ResumenPago | null,
     vouchers: [] as VoucherVM[],
     metodos: [] as Array<{ idMetodoPago: number; nombre: string }>,
@@ -103,19 +104,6 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     );
   }
 
-  getEstadoPill(row: PagoRow): { label: string; className: string } {
-    const key = (row.estado || '').toLowerCase().trim();
-    let className = 'badge bg-secondary';
-    if (['pagado', 'completo', 'pagado total'].includes(key)) {
-      className = 'badge bg-success';
-    } else if (['parcial', 'parciales', 'parcialmente pagado', 'abono'].includes(key)) {
-      className = 'badge bg-warning text-dark';
-    } else if (['pendiente', 'sin pago', 'no pagado'].includes(key)) {
-      className = 'badge bg-danger';
-    }
-    return { label: row.estado, className };
-  }
-
   isPagado(row: PagoRow | null | undefined): boolean {
     const key = (row?.estado || '').toLowerCase();
     return ['pagado', 'pagados', 'pagado total', 'completo'].includes(key);
@@ -141,7 +129,8 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
       file: null,
       fileName: null,
       faltanteDeposito: 0,
-      allowRegistro: !this.isPagado(row)
+      allowRegistro: !this.isPagado(row),
+      pagadoCompleto: this.isPagado(row)
     };
 
     this.pagoService.getMetodosPago().pipe(takeUntil(this.destroy$)).subscribe({
@@ -161,6 +150,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
         this.modal.faltanteDeposito = faltanteDeposito;
         if (saldo <= 0) {
           this.modal.allowRegistro = false;
+          this.modal.pagadoCompleto = true;
         }
         this.modal.loading = false;
       },
@@ -244,6 +234,23 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const confirm = await Swal.fire({
+      icon: 'question',
+      title: 'Confirmar pago',
+      text: `Registrar pago de ${this.formatearMoneda(monto)}${saldo ? ` (saldo actual: ${this.formatearMoneda(saldo)})` : ''}?`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, registrar',
+      cancelButtonText: 'Cancelar',
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'btn btn-primary me-2',
+        cancelButton: 'btn btn-outline-secondary'
+      }
+    });
+    if (!confirm.isConfirmed) {
+      return;
+    }
+
     this.modal.guardando = true;
     this.modal.error = null;
     try {
@@ -255,17 +262,29 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
         fecha: this.modal.fecha || undefined
       });
 
+      await this.refrescarDetalle(id);
+      this.loadTab(this.selectedTab, true);
+
+      const saldoRestante = this.obtenerSaldoPendiente();
+      const texto = saldoRestante > 0
+        ? 'El pago se registró correctamente.'
+        : 'Pago completado. El saldo llegó a 0.';
+
+      // Limpia inputs del modal para el siguiente registro
+      this.modal.monto = '';
+      this.modal.metodoId = null;
+      this.modal.file = null;
+      this.modal.fileName = null;
+      this.modal.montoError = null;
+
       await Swal.fire({
         icon: 'success',
         title: 'Pago registrado',
-        text: 'El pago se registró correctamente.',
+        text: texto,
         confirmButtonText: 'Aceptar',
         buttonsStyling: false,
         customClass: { confirmButton: 'btn btn-success' }
       });
-
-      this.cerrarGestionPago();
-      this.onRefresh();
     } catch (error) {
       console.error('[pagos-estandar] registrar', error);
       this.modal.error = 'No se pudo registrar el pago. Intenta nuevamente.';
@@ -280,6 +299,44 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     } finally {
       this.modal.guardando = false;
     }
+  }
+
+  irAPagados(): void {
+    this.selectedTab = 'pagados';
+    this.loadTab('pagados', true);
+    this.cerrarGestionPago();
+  }
+
+  private async refrescarDetalle(pedidoId: number): Promise<void> {
+    await Promise.all([
+      new Promise<void>((resolve) => {
+        this.pagoService.getResumenPedido(pedidoId).pipe(takeUntil(this.destroy$)).subscribe({
+          next: (res) => {
+            const total = this.parseMonto(res?.CostoTotal ?? 0);
+            const abonado = this.parseMonto(res?.MontoAbonado ?? 0);
+            const saldo = res?.SaldoPendiente != null
+              ? this.parseMonto(res.SaldoPendiente)
+              : Math.max(total - abonado, 0);
+            const faltanteDeposito = Math.max(total * 0.5 - abonado, 0);
+            this.modal.resumen = { ...res, SaldoPendiente: saldo } as ResumenPago;
+            this.modal.faltanteDeposito = faltanteDeposito;
+            this.modal.allowRegistro = saldo > 0;
+            this.modal.pagadoCompleto = saldo <= 0;
+            resolve();
+          },
+          error: () => {
+            this.modal.error = 'No se pudo refrescar el resumen.';
+            resolve();
+          }
+        });
+      }),
+      new Promise<void>((resolve) => {
+        this.pagoService.getVouchersPedido(pedidoId).pipe(takeUntil(this.destroy$)).subscribe({
+          next: (v) => { this.modal.vouchers = v ?? []; resolve(); },
+          error: () => { this.modal.error = 'No se pudieron refrescar los vouchers.'; resolve(); }
+        });
+      })
+    ]);
   }
 
   private obtenerSaldoPendiente(): number {
