@@ -543,8 +543,7 @@
       <div class="col-12">
         <div class="form-label">Staff</div>
         <div class="form-control" style="height: auto;" disabled>
-          {{ (detallePaqueteSeleccionado?.staff?.total ?? detallePaqueteSeleccionado?.eventoServicio?.staff?.total ??
-          detallePaqueteSeleccionado?.personal ?? '—') }}
+          {{ getDetalleStaffTotal(detallePaqueteSeleccionado) }}
           @if (getDetalleStaffLista(detallePaqueteSeleccionado).length) {
             <div class="small text-muted">
               @for (miembro of getDetalleStaffLista(detallePaqueteSeleccionado); track $index) {

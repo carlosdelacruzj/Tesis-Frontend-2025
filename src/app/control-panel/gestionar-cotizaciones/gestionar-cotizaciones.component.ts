@@ -1,4 +1,4 @@
-﻿import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgForm } from '@angular/forms';
 import { Subject, takeUntil, firstValueFrom, take } from 'rxjs';
@@ -63,12 +63,11 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private clienteCreadoEnAceptacion = false;
 
   @ViewChild('registroClienteForm') registroClienteForm?: NgForm;
+  readonly estadoModalTitle = 'Confirmar cambio de estado';
 
-  constructor(
-    private readonly cotizacionService: CotizacionService,
-    private readonly router: Router,
-    private readonly http: HttpClient
-  ) { }
+  private readonly cotizacionService = inject(CotizacionService);
+  private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   ngOnInit(): void { this.loadCotizaciones(); }
 
@@ -82,7 +81,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.searchTerm = term ?? '';
   }
 
-  ver(_row: Cotizacion) { /* opcional */ }
+  ver(row: Cotizacion): void { void row; }
 
   editCotizacion(cotizacion: Cotizacion): void {
     if (cotizacion.estado === 'Aceptada' || cotizacion.estado === 'Rechazada') {
@@ -304,8 +303,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     console.log('[cotizaciones] aceptar â€“ destino', destino);
   }
 
-  get estadoModalTitle(): string { return 'Confirmar cambio de estado'; }
-
   get estadoModalMessage(): string {
     if (!this.estadoTarget) return '';
     const nombre = this.estadoTarget.codigo ?? `Cotización #${this.estadoTarget.id}`;
@@ -314,8 +311,8 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     return `Selecciona el nuevo estado para ${nombre}. Estado actual: ${estadoActual}`;
   }
 
-  onSortChange(_evt: { key: string; direction: 'asc' | 'desc' | '' }) { }
-  onPageChange(_evt: { page: number; pageSize: number }) { }
+  onSortChange(evt: { key: string; direction: 'asc' | 'desc' | '' }): void { void evt; }
+  onPageChange(evt: { page: number; pageSize: number }): void { void evt; }
 
   reload(): void { this.loadCotizaciones(); }
 
@@ -465,8 +462,9 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (resp) => {
           console.debug('[cotizaciones] convertLeadToCliente resp', resp);
-          const usuarioAccion = (resp as any)?.usuarioAccion;
-          const clienteAccion = (resp as any)?.clienteAccion;
+          const response = resp as { usuarioAccion?: unknown; clienteAccion?: unknown } | null;
+          const usuarioAccion = response?.usuarioAccion;
+          const clienteAccion = response?.clienteAccion;
           const acciones = [usuarioAccion, clienteAccion]
             .map(valor => (valor ?? '').toString().trim().toUpperCase())
             .filter(Boolean);
@@ -580,5 +578,3 @@ interface RegistroClienteFormModel {
   celular: string;
   direccion: string;
 }
-
-

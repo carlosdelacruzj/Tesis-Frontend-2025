@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { AdministrarEquiposService } from '../service/administrar-equipos.service';
@@ -29,6 +29,9 @@ interface FiltrosDetalle {
   styleUrls: ['./equipo-detalle.component.css']
 })
 export class EquipoDetalleComponent implements OnInit, OnDestroy {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly administrarEquiposService = inject(AdministrarEquiposService);
   private readonly estadoDisponibleNombre = 'Disponible';
   private readonly estadoBajaNombre = 'De baja';
   filtros: FiltrosDetalle = {};
@@ -64,12 +67,6 @@ export class EquipoDetalleComponent implements OnInit, OnDestroy {
     equipo: null as EquipoInventario | null
   };
   private subscription: Subscription | null = null;
-
-  constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly administrarEquiposService: AdministrarEquiposService
-  ) {}
 
   ngOnInit(): void {
     this.subscription = this.route.queryParamMap.subscribe((params) => {

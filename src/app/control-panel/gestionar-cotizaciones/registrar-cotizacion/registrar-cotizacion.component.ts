@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
@@ -10,6 +10,7 @@ import { parseDateInput } from '../../../shared/utils/date-utils';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 type AlertIcon = 'success' | 'error' | 'warning' | 'info' | 'question';
+type AnyRecord = Record<string, unknown>;
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -31,7 +32,7 @@ interface PaqueteSeleccionado {
   eventoServicioId?: number;
   servicioId?: number | null;
   servicioNombre?: string;
-  origen?: any;
+  origen?: unknown;
   precioOriginal: number;
   editandoPrecio?: boolean;
 }
@@ -43,7 +44,7 @@ interface PaqueteRow {
   staff: number | null;
   horas: number | null;
   staffDetalle?: string;
-  raw: any;
+  raw: AnyRecord;
 }
 
 interface ProgramacionEventoItemConfig {
@@ -55,6 +56,27 @@ interface ProgramacionEventoItemConfig {
   esPrincipal?: boolean;
 }
 
+type StaffDetalle = number | { total?: number };
+
+interface PaqueteDetalle {
+  precio?: number;
+  titulo?: string;
+  horas?: number;
+  categoriaNombre?: string;
+  categoriaTipo?: string;
+  esAddon?: boolean;
+  descripcion?: string;
+  Descripcion?: string;
+  personal?: number;
+  fotosImpresas?: number;
+  trailerMin?: number;
+  filmMin?: number;
+  servicioNombre?: string;
+  servicio?: { nombre?: string };
+  staff?: StaffDetalle;
+  eventoServicio?: { staff?: StaffDetalle };
+}
+
 @Component({
   selector: 'app-registrar-cotizacion',
   templateUrl: './registrar-cotizacion.component.html',
@@ -63,19 +85,10 @@ interface ProgramacionEventoItemConfig {
 export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   readonly fechaMinimaEvento = RegistrarCotizacionComponent.computeFechaMinimaEvento();
   readonly fechaMaximaEvento = RegistrarCotizacionComponent.computeFechaMaximaEvento();
-  form: UntypedFormGroup = this.fb.group({
-    clienteNombre: ['', [Validators.required, Validators.minLength(2)]],
-    clienteContacto: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
-    fechaEvento: [RegistrarCotizacionComponent.computeFechaMinimaEvento(), [Validators.required, this.fechaEventoEnRangoValidator()]],
-    departamento: ['Lima', Validators.required],
-    horasEstimadas: [6, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
-    descripcion: [''],
-    totalEstimado: [0, Validators.min(0)],
-    programacion: this.fb.array([])
-  });
+  form: UntypedFormGroup;
 
-  servicios: any[] = [];
-  eventos: any[] = [];
+  servicios: AnyRecord[] = [];
+  eventos: AnyRecord[] = [];
   selectedServicioId: number | null = null;
   selectedServicioNombre = '';
   selectedEventoId: number | null = null;
@@ -141,15 +154,26 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   loadingPaquetes = false;
   loading = false;
   detallePaqueteAbierto = false;
-  detallePaqueteSeleccionado: any = null;
+  detallePaqueteSeleccionado: PaqueteDetalle | null = null;
 
   private readonly destroy$ = new Subject<void>();
 
-  constructor(
-    private readonly fb: UntypedFormBuilder,
-    private readonly cotizacionService: CotizacionService,
-    private readonly router: Router
-  ) { }
+  private readonly fb = inject(UntypedFormBuilder);
+  private readonly cotizacionService = inject(CotizacionService);
+  private readonly router = inject(Router);
+
+  constructor() {
+    this.form = this.fb.group({
+      clienteNombre: ['', [Validators.required, Validators.minLength(2)]],
+      clienteContacto: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
+      fechaEvento: [RegistrarCotizacionComponent.computeFechaMinimaEvento(), [Validators.required, this.fechaEventoEnRangoValidator()]],
+      departamento: ['Lima', Validators.required],
+      horasEstimadas: [6, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
+      descripcion: [''],
+      totalEstimado: [0, Validators.min(0)],
+      programacion: this.fb.array([])
+    });
+  }
 
   ngOnInit(): void {
     this.loadCatalogos();
@@ -223,7 +247,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedServicioNombre = '';
     } else {
       const selected = this.servicios.find(s => this.getId(s) === this.selectedServicioId);
-      this.selectedServicioNombre = selected?.nombre ?? '';
+      this.selectedServicioNombre = this.getNombre(selected);
     }
     this.loadEventosServicio();
   }
@@ -244,12 +268,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedEventoNombre = '';
     } else {
       const selected = this.eventos.find(e => this.getId(e) === this.selectedEventoId);
-      this.selectedEventoNombre = selected?.nombre ?? '';
+      this.selectedEventoNombre = this.getNombre(selected);
     }
     this.loadEventosServicio();
   }
 
-  addPaquete(element: any): void {
+  addPaquete(element: AnyRecord): void {
     const key = this.getPkgKey(element);
     if (this.selectedPaquetes.some(p => p.key === key)) {
       return;
@@ -313,6 +337,15 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.syncTotalEstimado();
   }
 
+  private asRecord(value: unknown): AnyRecord {
+    return value && typeof value === 'object' ? (value as AnyRecord) : {};
+  }
+
+  private getNombre(value: unknown): string {
+    const record = this.asRecord(value);
+    return typeof record['nombre'] === 'string' ? record['nombre'] : '';
+  }
+
   removePaquete(key: string | number): void {
     this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
     this.syncTotalEstimado();
@@ -328,14 +361,31 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.detallePaqueteSeleccionado = null;
   }
 
-  getDetalleStaffLista(paquete: any): Array<any> {
-    const lista = paquete?.staff?.detalle ?? paquete?.staff ?? [];
+  getDetalleStaffLista(paquete: unknown): AnyRecord[] {
+    const record = this.asRecord(paquete);
+    const staff = this.asRecord(record['staff']);
+    const lista = staff['detalle'] ?? record['staff'] ?? [];
     return Array.isArray(lista) ? lista : [];
   }
 
-  getEquiposLista(paquete: any): Array<any> {
-    const lista = paquete?.equipos ?? [];
+  getEquiposLista(paquete: unknown): AnyRecord[] {
+    const record = this.asRecord(paquete);
+    const lista = record['equipos'] ?? [];
     return Array.isArray(lista) ? lista : [];
+  }
+
+  getDetalleStaffTotal(paquete: PaqueteDetalle | null | undefined): string | number {
+    if (!paquete) {
+      return '—';
+    }
+    const staff = paquete.staff;
+    if (typeof staff === 'number') {
+      return staff;
+    }
+    const eventoStaff = paquete.eventoServicio?.staff;
+    const eventoTotal = typeof eventoStaff === 'number' ? eventoStaff : eventoStaff?.total;
+    const total = staff?.total ?? eventoTotal ?? paquete.personal;
+    return total ?? '—';
   }
 
   onClienteSelected(cliente: ClienteBusquedaResultado): void {
@@ -347,7 +397,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const contacto = this.resolveClienteContacto(cliente);
     this.clienteSearchControl.setValue(nombre, { emitEvent: false });
     this.clienteBusquedaTermino = nombre;
-    const patch: Record<string, any> = {};
+    const patch: Record<string, unknown> = {};
     if (nombre) {
       patch.clienteNombre = nombre;
     }
@@ -466,14 +516,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       ?? '').toString();
   }
 
-  pkgKey = (el: any) => this.getPkgKey(el);
+  pkgKey = (el: AnyRecord) => this.getPkgKey(el);
 
-  isInSeleccion(element: any): boolean {
+  isInSeleccion(element: AnyRecord): boolean {
     const key = this.getPkgKey(element);
     return this.selectedPaquetes.some(p => p.key === key);
   }
 
-  hasOtroPaqueteDelServicio(element: any): boolean {
+  hasOtroPaqueteDelServicio(element: AnyRecord): boolean {
     const servicioId = this.getPaqueteServicioId(element);
     if (servicioId == null) {
       const servicioNombre = this.getPaqueteServicioNombre(element);
@@ -614,7 +664,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotizacion de ${clienteNombre}` : 'Solicitud de cotizacion');
     const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas);
-    const programacionRaw = this.programacion.getRawValue() as Array<Record<string, unknown>>;
+    const programacionRaw = this.programacion.getRawValue() as Record<string, unknown>[];
     const eventos: CotizacionAdminEventoPayload[] = programacionRaw
       .map((config) => {
         const fecha = ((config['fecha'] ?? fechaEvento) || '').toString().trim();
@@ -851,8 +901,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         next: paquetes => {
           const activos = Array.isArray(paquetes)
             ? paquetes.filter(item => {
-                const estadoNombre = (item?.estado?.nombre ?? item?.estadoNombre ?? '').toString().toLowerCase();
-                const estadoId = item?.estado?.id ?? item?.estado?.idEstado ?? item?.estadoId;
+                const record = this.asRecord(item);
+                const estado = this.asRecord(record['estado']);
+                const estadoNombre = String(estado['nombre'] ?? record['estadoNombre'] ?? '').toLowerCase();
+                const estadoId = this.parseNumber(estado['id'] ?? estado['idEstado'] ?? record['estadoId']);
                 return estadoNombre !== 'inactivo' && estadoId !== 2;
               })
             : [];
@@ -875,18 +927,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.refreshSelectedPaquetesColumns();
   }
 
-  private getServicioNombre(item: any): string {
-    if (!item) {
-      return '';
-    }
-    return item?.nombre ?? '';
+  private getServicioNombre(item: unknown): string {
+    return this.getNombre(item);
   }
 
-  private getEventoNombre(item: any): string {
-    if (!item) {
-      return '';
-    }
-    return item?.nombre ?? '';
+  private getEventoNombre(item: unknown): string {
+    return this.getNombre(item);
   }
 
   private static getTodayIsoDate(): string {
@@ -939,75 +985,92 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     };
   }
 
-  private getId(item: any): number | null {
-    return this.parseNumber(item?.id);
+  private getId(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['id']);
   }
 
-  private getPkgKey(el: any): string {
+  private getPkgKey(el: unknown): string {
     const eventoServicioId = this.getEventoServicioId(el);
     return eventoServicioId != null ? String(eventoServicioId) : '';
   }
 
-  private getEventoServicioId(item: any): number | null {
-    if (!item) {
+  private getEventoServicioId(item: unknown): number | null {
+    const record = this.asRecord(item);
+    if (!Object.keys(record).length) {
       return null;
     }
-    const num = this.parseNumber(item?.eventoServicioId ?? item?.idEventoServicio ?? item?.eventoServicio?.id ?? item?.id);
+    const eventoServicio = this.asRecord(record['eventoServicio']);
+    const num = this.parseNumber(record['eventoServicioId'] ?? record['idEventoServicio'] ?? eventoServicio['id'] ?? record['id']);
     return num != null && num > 0 ? num : null;
   }
 
-  private getHoras(item: any): number | null {
-    return this.parseNumber(item?.horas);
+  private getHoras(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['horas']);
   }
 
-  private getStaff(item: any): number | null {
-    const staffTotal = item?.staff?.total;
-    return this.parseNumber(staffTotal ?? item?.staff);
+  private getStaff(item: unknown): number | null {
+    const record = this.asRecord(item);
+    const staff = this.asRecord(record['staff']);
+    const staffTotal = staff['total'];
+    return this.parseNumber(staffTotal ?? record['staff']);
   }
 
-  private getFotosImpresas(item: any): number | null {
-    return this.parseNumber(item?.fotosImpresas);
+  private getFotosImpresas(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['fotosImpresas']);
   }
 
-  private getTrailerMin(item: any): number | null {
-    return this.parseNumber(item?.trailerMin);
+  private getTrailerMin(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['trailerMin']);
   }
 
-  private getFilmMin(item: any): number | null {
-    return this.parseNumber(item?.filmMin);
+  private getFilmMin(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['filmMin']);
   }
 
-  private getTitulo(item: any): string {
-    return item?.titulo ?? 'Paquete';
+  private getTitulo(item: unknown): string {
+    const record = this.asRecord(item);
+    return String(record['titulo'] ?? 'Paquete');
   }
 
-  private getDescripcion(item: any): string {
-    return item?.descripcion ?? this.getTitulo(item);
+  private getDescripcion(item: unknown): string {
+    const record = this.asRecord(item);
+    return String(record['descripcion'] ?? this.getTitulo(record));
   }
 
-  private getMoneda(item: any): string | undefined {
-    const raw = item?.moneda;
+  private getMoneda(item: unknown): string | undefined {
+    const record = this.asRecord(item);
+    const raw = record['moneda'];
     return raw ? String(raw).toUpperCase() : undefined;
   }
 
-  private getGrupo(item: any): string | null {
-    const raw = item?.grupo ?? null;
+  private getGrupo(item: unknown): string | null {
+    const record = this.asRecord(item);
+    const raw = record['grupo'] ?? null;
     return raw != null ? String(raw) : null;
   }
 
-  private getPaqueteServicioId(item: any): number | null {
-    if (!item) {
+  private getPaqueteServicioId(item: unknown): number | null {
+    const record = this.asRecord(item);
+    if (!Object.keys(record).length) {
       return this.selectedServicioId;
     }
-    const parsed = this.parseNumber(item?.servicio?.id ?? item?.servicioId);
+    const servicio = this.asRecord(record['servicio']);
+    const parsed = this.parseNumber(servicio['id'] ?? record['servicioId']);
     if (parsed != null) {
       return parsed;
     }
     return this.selectedServicioId;
   }
 
-  private getPaqueteServicioNombre(item: any): string | undefined {
-    const baseNombre = item?.servicio?.nombre ?? item?.servicioNombre;
+  private getPaqueteServicioNombre(item: unknown): string | undefined {
+    const record = this.asRecord(item);
+    const servicio = this.asRecord(record['servicio']);
+    const baseNombre = servicio['nombre'] ?? record['servicioNombre'];
     if (baseNombre) {
       const texto = String(baseNombre).trim();
       if (texto) return texto;
@@ -1025,30 +1088,35 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  private getOpcion(item: any): number | null {
-    return this.parseNumber(item?.opcion);
+  private getOpcion(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['opcion']);
   }
 
-  private getDescuento(item: any): number | null {
-    return this.parseNumber(item?.descuento ?? null);
+  private getDescuento(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['descuento'] ?? null);
   }
 
-  private getRecargo(item: any): number | null {
-    return this.parseNumber(item?.recargo ?? null);
+  private getRecargo(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['recargo'] ?? null);
   }
 
-  private normalizePaqueteRow(item: any): PaqueteRow {
-    const precio = this.parseNumber(item?.precio);
-    const staffTotal = this.parseNumber(item?.staff?.total ?? item?.staff);
-    const staff = staffTotal ?? this.getStaff(item);
-    const horas = this.getHoras(item) ?? this.parseHorasToNumber(item?.horasTexto ?? item?.HorasTexto);
+  private normalizePaqueteRow(item: unknown): PaqueteRow {
+    const record = this.asRecord(item);
+    const precio = this.parseNumber(record['precio']);
+    const staffRecord = this.asRecord(record['staff']);
+    const staffTotal = this.parseNumber(staffRecord['total'] ?? record['staff']);
+    const staff = staffTotal ?? this.getStaff(record);
+    const horas = this.getHoras(record) ?? this.parseHorasToNumber(String(record['horasTexto'] ?? record['HorasTexto'] ?? ''));
     return {
-      titulo: this.getTitulo(item),
-      descripcion: this.getDescripcion(item),
+      titulo: this.getTitulo(record),
+      descripcion: this.getDescripcion(record),
       precio: precio != null ? precio : null,
       staff: staff != null ? staff : null,
       horas: horas != null ? horas : null,
-      raw: item
+      raw: record
     };
   }
 
@@ -1068,7 +1136,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return Number.isFinite(parsed) ? parsed : undefined;
   }
 
-  private parseNumber(raw: any): number | null {
+  private parseNumber(raw: unknown): number | null {
     if (raw == null) {
       return null;
     }

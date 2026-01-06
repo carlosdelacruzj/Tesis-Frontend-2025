@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
@@ -13,17 +13,14 @@ import { EventoServicioDataService } from './service/evento-servicio-data.servic
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdministrarPaqueteServicioComponent implements OnInit {
+  private readonly dataService = inject(EventoServicioDataService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
   eventos: Evento[] = [];
   eventosFiltrados: Evento[] = [];
   loadingEventos = false;
   searchTerm = '';
-
-  constructor(
-    private readonly dataService: EventoServicioDataService,
-    private readonly cdr: ChangeDetectorRef,
-    private readonly dialog: MatDialog,
-    private readonly router: Router
-  ) {}
 
   ngOnInit(): void {
     this.cargarEventos();
@@ -52,7 +49,7 @@ export class AdministrarPaqueteServicioComponent implements OnInit {
       .toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9\-]/g, '');
+      .replace(/[^a-z0-9-]/g, '');
     return `assets/images/${slug || 'default'}.jpg`;
   }
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subject, of } from 'rxjs';
@@ -17,6 +17,12 @@ import { Cargo, PersonalService } from '../../gestionar-personal/service/persona
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly dataService = inject(EventoServicioDataService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly fb = inject(FormBuilder);
+  private readonly personalService = inject(PersonalService);
   evento: Evento | null = null;
   paquetes: EventoServicioDetalle[] = [];
   selectedPaquete: EventoServicioDetalle | null = null;
@@ -76,14 +82,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
-  constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly dataService: EventoServicioDataService,
-    private readonly cdr: ChangeDetectorRef,
-    private readonly fb: FormBuilder,
-    private readonly personalService: PersonalService
-  ) {
+  constructor() {
     this.resetStaffForm();
     this.resetEquiposForm();
   }

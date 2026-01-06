@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
@@ -13,15 +13,31 @@ import { catchError, debounceTime, distinctUntilChanged, filter, map, switchMap,
 import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
-type Tag = { nombre: string; direccion: string; usedAt?: number };
-type PedidoPaqueteSeleccionado = {
+interface Tag {
+  nombre: string;
+  direccion: string;
+  usedAt?: number;
+}
+
+interface PedidoPaqueteSeleccionado {
   key: string | number;
   eventKey: string | number | null;
   ID?: number;
   descripcion: string;
   precio: number;
   notas: string;
-};
+}
+
+type AnyRecord = Record<string, unknown>;
+interface UbicacionRow {
+  ID: number;
+  Direccion: string;
+  Fecha: string;
+  Hora: string;
+  DireccionExacta: string;
+  Notas: string;
+}
+type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: boolean };
 
 @Component({
   selector: 'app-agregar-pedido',
@@ -40,13 +56,13 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   ];
 
   // ====== Data y catálogos ======
-  servicios: any[] = [];
-  evento: any[] = [];
+  servicios: AnyRecord[] = [];
+  evento: AnyRecord[] = [];
   servicioSeleccionado = 1;
   eventoSeleccionado = 1;
 
   // ⚠️ Inicializados para que nunca sean undefined
-  dataSource: MatTableDataSource<any> = new MatTableDataSource<any>([]);
+  dataSource: MatTableDataSource<UbicacionRow> = new MatTableDataSource<UbicacionRow>([]);
   paquetesRows: PaqueteRow[] = [];
 
   // ====== MatSort (2 tablas)
@@ -57,9 +73,9 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ====== Estado general ======
-  CodigoEmpleado: number = 1;
+  CodigoEmpleado = 1;
   infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
-  dniCliente: string = '';
+  dniCliente = '';
   clienteResultados: ClienteBusquedaResultado[] = [];
   clienteSearchLoading = false;
   clienteSearchError = '';
@@ -69,17 +85,17 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   private readonly destroy$ = new Subject<void>();
 
   // ====== Evento actual (inputs) ======
-  Direccion: any;
-  DireccionExacta: string = '';
-  NotasEvento: string = '';
+  Direccion = '';
+  DireccionExacta = '';
+  NotasEvento = '';
 
   // ====== Fechas ======
-  fechaCreate: Date = new Date();
+  fechaCreate = new Date();
   minimo: string;
   maximo: string;
 
   // ====== Ubicaciones ======
-  ubicacion = [{ ID: 0, Direccion: '', Fecha: '', Hora: '', DireccionExacta: '', Notas: '' }];
+  ubicacion: UbicacionRow[] = [{ ID: 0, Direccion: '', Fecha: '', Hora: '', DireccionExacta: '', Notas: '' }];
 
   // ====== Paquetes seleccionados ======
   selectedPaquetes: PedidoPaqueteSeleccionado[] = [];
@@ -98,12 +114,10 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   tagsPedido: Tag[] = [];
   tagsCliente: Tag[] = [];
 
-  constructor(
-    public pedidoService: PedidoService,
-    public visualizarService: VisualizarService,
-    private readonly cotizacionService: CotizacionService,
-    private readonly cdr: ChangeDetectorRef
-  ) { }
+  public readonly pedidoService = inject(PedidoService);
+  public readonly visualizarService = inject(VisualizarService);
+  private readonly cotizacionService = inject(CotizacionService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   // ====== Ciclo de vida ======
   ngOnInit(): void {
@@ -178,10 +192,21 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     return arr.findIndex(t => this.norm(t.nombre) === n);
   }
 
-  private getPkgKey(el: any): string | number {
-    return el?.ID ?? el?.PK_ExS_Cod ?? el?.pk ?? `${(el?.descripcion || '').trim()}|${el?.precio}`;
+  private asRecord(value: unknown): AnyRecord {
+    return value && typeof value === 'object' ? (value as AnyRecord) : {};
   }
-  public pkgKey = (el: any) => this.getPkgKey(el);
+
+  private getPkgKey(el: unknown): string | number {
+    const record = this.asRecord(el);
+    const descripcion = String(record['descripcion'] ?? '').trim();
+    return (
+      record['ID'] ??
+      record['PK_ExS_Cod'] ??
+      record['pk'] ??
+      `${descripcion}|${record['precio'] ?? ''}`
+    ) as string | number;
+  }
+  public pkgKey = (el: AnyRecord) => this.getPkgKey(el);
 
   get canGuardarTag(): boolean {
     const u = this.norm(this.Direccion);
@@ -298,7 +323,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     return formatDisplayDate(value, '');
   }
 
-  rowInvalid(row: any): boolean {
+  rowInvalid(row: UbicacionRow): boolean {
     const fechaOk = !!row.Fecha;
     const horaOk = !!row.Hora;
     const dex = (row.DireccionExacta || '').trim();
@@ -309,17 +334,17 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // ====== Cliente ======
   getDataCliente(dni: number | string) {
-    const obs: any = this.pedidoService.getDni?.(dni);
+    const obs = this.pedidoService.getDni?.(dni);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getDni] devolvió undefined o no-Observable');
       return;
     }
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('[getDni] error dentro del stream', err);
         return of([]); // fallback
       })
-    ).subscribe((res: any) => {
+    ).subscribe((res: unknown) => {
       if (!Array.isArray(res) || res.length === 0) {
         return;
       }
@@ -564,19 +589,19 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // ====== Catálogos ======
   getServicio() {
-    const obs: any = this.pedidoService.getServicios?.();
+    const obs = this.pedidoService.getServicios?.();
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getServicios] devolvió undefined o no-Observable');
       this.servicios = [];
       return;
     }
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('[getServicios] error dentro del stream', err);
         return of([]); // fallback
       })
-    ).subscribe((responde: any) => {
-      this.servicios = responde ?? [];
+    ).subscribe((responde: unknown) => {
+      this.servicios = Array.isArray(responde) ? responde : [];
     });
   }
 
@@ -586,19 +611,19 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   getEventos() {
-    const obs: any = this.pedidoService.getEventos?.();
+    const obs = this.pedidoService.getEventos?.();
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getEventos] devolvió undefined o no-Observable');
       this.evento = [];
       return;
     }
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('[getEventos] error dentro del stream', err);
         return of([]); // fallback
       })
-    ).subscribe((responde: any) => {
-      this.evento = responde ?? [];
+    ).subscribe((responde: unknown) => {
+      this.evento = Array.isArray(responde) ? responde : [];
     });
   }
 
@@ -608,18 +633,18 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   getEventoxServicio() {
-    const obs: any = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado);
+    const obs = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getEventosServicio] devolvió undefined o no-Observable');
       this.paquetesRows = [];
       return;
     }
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('[getEventosServicio] error dentro del stream', err);
         return of([]); // fallback
       })
-    ).subscribe((res: any) => {
+    ).subscribe((res: unknown) => {
       this.paquetesRows = Array.isArray(res)
         ? res.map(item => this.normalizePaqueteRow(item))
         : [];
@@ -627,12 +652,12 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ====== Selección de paquetes ======
-  isInSeleccion(el: any, eventoKey: any = this.currentEventoKey): boolean {
+  isInSeleccion(el: AnyRecord, eventoKey: string | number | null = this.currentEventoKey): boolean {
     const key = this.getPkgKey(el);
     return this.selectedPaquetes.some(p => p.key === key && p.eventKey === eventoKey);
   }
 
-  addPaquete(el: any, eventoKey: any = this.currentEventoKey) {
+  addPaquete(el: AnyRecord, eventoKey: string | number | null = this.currentEventoKey) {
     if (this.isInSeleccion(el, eventoKey)) {
       Swal.fire({
         text: 'Ya seleccionaste este paquete para este evento.',
@@ -644,17 +669,18 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       return;
     }
     // console.log('addPaquete', { el, eventoKey });
+    const record = this.asRecord(el);
     this.selectedPaquetes.push({
       key: this.getPkgKey(el),
       eventKey: eventoKey ?? null,
-      ID: el.idEventoServicio,
-      descripcion: el.descripcion,
-      precio: el.precio,
+      ID: this.parseNumberNullable(record['idEventoServicio']),
+      descripcion: String(record['descripcion'] ?? ''),
+      precio: Number(record['precio'] ?? 0),
       notas: ''
     });
   }
 
-  removePaquete(key: any, eventoKey: any = this.currentEventoKey) {
+  removePaquete(key: string | number | null, eventoKey: string | number | null = this.currentEventoKey) {
     this.selectedPaquetes = this.selectedPaquetes.filter(p => !(p.key === key && p.eventKey === eventoKey));
   }
 
@@ -663,22 +689,24 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ====== Edición inline en tabla de ubicaciones ======
-  startEdit(row: any) {
+  startEdit(row: UbicacionRowEditable) {
     row._backup = { ...row };
     row.editing = true;
   }
 
-  saveEdit(row: any) {
+  saveEdit(row: UbicacionRowEditable) {
     row.editing = false;
     delete row._backup;
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
   }
 
-  cancelEdit(row: any) {
-    Object.assign(row, row._backup);
+  cancelEdit(row: UbicacionRowEditable) {
+    if (row._backup) {
+      Object.assign(row, row._backup);
+      delete row._backup;
+    }
     row.editing = false;
-    delete row._backup;
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
   }
@@ -745,7 +773,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     }
   }
 
-  async deleteElement(p: any, c: any) {
+  async deleteElement(p: string, c: string) {
     const fila = this.ubicacion.find(x => x.Hora == c && x.Direccion == p);
     const { isConfirmed } = await Swal.fire({
       title: '¿Eliminar ubicación?',
@@ -772,7 +800,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     }
   }
 
-  drop(event: CdkDragDrop<any[]>) {
+  drop(event: CdkDragDrop<AnyRecord[]>) {
     moveItemInArray(this.ubicacion, event.previousIndex, event.currentIndex);
     // crea nueva referencia para que Angular detecte el cambio
     this.ubicacion = [...this.ubicacion];
@@ -915,17 +943,18 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     );
   }
 
-  private normalizePaqueteRow(item: any): PaqueteRow {
-    const precio = Number(item?.precio ?? item?.Precio);
-    const staff = Number(item?.staff ?? item?.Staff ?? item?.personal ?? item?.Personal);
-    const horas = Number(item?.horas ?? item?.Horas ?? item?.duration ?? item?.Duracion);
+  private normalizePaqueteRow(item: unknown): PaqueteRow {
+    const record = this.asRecord(item);
+    const precio = Number(record['precio'] ?? record['Precio']);
+    const staff = Number(record['staff'] ?? record['Staff'] ?? record['personal'] ?? record['Personal']);
+    const horas = Number(record['horas'] ?? record['Horas'] ?? record['duration'] ?? record['Duracion']);
 
     return {
-      descripcion: item?.descripcion ?? item?.Descripcion ?? item?.titulo ?? 'Paquete',
+      descripcion: String(record['descripcion'] ?? record['Descripcion'] ?? record['titulo'] ?? 'Paquete'),
       precio: Number.isFinite(precio) ? precio : null,
       staff: Number.isFinite(staff) ? staff : null,
       horas: Number.isFinite(horas) ? horas : null,
-      raw: item
+      raw: record
     };
   }
 }
@@ -935,5 +964,5 @@ interface PaqueteRow {
   precio: number | null;
   staff: number | null;
   horas: number | null;
-  raw: any;
+  raw: AnyRecord;
 }

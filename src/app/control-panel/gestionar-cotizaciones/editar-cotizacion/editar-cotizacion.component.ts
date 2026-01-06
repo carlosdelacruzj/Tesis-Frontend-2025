@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, finalize, switchMap, takeUntil } from 'rxjs';
@@ -9,6 +9,7 @@ import { TableColumn } from 'src/app/components/table-base/table-base.component'
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 type AlertIcon = 'success' | 'error' | 'warning' | 'info' | 'question';
+type AnyRecord = Record<string, unknown>;
 
 interface PaqueteSeleccionado {
   key: string | number;
@@ -30,7 +31,7 @@ interface PaqueteSeleccionado {
   eventoServicioId?: number;
   servicioId?: number | null;
   servicioNombre?: string;
-  origen?: any;
+  origen?: unknown;
   precioOriginal: number;
   editandoPrecio?: boolean;
 }
@@ -41,7 +42,7 @@ interface PaqueteRow {
   precio: number | null;
   staff: number | null;
   horas: number | null;
-  raw: any;
+  raw: AnyRecord;
 }
 
 interface ProgramacionEventoItemConfig {
@@ -58,7 +59,7 @@ type ProgramacionEventoItem = ProgramacionEventoItemConfig & { esPrincipal: bool
 interface EventoCatalogo {
   id: number;
   nombre: string;
-  raw: any;
+  raw: AnyRecord;
 }
 
 @Component({
@@ -70,18 +71,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   readonly fechaMinimaEvento = EditarCotizacionComponent.computeFechaMinimaEvento();
   readonly fechaMaximaEvento = EditarCotizacionComponent.computeFechaMaximaEvento();
 
-  form: UntypedFormGroup = this.fb.group({
-    clienteNombre: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(2)]],
-    clienteContacto: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(6)]],
-    fechaEvento: ['', [Validators.required, this.fechaEventoEnRangoValidator()]],
-    horasEstimadas: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
-    departamento: ['', Validators.required],
-    descripcion: [''],
-    totalEstimado: [0, Validators.min(0)],
-    programacion: this.fb.array([])
-  });
+  form: UntypedFormGroup;
 
-  servicios: any[] = [];
+  servicios: AnyRecord[] = [];
   eventos: EventoCatalogo[] = [];
   selectedServicioId: number | null = null;
   selectedServicioNombre = '';
@@ -141,12 +133,23 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   ];
   eventoSelectTouched = false;
 
-  constructor(
-    private readonly fb: UntypedFormBuilder,
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly cotizacionService: CotizacionService
-  ) {}
+  private readonly fb = inject(UntypedFormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly cotizacionService = inject(CotizacionService);
+
+  constructor() {
+    this.form = this.fb.group({
+      clienteNombre: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(2)]],
+      clienteContacto: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(6)]],
+      fechaEvento: ['', [Validators.required, this.fechaEventoEnRangoValidator()]],
+      horasEstimadas: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
+      departamento: ['', Validators.required],
+      descripcion: [''],
+      totalEstimado: [0, Validators.min(0)],
+      programacion: this.fb.array([])
+    });
+  }
 
   ngOnInit(): void {
     this.loadCatalogos();
@@ -228,7 +231,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedServicioNombre = '';
     } else {
       const selected = this.servicios.find(s => this.getId(s) === this.selectedServicioId);
-      this.selectedServicioNombre = selected?.nombre ?? '';
+      this.selectedServicioNombre = this.getNombre(selected);
     }
     this.loadEventosServicio();
   }
@@ -246,12 +249,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedEventoNombre = '';
     } else {
       const selected = this.eventos.find(e => e.id === this.selectedEventoId);
-      this.selectedEventoNombre = selected?.nombre ?? '';
+      this.selectedEventoNombre = this.getNombre(selected);
     }
     this.loadEventosServicio();
   }
 
-  addPaquete(element: any): void {
+  addPaquete(element: AnyRecord): void {
     const key = this.getPkgKey(element);
     if (this.selectedPaquetes.some(p => p.key === key)) {
       return;
@@ -315,19 +318,28 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.syncTotalEstimado();
   }
 
+  private asRecord(value: unknown): AnyRecord {
+    return value && typeof value === 'object' ? (value as AnyRecord) : {};
+  }
+
+  private getNombre(value: unknown): string {
+    const record = this.asRecord(value);
+    return typeof record['nombre'] === 'string' ? record['nombre'] : '';
+  }
+
   removePaquete(key: string | number): void {
     this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
     this.syncTotalEstimado();
   }
 
-  pkgKey = (el: any) => this.getPkgKey(el);
+  pkgKey = (el: AnyRecord) => this.getPkgKey(el);
 
-  isInSeleccion(element: any): boolean {
+  isInSeleccion(element: AnyRecord): boolean {
     const key = this.getPkgKey(element);
     return this.selectedPaquetes.some(p => p.key === key);
   }
 
-  hasOtroPaqueteDelServicio(element: any): boolean {
+  hasOtroPaqueteDelServicio(element: AnyRecord): boolean {
     const servicioId = this.getPaqueteServicioId(element);
     if (servicioId == null) {
       const servicioNombre = this.getPaqueteServicioNombre(element);
@@ -674,10 +686,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
     const servicioId = this.parseNumber(contexto?.servicioId ?? cotizacion.servicioId);
     this.pendingServicioId = servicioId != null && servicioId > 0 ? servicioId : null;
+    const contextoRecord = this.asRecord(contexto);
     const eventoId = this.parseNumber(
       detalle?.eventoId ??
       detalle?.idTipoEvento ??
-      (contexto as any)?.eventoId ??
+      contextoRecord['eventoId'] ??
       cotizacion.eventoId
     );
     this.pendingEventoId = eventoId != null && eventoId > 0 ? eventoId : null;
@@ -688,12 +701,13 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.selectedEventoNombre = contexto?.eventoNombre ?? detalle?.tipoEvento ?? cotizacion.evento ?? '';
 
     this.selectedPaquetes = (raw?.items ?? cotizacion.items ?? []).map((item, index) => {
+      const record = this.asRecord(item);
       const horas = this.getHoras(item);
       const staff = this.getStaff(item);
       const fotosImpresas = this.getFotosImpresas(item);
       const trailerMin = this.getTrailerMin(item);
       const filmMin = this.getFilmMin(item);
-      const precioUnitario = Number((item as any)?.precio ?? item.precioUnitario ?? 0) || 0;
+      const precioUnitario = Number(record['precio'] ?? item.precioUnitario ?? 0) || 0;
       const cantidad = Number(item.cantidad ?? 1) || 1;
     const paqueteServicioId = this.getPaqueteServicioId(item);
     const paqueteServicioNombre = this.getPaqueteServicioNombre(item);
@@ -705,9 +719,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         cantidad,
         moneda: this.getMoneda(item) ?? undefined,
         grupo: this.getGrupo(item),
-        opcion: item.opcion ?? index + 1,
+        opcion: this.parseNumber(record['opcion']) ?? index + 1,
         eventoServicioId: this.getEventoServicioId(item) ?? undefined,
-        notas: item.notas,
+        notas: record['notas'] as string | undefined,
         horas: horas ?? undefined,
         staff: staff ?? undefined,
         fotosImpresas: fotosImpresas ?? undefined,
@@ -718,7 +732,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         servicioId: paqueteServicioId,
         servicioNombre: paqueteServicioNombre ?? contexto?.servicioNombre ?? cotizacion.servicio ?? undefined,
         origen: item,
-        precioOriginal: Number((item as any)?.precioOriginal ?? precioUnitario) || precioUnitario,
+        precioOriginal: Number(record['precioOriginal'] ?? precioUnitario) || precioUnitario,
         editandoPrecio: false
       };
     });
@@ -738,7 +752,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const array = this.programacion;
     this.clearFormArray(array);
 
-    let configs: ProgramacionEventoItem[] = eventos.map((config, index) => ({
+    const configs: ProgramacionEventoItem[] = eventos.map((config, index) => ({
       ...config,
       esPrincipal: config.esPrincipal ?? index < this.programacionMinimaRecomendada
     })).filter(config => this.hasProgramacionContent(config));
@@ -784,17 +798,21 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private extractProgramacionEventos(cotizacion: Cotizacion, raw?: CotizacionPayload | null): ProgramacionEventoItem[] {
+    const rawRecord = this.asRecord(raw);
+    const cotizacionRecord = this.asRecord(cotizacion);
+    const cotizacionRawRecord = this.asRecord(cotizacion.raw);
+    const detalleRecord = this.asRecord(rawRecord['cotizacion']);
     const candidates: unknown[] = [
-      (raw as any)?.cotizacion?.eventos,
-      (raw as any)?.eventos,
-      (cotizacion as any)?.eventos,
-      (cotizacion.raw as any)?.eventos
+      detalleRecord['eventos'],
+      rawRecord['eventos'],
+      cotizacionRecord['eventos'],
+      cotizacionRawRecord['eventos']
     ];
 
     for (const candidate of candidates) {
       if (Array.isArray(candidate) && candidate.length) {
         return candidate
-          .map((evento: any, index: number) => this.mapEventoToConfig(evento, index))
+          .map((evento: AnyRecord, index: number) => this.mapEventoToConfig(evento, index))
           .filter(config => this.hasProgramacionContent(config));
       }
     }
@@ -802,7 +820,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return [];
   }
 
-  private mapEventoToConfig(evento: Record<string, any>, index: number): ProgramacionEventoItem {
+  private mapEventoToConfig(evento: AnyRecord, index: number): ProgramacionEventoItem {
     if (!evento) {
       return { esPrincipal: index < this.programacionMinimaRecomendada };
     }
@@ -1002,7 +1020,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
   }
 
-  private pickFirstString(...values: Array<unknown>): string {
+  private pickFirstString(...values: unknown[]): string {
     for (const value of values) {
       if (value == null) {
         continue;
@@ -1015,13 +1033,14 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return '';
   }
 
-  private normalizeEventoCatalogo(evento: any): EventoCatalogo | null {
-    const id = this.parseNumber(evento?.id);
+  private normalizeEventoCatalogo(evento: unknown): EventoCatalogo | null {
+    const record = this.asRecord(evento);
+    const id = this.parseNumber(record['id']);
     if (id == null || id <= 0) {
       return null;
     }
-    const nombre = this.pickFirstString(evento?.nombre) || 'Evento';
-    return { id, nombre, raw: evento };
+    const nombre = this.pickFirstString(record['nombre']) || 'Evento';
+    return { id, nombre, raw: record };
   }
 
   private applyPendingSelections(): void {
@@ -1029,7 +1048,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const servicio = this.servicios.find(s => this.getId(s) === this.pendingServicioId);
       if (servicio) {
         this.selectedServicioId = this.pendingServicioId;
-        this.selectedServicioNombre = servicio?.nombre ?? '';
+        this.selectedServicioNombre = this.getNombre(servicio);
       }
     } else if (!this.selectedServicioId && this.servicios.length && !this.selectedServicioNombre) {
       // Mantiene la lista vacía hasta que se vincule un servicio manualmente
@@ -1040,9 +1059,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (this.pendingEventoId != null) {
       const evento = this.eventos.find(e => e.id === this.pendingEventoId);
       if (evento) {
-        this.selectedEventoId = evento.id;
-        this.selectedEventoNombre = evento.nombre;
-        this.selectedEventoIdValue = String(evento.id);
+        const record = this.asRecord(evento);
+        const eventoId = this.parseNumber(record['id']) ?? null;
+        this.selectedEventoId = eventoId;
+        this.selectedEventoNombre = this.getNombre(evento);
+        this.selectedEventoIdValue = eventoId != null ? String(eventoId) : '';
       }
     } else if (!this.selectedEventoId && this.eventos.length && !this.selectedEventoNombre) {
       this.selectedEventoId = null;
@@ -1072,8 +1093,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         next: paquetes => {
           const activos = Array.isArray(paquetes)
             ? paquetes.filter(item => {
-                const estadoNombre = (item?.estado?.nombre ?? item?.estadoNombre ?? '').toString().toLowerCase();
-                const estadoId = item?.estado?.id ?? item?.estado?.idEstado ?? item?.estadoId;
+                const record = this.asRecord(item);
+                const estado = this.asRecord(record['estado']);
+                const estadoNombre = String(estado['nombre'] ?? record['estadoNombre'] ?? '').toLowerCase();
+                const estadoId = this.parseNumber(estado['id'] ?? estado['idEstado'] ?? record['estadoId']);
                 return estadoNombre !== 'inactivo' && estadoId !== 2;
               })
             : [];
@@ -1100,95 +1123,114 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.refreshSelectedPaquetesColumns();
   }
 
-  getId(item: any): number | null {
-    return this.parseNumber(item?.id);
+  getId(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['id']);
   }
 
-  private getPkgKey(el: any): string {
-    const eventoServicioId = this.getEventoServicioId(el);
+  private getPkgKey(el: unknown): string {
+    const record = this.asRecord(el);
+    const eventoServicioId = this.getEventoServicioId(record);
     if (eventoServicioId != null) {
       return String(eventoServicioId);
     }
-    return String(el?.id ?? `${el?.descripcion}|${el?.precio}`);
+    return String(record['id'] ?? `${record['descripcion']}|${record['precio']}`);
   }
 
-  private getEventoServicioId(item: any): number | null {
-    if (!item) {
+  private getEventoServicioId(item: unknown): number | null {
+    const record = this.asRecord(item);
+    if (!Object.keys(record).length) {
       return null;
     }
-    const num = this.parseNumber(item?.eventoServicioId ?? item?.idEventoServicio ?? item?.eventoServicio?.id ?? item?.id);
+    const eventoServicio = this.asRecord(record['eventoServicio']);
+    const num = this.parseNumber(record['eventoServicioId'] ?? record['idEventoServicio'] ?? eventoServicio['id'] ?? record['id']);
     return num != null && num > 0 ? num : null;
   }
 
-  private getHoras(item: any): number | null {
-    return this.parseNumber(item?.horas);
+  private getHoras(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['horas']);
   }
 
-  private getStaff(item: any): number | null {
-    if (item?.personal != null) {
-      return this.parseNumber(item.personal);
+  private getStaff(item: unknown): number | null {
+    const record = this.asRecord(item);
+    if (record['personal'] != null) {
+      return this.parseNumber(record['personal']);
     }
-    const staffTotal = item?.staff?.total;
-    return this.parseNumber(staffTotal ?? item?.staff);
+    const staff = this.asRecord(record['staff']);
+    const staffTotal = staff['total'];
+    return this.parseNumber(staffTotal ?? record['staff']);
   }
 
-  private getFotosImpresas(item: any): number | null {
-    return this.parseNumber(item?.fotosImpresas);
+  private getFotosImpresas(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['fotosImpresas']);
   }
 
-  private getTrailerMin(item: any): number | null {
-    return this.parseNumber(item?.trailerMin);
+  private getTrailerMin(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['trailerMin']);
   }
 
-  private getFilmMin(item: any): number | null {
-    return this.parseNumber(item?.filmMin);
+  private getFilmMin(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['filmMin']);
   }
 
-  private normalizePaqueteRow(item: any): PaqueteRow {
-    const precio = this.parseNumber(item?.precio);
-    const staff = this.getStaff(item);
-    const horas = this.getHoras(item);
+  private normalizePaqueteRow(item: unknown): PaqueteRow {
+    const record = this.asRecord(item);
+    const precio = this.parseNumber(record['precio']);
+    const staff = this.getStaff(record);
+    const horas = this.getHoras(record);
     return {
-      titulo: this.getTitulo(item),
-      descripcion: this.getDescripcion(item),
+      titulo: this.getTitulo(record),
+      descripcion: this.getDescripcion(record),
       precio: precio != null ? precio : null,
       staff: staff != null ? staff : null,
       horas: horas != null ? horas : null,
-      raw: item
+      raw: record
     };
   }
 
-  private getTitulo(item: any): string {
-    return item?.titulo ?? 'Paquete';
+  private getTitulo(item: unknown): string {
+    const record = this.asRecord(item);
+    return String(record['titulo'] ?? 'Paquete');
   }
 
-  private getDescripcion(item: any): string {
-    return item?.descripcion ?? this.getTitulo(item);
+  private getDescripcion(item: unknown): string {
+    const record = this.asRecord(item);
+    return String(record['descripcion'] ?? this.getTitulo(record));
   }
 
-  private getMoneda(item: any): string | undefined {
-    const raw = item?.moneda;
+  private getMoneda(item: unknown): string | undefined {
+    const record = this.asRecord(item);
+    const raw = record['moneda'];
     return raw ? String(raw).toUpperCase() : undefined;
   }
 
-  private getGrupo(item: any): string | null {
-    const raw = item?.grupo ?? null;
+  private getGrupo(item: unknown): string | null {
+    const record = this.asRecord(item);
+    const raw = record['grupo'] ?? null;
     return raw != null ? String(raw) : null;
   }
 
-  private getPaqueteServicioId(item: any, fallbackToSelected = true): number | null {
-    if (!item) {
+  private getPaqueteServicioId(item: unknown, fallbackToSelected = true): number | null {
+    const record = this.asRecord(item);
+    if (!Object.keys(record).length) {
       return this.selectedServicioId;
     }
-    const parsed = this.parseNumber(item?.servicio?.id ?? item?.servicioId);
+    const servicio = this.asRecord(record['servicio']);
+    const parsed = this.parseNumber(servicio['id'] ?? record['servicioId']);
     if (parsed != null) {
       return parsed;
     }
     return fallbackToSelected ? this.selectedServicioId : null;
   }
 
-  private getPaqueteServicioNombre(item: any, fallbackToSelected = true): string | undefined {
-    const baseNombre = item?.servicio?.nombre ?? item?.servicioNombre;
+  private getPaqueteServicioNombre(item: unknown, fallbackToSelected = true): string | undefined {
+    const record = this.asRecord(item);
+    const servicio = this.asRecord(record['servicio']);
+    const baseNombre = servicio['nombre'] ?? record['servicioNombre'];
     if (baseNombre) {
       const texto = String(baseNombre).trim();
       if (texto) return texto;
@@ -1196,16 +1238,19 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return fallbackToSelected ? (this.selectedServicioNombre || undefined) : undefined;
   }
 
-  private getOpcion(item: any): number | null {
-    return this.parseNumber(item?.opcion);
+  private getOpcion(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['opcion']);
   }
 
-  private getDescuento(item: any): number | null {
-    return this.parseNumber(item?.descuento ?? null);
+  private getDescuento(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['descuento'] ?? null);
   }
 
-  private getRecargo(item: any): number | null {
-    return this.parseNumber(item?.recargo ?? null);
+  private getRecargo(item: unknown): number | null {
+    const record = this.asRecord(item);
+    return this.parseNumber(record['recargo'] ?? null);
   }
 
   private parseHorasToNumber(value: string | null | undefined): number | undefined {
@@ -1224,7 +1269,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return Number.isFinite(parsed) ? parsed : undefined;
   }
 
-  private parseNumber(raw: any): number | null {
+  private parseNumber(raw: unknown): number | null {
     if (raw == null) {
       return null;
     }

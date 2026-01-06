@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
@@ -6,7 +6,7 @@ import { Cliente, EstadoCliente } from './model/cliente.model';
 import { ClienteService } from './service/cliente.service';
 import { from, Subject, takeUntil } from 'rxjs';
 
-export interface ClienteRow extends Cliente { }
+export type ClienteRow = Cliente;
 
 @Component({
   selector: 'app-gestionar-cliente',
@@ -14,6 +14,7 @@ export interface ClienteRow extends Cliente { }
   styleUrls: ['./gestionar-cliente.component.css']
 })
 export class GestionarClienteComponent implements OnInit, OnDestroy {
+  private readonly clienteService = inject(ClienteService);
 
   columns: TableColumn<ClienteRow>[] = [
     { key: 'codigo', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
@@ -54,10 +55,6 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   @ViewChild('editForm') editForm?: NgForm;
 
   private readonly destroy$ = new Subject<void>();
-
-  constructor(
-    private readonly clienteService: ClienteService
-  ) { }
 
   ngOnInit(): void {
     this.loadEstados();
@@ -241,10 +238,11 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       this.clienteService.putClienteById(payload)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
-          next: (res: any) => {
-            const isBackendError = res && res.ok === false;
+          next: (res: unknown) => {
+            const response = res as { ok?: boolean; message?: string } | null;
+            const isBackendError = !!response && response.ok === false;
             const msg = isBackendError
-              ? (res.message || 'Ocurrió un error, volver a intentar.')
+              ? (response?.message || 'Ocurrió un error, volver a intentar.')
               : 'Actualización exitosa';
 
             if (isBackendError) {
@@ -335,12 +333,14 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
     return encontrado ? encontrado.idEstadoCliente : null;
   }
 
-  onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {
+  onSortChange(event: { key: string; direction: 'asc' | 'desc' | '' }): void {
     // Reservado para telemetría futura
+    void event;
   }
 
-  onPageChange(_: { page: number; pageSize: number }): void {
+  onPageChange(event: { page: number; pageSize: number }): void {
     // Reservado para telemetría futura
+    void event;
   }
 
   reload(): void {

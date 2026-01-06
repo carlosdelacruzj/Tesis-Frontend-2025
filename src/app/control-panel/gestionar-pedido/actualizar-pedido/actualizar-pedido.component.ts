@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, inject } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
@@ -11,8 +11,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
-type Tag = { nombre: string; direccion: string; usedAt?: number };
-type PedidoPaqueteSeleccionado = {
+interface Tag {
+  nombre: string;
+  direccion: string;
+  usedAt?: number;
+}
+
+interface PedidoPaqueteSeleccionado {
   key: string | number;
   eventKey: string | number | null;
   ID?: number;
@@ -25,7 +30,19 @@ type PedidoPaqueteSeleccionado = {
   cantidad?: number;
   descuento?: number;
   recargo?: number;
-};
+}
+
+type AnyRecord = Record<string, unknown>;
+interface UbicacionRow {
+  ID: number;
+  dbId?: number;
+  Direccion: string;
+  Fecha: string;
+  Hora: string;
+  DireccionExacta: string;
+  Notas: string;
+}
+type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: boolean };
 
 @Component({
   selector: 'app-actualizar-pedido',
@@ -45,12 +62,12 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   ];
 
   // ====== Data y catálogos ======
-  servicios: any[] = [];
-  evento: any[] = [];
+  servicios: AnyRecord[] = [];
+  evento: AnyRecord[] = [];
   servicioSeleccionado = 1;
   eventoSeleccionado = 1;
 
-  dataSource: MatTableDataSource<any> = new MatTableDataSource<any>([]);
+  dataSource: MatTableDataSource<UbicacionRow> = new MatTableDataSource<UbicacionRow>([]);
   paquetesRows: PaqueteRow[] = [];
 
   @ViewChild('sortUbic') sortUbic!: MatSort;
@@ -60,22 +77,22 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   // ====== Estado general ======
-  CodigoEmpleado: number = 1;
+  CodigoEmpleado = 1;
   infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
-  dniCliente: any;
+  dniCliente = '';
 
   // ====== Evento actual (inputs) ======
-  Direccion: any;
-  DireccionExacta: string = '';
-  NotasEvento: string = '';
+  Direccion = '';
+  DireccionExacta = '';
+  NotasEvento = '';
 
   // ====== Fechas ======
-  fechaCreate: Date = new Date();
+  fechaCreate = new Date();
   minimo: string;
   maximo: string;
 
   // ====== Ubicaciones ======
-  ubicacion = [{ ID: 0, dbId: 0, Direccion: '', Fecha: '', Hora: '', DireccionExacta: '', Notas: '' }];
+  ubicacion: UbicacionRow[] = [{ ID: 0, dbId: 0, Direccion: '', Fecha: '', Hora: '', DireccionExacta: '', Notas: '' }];
 
   // ====== Paquetes seleccionados ======
   selectedPaquetes: PedidoPaqueteSeleccionado[] = [];
@@ -132,12 +149,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return this.toOptionalString(this.infoCliente?.celular) ?? '-';
   }
 
-  constructor(
-    public pedidoService: PedidoService,
-    public visualizarService: VisualizarService,
-    private route: ActivatedRoute,
-    private router: Router,
-  ) { }
+  public readonly pedidoService = inject(PedidoService);
+  public readonly visualizarService = inject(VisualizarService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   // ====== Ciclo de vida ======
   ngOnInit(): void {
@@ -185,16 +200,23 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return arr.findIndex(t => this.norm(t.nombre) === n);
   }
 
-  private getPkgKey(el: any): string | number {
-    return (
-      el?.ID ??
-      el?.idEventoServicio ??   // catálogo
-      el?.exsId ??              // items desde BD
-      el?.PK_ExS_Cod ??         // por si viene con este nombre
-      `${(el?.descripcion ?? el?.nombre ?? '').trim()}|${el?.precio ?? el?.precioUnit ?? 0}`
-    );
+  private asRecord(value: unknown): AnyRecord {
+    return value && typeof value === 'object' ? (value as AnyRecord) : {};
   }
-  public pkgKey = (el: any) => this.getPkgKey(el);
+
+  private getPkgKey(el: unknown): string | number {
+    const record = this.asRecord(el);
+    const descr = String(record['descripcion'] ?? record['nombre'] ?? '').trim();
+    const precio = record['precio'] ?? record['precioUnit'] ?? 0;
+    return (
+      record['ID'] ??
+      record['idEventoServicio'] ??
+      record['exsId'] ??
+      record['PK_ExS_Cod'] ??
+      `${descr}|${precio}`
+    ) as string | number;
+  }
+  public pkgKey = (el: AnyRecord) => this.getPkgKey(el);
 
   get canGuardarTag(): boolean {
     const u = this.norm(this.Direccion);
@@ -304,7 +326,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return formatDisplayDate(value, '');
   }
 
-  rowInvalid(row: any): boolean {
+  rowInvalid(row: UbicacionRow): boolean {
     const fechaOk = !!row.Fecha;
     const horaOk = !!row.Hora;
     const dex = (row.DireccionExacta || '').trim();
@@ -315,19 +337,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Cliente ======
   getDataCliente(dni: number) {
-    const obs: any = this.pedidoService.getDni?.(dni);
+    const obs = this.pedidoService.getDni?.(dni);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getDni] devolvió undefined o no-Observable');
       return;
     }
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('[getDni] error dentro del stream', err);
         return of([]); // fallback
       })
-    ).subscribe((res: any) => {
-      if (!res?.length) return;
-      this.infoCliente = res[0];
+    ).subscribe((res: unknown) => {
+      if (!Array.isArray(res) || !res.length) return;
+      this.infoCliente = res[0] as typeof this.infoCliente;
       this.loadTagsCliente();
     });
   }
@@ -338,19 +360,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Catálogos ======
   getServicio() {
-    const obs: any = this.pedidoService.getServicios?.();
+    const obs = this.pedidoService.getServicios?.();
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getServicios] devolvió undefined o no-Observable');
       this.servicios = [];
       return;
     }
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('[getServicios] error dentro del stream', err);
         return of([]); // fallback
       })
-    ).subscribe((responde: any) => {
-      this.servicios = responde ?? [];
+    ).subscribe((responde: unknown) => {
+      this.servicios = Array.isArray(responde) ? responde : [];
     });
   }
 
@@ -360,19 +382,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   getEventos() {
-    const obs: any = this.pedidoService.getEventos?.();
+    const obs = this.pedidoService.getEventos?.();
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getEventos] devolvió undefined o no-Observable');
       this.evento = [];
       return;
     }
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('[getEventos] error dentro del stream', err);
         return of([]); // fallback
       })
-    ).subscribe((responde: any) => {
-      this.evento = responde ?? [];
+    ).subscribe((responde: unknown) => {
+      this.evento = Array.isArray(responde) ? responde : [];
     });
   }
 
@@ -382,46 +404,50 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   getEventoxServicio() {
-    const obs: any = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado);
+    const obs = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getEventosServicio] devolvió undefined o no-Observable');
       this.paquetesRows = [];
       return;
     }
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('[getEventosServicio] error dentro del stream', err);
         return of([]); // fallback
       })
-    ).subscribe((res: any) => {
+    ).subscribe((res: unknown) => {
       this.paquetesRows = Array.isArray(res)
-        ? res.map(item => this.normalizePaqueteRow(item))
+        ? res.map(item => this.normalizePaqueteRow(item as AnyRecord))
         : [];
     });
   }
 
   // ====== Selección de paquetes ======
-  isInSeleccion(el: any, eventoKey: any = this.currentEventoKey): boolean {
+  isInSeleccion(el: AnyRecord, eventoKey: string | number | null = this.currentEventoKey): boolean {
     const key = this.getPkgKey(el);
     const ek = eventoKey ?? null;
     return this.selectedPaquetes.some(p => p.key === key && (p.eventKey ?? null) === ek);
   }
 
-  addPaquete(el: any, eventoKey: any = this.currentEventoKey) {
+  addPaquete(el: AnyRecord, eventoKey: string | number | null = this.currentEventoKey) {
     if (this.isInSeleccion(el, eventoKey)) {
       // ...
       return;
     }
+    const record = el as Record<string, unknown>;
+    const id = Number(record['idEventoServicio'] ?? record['exsId'] ?? record['PK_ExS_Cod'] ?? 0) || null;
+    const descripcion = String(record['descripcion'] ?? record['nombre'] ?? '');
+    const precio = Number(record['precio'] ?? record['precioUnit'] ?? 0);
     this.selectedPaquetes.push({
       key: this.getPkgKey(el),
       eventKey: eventoKey ?? null,
-      ID: el.idEventoServicio ?? el.exsId ?? el.PK_ExS_Cod ?? null, // <-- FK consistente
-      descripcion: el.descripcion ?? el.nombre ?? '',
-      precio: Number(el.precio ?? el.precioUnit ?? 0),
+      ID: id, // <-- FK consistente
+      descripcion,
+      precio,
       notas: ''
     });
   }
-  removePaquete(key: any, eventoKey: any = this.currentEventoKey) {
+  removePaquete(key: string | number | null, eventoKey: string | number | null = this.currentEventoKey) {
     this.selectedPaquetes = this.selectedPaquetes.filter(p => !(p.key === key && p.eventKey === eventoKey));
   }
 
@@ -430,22 +456,24 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   // ====== Edición inline en tabla de ubicaciones ======
-  startEdit(row: any) {
+  startEdit(row: UbicacionRowEditable) {
     row._backup = { ...row };
     row.editing = true;
   }
 
-  saveEdit(row: any) {
+  saveEdit(row: UbicacionRowEditable) {
     row.editing = false;
     delete row._backup;
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
   }
 
-  cancelEdit(row: any) {
-    Object.assign(row, row._backup);
+  cancelEdit(row: UbicacionRowEditable) {
+    if (row._backup) {
+      Object.assign(row, row._backup);
+      delete row._backup;
+    }
     row.editing = false;
-    delete row._backup;
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
   }
@@ -509,7 +537,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     this.bindSorts();
   }
 
-  async deleteElement(p: any, c: any) {
+  async deleteElement(p: string, c: string) {
     const fila = this.ubicacion.find(x => x.Hora == c && x.Direccion == p);
     const { isConfirmed } = await Swal.fire({
       title: '¿Eliminar ubicación?',
@@ -536,7 +564,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
   }
 
-  drop(event: CdkDragDrop<any[]>) {
+  drop(event: CdkDragDrop<AnyRecord[]>) {
     moveItemInArray(this.ubicacion, event.previousIndex, event.currentIndex);
     this.ubicacion = [...this.ubicacion];
     this.dataSource.data = this.ubicacion;
@@ -545,14 +573,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Carga del pedido existente ======
   private loadPedido(id: number) {
-    const obs: any = this.visualizarService.getPedidoById?.(id);
+    const obs = this.visualizarService.getPedidoById?.(id);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.error('[getPedidoById] no disponible');
       return;
     }
 
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('[getPedidoById] error', err);
         Swal.fire({
           text: 'No se pudo cargar el pedido.',
@@ -563,7 +591,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         });
         return of(null);
       })
-    ).subscribe((data: any) => {
+    ).subscribe((data: AnyRecord | null) => {
       if (!data) return;
       console.log('Pedido cargado:', data);
       console.log('Pedido (raw):', data.pedido || data);
@@ -571,19 +599,22 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
       // === Mapear cabecera ===
       // Ajusta nombres según tu DTO real
-      const cab = data.pedido || data;
-      this.visualizarService.selectAgregarPedido.NombrePedido = cab?.nombrePedido ?? cab?.nombre ?? '';
-      this.visualizarService.selectAgregarPedido.Observacion = cab?.observaciones ?? '';
-      this.CodigoEmpleado = cab?.empleadoId ?? this.CodigoEmpleado;
-      this.estadoPedidoId = cab?.estadoPedidoId ?? cab?.estadoPedido?.id ?? cab?.estadoPedido?.idEstado ?? null;
-      this.estadoPagoId = cab?.estadoPagoId ?? cab?.estadoPago?.id ?? cab?.estadoPago?.idEstado ?? null;
-      const fechaCreacionParsed = parseDateInput(cab?.fechaCreacion) ?? new Date();
+      const cabRecord = this.asRecord(data.pedido ?? data);
+      const estadoPedido = this.asRecord(cabRecord['estadoPedido']);
+      const estadoPago = this.asRecord(cabRecord['estadoPago']);
+      const cliente = this.asRecord(cabRecord['cliente']);
+      this.visualizarService.selectAgregarPedido.NombrePedido = String(cabRecord['nombrePedido'] ?? cabRecord['nombre'] ?? '');
+      this.visualizarService.selectAgregarPedido.Observacion = String(cabRecord['observaciones'] ?? '');
+      this.CodigoEmpleado = this.parseNumber(cabRecord['empleadoId']) ?? this.CodigoEmpleado;
+      this.estadoPedidoId = this.parseNumber(cabRecord['estadoPedidoId'] ?? estadoPedido['id'] ?? estadoPedido['idEstado']) ?? null;
+      this.estadoPagoId = this.parseNumber(cabRecord['estadoPagoId'] ?? estadoPago['id'] ?? estadoPago['idEstado']) ?? null;
+      const fechaCreacionParsed = parseDateInput(cabRecord['fechaCreacion'] as string | undefined) ?? new Date();
       this.fechaCreate = fechaCreacionParsed;
       this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(fechaCreacionParsed, '');
 
       // Fecha base del evento (cabecera)
-      const fechaEventoCab = cab?.fechaEvento ?? cab?.fecha_evento ?? null;
-      if (fechaEventoCab) {
+      const fechaEventoCab = cabRecord['fechaEvento'] ?? cabRecord['fecha_evento'] ?? null;
+      if (typeof fechaEventoCab === 'string' || fechaEventoCab instanceof Date) {
         const iso = this.toIsoDate(fechaEventoCab);
         this.visualizarService.selectAgregarPedido.fechaEvent = iso;
         this.fechaValidate(iso);
@@ -591,19 +622,18 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
       // Cliente
       this.infoCliente = {
-        nombre: cab?.cliente?.nombres ?? '-',
-        apellido: cab?.cliente?.apellidos ?? '-',
-        celular: cab?.cliente?.celular ?? '-',
-        correo: cab?.cliente?.correo ?? '-',
-        documento: cab?.cliente?.documento ?? '-',
-        direccion: cab?.cliente?.direccion ?? '-',
-        idCliente: cab?.clienteId ?? cab?.cliente?.id ?? 0,
+        nombre: String(cliente['nombres'] ?? '-'),
+        apellido: String(cliente['apellidos'] ?? '-'),
+        celular: String(cliente['celular'] ?? '-'),
+        correo: String(cliente['correo'] ?? '-'),
+        documento: String(cliente['documento'] ?? '-'),
+        direccion: String(cliente['direccion'] ?? '-'),
+        idCliente: this.parseNumber(cabRecord['clienteId'] ?? cliente['id']) ?? 0,
         idUsuario: 0
       };
       this.dniCliente = this.infoCliente.documento || '';
 
       // === Mapear eventos ===
-      const eventos = data.eventos ?? cab?.eventos ?? [];
       // Normaliza a {ID, Direccion, Fecha, Hora, DireccionExacta, Notas}
       // this.ubicacion = (Array.isArray(eventos) ? eventos : []).map((e: any, idx: number) => ({
       //   ID: idx + 1,
@@ -613,15 +643,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       //   DireccionExacta: e.direccion ?? '',
       //   Notas: e.notas ?? ''
       // }));
-      this.ubicacion = (data.eventos || []).map((e: any, idx: number) => ({
-        ID: idx + 1,                 // solo para la tabla
-        dbId: e.id ?? e.dbId ?? 0,  // <-- toma el id real
-        Direccion: e.ubicacion ?? '',
-        Fecha: String(e.fecha).slice(0, 10),
-        Hora: String(e.hora).slice(0, 5),
-        DireccionExacta: e.direccion ?? '',
-        Notas: e.notas ?? ''
-      }));
+      const dataEventos = Array.isArray((data as AnyRecord)['eventos']) ? (data as AnyRecord)['eventos'] as AnyRecord[] : [];
+      this.ubicacion = dataEventos.map((e: AnyRecord, idx: number) => {
+        const record = e as Record<string, unknown>;
+        return {
+          ID: idx + 1,                 // solo para la tabla
+        dbId: Number(record['id'] ?? record['dbId'] ?? 0),
+        Direccion: String(record['ubicacion'] ?? ''),
+        Fecha: String(record['fecha'] ?? '').slice(0, 10),
+        Hora: String(record['hora'] ?? '').slice(0, 5),
+        DireccionExacta: String(record['direccion'] ?? ''),
+        Notas: String(record['notas'] ?? '')
+        };
+      });
       console.log('Eventos mapeados:', this.ubicacion);
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
@@ -643,7 +677,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       }
 
       // === Mapear items/paquetes ===
-      const items = data.items ?? cab?.items ?? [];
       // this.selectedPaquetes = (Array.isArray(items) ? items : []).map((it: any) => ({
       //   key: this.getPkgKey(it),                         // ahora sí dará el mismo valor que en el catálogo
       //   eventKey: it.eventoCodigo ?? null,               // si asocias por evento
@@ -652,20 +685,32 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       //   precio: Number(it.precioUnit ?? it.precio ?? 0), // normaliza precio
       //   notas: it.notas ?? ''
       // }));
-      this.selectedPaquetes = (data.items || []).map((it: any) => ({
-        id: it.id,                                       // <-- PK_PS_Cod real
-        key: this.getPkgKey(it),                         // <-- clave consistente
-        eventKey: it.eventoCodigo ?? null,               // si asocias por evento
-        eventoCodigo: it.eventoCodigo ?? null,
-        ID: it.exsId ?? it.id ?? null,                   // FK a T_EventoServicio
-        descripcion: it.nombre ?? it.descripcion ?? '',
-        precio: Number(it.precioUnit ?? it.precio ?? 0),
-        notas: it.notas ?? '',
-        moneda: it.moneda ?? 'USD',
-        cantidad: Number(it.cantidad ?? 1),
-        descuento: Number(it.descuento ?? 0),
-        recargo: Number(it.recargo ?? 0)
-      }));
+      const dataItems = Array.isArray((data as AnyRecord)['items']) ? (data as AnyRecord)['items'] as AnyRecord[] : [];
+      this.selectedPaquetes = dataItems.map((it: AnyRecord) => {
+        const record = it as Record<string, unknown>;
+        const eventKeyValue = record['eventoCodigo'];
+        const eventKey = typeof eventKeyValue === 'number'
+          ? eventKeyValue
+          : (typeof eventKeyValue === 'string' && eventKeyValue.trim() ? eventKeyValue : null);
+        const eventoCodigoValue = record['eventoCodigo'];
+        const eventoCodigo = typeof eventoCodigoValue === 'number'
+          ? eventoCodigoValue
+          : (typeof eventoCodigoValue === 'string' && eventoCodigoValue.trim() ? eventoCodigoValue : null);
+        return {
+          id: this.parseNumber(record['id']) ?? undefined,        // <-- PK_PS_Cod real
+          key: this.getPkgKey(it),                                // <-- clave consistente
+          eventKey,                                               // si asocias por evento
+          eventoCodigo,
+          ID: this.parseNumber(record['exsId'] ?? record['id']) ?? undefined, // FK a T_EventoServicio
+          descripcion: String(record['nombre'] ?? record['descripcion'] ?? ''),
+          precio: Number(record['precioUnit'] ?? record['precio'] ?? 0),
+          notas: String(record['notas'] ?? ''),
+          moneda: String(record['moneda'] ?? 'USD'),
+          cantidad: Number(record['cantidad'] ?? 1),
+          descuento: Number(record['descuento'] ?? 0),
+          recargo: Number(record['recargo'] ?? 0)
+        };
+      });
       // Cargar tags del cliente (si procede)
       if (this.dniCliente) this.loadTagsCliente();
     });
@@ -769,7 +814,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     // console.log(JSON.stringify(payload, null, 2));
     // Modo prueba: solo mostrar en consola, sin enviar al API.
 
-    const obs: any = this.visualizarService.updatePedido?.(this.pedidoId, payload);
+    const obs = this.visualizarService.updatePedido?.(this.pedidoId, payload);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.error('[updatePedido] no disponible');
       Swal.fire({
@@ -796,7 +841,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       take(1),
       finalize(() => { this.saving = false; }) // ← libéralo siempre
     ).subscribe(
-      (res: any) => {
+      (res: unknown) => {
         Swal.fire({
           text: 'Pedido actualizado correctamente.',
           icon: 'success',
@@ -806,7 +851,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         });
         // this.router.navigate(['/home/gestionar-pedido']);
       },
-      (err: any) => {
+      (err: unknown) => {
         console.error('[updatePedido] error', err);
         Swal.fire({
           text: 'Ocurrió un error al actualizar, vuelve a intentar.',
@@ -819,13 +864,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     );
   }
 
-  private normalizePaqueteRow(item: any): PaqueteRow {
-    const precio = Number(item?.precio ?? item?.Precio ?? item?.precioUnit ?? item?.precio_unitario);
-    const staff = Number(item?.staff ?? item?.Staff ?? item?.personal ?? item?.Personal);
-    const horas = Number(item?.horas ?? item?.Horas ?? item?.duration ?? item?.Duracion);
+  private normalizePaqueteRow(item: AnyRecord): PaqueteRow {
+    const record = item as Record<string, unknown>;
+    const precio = Number(record['precio'] ?? record['Precio'] ?? record['precioUnit'] ?? record['precio_unitario']);
+    const staff = Number(record['staff'] ?? record['Staff'] ?? record['personal'] ?? record['Personal']);
+    const horas = Number(record['horas'] ?? record['Horas'] ?? record['duration'] ?? record['Duracion']);
 
     return {
-      descripcion: item?.descripcion ?? item?.Descripcion ?? item?.titulo ?? 'Paquete',
+      descripcion: String(record['descripcion'] ?? record['Descripcion'] ?? record['titulo'] ?? 'Paquete'),
       precio: Number.isFinite(precio) ? precio : null,
       staff: Number.isFinite(staff) ? staff : null,
       horas: Number.isFinite(horas) ? horas : null,
@@ -845,6 +891,17 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
     return this.convert(value);
   }
+
+  private parseNumber(value: unknown): number | null {
+    if (value == null) {
+      return null;
+    }
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+    const parsed = Number(String(value).trim());
+    return Number.isFinite(parsed) ? parsed : null;
+  }
 }
 
 interface PaqueteRow {
@@ -852,5 +909,5 @@ interface PaqueteRow {
   precio: number | null;
   staff: number | null;
   horas: number | null;
-  raw: any;
+  raw: AnyRecord;
 }

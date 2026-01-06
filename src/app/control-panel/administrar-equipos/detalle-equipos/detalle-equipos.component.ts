@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AdministrarEquiposService } from '../service/administrar-equipos.service';
@@ -25,11 +25,15 @@ interface ResumenModelo {
   styleUrls: ['./detalle-equipos.component.css']
 })
 export class DetalleEquiposComponent implements OnInit, OnDestroy {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly administrarEquiposService = inject(AdministrarEquiposService);
   filtros: FiltrosDetalle = {};
   resumenModelos: ResumenModelo[] = [];
   busqueda = '';
   cargando = false;
   error = false;
+  readonly toolbarDescriptionText = 'Consulta los modelos disponibles y accede al detalle completo.';
   private modelosDesdeEstado: EquipoResumen[] | undefined;
   readonly columnasResumen: TableColumn<ResumenModelo>[] = [
     { key: 'nombreMarca', header: 'Marca', sortable: true, class: 'text-capitalize' },
@@ -39,12 +43,6 @@ export class DetalleEquiposComponent implements OnInit, OnDestroy {
     { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, class: 'text-center', width: '160px' }
   ];
   private subscription: Subscription | null = null;
-
-  constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly administrarEquiposService: AdministrarEquiposService
-  ) {}
 
   ngOnInit(): void {
     if (Object.prototype.hasOwnProperty.call(history.state, 'modelos')) {
@@ -72,7 +70,7 @@ export class DetalleEquiposComponent implements OnInit, OnDestroy {
   }
 
   get toolbarDescription(): string {
-    return 'Consulta los modelos disponibles y accede al detalle completo.';
+    return this.toolbarDescriptionText;
   }
 
   get totalModelos(): number {

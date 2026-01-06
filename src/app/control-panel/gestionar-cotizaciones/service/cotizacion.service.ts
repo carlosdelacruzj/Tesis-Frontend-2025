@@ -1,5 +1,5 @@
 ﻿import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { Cotizacion, CotizacionItemPayload, CotizacionPayload, CotizacionContacto, CotizacionContactoPayload, CotizacionContextoPayload, CotizacionDetallePayload, CotizacionEventoPayload, CotizacionApiContacto, CotizacionApiResponse, ClienteBusquedaResultado, CotizacionPublicPayload, CotizacionPublicResponse, CotizacionPublicResult, LeadConvertPayload, CotizacionPedidoPayload, CotizacionPedidoResponse, CotizacionAdminCreatePayload, CotizacionAdminUpdatePayload } from '../model/cotizacion.model';
@@ -17,13 +17,10 @@ export class CotizacionService {
   private readonly baseUrl = `${this.apiBase}/cotizaciones`;
   private sequence = 0;
 
-  private cotizaciones: Array<Cotizacion & { raw?: CotizacionPayload }> = [];
-
-  constructor(
-    private readonly http: HttpClient,
-    private readonly pedidoService: PedidoService,
-    private readonly visualizarService: VisualizarService
-  ) { }
+  private readonly http = inject(HttpClient);
+  private readonly pedidoService = inject(PedidoService);
+  private readonly visualizarService = inject(VisualizarService);
+  private cotizaciones: (Cotizacion & { raw?: CotizacionPayload })[] = [];
 
   // [1] GET /cotizaciones
   listCotizaciones(filters?: Record<string, string | number | null | undefined>): Observable<Cotizacion[]> {
@@ -91,14 +88,14 @@ export class CotizacionService {
     if (!trimmed) return of([]);
 
     // Enviar ambas variantes por compatibilidad con tu backend
-    let params = new HttpParams()
+    const params = new HttpParams()
       .set('query', trimmed)
       .set('q', trimmed)
       .set('limit', String(limit))
       .set('top', String(limit));
 
     return this.http
-      .get<Array<Record<string, unknown>>>(`${environment.baseUrl}/clientes/buscar`, { params })
+      .get<Record<string, unknown>[]>(`${environment.baseUrl}/clientes/buscar`, { params })
       .pipe(
         map(items => Array.isArray(items) ? items.map(item => this.normalizeClienteBusqueda(item)) : []),
         catchError(err => {
@@ -275,7 +272,7 @@ downloadPdf(
     );
   }
 
-  getServicios(): Observable<any[]> {
+  getServicios(): Observable<Record<string, unknown>[]> {
     return this.pedidoService.getServicios().pipe(
       catchError(err => {
         console.error('[cotizaciones] getServicios', err);
@@ -284,7 +281,7 @@ downloadPdf(
     );
   }
 
-  getEventos(): Observable<any[]> {
+  getEventos(): Observable<Record<string, unknown>[]> {
     return this.pedidoService.getEventos().pipe(
       catchError(err => {
         console.error('[cotizaciones] getEventos', err);
@@ -293,7 +290,7 @@ downloadPdf(
     );
   }
 
-  getEventosServicio(eventoId?: number | null, servicioId?: number | null): Observable<any[]> {
+  getEventosServicio(eventoId?: number | null, servicioId?: number | null): Observable<Record<string, unknown>[]> {
     return this.visualizarService.getEventosServicio(eventoId ?? undefined, servicioId ?? undefined).pipe(
       catchError(err => {
         console.error('[cotizaciones] getEventosServicio', err);
@@ -309,12 +306,14 @@ downloadPdf(
     const generatedId = this.sequence + 1;
     const id = (api.id && Number.isFinite(Number(api.id))) ? Number(api.id) : payload.cotizacion.idCotizacion ?? generatedId;
 
+    const apiRecord = api as Record<string, unknown>;
+    const cotizacionRecord = (api.cotizacion ?? {}) as Record<string, unknown>;
     const codigoApi = this.toOptionalString(
       // Prefer explicit codigo fields coming from the backend.
-      (api as any)?.codigo ??
-      (api as any)?.codigoCotizacion ??
-      (api.cotizacion as any)?.codigo ??
-      (api.cotizacion as any)?.codigoCotizacion
+      apiRecord['codigo'] ??
+      apiRecord['codigoCotizacion'] ??
+      cotizacionRecord['codigo'] ??
+      cotizacionRecord['codigoCotizacion']
     );
 
     const codigoCache = this.cotizaciones.find(item => item.id === id)?.codigo;
@@ -673,8 +672,8 @@ downloadPdf(
     };
   }
 
-  private cleanObject(input: Record<string, any>): Record<string, any> {
-    const output: Record<string, any> = {};
+  private cleanObject(input: Record<string, unknown>): Record<string, unknown> {
+    const output: Record<string, unknown> = {};
     Object.entries(input).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         output[key] = value;
@@ -812,7 +811,7 @@ downloadPdf(
 
     const eventosFuente = Array.isArray(api.eventos) ? api.eventos : [];
     const eventos = eventosFuente
-      .map((evento: any, index: number) => this.extractEventoFromApi(evento, index))
+      .map((evento, index) => this.extractEventoFromApi(evento as Record<string, unknown>, index))
       .filter(evento => evento != null);
 
     return {
@@ -993,11 +992,11 @@ downloadPdf(
     return new Date().toISOString().slice(0, 10);
   }
 
-  private applyFilters(data: Array<Cotizacion & { raw?: CotizacionPayload }>, filters?: Record<string, string | number | null | undefined>): Cotizacion[] {
+  private applyFilters(data: (Cotizacion & { raw?: CotizacionPayload })[], filters?: Record<string, string | number | null | undefined>): Cotizacion[] {
     if (!filters) {
       return data.map(c => this.cloneCotizacion(c));
     }
-    const entries = Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined && value !== '');
+    const entries = Object.entries(filters).filter(([, value]) => value !== null && value !== undefined && value !== '');
     if (!entries.length) {
       return data.map(c => this.cloneCotizacion(c));
     }

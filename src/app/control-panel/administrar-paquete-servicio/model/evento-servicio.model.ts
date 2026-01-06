@@ -80,7 +80,7 @@ export interface CrearEventoServicioRequest {
   trailerMin?: number | null;
   filmMin?: number | null;
   staff: EventoServicioStaff[];
-  equipos: Array<{ tipoEquipoId: number; cantidad: number; notas?: string | null }>;
+  equipos: { tipoEquipoId: number; cantidad: number; notas?: string | null }[];
 }
 
 export interface ActualizarEventoServicioRequest {
@@ -96,7 +96,7 @@ export interface ActualizarEventoServicioRequest {
   trailerMin?: number | null;
   filmMin?: number | null;
   staff: EventoServicioStaff[];
-  equipos: Array<{ tipoEquipoId: number; cantidad: number; notas?: string | null }>;
+  equipos: { tipoEquipoId: number; cantidad: number; notas?: string | null }[];
 }
 
 export interface ActualizarEstadoEventoServicioResponse {

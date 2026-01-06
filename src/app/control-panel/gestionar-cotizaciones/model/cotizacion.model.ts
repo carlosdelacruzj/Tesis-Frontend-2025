@@ -103,10 +103,10 @@ export interface CotizacionApiResponse {
     fechaCreacion?: string | null;
     estado?: string | null;
     idTipoEvento?: number | string | null;
-    items?: Array<Record<string, unknown>> | null;
+    items?: Record<string, unknown>[] | null;
   }) | null;
-  items?: Array<Record<string, unknown>> | null;
-  eventos?: Array<Record<string, unknown>> | null;
+  items?: Record<string, unknown>[] | null;
+  eventos?: Record<string, unknown>[] | null;
 }
 
 export interface CotizacionItemPayload {
