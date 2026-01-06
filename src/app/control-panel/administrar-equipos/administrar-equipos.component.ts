@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AdministrarEquiposService } from './service/administrar-equipos.service';
 import { EquipoResumen } from './models/equipo-resumen.model';
@@ -20,7 +20,9 @@ interface ResumenPorTipo {
   templateUrl: './administrar-equipos.component.html',
   styleUrls: ['./administrar-equipos.component.css']
 })
-export class AdministrarEquiposComponent implements OnInit, OnDestroy {
+export class AdministrarEquiposComponent implements OnInit {
+  private readonly administrarEquiposService = inject(AdministrarEquiposService);
+  private readonly router = inject(Router);
   resumenPorTipo: ResumenPorTipo[] = [];
   filtradoResumen: ResumenPorTipo[] = [];
   readonly maxModelosCompactos = 5;
@@ -55,16 +57,8 @@ export class AdministrarEquiposComponent implements OnInit, OnDestroy {
   tiposDisponibles: TipoEquipo[] = [];
   marcasDisponibles: Marca[] = [];
 
-  constructor(
-    private readonly administrarEquiposService: AdministrarEquiposService,
-    private readonly router: Router
-  ) {}
-
   ngOnInit(): void {
     this.cargarResumen();
-  }
-
-  ngOnDestroy(): void {
   }
 
   trackByTipo(_: number, item: ResumenPorTipo): number {

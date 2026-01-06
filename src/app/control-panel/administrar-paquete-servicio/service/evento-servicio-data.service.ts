@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
@@ -9,7 +9,7 @@ import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 export class EventoServicioDataService {
   private readonly baseUrl = environment.baseUrl;
 
-  constructor(private readonly http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getEventos(): Observable<Evento[]> {
     return this.http.get<Evento[]>(`${this.baseUrl}/eventos`);
@@ -19,15 +19,15 @@ export class EventoServicioDataService {
     return this.http.get<Evento>(`${this.baseUrl}/eventos/${id}`);
   }
 
-  crearEvento(nombre: string, iconUrl?: string | null): Observable<any> {
+  crearEvento(nombre: string, iconUrl?: string | null): Observable<Evento> {
     const body: Record<string, unknown> = { nombre };
     if (iconUrl !== undefined) {
       body['iconUrl'] = iconUrl;
     }
-    return this.http.post(`${this.baseUrl}/eventos`, body);
+    return this.http.post<Evento>(`${this.baseUrl}/eventos`, body);
   }
 
-  actualizarEvento(id: number, nombre?: string, iconUrl?: string | null): Observable<any> {
+  actualizarEvento(id: number, nombre?: string, iconUrl?: string | null): Observable<Evento> {
     const body: Record<string, unknown> = {};
     if (nombre !== undefined) {
       body['nombre'] = nombre;
@@ -35,7 +35,7 @@ export class EventoServicioDataService {
     if (iconUrl !== undefined) {
       body['iconUrl'] = iconUrl;
     }
-    return this.http.put(`${this.baseUrl}/eventos/${id}`, body);
+    return this.http.put<Evento>(`${this.baseUrl}/eventos/${id}`, body);
   }
 
   getServicios(): Observable<Servicio[]> {
@@ -71,12 +71,12 @@ export class EventoServicioDataService {
     });
   }
 
-  crearEventoServicio(payload: CrearEventoServicioRequest): Observable<any> {
-    return this.http.post(`${this.baseUrl}/eventos_servicios`, payload);
+  crearEventoServicio(payload: CrearEventoServicioRequest): Observable<EventoServicioDetalle> {
+    return this.http.post<EventoServicioDetalle>(`${this.baseUrl}/eventos_servicios`, payload);
   }
 
-  actualizarEventoServicio(id: number, payload: ActualizarEventoServicioRequest): Observable<any> {
-    return this.http.put(`${this.baseUrl}/eventos_servicios/${id}`, payload);
+  actualizarEventoServicio(id: number, payload: ActualizarEventoServicioRequest): Observable<EventoServicioDetalle> {
+    return this.http.put<EventoServicioDetalle>(`${this.baseUrl}/eventos_servicios/${id}`, payload);
   }
 
   actualizarEstadoEventoServicio(id: number, estadoId: number): Observable<ActualizarEstadoEventoServicioResponse> {
@@ -94,11 +94,11 @@ export class EventoServicioDataService {
     return this.http.get<TipoEquipo[]>(`${this.baseUrl}/inventario/tipos-equipo`);
   }
 
-  crearServicio(nombre: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/servicios`, { nombre });
+  crearServicio(nombre: string): Observable<Servicio> {
+    return this.http.post<Servicio>(`${this.baseUrl}/servicios`, { nombre });
   }
 
-  actualizarServicio(id: number, nombre: string): Observable<any> {
-    return this.http.put(`${this.baseUrl}/servicios/${id}`, { nombre });
+  actualizarServicio(id: number, nombre: string): Observable<Servicio> {
+    return this.http.put<Servicio>(`${this.baseUrl}/servicios/${id}`, { nombre });
   }
 }

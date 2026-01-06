@@ -10,8 +10,8 @@ import {
   OnDestroy,
   ViewChild,
   HostListener,
-  Inject,
-  Renderer2
+  Renderer2,
+  inject
 } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 
@@ -72,11 +72,13 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Output() opened = new EventEmitter<void>();
   @Output() closed = new EventEmitter<CloseReason>();
   @Output() confirm = new EventEmitter<void>();
-  @Output() cancel = new EventEmitter<void>();
+  @Output() cancelled = new EventEmitter<void>();
 
   @ViewChild('dialog', { static: false }) dialogRef!: ElementRef<HTMLElement>;
   @ViewChild('closeBtn', { static: false }) closeBtnRef!: ElementRef<HTMLButtonElement>;
 
+  private readonly doc = inject(DOCUMENT);
+  private readonly renderer = inject(Renderer2);
   private previouslyFocused: Element | null = null;
   private static activeScrollLocks = 0;
   private hasScrollLock = false;
@@ -85,11 +87,6 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
   private dragOrigin = { x: 0, y: 0 };
   private dragStartPoint: { x: number; y: number } | null = null;
   private dragging = false;
-
-  constructor(
-    @Inject(DOCUMENT) private readonly doc: Document | null,
-    private readonly renderer: Renderer2
-  ) {}
 
   /** Clase de tamaño */
   get sizeClass(): string {
@@ -148,7 +145,7 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   onCancel(): void {
     if (this.disableClose) return;
-    this.cancel.emit();
+    this.cancelled.emit();
     this.close('cancel');
   }
 

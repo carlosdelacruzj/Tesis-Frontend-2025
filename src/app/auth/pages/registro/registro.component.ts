@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
@@ -8,8 +8,12 @@ import { Router } from '@angular/router';
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.css']
 })
-export class RegistroComponent implements OnInit {
-  codigo: number = 0;
+export class RegistroComponent {
+  private readonly fb = inject(UntypedFormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  codigo = 0;
   miFormulario: UntypedFormGroup = this.fb.group({
     pas1: ['', [Validators.required, Validators.maxLength(1)]],
     pas2: ['', [Validators.required, Validators.minLength(1)]],
@@ -19,15 +23,9 @@ export class RegistroComponent implements OnInit {
     pas6: ['', [Validators.required, Validators.minLength(1)]],
 
   });
-  constructor(private fb: UntypedFormBuilder,private authService: AuthService,private router:Router) { }
-
-  ngOnInit(): void {
-    this.miFormulario
-  }
-  
   validacion(){
     console.log(this.miFormulario.value);
-    var {pas1,pas2,pas3,pas4,pas5,pas6} = this.miFormulario.value;
+    const { pas1, pas2, pas3, pas4, pas5, pas6 } = this.miFormulario.value;
     this.codigo = parseInt(`${pas1}${pas2}${pas3}${pas4}${pas5}${pas6}`);
     this.authService.validacion(localStorage.getItem('correo'),this.codigo).subscribe(
       resp => {

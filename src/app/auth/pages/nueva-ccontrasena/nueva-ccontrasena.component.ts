@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 
 @Component({
@@ -6,16 +6,15 @@ import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms
   templateUrl: './nueva-ccontrasena.component.html',
   styleUrls: ['./nueva-ccontrasena.component.css']
 })
-export class NuevaCContrasenaComponent implements OnInit {
-
-  constructor(private fb: UntypedFormBuilder) { }
+export class NuevaCContrasenaComponent {
+  private readonly fb = inject(UntypedFormBuilder);
   miFormulario: UntypedFormGroup = this.fb.group({
     correo: ['', [Validators.required, Validators.email]],
   });
-  ngOnInit(): void {
-  }
-  validacion(){
-    
+  validacion(): void {
+    if (this.miFormulario.invalid) {
+      this.miFormulario.markAllAsTouched();
+    }
   }
 
 }

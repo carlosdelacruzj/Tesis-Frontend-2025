@@ -15,7 +15,7 @@
 
   <ng-container *ngIf="!loadingList; else loadingState">
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="25"
-      emptyText="Sin perfiles registrados" (rowClick)="editarPerfil($event)" (sortChange)="onSortChange($event)"
+      emptyText="Sin perfiles registrados" (rowClick)="editarPerfil($any($event))" (sortChange)="onSortChange($event)"
       (pageChange)="onPageChange($event)" [showCreateButton]="false" [showSearch]="false"
       [externalSearchTerm]="searchTerm">
 

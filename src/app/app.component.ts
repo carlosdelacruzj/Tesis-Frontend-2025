@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Type, inject } from '@angular/core';
 import { Router, Routes, NavigationEnd, RouteConfigLoadStart, RouteConfigLoadEnd, GuardsCheckStart, GuardsCheckEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
@@ -8,22 +8,32 @@ import { filter } from 'rxjs/operators';
   template: '<router-outlet></router-outlet>',
 })
 export class AppComponent implements OnInit {
-  constructor(private router: Router) {}
+  private readonly router = inject(Router);
 
   ngOnInit(): void {
+    const tokenName = (token: unknown): string | undefined => {
+      if (typeof token === 'function') {
+        return token.name;
+      }
+      if (token && typeof token === 'object' && 'name' in token) {
+        const nameValue = (token as { name?: unknown }).name;
+        return typeof nameValue === 'string' ? nameValue : undefined;
+      }
+      return undefined;
+    };
+
     // A) dump de TODA la config de rutas (incluye children y guards)
     const dump = (routes: Routes, prefix = '') => {
       routes.forEach(r => {
-        // NO tipar como Route; usamos un POJO de resumen
         const info = {
           path: r.path,
           redirectTo: r.redirectTo,
           pathMatch: r.pathMatch as string | undefined,
-          component: (r as any).component?.name as string | undefined, // solo nombre para log
-          hasLoadChildren: !!r.loadChildren,                            // <— aquí el cambio clave
-          canActivate: (r.canActivate || []).map(g => (g as any).name),
-          canLoad: (r.canLoad || []).map(g => (g as any).name),
-          canActivateChild: (r.canActivateChild || []).map(g => (g as any).name),
+          component: (r.component as Type<unknown> | undefined)?.name, // solo nombre para log
+          hasLoadChildren: !!r.loadChildren,
+          canActivate: (r.canActivate || []).map(tokenName).filter((name): name is string => !!name),
+          canLoad: (r.canLoad || []).map(tokenName).filter((name): name is string => !!name),
+          canActivateChild: (r.canActivateChild || []).map(tokenName).filter((name): name is string => !!name),
           resolveKeys: r.resolve ? Object.keys(r.resolve) : [],
         };
         console.log(prefix + '🧭 Route ->', info);

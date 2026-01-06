@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, of } from 'rxjs';
+import { Observable, Subject, of } from 'rxjs';
 import { finalize, switchMap, takeUntil } from 'rxjs/operators';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
@@ -249,7 +249,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     }
 
     this.modalSaving = true;
-    const request$ = this.modalModo === 'crear'
+    const request$: Observable<unknown> = this.modalModo === 'crear'
       ? this.dataService.crearEventoServicio(payload)
       : (soloEstadoCambiado
           ? this.dataService.actualizarEstadoEventoServicio(this.paqueteEditando!.id, estadoSeleccionado!)

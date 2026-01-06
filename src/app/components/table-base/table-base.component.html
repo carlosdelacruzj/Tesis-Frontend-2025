@@ -78,7 +78,7 @@
             [ngTemplateOutletContext]="{ $implicit: row, row: row, key: col.key }">
           </ng-container>
           } @else {
-          <span [title]="getValue(row, col.key)">{{ getValue(row, col.key) }}</span>
+          <span [title]="getValue(row, col)">{{ getValue(row, col) }}</span>
           }
         </td>
         }

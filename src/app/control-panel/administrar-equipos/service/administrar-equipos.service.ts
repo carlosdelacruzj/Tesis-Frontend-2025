@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { EquipoResumen } from '../models/equipo-resumen.model';
@@ -13,14 +13,13 @@ import { ProyectoAfectado } from '../models/proyecto-afectado.model';
   providedIn: 'root'
 })
 export class AdministrarEquiposService {
+  private readonly http = inject(HttpClient);
   private readonly resumenUrl = `${environment.baseUrl}/inventario/equipos/resumen`;
   private readonly inventarioUrl = `${environment.baseUrl}/inventario/equipos`;
   private readonly tiposUrl = `${environment.baseUrl}/inventario/tipos-equipo`;
   private readonly marcasUrl = `${environment.baseUrl}/inventario/marcas`;
   private readonly modelosUrl = `${environment.baseUrl}/inventario/modelos`;
   private readonly estadosUrl = `${environment.baseUrl}/inventario/equipos/estados`;
-
-  constructor(private readonly http: HttpClient) {}
 
   getResumenEquipos(): Observable<EquipoResumen[]> {
     return this.http.get<EquipoResumen[]>(this.resumenUrl);
@@ -96,8 +95,8 @@ export class AdministrarEquiposService {
     return this.http.get<Modelo[]>(this.modelosUrl);
   }
 
-  obtenerEstados(): Observable<Array<{ idEstado: number; nombreEstado: string }>> {
-    return this.http.get<Array<{ idEstado: number; nombreEstado: string }>>(this.estadosUrl);
+  obtenerEstados(): Observable<{ idEstado: number; nombreEstado: string }[]> {
+    return this.http.get<{ idEstado: number; nombreEstado: string }[]>(this.estadosUrl);
   }
 
   crearEquipo(payload: { fechaIngreso: string; idModelo: number; idEstado: number; serie: string }): Observable<void> {

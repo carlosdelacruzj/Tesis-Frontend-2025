@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { map, tap } from "rxjs/operators";
@@ -10,7 +10,7 @@ import { Observable, of } from 'rxjs';
 })
 export class AuthService {
 
-  constructor(private http: HttpClient) { }
+  private readonly http = inject(HttpClient);
   private baseUrl: string = environment.baseUrl;
   private _usuario: Usuario | null = this.getUsuarioFromStorage();
 

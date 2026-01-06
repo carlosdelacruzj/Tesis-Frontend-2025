@@ -65,7 +65,10 @@ export class EstadoBadgeComponent {
     if (!estadoKey) return 'neutral';
 
     if (this.mapaColores) {
-      const match = this.mapaColores[estadoKey] ?? this.mapaColores[this.estado as any];
+      let match = this.mapaColores[estadoKey];
+      if (!match && (typeof this.estado === 'string' || typeof this.estado === 'number')) {
+        match = this.mapaColores[this.estado];
+      }
       if (match) return match;
     }
 

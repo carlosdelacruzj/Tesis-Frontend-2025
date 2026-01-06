@@ -1,10 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { AuthService } from '../../services/auth.service';
-import { AuthResponse } from '../../interfaces/auth.interface';
 
 @Component({
   selector: 'app-login',
@@ -12,12 +11,15 @@ import { AuthResponse } from '../../interfaces/auth.interface';
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
+  private readonly fb = inject(UntypedFormBuilder);
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+
   hide = true;
   miFormulario: UntypedFormGroup = this.fb.group({
     correo: ['', [Validators.required, Validators.email]],
     contrasena: ['', [Validators.required, Validators.minLength(6)]],
   });
-  constructor(private fb: UntypedFormBuilder, private router: Router, private authService: AuthService) { }
   login() {
     if (this.miFormulario.invalid) {
       this.miFormulario.markAllAsTouched();
@@ -26,7 +28,7 @@ export class LoginComponent {
     const { correo, contrasena } = this.miFormulario.value;
     this.authService.login(correo, contrasena)
       .subscribe({
-        next: (_resp: AuthResponse) => {
+        next: () => {
           if (this.authService.esEmpleado()) {
             void this.router.navigateByUrl('/home');
             return;

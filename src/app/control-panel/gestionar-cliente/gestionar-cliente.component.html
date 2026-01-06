@@ -18,7 +18,7 @@
   @if (!loadingList) {
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
       emptyText="Sin resultados"
-      (rowClick)="editarCliente($event)" (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
+      (rowClick)="editarCliente($any($event))" (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
       [showCreateButton]="false" [showSearch]="false"
       [externalSearchTerm]="searchTerm">
 

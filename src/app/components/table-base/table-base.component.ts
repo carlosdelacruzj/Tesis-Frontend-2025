@@ -12,7 +12,8 @@ import {
     AfterContentInit,
     OnChanges,
     OnDestroy,
-    SimpleChanges
+    SimpleChanges,
+    inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -22,10 +23,13 @@ import { Subscription } from 'rxjs';
 /** Dirección de ordenamiento */
 export type SortDirection = 'asc' | 'desc' | '';
 
+type TableRow = unknown;
+
 /** Definición de columna base */
-export interface TableColumn<T = any> {
+export interface TableColumn<T = TableRow> {
     key: string;
     header: string;
+    valueAccessor?: (row: T) => unknown;
     sortable?: boolean;
     filterable?: boolean;
     width?: string;
@@ -45,12 +49,31 @@ export interface TableColumn<T = any> {
 })
 export class CellTemplateDirective {
     @Input('appCell') columnKey!: string;
-    constructor(public readonly template: TemplateRef<any>) { }
+    readonly template = inject(TemplateRef<unknown>);
 }
 
 /** Utilidad: obtener valor por path 'a.b.c' desde un objeto */
-function getByPath(obj: any, path: string): any {
-    return path.split('.').reduce((acc, part) => (acc ? acc[part] : undefined), obj);
+function getByPath(obj: unknown, path: string): unknown {
+    if (!obj || typeof obj !== 'object') return undefined;
+    return path.split('.').reduce<unknown>((acc, part) => {
+        if (!acc || typeof acc !== 'object') return undefined;
+        const record = acc as Record<string, unknown>;
+        return part in record ? record[part] : undefined;
+    }, obj);
+}
+
+function compareValues(a: unknown, b: unknown, dir: SortDirection): number {
+    if (a == null && b == null) return 0;
+    if (a == null) return dir === 'asc' ? -1 : 1;
+    if (b == null) return dir === 'asc' ? 1 : -1;
+
+    if (typeof a === 'number' && typeof b === 'number') {
+        return dir === 'asc' ? a - b : b - a;
+    }
+
+    const sa = String(a).toLocaleLowerCase();
+    const sb = String(b).toLocaleLowerCase();
+    return dir === 'asc' ? sa.localeCompare(sb) : sb.localeCompare(sa);
 }
 
 @Component({
@@ -60,7 +83,7 @@ function getByPath(obj: any, path: string): any {
     templateUrl: './table-base.component.html',
     styleUrls: ['./table-base.component.css']
 })
-export class TableBaseComponent<T = any> implements AfterContentInit, OnChanges, OnDestroy {
+export class TableBaseComponent<T extends TableRow = TableRow> implements AfterContentInit, OnChanges, OnDestroy {
     /** Datos completos (cliente-side pagination/filter/sort) */
     @Input({ required: true }) data: T[] = [];
     /** Columnas a mostrar (extendidas con min/max opcionales) */
@@ -111,7 +134,7 @@ export class TableBaseComponent<T = any> implements AfterContentInit, OnChanges,
     private _externalSearchTerm = '';
 
     /** Mapa de plantillas por columnKey */
-    cellTemplateMap = new Map<string, TemplateRef<any>>();
+    cellTemplateMap = new Map<string, TemplateRef<unknown>>();
     private cellTplsChangesSub?: Subscription;
 
     ngAfterContentInit(): void {
@@ -153,7 +176,7 @@ export class TableBaseComponent<T = any> implements AfterContentInit, OnChanges,
         const source = this.dataSignal();
         if (!term) return source ?? [];
         const keys = this.columns
-            .filter(c => (c as any).filterable !== false)
+            .filter(c => c.filterable !== false)
             .map(c => c.key);
         return (source ?? []).filter(row =>
             keys.some(k => {
@@ -170,19 +193,10 @@ export class TableBaseComponent<T = any> implements AfterContentInit, OnChanges,
         const base = this.filtered().slice();
         if (!key || !dir) return base;
 
-        return base.sort((a: any, b: any) => {
+        return base.sort((a, b) => {
             const va = getByPath(a, key);
             const vb = getByPath(b, key);
-            if (va == null && vb == null) return 0;
-            if (va == null) return dir === 'asc' ? -1 : 1;
-            if (vb == null) return dir === 'asc' ? 1 : -1;
-
-            if (typeof va === 'number' && typeof vb === 'number') {
-                return dir === 'asc' ? va - vb : vb - va;
-            }
-            const sa = String(va).toLocaleLowerCase();
-            const sb = String(vb).toLocaleLowerCase();
-            return dir === 'asc' ? sa.localeCompare(sb) : sb.localeCompare(sa);
+            return compareValues(va, vb, dir);
         });
     });
 
@@ -251,15 +265,16 @@ export class TableBaseComponent<T = any> implements AfterContentInit, OnChanges,
         return this.cellTemplateMap.has(colKey);
     }
 
-    getTemplate(colKey: string) {
+    getTemplate(colKey: string): TemplateRef<unknown> {
         return this.cellTemplateMap.get(colKey)!;
     }
 
-    getValue(row: T, key: string) {
-        return getByPath(row, key);
+    getValue(row: T, col: TableColumn<T>): unknown {
+        if (col.valueAccessor) return col.valueAccessor(row);
+        return getByPath(row, col.key);
     }
 
-    trackByIndex = (_: number, __: any) => _;
+    trackByIndex = (index: number) => index;
 
     private rebuildCellTemplateMap(): void {
         this.cellTemplateMap.clear();

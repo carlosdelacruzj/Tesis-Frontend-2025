@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -6,11 +6,10 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class DashboardService {
-  private API_PRUEBA =
-  "https://rickandmortyapi.com/api/character";
-constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
+  private readonly API_PRUEBA = 'https://rickandmortyapi.com/api/character';
 
-public getAllNombres(): Observable<any> {
-  return this.http.get(this.API_PRUEBA);
-}
+  public getAllNombres(): Observable<unknown> {
+    return this.http.get(this.API_PRUEBA);
+  }
 }

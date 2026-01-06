@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -9,18 +9,16 @@ import { EventoServicioDataService } from 'src/app/control-panel/administrar-paq
   templateUrl: './add-evento.component.html',
 })
 export class AddEventoComponent {
+  private readonly fb = inject(FormBuilder);
+  private readonly snack = inject(MatSnackBar);
+  private readonly svc = inject(EventoServicioDataService);
+  private readonly dialogRef = inject(MatDialogRef<AddEventoComponent>);
+
   loading = false;
 
   form = this.fb.group({
     nombre: ['', [Validators.required, Validators.minLength(3)]],
   });
-
-  constructor(
-    private fb: FormBuilder,
-    private snack: MatSnackBar,
-    private svc: EventoServicioDataService,
-    private dialogRef: MatDialogRef<AddEventoComponent>
-  ) {}
 
   /** Normaliza el nombre para buscar la imagen por archivo */
   private slugify(v: string): string {
@@ -58,11 +56,12 @@ export class AddEventoComponent {
         this.snack.open('Evento creado correctamente', 'OK', { duration: 2500 });
         this.dialogRef.close(true);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.loading = false;
 
         // Marca error de duplicado si el backend devuelve 409 (o mensaje típico)
-        if (err?.status === 409 || /existe/i.test(err?.error?.message || '')) {
+        const errorResponse = err as { status?: number; error?: { message?: string } };
+        if (errorResponse?.status === 409 || /existe/i.test(errorResponse?.error?.message || '')) {
           this.form.get('nombre')?.setErrors({ duplicado: true });
           return;
         }

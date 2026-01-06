@@ -1,6 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { UntypedFormGroup, Validators, UntypedFormBuilder } from '@angular/forms';
-import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
 @Component({
@@ -8,17 +7,16 @@ import { Router } from '@angular/router';
   templateUrl: './recuperar-contrasena.component.html',
   styleUrls: ['./recuperar-contrasena.component.css']
 })
-export class RecuperarContrasenaComponent implements OnInit {
+export class RecuperarContrasenaComponent {
 
   favoriteSeason: string;
   seasons: string[] = ['Winter', 'Spring', 'Summer', 'Autumn'];
+  private readonly fb = inject(UntypedFormBuilder);
+  private readonly router = inject(Router);
+
   miFormulario: UntypedFormGroup = this.fb.group({
     correo: ['', [Validators.required, Validators.email]],
   });
-  constructor(private fb: UntypedFormBuilder,private authService: AuthService,private router:Router) { }
-
-  ngOnInit(): void {
-  }
   validacion(){
     console.log(this.miFormulario.value);
     const {correo} = this.miFormulario.value;
