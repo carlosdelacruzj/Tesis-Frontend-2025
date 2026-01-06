@@ -32,12 +32,10 @@
     </div>
   </app-list-toolbar>
 
-  <ng-container *ngIf="filtradoResumen.length; else emptyState">
+  @if (filtradoResumen.length) {
     <div class="card-grid">
-      <mat-card
-        class="equipment-card"
-        *ngFor="let tipo of filtradoResumen; trackBy: trackByTipo"
-      >
+      @for (tipo of filtradoResumen; track tipo.idTipoEquipo !== null && tipo.idTipoEquipo !== undefined ? tipo.idTipoEquipo : $index) {
+      <mat-card class="equipment-card">
         <mat-card-header>
           <div mat-card-avatar class="equipment-avatar">
             {{ tipo.nombreTipoEquipo | slice: 0:1 }}
@@ -50,7 +48,8 @@
 
         <mat-card-content>
           <ul class="model-list">
-            <li *ngFor="let modelo of tipo.modelos | slice: 0: maxModelosCompactos; trackBy: trackByModelo">
+            @for (modelo of tipo.modelos | slice: 0: maxModelosCompactos; track modelo.idModelo !== null && modelo.idModelo !== undefined ? modelo.idModelo : $index) {
+            <li>
               <button
                 type="button"
                 class="model-item"
@@ -64,10 +63,13 @@
                 </span>
               </button>
             </li>
+            }
           </ul>
-          <span class="preview-note" *ngIf="tipo.modelos.length > maxModelosCompactos">
+          @if (tipo.modelos.length > maxModelosCompactos) {
+          <span class="preview-note">
             + {{ tipo.modelos.length - maxModelosCompactos }} modelo{{ tipo.modelos.length - maxModelosCompactos === 1 ? '' : 's' }} más
           </span>
+          }
         </mat-card-content>
 
         <mat-card-actions class="card-actions">
@@ -76,15 +78,14 @@
           </button>
         </mat-card-actions>
       </mat-card>
+      }
     </div>
-  </ng-container>
-
-  <ng-template #emptyState>
+  } @else {
     <div class="empty-state">
       <mat-icon>inventory_2</mat-icon>
       <p>No hay equipos registrados en el inventario.</p>
     </div>
-  </ng-template>
+  }
 
   <app-modal-base
     [open]="modalTipoOpen"
@@ -120,9 +121,11 @@
             (ngModelChange)="formTipo.nombre = normalizarEntrada($event)"
             #nombreTipoCtrl="ngModel"
           />
-          <div class="invalid-feedback d-block" *ngIf="nombreTipoCtrl.invalid && (nombreTipoCtrl.dirty || nombreTipoCtrl.touched)">
+          @if (nombreTipoCtrl.invalid && (nombreTipoCtrl.dirty || nombreTipoCtrl.touched)) {
+          <div class="invalid-feedback d-block">
             Ingresa un nombre válido.
           </div>
+          }
         </div>
 
         <div class="col-12">
@@ -143,10 +146,12 @@
           </div>
         </div>
 
-        <div class="col-12 mensaje-exito" *ngIf="formTipo.exito">
+        @if (formTipo.exito) {
+        <div class="col-12 mensaje-exito">
           <mat-icon>check_circle</mat-icon>
           {{ formTipo.exito }}
         </div>
+        }
       </form>
     </app-formulario-base>
     <div modal-footer class="d-flex justify-content-end gap-2">
@@ -159,7 +164,9 @@
         form="crearTipoForm"
         [disabled]="!formTipo.confirmacion || crearTipoForm.invalid || formTipo.cargando"
       >
-        <span class="spinner-border spinner-border-sm" *ngIf="formTipo.cargando" role="status" aria-hidden="true"></span>
+        @if (formTipo.cargando) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
         <span>Crear</span>
       </button>
     </div>
@@ -198,15 +205,19 @@
             [(ngModel)]="formMarca.nombre"
             #nombreMarcaCtrl="ngModel"
           />
-          <div class="invalid-feedback d-block" *ngIf="nombreMarcaCtrl.invalid && (nombreMarcaCtrl.dirty || nombreMarcaCtrl.touched)">
+          @if (nombreMarcaCtrl.invalid && (nombreMarcaCtrl.dirty || nombreMarcaCtrl.touched)) {
+          <div class="invalid-feedback d-block">
             Ingresa un nombre válido.
           </div>
+          }
         </div>
 
-        <div class="col-12 mensaje-exito" *ngIf="formMarca.exito">
+        @if (formMarca.exito) {
+        <div class="col-12 mensaje-exito">
           <mat-icon>check_circle</mat-icon>
           {{ formMarca.exito }}
         </div>
+        }
       </form>
     </app-formulario-base>
     <div modal-footer class="d-flex justify-content-end gap-2">
@@ -219,7 +230,9 @@
         form="crearMarcaForm"
         [disabled]="crearMarcaForm.invalid || formMarca.cargando"
       >
-        <span class="spinner-border spinner-border-sm" *ngIf="formMarca.cargando" role="status" aria-hidden="true"></span>
+        @if (formMarca.cargando) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
         <span>Crear</span>
       </button>
     </div>
@@ -258,9 +271,11 @@
             [(ngModel)]="formModelo.nombre"
             #nombreModeloCtrl="ngModel"
           />
-          <div class="invalid-feedback d-block" *ngIf="nombreModeloCtrl.invalid && (nombreModeloCtrl.dirty || nombreModeloCtrl.touched)">
+          @if (nombreModeloCtrl.invalid && (nombreModeloCtrl.dirty || nombreModeloCtrl.touched)) {
+          <div class="invalid-feedback d-block">
             Ingresa un nombre válido.
           </div>
+          }
         </div>
 
         <div class="col-12 col-md-6">
@@ -274,13 +289,17 @@
             #tipoEquipoCtrl="ngModel"
           >
             <option [ngValue]="null" disabled>Selecciona un tipo</option>
-            <option *ngFor="let tipo of tiposDisponibles" [ngValue]="tipo.idTipoEquipo">
+            @for (tipo of tiposDisponibles; track tipo.idTipoEquipo !== null && tipo.idTipoEquipo !== undefined ? tipo.idTipoEquipo : $index) {
+            <option [ngValue]="tipo.idTipoEquipo">
               {{ tipo.nombre }}
             </option>
+            }
           </select>
-          <div class="invalid-feedback d-block" *ngIf="tipoEquipoCtrl.invalid && (tipoEquipoCtrl.dirty || tipoEquipoCtrl.touched)">
+          @if (tipoEquipoCtrl.invalid && (tipoEquipoCtrl.dirty || tipoEquipoCtrl.touched)) {
+          <div class="invalid-feedback d-block">
             Selecciona un tipo de equipo.
           </div>
+          }
         </div>
 
         <div class="col-12 col-md-6">
@@ -294,19 +313,25 @@
             #marcaCtrl="ngModel"
           >
             <option [ngValue]="null" disabled>Selecciona una marca</option>
-            <option *ngFor="let marca of marcasDisponibles" [ngValue]="marca.idMarca">
+            @for (marca of marcasDisponibles; track marca.idMarca !== null && marca.idMarca !== undefined ? marca.idMarca : $index) {
+            <option [ngValue]="marca.idMarca">
               {{ marca.nombre }}
             </option>
+            }
           </select>
-          <div class="invalid-feedback d-block" *ngIf="marcaCtrl.invalid && (marcaCtrl.dirty || marcaCtrl.touched)">
+          @if (marcaCtrl.invalid && (marcaCtrl.dirty || marcaCtrl.touched)) {
+          <div class="invalid-feedback d-block">
             Selecciona una marca.
           </div>
+          }
         </div>
 
-        <div class="col-12 mensaje-exito" *ngIf="formModelo.exito">
+        @if (formModelo.exito) {
+        <div class="col-12 mensaje-exito">
           <mat-icon>check_circle</mat-icon>
           {{ formModelo.exito }}
         </div>
+        }
       </form>
     </app-formulario-base>
     <div modal-footer class="d-flex justify-content-end gap-2">
@@ -319,7 +344,9 @@
         form="crearModeloForm"
         [disabled]="crearModeloForm.invalid || formModelo.cargando"
       >
-        <span class="spinner-border spinner-border-sm" *ngIf="formModelo.cargando" role="status" aria-hidden="true"></span>
+        @if (formModelo.cargando) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
         <span>Crear</span>
       </button>
     </div>

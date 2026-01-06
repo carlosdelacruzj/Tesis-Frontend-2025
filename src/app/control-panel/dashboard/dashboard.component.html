@@ -19,21 +19,23 @@
   </header>
 
   <section class="summary-grid">
-    <article class="summary-card" *ngFor="let card of summaryCards" [ngClass]="card.accent">
-      <div class="summary-card__top">
-        <span class="summary-card__label">{{ card.title }}</span>
-        <span class="summary-card__chip">{{ card.period }}</span>
-      </div>
-      <div class="summary-card__value">{{ card.value }}</div>
-      <div class="summary-card__trend" [ngClass]="{
-          'is-up': card.trend === 'up',
-          'is-down': card.trend === 'down',
-          'is-flat': card.trend === 'flat'
-        }">
-        <span class="summary-card__trend-value">{{ card.change }}</span>
-        <span class="summary-card__trend-caption">{{ card.subtitle }}</span>
-      </div>
-    </article>
+    @for (card of summaryCards; track $index) {
+      <article class="summary-card" [ngClass]="card.accent">
+        <div class="summary-card__top">
+          <span class="summary-card__label">{{ card.title }}</span>
+          <span class="summary-card__chip">{{ card.period }}</span>
+        </div>
+        <div class="summary-card__value">{{ card.value }}</div>
+        <div class="summary-card__trend" [ngClass]="{
+            'is-up': card.trend === 'up',
+            'is-down': card.trend === 'down',
+            'is-flat': card.trend === 'flat'
+          }">
+          <span class="summary-card__trend-value">{{ card.change }}</span>
+          <span class="summary-card__trend-caption">{{ card.subtitle }}</span>
+        </div>
+      </article>
+    }
   </section>
 
   <div class="content-grid">
@@ -55,22 +57,24 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let event of upcomingEvents">
-                <td class="table-date">{{ event.dateLabel }}</td>
-                <td>
-                  <div class="table-client">{{ event.title }}</div>
-                  <div class="table-tags">
-                    <span class="tag">{{ event.type }}</span>
-                    <span class="table-meta d-lg-none">{{ event.crewLead }}</span>
-                  </div>
-                  <small class="text-muted d-md-none">{{ event.location }}</small>
-                </td>
-                <td class="d-none d-md-table-cell">{{ event.location }}</td>
-                <td class="d-none d-lg-table-cell">{{ event.crewLead }}</td>
-                <td>
-                  <span class="status-badge" [ngClass]="event.statusClass">{{ event.status }}</span>
-                </td>
-              </tr>
+              @for (event of upcomingEvents; track $index) {
+                <tr>
+                  <td class="table-date">{{ event.dateLabel }}</td>
+                  <td>
+                    <div class="table-client">{{ event.title }}</div>
+                    <div class="table-tags">
+                      <span class="tag">{{ event.type }}</span>
+                      <span class="table-meta d-lg-none">{{ event.crewLead }}</span>
+                    </div>
+                    <small class="text-muted d-md-none">{{ event.location }}</small>
+                  </td>
+                  <td class="d-none d-md-table-cell">{{ event.location }}</td>
+                  <td class="d-none d-lg-table-cell">{{ event.crewLead }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="event.statusClass">{{ event.status }}</span>
+                  </td>
+                </tr>
+              }
             </tbody>
           </table>
         </div>
@@ -82,17 +86,19 @@
           <button class="btn btn-outline-secondary btn-sm" type="button">Ver checklist completo</button>
         </div>
         <ul class="deliverables">
-          <li class="deliverable" *ngFor="let deliverable of deliverables">
-            <div>
-              <h3>{{ deliverable.title }}</h3>
-              <span class="deliverable__client">{{ deliverable.client }}</span>
-            </div>
-            <div class="deliverable__meta">
-              <span class="deliverable__status">{{ deliverable.status }}</span>
-              <span class="deliverable__owner">{{ deliverable.owner }}</span>
-              <span class="deliverable__due">Entrega {{ deliverable.due }}</span>
-            </div>
-          </li>
+          @for (deliverable of deliverables; track $index) {
+            <li class="deliverable">
+              <div>
+                <h3>{{ deliverable.title }}</h3>
+                <span class="deliverable__client">{{ deliverable.client }}</span>
+              </div>
+              <div class="deliverable__meta">
+                <span class="deliverable__status">{{ deliverable.status }}</span>
+                <span class="deliverable__owner">{{ deliverable.owner }}</span>
+                <span class="deliverable__due">Entrega {{ deliverable.due }}</span>
+              </div>
+            </li>
+          }
         </ul>
       </section>
     </div>
@@ -104,16 +110,18 @@
           <a routerLink="agenda-operativa" class="btn btn-outline-primary btn-sm">Abrir agenda</a>
         </div>
         <div class="agenda-snapshot">
-          <div class="agenda-snapshot__item" *ngFor="let item of agendaHighlights" [ngClass]="'agenda--' + item.theme">
-            <div class="agenda-snapshot__icon">
-              <i class="material-icons">{{ item.icon }}</i>
+          @for (item of agendaHighlights; track $index) {
+            <div class="agenda-snapshot__item" [ngClass]="'agenda--' + item.theme">
+              <div class="agenda-snapshot__icon">
+                <i class="material-icons">{{ item.icon }}</i>
+              </div>
+              <div>
+                <p class="agenda-snapshot__label">{{ item.label }}</p>
+                <p class="agenda-snapshot__value">{{ item.value }}</p>
+                <p class="agenda-snapshot__detail">{{ item.detail }}</p>
+              </div>
             </div>
-            <div>
-              <p class="agenda-snapshot__label">{{ item.label }}</p>
-              <p class="agenda-snapshot__value">{{ item.value }}</p>
-              <p class="agenda-snapshot__detail">{{ item.detail }}</p>
-            </div>
-          </div>
+          }
         </div>
       </section>
 
@@ -122,17 +130,19 @@
           <h2>Utilización de equipos</h2>
         </div>
         <ul class="equipment-list">
-          <li *ngFor="let equipment of equipmentUtilization">
-            <div class="equipment-list__header">
-              <h3>{{ equipment.label }}</h3>
-              <span class="equipment-list__availability">{{ equipment.availability }}</span>
-            </div>
-            <span class="equipment-list__detail">{{ equipment.detail }}</span>
-            <div class="progress progress--thin">
-              <div class="progress-bar" [style.width.%]="equipment.utilization"></div>
-            </div>
-            <span class="equipment-list__utilization">{{ equipment.utilization }}% en uso</span>
-          </li>
+          @for (equipment of equipmentUtilization; track $index) {
+            <li>
+              <div class="equipment-list__header">
+                <h3>{{ equipment.label }}</h3>
+                <span class="equipment-list__availability">{{ equipment.availability }}</span>
+              </div>
+              <span class="equipment-list__detail">{{ equipment.detail }}</span>
+              <div class="progress progress--thin">
+                <div class="progress-bar" [style.width.%]="equipment.utilization"></div>
+              </div>
+              <span class="equipment-list__utilization">{{ equipment.utilization }}% en uso</span>
+            </li>
+          }
         </ul>
       </section>
 
@@ -141,16 +151,18 @@
           <h2>Canales de captación</h2>
         </div>
         <ul class="sales-sources">
-          <li *ngFor="let source of salesSources" [ngClass]="{
-              'is-up': source.trend === 'up',
-              'is-down': source.trend === 'down'
-            }">
-            <div class="sales-sources__channel">{{ source.channel }}</div>
-            <div class="sales-sources__meta">
-              <span class="sales-sources__value">{{ source.contribution }}</span>
-              <span class="sales-sources__note">{{ source.note }}</span>
-            </div>
-          </li>
+          @for (source of salesSources; track $index) {
+            <li [ngClass]="{
+                'is-up': source.trend === 'up',
+                'is-down': source.trend === 'down'
+              }">
+              <div class="sales-sources__channel">{{ source.channel }}</div>
+              <div class="sales-sources__meta">
+                <span class="sales-sources__value">{{ source.contribution }}</span>
+                <span class="sales-sources__note">{{ source.note }}</span>
+              </div>
+            </li>
+          }
         </ul>
       </section>
     </aside>

@@ -21,20 +21,22 @@
     </div>
   </app-list-toolbar>
 
-  <div class="detalle-status" *ngIf="cargando">
+  @if (cargando) {
+  <div class="detalle-status">
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
     <span>Cargando equipos...</span>
   </div>
+  }
 
-  <div class="detalle-status error" *ngIf="error">
+  @if (error) {
+  <div class="detalle-status error">
     <mat-icon>error_outline</mat-icon>
     <span>No se pudo cargar la información. Intenta nuevamente.</span>
   </div>
+  }
 
-  <ng-container *ngIf="!cargando && !error">
-
-
-    <ng-container *ngIf="equipos.length; else sinEquipos">
+  @if (!cargando && !error) {
+    @if (equipos.length) {
       <app-table-base
         [columns]="columnas"
         [data]="equiposFiltrados"
@@ -74,15 +76,13 @@
           </button>
         </ng-template>
       </app-table-base>
-    </ng-container>
-  </ng-container>
-
-  <ng-template #sinEquipos>
-    <div class="empty-state">
-      <mat-icon>inventory_2</mat-icon>
-      <p>No hay equipos registrados con estos filtros.</p>
-    </div>
-  </ng-template>
+    } @else {
+      <div class="empty-state">
+        <mat-icon>inventory_2</mat-icon>
+        <p>No hay equipos registrados con estos filtros.</p>
+      </div>
+    }
+  }
 
   <app-modal-base
     [open]="modalEquipoOpen"
@@ -115,20 +115,21 @@
             [(ngModel)]="formEquipo.fechaIngreso"
             #fechaIngresoCtrl="ngModel"
           />
-          <div class="invalid-feedback d-block" *ngIf="fechaIngresoCtrl.invalid && (fechaIngresoCtrl.dirty || fechaIngresoCtrl.touched)">
+          @if (fechaIngresoCtrl.invalid && (fechaIngresoCtrl.dirty || fechaIngresoCtrl.touched)) {
+          <div class="invalid-feedback d-block">
             Selecciona una fecha válida.
           </div>
+          }
         </div>
 
         <div class="col-12 col-md-6">
           <label class="form-label" for="modeloEquipoSelect">Modelo</label>
-          <ng-container *ngIf="modeloFijo; else selectorModelo">
+          @if (modeloFijo) {
             <div class="form-control-plaintext fw-semibold">
               {{ filtros.marcaNombre }} · {{ filtros.modeloNombre }}
             </div>
             <input type="hidden" name="modeloEquipoSelect" [(ngModel)]="formEquipo.idModelo" />
-          </ng-container>
-          <ng-template #selectorModelo>
+          } @else {
             <select
               id="modeloEquipoSelect"
               name="modeloEquipoSelect"
@@ -139,14 +140,18 @@
               #modeloCtrl="ngModel"
             >
               <option [ngValue]="null" disabled>Selecciona un modelo</option>
-              <option *ngFor="let modelo of modelosDisponibles" [ngValue]="modelo.idModelo">
+              @for (modelo of modelosDisponibles; track modelo.idModelo !== null && modelo.idModelo !== undefined ? modelo.idModelo : $index) {
+              <option [ngValue]="modelo.idModelo">
                 {{ modelo.nombreMarca }} · {{ modelo.nombre }}
               </option>
+              }
             </select>
-            <div class="invalid-feedback d-block" *ngIf="modeloCtrl.invalid && (modeloCtrl.dirty || modeloCtrl.touched)">
+            @if (modeloCtrl.invalid && (modeloCtrl.dirty || modeloCtrl.touched)) {
+            <div class="invalid-feedback d-block">
               Selecciona un modelo.
             </div>
-          </ng-template>
+            }
+          }
         </div>
 
         <div class="col-12 col-md-6">
@@ -160,9 +165,11 @@
             [(ngModel)]="formEquipo.idEstado"
           >
             <option [ngValue]="null" disabled>Selecciona un estado</option>
-            <option *ngFor="let estado of estadosDisponibles" [ngValue]="estado.idEstado">
+            @for (estado of estadosDisponibles; track estado.idEstado !== null && estado.idEstado !== undefined ? estado.idEstado : $index) {
+            <option [ngValue]="estado.idEstado">
               {{ estado.nombreEstado }}
             </option>
+            }
           </select>
         </div>
 
@@ -178,15 +185,19 @@
             [(ngModel)]="formEquipo.serie"
             #serieCtrl="ngModel"
           />
-          <div class="invalid-feedback d-block" *ngIf="serieCtrl.invalid && (serieCtrl.dirty || serieCtrl.touched)">
+          @if (serieCtrl.invalid && (serieCtrl.dirty || serieCtrl.touched)) {
+          <div class="invalid-feedback d-block">
             Ingrese un número de serie.
           </div>
+          }
         </div>
 
-        <div class="col-12 mensaje-exito" *ngIf="formEquipo.exito">
+        @if (formEquipo.exito) {
+        <div class="col-12 mensaje-exito">
           <mat-icon>check_circle</mat-icon>
           {{ formEquipo.exito }}
         </div>
+        }
       </form>
     </app-formulario-base>
     <div modal-footer class="d-flex justify-content-end gap-2">
@@ -199,7 +210,9 @@
         form="crearEquipoForm"
         [disabled]="crearEquipoForm.invalid || formEquipo.cargando"
       >
-        <span class="spinner-border spinner-border-sm" *ngIf="formEquipo.cargando" role="status" aria-hidden="true"></span>
+        @if (formEquipo.cargando) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
         <span>Registrar</span>
       </button>
     </div>
@@ -231,19 +244,25 @@
             [(ngModel)]="estadoModal.idEstado"
           >
             <option [ngValue]="null" disabled>Selecciona un estado</option>
-            <option *ngFor="let estado of estadosDisponibles" [ngValue]="estado.idEstado">
+            @for (estado of estadosDisponibles; track estado.idEstado !== null && estado.idEstado !== undefined ? estado.idEstado : $index) {
+            <option [ngValue]="estado.idEstado">
               {{ estado.nombreEstado }}
             </option>
+            }
           </select>
-          <div class="form-text" *ngIf="equipoEnBaja">
+          @if (equipoEnBaja) {
+          <div class="form-text">
             Un equipo dado de baja no puede cambiar a otro estado.
           </div>
+          }
         </div>
 
         <div class="col-12">
-          <div class="alert alert-secondary" role="status" *ngIf="estadoModal.equipo">
+          @if (estadoModal.equipo) {
+          <div class="alert alert-secondary" role="status">
             Equipo: <strong>{{ estadoModal.equipo.serie }}</strong> · {{ estadoModal.equipo.nombreModelo }}
           </div>
+          }
         </div>
       </form>
     </app-formulario-base>

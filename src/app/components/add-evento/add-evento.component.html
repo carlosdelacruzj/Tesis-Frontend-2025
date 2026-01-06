@@ -15,15 +15,21 @@
       (<code>{{ hintPath }}</code>). Si no existe, usaremos uno por defecto.
     </mat-hint>
 
-    <mat-error *ngIf="form.get('nombre')?.hasError('required')">
-      Requerido
-    </mat-error>
-    <mat-error *ngIf="form.get('nombre')?.hasError('minlength')">
-      Mínimo 3 caracteres
-    </mat-error>
-    <mat-error *ngIf="form.get('nombre')?.hasError('duplicado')">
-      Ya existe un evento con ese nombre
-    </mat-error>
+    @if (form.get('nombre')?.hasError('required')) {
+      <mat-error>
+        Requerido
+      </mat-error>
+    }
+    @if (form.get('nombre')?.hasError('minlength')) {
+      <mat-error>
+        Mínimo 3 caracteres
+      </mat-error>
+    }
+    @if (form.get('nombre')?.hasError('duplicado')) {
+      <mat-error>
+        Ya existe un evento con ese nombre
+      </mat-error>
+    }
   </mat-form-field>
 </mat-dialog-content>
 

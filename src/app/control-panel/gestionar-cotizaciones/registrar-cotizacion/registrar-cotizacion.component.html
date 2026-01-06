@@ -13,78 +13,96 @@
 
             <!-- ===== Cliente existente (Autocomplete) ===== -->
             <div class="form-group mb-3">
-              <label class="col-form-label">Cliente existente (opcional)</label>
+              <label class="col-form-label" for="clienteExistenteInput">Cliente existente (opcional)</label>
 
               <div class="input-group mb-1">
-                <input type="text" class="form-control" placeholder="Buscar por nombre, razón social o contacto"
-                  [formControl]="clienteSearchControl" [matAutocomplete]="auto">
-                <span class="input-group-text bg-white" *ngIf="clienteSearchLoading">
-                  <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                </span>
+                <input id="clienteExistenteInput" type="text" class="form-control"
+                  placeholder="Buscar por nombre, razón social o contacto" [formControl]="clienteSearchControl"
+                  [matAutocomplete]="auto">
+                @if (clienteSearchLoading) {
+                  <span class="input-group-text bg-white">
+                    <span class="spinner-border spinner-border-sm text-primary" role="status"
+                      aria-hidden="true"></span>
+                  </span>
+                }
                 <button type="button" class="btn btn-outline-secondary" (click)="clearClienteSeleccionado()"
                   [disabled]="clienteSearchLoading || (!clienteSeleccionado && !clienteBusquedaTermino)">
                   Limpiar
                 </button>
               </div>
 
-              <small class="text-danger d-block mt-1" *ngIf="clienteSearchError">
-                {{ clienteSearchError }}
-              </small>
-              <small class="text-muted d-block mt-1"
-                *ngIf="!clienteSearchLoading && !clienteSearchError && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled">
-                Sin resultados para “{{ clienteBusquedaTermino }}”.
-              </small>
+              @if (clienteSearchError) {
+                <small class="text-danger d-block mt-1">
+                  {{ clienteSearchError }}
+                </small>
+              }
+              @if (!clienteSearchLoading && !clienteSearchError && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled) {
+                <small class="text-muted d-block mt-1">
+                  Sin resultados para “{{ clienteBusquedaTermino }}”.
+                </small>
+              }
 
               <mat-autocomplete #auto="matAutocomplete" [displayWith]="clienteDisplay"
                 (optionSelected)="onClienteSelected($event.option.value)">
-                <mat-option *ngFor="let c of clienteResultados" [value]="c">
+                @for (c of clienteResultados; track $index) {
+                  <mat-option [value]="c">
                   <div class="d-flex flex-column">
                     <span class="fw-semibold">{{ (c.nombreCompleto || c.nombre || c.razonSocial || c.contacto ||
                       c.email) }}</span>
                     <small class="text-muted">
-                      {{ resolveClienteContacto(c) }} <span *ngIf="resolveClienteDocumento(c)">· {{
-                        resolveClienteDocumento(c) }}</span>
+                      {{ resolveClienteContacto(c) }}
+                      @if (resolveClienteDocumento(c)) {
+                        <span>· {{ resolveClienteDocumento(c) }}</span>
+                      }
                     </small>
                   </div>
-                </mat-option>
-                <mat-option
-                  *ngIf="!clienteSearchLoading && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled"
-                  disabled>
-                  Sin resultados para “{{ clienteBusquedaTermino }}”
-                </mat-option>
+                  </mat-option>
+                }
+                @if (!clienteSearchLoading && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled) {
+                  <mat-option disabled>
+                    Sin resultados para “{{ clienteBusquedaTermino }}”
+                  </mat-option>
+                }
               </mat-autocomplete>
             </div>
             <!-- ===== Fin Cliente existente (Autocomplete) ===== -->
             <div class="form-group">
-              <label class="col-form-label">Nombre completo</label>
-              <input type="text" class="form-control" formControlName="clienteNombre" placeholder="Nombre y apellidos"
+              <label class="col-form-label" for="clienteNombre">Nombre completo</label>
+              <input id="clienteNombre" type="text" class="form-control" formControlName="clienteNombre"
+                placeholder="Nombre y apellidos"
                 [class.is-invalid]="form.get('clienteNombre')?.invalid && form.get('clienteNombre')?.touched">
-              <small class="text-danger"
-                *ngIf="form.get('clienteNombre')?.hasError('required') && form.get('clienteNombre')?.touched">
-                Ingresa el nombre del solicitante.
-              </small>
-              <small class="text-danger"
-                *ngIf="form.get('clienteNombre')?.hasError('minlength') && form.get('clienteNombre')?.touched">
-                Ingresa al menos 2 caracteres.
-              </small>
+              @if (form.get('clienteNombre')?.hasError('required') && form.get('clienteNombre')?.touched) {
+                <small class="text-danger">
+                  Ingresa el nombre del solicitante.
+                </small>
+              }
+              @if (form.get('clienteNombre')?.hasError('minlength') && form.get('clienteNombre')?.touched) {
+                <small class="text-danger">
+                  Ingresa al menos 2 caracteres.
+                </small>
+              }
             </div>
 
             <div class="form-group">
-              <label class="col-form-label">WhatsApp / contacto</label>
-              <input type="tel" class="form-control" formControlName="clienteContacto" placeholder="Ej. 999 999 999"
+              <label class="col-form-label" for="clienteContacto">WhatsApp / contacto</label>
+              <input id="clienteContacto" type="tel" class="form-control" formControlName="clienteContacto"
+                placeholder="Ej. 999 999 999"
                 [class.is-invalid]="form.get('clienteContacto')?.invalid && form.get('clienteContacto')?.touched">
-              <small class="text-danger"
-                *ngIf="form.get('clienteContacto')?.hasError('required') && form.get('clienteContacto')?.touched">
-                Ingresa un número de contacto.
-              </small>
-              <small class="text-danger"
-                *ngIf="form.get('clienteContacto')?.hasError('minlength') && form.get('clienteContacto')?.touched">
-                Debe tener al menos 6 dígitos.
-              </small>
-              <small class="text-danger"
-                *ngIf="form.get('clienteContacto')?.hasError('pattern') && form.get('clienteContacto')?.touched">
-                Usa solo dígitos (6 a 15).
-              </small>
+              @if (form.get('clienteContacto')?.hasError('required') && form.get('clienteContacto')?.touched) {
+                <small class="text-danger">
+                  Ingresa un número de contacto.
+                </small>
+              }
+              @if (form.get('clienteContacto')?.hasError('minlength') && form.get('clienteContacto')?.touched) {
+                <small class="text-danger">
+                  Debe tener al menos 6 dígitos.
+                </small>
+              }
+              @if (form.get('clienteContacto')?.hasError('pattern') && form.get('clienteContacto')?.touched) {
+                <small class="text-danger">
+                  Usa solo dígitos (6 a 15).
+                </small>
+              }
             </div>
 
           </mat-card-content>
@@ -100,75 +118,92 @@
             <div class="row g-3">
               <div class="col-sm-6">
                 <div class="form-group">
-                  <label class="col-form-label">Fecha del evento</label>
-                  <input type="date" class="form-control" formControlName="fechaEvento" [min]="fechaMinimaEvento"
+                  <label class="col-form-label" for="fechaEvento">Fecha del evento</label>
+                  <input id="fechaEvento" type="date" class="form-control" formControlName="fechaEvento"
+                    [min]="fechaMinimaEvento"
                     [max]="fechaMaximaEvento"
                     [class.is-invalid]="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
-                  <small class="text-danger"
-                    *ngIf="form.get('fechaEvento')?.hasError('required') && form.get('fechaEvento')?.touched">
-                    Selecciona una fecha.
-                  </small>
-                  <small class="text-danger"
-                    *ngIf="form.get('fechaEvento')?.hasError('fechaEventoAnterior') && form.get('fechaEvento')?.touched">
-                    La fecha debe ser al menos un día después de hoy.
-                  </small>
-                  <small class="text-danger"
-                    *ngIf="form.get('fechaEvento')?.hasError('fechaEventoPosterior') && form.get('fechaEvento')?.touched">
-                    La fecha no puede superar los 6 meses desde hoy.
-                  </small>
-                  <small class="text-danger"
-                    *ngIf="form.get('fechaEvento')?.hasError('fechaEventoInvalida') && form.get('fechaEvento')?.touched">
-                    Selecciona una fecha válida.
-                  </small>
+                  @if (form.get('fechaEvento')?.hasError('required') && form.get('fechaEvento')?.touched) {
+                    <small class="text-danger">
+                      Selecciona una fecha.
+                    </small>
+                  }
+                  @if (form.get('fechaEvento')?.hasError('fechaEventoAnterior') && form.get('fechaEvento')?.touched) {
+                    <small class="text-danger">
+                      La fecha debe ser al menos un día después de hoy.
+                    </small>
+                  }
+                  @if (form.get('fechaEvento')?.hasError('fechaEventoPosterior') && form.get('fechaEvento')?.touched) {
+                    <small class="text-danger">
+                      La fecha no puede superar los 6 meses desde hoy.
+                    </small>
+                  }
+                  @if (form.get('fechaEvento')?.hasError('fechaEventoInvalida') && form.get('fechaEvento')?.touched) {
+                    <small class="text-danger">
+                      Selecciona una fecha válida.
+                    </small>
+                  }
                 </div>
               </div>
               <div class="col-sm-6">
                 <div class="form-group">
-                  <label class="col-form-label">Horas estimadas</label>
-                  <input type="number" class="form-control" formControlName="horasEstimadas" placeholder="Ej. 6" min="1"
+                  <label class="col-form-label" for="horasEstimadas">Horas estimadas</label>
+                  <input id="horasEstimadas" type="number" class="form-control" formControlName="horasEstimadas"
+                    placeholder="Ej. 6" min="1"
                     step="1" inputmode="numeric"
                     [class.is-invalid]="form.get('horasEstimadas')?.invalid && form.get('horasEstimadas')?.touched">
-                  <small class="text-danger"
-                    *ngIf="form.get('horasEstimadas')?.hasError('required') && form.get('horasEstimadas')?.touched">
-                    Ingresa las horas estimadas.
-                  </small>
-                  <small class="text-danger"
-                    *ngIf="form.get('horasEstimadas')?.hasError('pattern') && form.get('horasEstimadas')?.touched">
-                    Usa solo números enteros.
-                  </small>
-                  <small class="text-danger"
-                    *ngIf="form.get('horasEstimadas')?.hasError('min') && form.get('horasEstimadas')?.touched">
-                    Ingresa un número mayor a 0.
-                  </small>
+                  @if (form.get('horasEstimadas')?.hasError('required') && form.get('horasEstimadas')?.touched) {
+                    <small class="text-danger">
+                      Ingresa las horas estimadas.
+                    </small>
+                  }
+                  @if (form.get('horasEstimadas')?.hasError('pattern') && form.get('horasEstimadas')?.touched) {
+                    <small class="text-danger">
+                      Usa solo números enteros.
+                    </small>
+                  }
+                  @if (form.get('horasEstimadas')?.hasError('min') && form.get('horasEstimadas')?.touched) {
+                    <small class="text-danger">
+                      Ingresa un número mayor a 0.
+                    </small>
+                  }
                 </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="col-form-label">Departamento</label>
-              <select class="form-control" formControlName="departamento"
+              <label class="col-form-label" for="departamentoSelect">Departamento</label>
+              <select id="departamentoSelect" class="form-control" formControlName="departamento"
                 [class.is-invalid]="form.get('departamento')?.invalid && form.get('departamento')?.touched">
                 <option value="">Selecciona un departamento</option>
-                <option *ngFor="let dep of departamentos" [value]="dep">{{ dep }}</option>
+                @for (dep of departamentos; track dep) {
+                  <option [value]="dep">{{ dep }}</option>
+                }
               </select>
-              <small class="text-danger" *ngIf="form.get('departamento')?.invalid && form.get('departamento')?.touched">
-                Selecciona el departamento del evento.
-              </small>
+              @if (form.get('departamento')?.invalid && form.get('departamento')?.touched) {
+                <small class="text-danger">
+                  Selecciona el departamento del evento.
+                </small>
+              }
             </div>
 
             <div class="form-group mt-3">
-              <label class="col-form-label">Tipo de evento</label>
-              <select class="form-control" [value]="selectedEventoId ?? ''"
+              <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
+              <select id="eventoSelect" class="form-control" [value]="selectedEventoId ?? ''"
                 (change)="onEventoDropdownChange($any($event.target).value)" [disabled]="!eventos.length"
                 [ngClass]="{'is-invalid': eventoSelectTouched && !selectedEventoId}">
                 <option value="" disabled>Selecciona un tipo de evento</option>
-                <option *ngFor="let evento of eventos" [value]="evento.id ?? ''">
-                  {{ evento.nombre ?? 'Evento' }}
-                </option>
+                @for (evento of eventos; track evento.id !== null && evento.id !== undefined ? evento.id : $index) {
+                  <option [value]="evento.id ?? ''">
+                    {{ evento.nombre ?? 'Evento' }}
+                  </option>
+                }
               </select>
-              <small class="text-danger" *ngIf="eventoSelectTouched && !selectedEventoId">
-                Selecciona un tipo de evento.
-              </small>
+              @if (eventoSelectTouched && !selectedEventoId) {
+                <small class="text-danger">
+                  Selecciona un tipo de evento.
+                </small>
+              }
             </div>
           </mat-card-content>
         </mat-card>
@@ -185,75 +220,84 @@
       </mat-card-header>
       <mat-card-content>
         <div formArrayName="programacion" class="programacion-list">
-          <div class="programacion-item" *ngFor="let grupo of programacion.controls; let i = index" [formGroupName]="i">
-            <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
-              <div class="d-flex align-items-center gap-2">
-                <h4 class="mb-0">
-                  {{ grupo.get('nombre')?.value || ('Locación ' + (i + 1)) }}
-                </h4>
+          @for (grupo of programacion.controls; track $index) {
+            <div class="programacion-item" [formGroupName]="$index">
+              <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <h4 class="mb-0">
+                    {{ grupo.get('nombre')?.value || ('Locación ' + ($index + 1)) }}
+                  </h4>
+                </div>
+                <button type="button" class="btn btn-link btn-sm text-danger" (click)="removeProgramacionItem($index)"
+                  [disabled]="programacion.length <= 1"
+                  [attr.aria-label]="'Eliminar locación ' + (grupo.get('nombre')?.value || ('Locación ' + ($index + 1)))"
+                  [attr.title]="programacion.length <= 1 ? 'Mantén al menos una locación' : 'Eliminar locación'">
+                  Eliminar
+                </button>
               </div>
-              <button type="button" class="btn btn-link btn-sm text-danger" (click)="removeProgramacionItem(i)"
-                [disabled]="programacion.length <= 1"
-                [attr.aria-label]="'Eliminar locación ' + (grupo.get('nombre')?.value || ('Locación ' + (i + 1)))"
-                [attr.title]="programacion.length <= 1 ? 'Mantén al menos una locación' : 'Eliminar locación'">
-                Eliminar
-              </button>
-            </div>
 
-            <div class="row g-3 mt-2">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="col-form-label">Nombre de la locación</label>
-                  <input type="text" class="form-control" formControlName="nombre" placeholder="Ej. Recepción en casona"
-                    [class.is-invalid]="grupo.get('nombre')?.invalid && grupo.get('nombre')?.touched">
-                  <small class="text-danger"
-                    *ngIf="grupo.get('nombre')?.hasError('required') && grupo.get('nombre')?.touched">
-                    Ingresa la locación.
-                  </small>
+              <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionNombre' + $index">Nombre de la locación</label>
+                    <input [attr.id]="'programacionNombre' + $index" type="text" class="form-control"
+                      formControlName="nombre" placeholder="Ej. Recepción en casona"
+                      [class.is-invalid]="grupo.get('nombre')?.invalid && grupo.get('nombre')?.touched">
+                    @if (grupo.get('nombre')?.hasError('required') && grupo.get('nombre')?.touched) {
+                      <small class="text-danger">
+                        Ingresa la locación.
+                      </small>
+                    }
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="col-form-label">Dirección o punto de encuentro</label>
-                  <input type="text" class="form-control" formControlName="direccion"
-                    placeholder="Ej. Av. La Marina 1234"
-                    [class.is-invalid]="grupo.get('direccion')?.invalid && grupo.get('direccion')?.touched">
-                  <small class="text-danger"
-                    *ngIf="grupo.get('direccion')?.hasError('required') && grupo.get('direccion')?.touched">
-                    Ingresa la dirección.
-                  </small>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionDireccion' + $index">Dirección o punto de encuentro</label>
+                    <input [attr.id]="'programacionDireccion' + $index" type="text" class="form-control"
+                      formControlName="direccion" placeholder="Ej. Av. La Marina 1234"
+                      [class.is-invalid]="grupo.get('direccion')?.invalid && grupo.get('direccion')?.touched">
+                    @if (grupo.get('direccion')?.hasError('required') && grupo.get('direccion')?.touched) {
+                      <small class="text-danger">
+                        Ingresa la dirección.
+                      </small>
+                    }
+                  </div>
                 </div>
-              </div>
-              <div class="col-sm-6 col-md-3">
-                <div class="form-group">
-                  <label class="col-form-label">Fecha</label>
-                  <input type="date" class="form-control" formControlName="fecha">
+                <div class="col-sm-6 col-md-3">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionFecha' + $index">Fecha</label>
+                    <input [attr.id]="'programacionFecha' + $index" type="date" class="form-control"
+                      formControlName="fecha">
+                  </div>
                 </div>
-              </div>
-              <div class="col-sm-6 col-md-3">
-                <div class="form-group">
-                  <label class="col-form-label">Hora</label>
-                  <input type="time" class="form-control" formControlName="hora" min="06:00" max="22:00"
-                    [class.is-invalid]="grupo.get('hora')?.invalid && grupo.get('hora')?.touched">
-                  <small class="text-danger"
-                    *ngIf="grupo.get('hora')?.hasError('required') && grupo.get('hora')?.touched">
-                    Ingresa la hora.
-                  </small>
-                  <small class="text-danger"
-                    *ngIf="grupo.get('hora')?.hasError('pattern') && grupo.get('hora')?.touched">
-                    Usa el formato HH:MM.
-                  </small>
+                <div class="col-sm-6 col-md-3">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionHora' + $index">Hora</label>
+                    <input [attr.id]="'programacionHora' + $index" type="time" class="form-control"
+                      formControlName="hora" min="06:00" max="22:00"
+                      [class.is-invalid]="grupo.get('hora')?.invalid && grupo.get('hora')?.touched">
+                    @if (grupo.get('hora')?.hasError('required') && grupo.get('hora')?.touched) {
+                      <small class="text-danger">
+                        Ingresa la hora.
+                      </small>
+                    }
+                    @if (grupo.get('hora')?.hasError('pattern') && grupo.get('hora')?.touched) {
+                      <small class="text-danger">
+                        Usa el formato HH:MM.
+                      </small>
+                    }
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group mb-0">
-                  <label class="col-form-label">Notas internas</label>
-                  <textarea class="form-control" rows="2" formControlName="notas"
-                    placeholder="Detalles adicionales para el equipo (opcional)"></textarea>
+                <div class="col-md-6">
+                  <div class="form-group mb-0">
+                    <label class="col-form-label" [attr.for]="'programacionNotas' + $index">Notas internas</label>
+                    <textarea [attr.id]="'programacionNotas' + $index" class="form-control" rows="2"
+                      formControlName="notas" placeholder="Detalles adicionales para el equipo (opcional)"></textarea>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          }
         </div>
 
         <div class="text-end mt-3">
@@ -282,141 +326,155 @@
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <div class="form-group">
-              <label class="col-form-label">Servicio</label>
-              <select class="form-control" [value]="selectedServicioId ?? ''"
+              <label class="col-form-label" for="servicioSelect">Servicio</label>
+              <select id="servicioSelect" class="form-control" [value]="selectedServicioId ?? ''"
                 (change)="onServicioDropdownChange($any($event.target).value)" [disabled]="!servicios.length">
                 <option value="" disabled>Selecciona un servicio</option>
-                <option *ngFor="let servicio of servicios" [value]="servicio.id ?? ''">
-                  {{ servicio.nombre ?? 'Servicio' }}
-                </option>
+                @for (servicio of servicios; track servicio.id !== null && servicio.id !== undefined ? servicio.id : $index) {
+                  <option [value]="servicio.id ?? ''">
+                    {{ servicio.nombre ?? 'Servicio' }}
+                  </option>
+                }
               </select>
             </div>
           </div>
         </div>
 
-        <div class="table-responsive" *ngIf="!loadingPaquetes; else paquetesLoading">
-          <app-table-base [columns]="paquetesColumns" [data]="paquetesRows" [showSearch]="false"
-            [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false" [showCreateButton]="false"
-            [pageSize]="paquetesRows.length || 10" [pageSizeOptions]="[paquetesRows.length || 10]"
-            emptyText="Sin paquetes disponibles">
+        @if (!loadingPaquetes) {
+          <div class="table-responsive">
+            <app-table-base [columns]="paquetesColumns" [data]="paquetesRows" [showSearch]="false"
+              [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false"
+              [showCreateButton]="false" [pageSize]="paquetesRows.length || 10"
+              [pageSizeOptions]="[paquetesRows.length || 10]" emptyText="Sin paquetes disponibles">
 
-            <ng-template appCell="titulo" let-row>
-              {{ row.titulo || '—' }}
-            </ng-template>
+              <ng-template appCell="titulo" let-row>
+                {{ row.titulo || '—' }}
+              </ng-template>
 
-            <ng-template appCell="precio" let-row>
-              {{ row.precio != null ? (row.precio | number:'1.2-2') : '—' }}
-            </ng-template>
+              <ng-template appCell="precio" let-row>
+                {{ row.precio !== null ? (row.precio | number:'1.2-2') : '—' }}
+              </ng-template>
 
-            <ng-template appCell="staff" let-row>
-              {{ row.staff != null ? row.staff : '—' }}
-            </ng-template>
+              <ng-template appCell="staff" let-row>
+                {{ row.staff !== null ? row.staff : '—' }}
+              </ng-template>
 
-            <ng-template appCell="horas" let-row>
-              {{ row.horas != null ? row.horas : '—' }}
-            </ng-template>
+              <ng-template appCell="horas" let-row>
+                {{ row.horas !== null ? row.horas : '—' }}
+              </ng-template>
 
-            <ng-template appCell="acciones" let-row>
-              <div class="d-flex justify-content-center gap-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="mostrarDetallePaquete(row)">
-                  Mostrar
-                </button>
-                <button type="button" class="btn btn-outline-primary btn-sm"
-                  [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
-                  *ngIf="!isInSeleccion(row.raw); else quitarBtn" (click)="addPaquete(row.raw)">
-                  {{ hasOtroPaqueteDelServicio(row.raw) ? 'Reemplazar' : 'Agregar' }}
-                </button>
-                <ng-template #quitarBtn>
-                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removePaquete(pkgKey(row.raw))">
-                    Quitar
+              <ng-template appCell="acciones" let-row>
+                <div class="d-flex justify-content-center gap-2">
+                  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="mostrarDetallePaquete(row)">
+                    Mostrar
                   </button>
-                </ng-template>
-              </div>
-            </ng-template>
-
-          </app-table-base>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="card mb-3" *ngIf="selectedPaquetes.length">
-      <mat-card-header>
-        <mat-card-title>Paquetes seleccionados ({{ selectedPaquetes.length }})</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="table-responsive">
-          <app-table-base [columns]="selectedPaquetesColumns" [data]="selectedPaquetes" [showSearch]="false"
-            [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false" [showCreateButton]="false"
-            [pageSize]="selectedPaquetes.length || 10" [pageSizeOptions]="[selectedPaquetes.length || 10]"
-            emptyText="Sin paquetes seleccionados">
-
-            <ng-template appCell="titulo" let-row>
-              {{ row.titulo }}
-            </ng-template>
-
-            <ng-template appCell="precioUnit" let-row>
-              <div class="text-end">
-                <ng-container *ngIf="!row.editandoPrecio; else precioUnitEditor">
-                  <span role="button" class="text-decoration-underline" (click)="enablePrecioEdit(row)"
-                    title="Haz clic para editar">
-                    {{ row.precio | number:'1.2-2' }}
-                  </span>
-                </ng-container>
-                <ng-template #precioUnitEditor>
-                  <input type="number" class="form-control form-control-sm text-end" [id]="getPrecioInputId(row)"
-                    [value]="row.precio" step="0.01" [attr.min]="getPrecioMinimo(row)"
-                    (blur)="confirmPrecioEdit(row, $any($event.target).value)"
-                    (keydown.enter)="confirmPrecioEdit(row, $any($event.target).value)"
-                    (keydown.escape)="cancelPrecioEdit(row)">
-                  <small class="text-muted">Mínimo: {{ getPrecioMinimo(row) | number:'1.2-2' }}</small>
-                </ng-template>
-              </div>
-            </ng-template>
-
-            <ng-template appCell="precioOriginal" let-row>
-              <div class="text-end">
-                <div>{{ row.precioOriginal | number:'1.2-2' }}</div>
-                <div *ngIf="getDescuentoPorcentaje(row) != null" class="text-success small">
-                  −{{ getDescuentoPorcentaje(row) | number:'1.0-1' }}%
+                  @if (!isInSeleccion(row.raw)) {
+                    <button type="button" class="btn btn-outline-primary btn-sm"
+                      [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
+                      (click)="addPaquete(row.raw)">
+                      {{ hasOtroPaqueteDelServicio(row.raw) ? 'Reemplazar' : 'Agregar' }}
+                    </button>
+                  } @else {
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="removePaquete(pkgKey(row.raw))">
+                      Quitar
+                    </button>
+                  }
                 </div>
-              </div>
-            </ng-template>
+              </ng-template>
 
-            <ng-template appCell="horas" let-row>
-              <div class="text-center">{{ row.horas ?? '—' }}</div>
-            </ng-template>
-
-            <ng-template appCell="staff" let-row>
-              <div class="text-center">{{ row.staff ?? '—' }}</div>
-            </ng-template>
-
-            <ng-template appCell="subtotal" let-row>
-              <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | number:'1.2-2' }}</div>
-            </ng-template>
-
-            <ng-template appCell="notas" let-row>
-              <input type="text" class="form-control form-control-sm" [(ngModel)]="row.notas"
-                [ngModelOptions]="{standalone:true}" maxlength="200" placeholder="Notas opcionales">
-            </ng-template>
-
-            <ng-template appCell="quitar" let-row>
-              <button type="button" class="btn btn-link text-danger p-0" (click)="removePaquete(row.key)">✖</button>
-            </ng-template>
-
-          </app-table-base>
-        </div>
-        <div class="text-end mt-2">
-          <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>
-        </div>
+            </app-table-base>
+          </div>
+        } @else {
+          <div class="d-flex flex-column align-items-center justify-content-center py-4 text-muted">
+            <mat-spinner diameter="32"></mat-spinner>
+            <span class="mt-2">Cargando paquetes…</span>
+          </div>
+        }
       </mat-card-content>
     </mat-card>
+
+    @if (selectedPaquetes.length) {
+      <mat-card class="card mb-3">
+        <mat-card-header>
+          <mat-card-title>Paquetes seleccionados ({{ selectedPaquetes.length }})</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="table-responsive">
+            <app-table-base [columns]="selectedPaquetesColumns" [data]="selectedPaquetes" [showSearch]="false"
+              [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false"
+              [showCreateButton]="false" [pageSize]="selectedPaquetes.length || 10"
+              [pageSizeOptions]="[selectedPaquetes.length || 10]" emptyText="Sin paquetes seleccionados">
+
+              <ng-template appCell="titulo" let-row>
+                {{ row.titulo }}
+              </ng-template>
+
+              <ng-template appCell="precioUnit" let-row>
+                <div class="text-end">
+                  @if (!row.editandoPrecio) {
+                    <button type="button" class="btn btn-link p-0 text-decoration-underline"
+                      (click)="enablePrecioEdit(row)" title="Haz clic para editar">
+                      {{ row.precio | number:'1.2-2' }}
+                    </button>
+                  } @else {
+                    <input type="number" class="form-control form-control-sm text-end" [id]="getPrecioInputId(row)"
+                      [value]="row.precio" step="0.01" [attr.min]="getPrecioMinimo(row)"
+                      (blur)="confirmPrecioEdit(row, $any($event.target).value)"
+                      (keydown.enter)="confirmPrecioEdit(row, $any($event.target).value)"
+                      (keydown.escape)="cancelPrecioEdit(row)">
+                    <small class="text-muted">Mínimo: {{ getPrecioMinimo(row) | number:'1.2-2' }}</small>
+                  }
+                </div>
+              </ng-template>
+
+              <ng-template appCell="precioOriginal" let-row>
+                <div class="text-end">
+                  <div>{{ row.precioOriginal | number:'1.2-2' }}</div>
+                  @if (getDescuentoPorcentaje(row) !== null) {
+                    <div class="text-success small">
+                      −{{ getDescuentoPorcentaje(row) | number:'1.0-1' }}%
+                    </div>
+                  }
+                </div>
+              </ng-template>
+
+              <ng-template appCell="horas" let-row>
+                <div class="text-center">{{ row.horas ?? '—' }}</div>
+              </ng-template>
+
+              <ng-template appCell="staff" let-row>
+                <div class="text-center">{{ row.staff ?? '—' }}</div>
+              </ng-template>
+
+              <ng-template appCell="subtotal" let-row>
+                <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | number:'1.2-2' }}</div>
+              </ng-template>
+
+              <ng-template appCell="notas" let-row>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="row.notas"
+                  [ngModelOptions]="{standalone:true}" maxlength="200" placeholder="Notas opcionales">
+              </ng-template>
+
+              <ng-template appCell="quitar" let-row>
+                <button type="button" class="btn btn-link text-danger p-0" (click)="removePaquete(row.key)">✖</button>
+              </ng-template>
+
+            </app-table-base>
+          </div>
+          <div class="text-end mt-2">
+            <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
 
     <div class="row mb-3">
       <div class="col-md-4 ms-auto">
-        <label class="col-form-label">Total estimado</label>
+        <label class="col-form-label" for="totalEstimado">Total estimado</label>
         <div class="input-group">
           <span class="input-group-text">US$</span>
-          <input type="number" class="form-control" formControlName="totalEstimado" min="0" step="0.01">
+          <input id="totalEstimado" type="number" class="form-control" formControlName="totalEstimado" min="0"
+            step="0.01">
         </div>
         <small class="text-muted">
           Se calcula automáticamente con los paquetes seleccionados, pero puedes ajustarlo manualmente.
@@ -428,101 +486,116 @@
       <button type="button" class="btn btn-outline-secondary me-2" (click)="cancel()"
         [disabled]="loading">Cancelar</button>
       <button type="submit" class="btn btn-primary" [disabled]="loading">
-        <span *ngIf="!loading">Guardar cotización</span>
-        <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        @if (!loading) {
+          <span>Guardar cotización</span>
+        }
+        @if (loading) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
       </button>
     </div>
   </form>
 </div>
 
-<ng-template #paquetesLoading>
-  <div class="d-flex flex-column align-items-center justify-content-center py-4 text-muted">
-    <mat-spinner diameter="32"></mat-spinner>
-    <span class="mt-2">Cargando paquetes…</span>
-  </div>
-</ng-template>
-
 <app-modal-base [open]="detallePaqueteAbierto" [disableClose]="false" [loading]="false" [useDefaultFooter]="true"
   size="lg" title="Detalle del paquete" (closed)="cerrarDetallePaquete()">
 
-  <ng-container *ngIf="detallePaqueteSeleccionado; else sinPaqueteDetalle">
+  @if (detallePaqueteSeleccionado) {
     <div class="row g-3">
       <div class="col-md-6">
-        <label class="form-label">Título</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.titulo ?? '—'" disabled>
+        <label class="form-label" for="detallePaqueteTitulo">Título</label>
+        <input id="detallePaqueteTitulo" class="form-control"
+          [value]="detallePaqueteSeleccionado?.titulo ?? '—'" disabled>
       </div>
       <div class="col-md-3">
-        <label class="form-label">Precio</label>
-        <input class="form-control" [value]="(detallePaqueteSeleccionado?.precio ?? 0) | number:'1.0-0'" disabled>
+        <label class="form-label" for="detallePaquetePrecio">Precio</label>
+        <input id="detallePaquetePrecio" class="form-control"
+          [value]="(detallePaqueteSeleccionado?.precio ?? 0) | number:'1.0-0'" disabled>
       </div>
       <div class="col-md-3">
-        <label class="form-label">Horas</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.horas ?? '—'" disabled>
+        <label class="form-label" for="detallePaqueteHoras">Horas</label>
+        <input id="detallePaqueteHoras" class="form-control" [value]="detallePaqueteSeleccionado?.horas ?? '—'"
+          disabled>
       </div>
       <div class="col-md-6">
-        <label class="form-label">Servicio</label>
-        <input class="form-control"
+        <label class="form-label" for="detallePaqueteServicio">Servicio</label>
+        <input id="detallePaqueteServicio" class="form-control"
           [value]="detallePaqueteSeleccionado?.servicioNombre ?? detallePaqueteSeleccionado?.servicio?.nombre ?? '—'"
           disabled>
       </div>
       <div class="col-md-6">
-        <label class="form-label">Categoría</label>
-        <input class="form-control"
+        <label class="form-label" for="detallePaqueteCategoria">Categoría</label>
+        <input id="detallePaqueteCategoria" class="form-control"
           [value]="detallePaqueteSeleccionado?.categoriaNombre ?? detallePaqueteSeleccionado?.categoriaTipo ?? '—'"
           disabled>
       </div>
       <div class="col-md-6">
-        <label class="form-label">Tipo de paquete</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'"
-          disabled>
+        <label class="form-label" for="detallePaqueteTipo">Tipo de paquete</label>
+        <input id="detallePaqueteTipo" class="form-control"
+          [value]="detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'" disabled>
       </div>
       <div class="col-12">
-        <label class="form-label">Descripción</label>
-        <textarea class="form-control" rows="3"
+        <label class="form-label" for="detallePaqueteDescripcion">Descripción</label>
+        <textarea id="detallePaqueteDescripcion" class="form-control" rows="3"
           [value]="detallePaqueteSeleccionado?.descripcion || detallePaqueteSeleccionado?.Descripcion || '—'"
           disabled></textarea>
       </div>
       <div class="col-12">
-        <label class="form-label">Staff</label>
+        <div class="form-label">Staff</div>
         <div class="form-control" style="height: auto;" disabled>
           {{ (detallePaqueteSeleccionado?.staff?.total ?? detallePaqueteSeleccionado?.eventoServicio?.staff?.total ??
           detallePaqueteSeleccionado?.personal ?? '—') }}
-          <div class="small text-muted" *ngIf="getDetalleStaffLista(detallePaqueteSeleccionado).length">
-            <div *ngFor="let miembro of getDetalleStaffLista(detallePaqueteSeleccionado)">
-              {{ (miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? 'Rol') }} <span *ngIf="miembro?.cantidad">({{
-                miembro?.cantidad }})</span>
+          @if (getDetalleStaffLista(detallePaqueteSeleccionado).length) {
+            <div class="small text-muted">
+              @for (miembro of getDetalleStaffLista(detallePaqueteSeleccionado); track $index) {
+                <div>
+                  {{ (miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? 'Rol') }}
+                  @if (miembro?.cantidad) {
+                    <span>({{ miembro?.cantidad }})</span>
+                  }
+                </div>
+              }
             </div>
-          </div>
+          }
         </div>
       </div>
       <div class="col-md-4">
-        <label class="form-label">Fotos impresas</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.fotosImpresas ?? '—'" disabled>
+        <label class="form-label" for="detallePaqueteFotos">Fotos impresas</label>
+        <input id="detallePaqueteFotos" class="form-control"
+          [value]="detallePaqueteSeleccionado?.fotosImpresas ?? '—'" disabled>
       </div>
       <div class="col-md-4">
-        <label class="form-label">Trailer (min)</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.trailerMin ?? '—'" disabled>
+        <label class="form-label" for="detallePaqueteTrailer">Trailer (min)</label>
+        <input id="detallePaqueteTrailer" class="form-control"
+          [value]="detallePaqueteSeleccionado?.trailerMin ?? '—'" disabled>
       </div>
       <div class="col-md-4">
-        <label class="form-label">Filmación (min)</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.filmMin ?? '—'" disabled>
+        <label class="form-label" for="detallePaqueteFilm">Filmación (min)</label>
+        <input id="detallePaqueteFilm" class="form-control" [value]="detallePaqueteSeleccionado?.filmMin ?? '—'"
+          disabled>
       </div>
-      <div class="col-12" *ngIf="getEquiposLista(detallePaqueteSeleccionado).length">
-        <label class="form-label">Equipamiento requerido</label>
-        <ul class="list-group">
-          <li class="list-group-item py-2" *ngFor="let eq of getEquiposLista(detallePaqueteSeleccionado)">
-            <div class="fw-semibold">{{ eq?.tipoEquipo ?? eq?.tipo }}</div>
-            <div class="small text-muted">
-              <span *ngIf="eq?.cantidad">Cantidad: {{ eq?.cantidad }}</span>
-              <span *ngIf="eq?.notas" class="ms-2">({{ eq?.notas }})</span>
-            </div>
-          </li>
-        </ul>
-      </div>
+      @if (getEquiposLista(detallePaqueteSeleccionado).length) {
+        <div class="col-12">
+          <div class="form-label">Equipamiento requerido</div>
+          <ul class="list-group">
+            @for (eq of getEquiposLista(detallePaqueteSeleccionado); track $index) {
+              <li class="list-group-item py-2">
+                <div class="fw-semibold">{{ eq?.tipoEquipo ?? eq?.tipo }}</div>
+                <div class="small text-muted">
+                  @if (eq?.cantidad) {
+                    <span>Cantidad: {{ eq?.cantidad }}</span>
+                  }
+                  @if (eq?.notas) {
+                    <span class="ms-2">({{ eq?.notas }})</span>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      }
     </div>
-  </ng-container>
-
-  <ng-template #sinPaqueteDetalle>
+  } @else {
     <p class="text-muted mb-0">Selecciona un paquete para ver el detalle.</p>
-  </ng-template>
+  }
 </app-modal-base>

@@ -58,91 +58,109 @@
     size="lg" title="Detalle del paquete" (closed)="cerrarModalDetalle()">
 
     <app-formulario-base [open]="detalleModalAbierto" [loading]="false" [error]="null">
-      <ng-container *ngIf="selectedPaquete; else sinSeleccion">
+      @if (selectedPaquete) {
         <div class="row g-3">
           <div class="col-12 col-md-6">
-            <label class="form-label">Título</label>
-            <input type="text" class="form-control" [value]="selectedPaquete.titulo" disabled>
+            <label class="form-label" for="detalleTitulo">Título</label>
+            <input id="detalleTitulo" type="text" class="form-control" [value]="selectedPaquete.titulo" disabled>
           </div>
           <div class="col-12 col-md-6">
-            <label class="form-label">Servicio</label>
-            <input type="text" class="form-control" [value]="selectedPaquete.servicio?.nombre || 'Sin servicio'"
-              disabled>
+            <label class="form-label" for="detalleServicio">Servicio</label>
+            <input id="detalleServicio" type="text" class="form-control"
+              [value]="selectedPaquete.servicio?.nombre || 'Sin servicio'" disabled>
           </div>
           <div class="col-12 col-md-6">
-            <label class="form-label">Estado</label>
-            <input type="text" class="form-control" [value]="selectedPaquete.estado?.nombre || '—'" disabled>
+            <label class="form-label" for="detalleEstado">Estado</label>
+            <input id="detalleEstado" type="text" class="form-control"
+              [value]="selectedPaquete.estado?.nombre || '—'" disabled>
           </div>
           <div class="col-12 col-md-6">
-            <label class="form-label">Categoría</label>
-            <input type="text" class="form-control" [value]="selectedPaquete.categoriaNombre || 'Sin categoría'"
-              disabled>
+            <label class="form-label" for="detalleCategoria">Categoría</label>
+            <input id="detalleCategoria" type="text" class="form-control"
+              [value]="selectedPaquete.categoriaNombre || 'Sin categoría'" disabled>
           </div>
           <div class="col-12 col-md-3">
-            <label class="form-label">Precio (USD)</label>
-            <input type="text" class="form-control"
+            <label class="form-label" for="detallePrecio">Precio (USD)</label>
+            <input id="detallePrecio" type="text" class="form-control"
               [value]="'USD ' + ((selectedPaquete.precio ?? 0) | number : '1.0-0')" disabled>
           </div>
           <div class="col-12 col-md-3">
-            <label class="form-label">Horas</label>
-            <input type="text" class="form-control" [value]="selectedPaquete.horas ?? '—'" disabled>
+            <label class="form-label" for="detalleHoras">Horas</label>
+            <input id="detalleHoras" type="text" class="form-control" [value]="selectedPaquete.horas ?? '—'" disabled>
           </div>
           <div class="col-12 col-md-6">
-            <label class="form-label">Tipo de paquete</label>
-            <input type="text" class="form-control" [value]="selectedPaquete.esAddon ? 'Add-on' : 'Paquete principal'"
+            <label class="form-label" for="detalleTipo">Tipo de paquete</label>
+            <input id="detalleTipo" type="text" class="form-control"
+              [value]="selectedPaquete.esAddon ? 'Add-on' : 'Paquete principal'" disabled>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="detalleDescripcion">Descripción</label>
+            <textarea id="detalleDescripcion" class="form-control" rows="3"
+              [value]="selectedPaquete.descripcion || '—'" disabled></textarea>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label class="form-label" for="detalleFotosImpresas">Fotos impresas</label>
+            <input id="detalleFotosImpresas" type="text" class="form-control"
+              [value]="selectedPaquete.fotosImpresas ?? '—'" disabled>
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label" for="detalleTrailerMin">Trailer (min)</label>
+            <input id="detalleTrailerMin" type="text" class="form-control"
+              [value]="selectedPaquete.trailerMin ?? '—'" disabled>
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label" for="detalleFilmMin">Filmación (min)</label>
+            <input id="detalleFilmMin" type="text" class="form-control" [value]="selectedPaquete.filmMin ?? '—'"
               disabled>
           </div>
-          <div class="col-12">
-            <label class="form-label">Descripción</label>
-            <textarea class="form-control" rows="3" [value]="selectedPaquete.descripcion || '—'" disabled></textarea>
-          </div>
-
-          <div class="col-12 col-md-4">
-            <label class="form-label">Fotos impresas</label>
-            <input type="text" class="form-control" [value]="selectedPaquete.fotosImpresas ?? '—'" disabled>
-          </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Trailer (min)</label>
-            <input type="text" class="form-control" [value]="selectedPaquete.trailerMin ?? '—'" disabled>
-          </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Filmación (min)</label>
-            <input type="text" class="form-control" [value]="selectedPaquete.filmMin ?? '—'" disabled>
-          </div>
 
           <div class="col-12">
-            <label class="form-label d-flex justify-content-between">
+            <div class="form-label d-flex justify-content-between">
               <span>Staff requerido</span>
-              <span class="text-muted small" *ngIf="!selectedPaquete.staff?.detalle?.length">Sin staff registrado</span>
-            </label>
-            <div class="border rounded p-3 bg-light" *ngIf="selectedPaquete.staff?.detalle?.length">
-              <ul class="list-unstyled mb-0">
-                <li *ngFor="let miembro of selectedPaquete.staff.detalle">
-                  {{ miembro.rol }} · {{ miembro.cantidad }}
-                </li>
-              </ul>
+              @if (!selectedPaquete.staff?.detalle?.length) {
+                <span class="text-muted small">Sin staff registrado</span>
+              }
             </div>
+            @if (selectedPaquete.staff?.detalle?.length) {
+              <div class="border rounded p-3 bg-light">
+                <ul class="list-unstyled mb-0">
+                  @for (miembro of selectedPaquete.staff.detalle; track $index) {
+                    <li>
+                      {{ miembro.rol }} · {{ miembro.cantidad }}
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
           </div>
 
           <div class="col-12">
-            <label class="form-label d-flex justify-content-between">
+            <div class="form-label d-flex justify-content-between">
               <span>Equipamiento</span>
-              <span class="text-muted small" *ngIf="!selectedPaquete.equipos?.length">Sin equipamiento registrado</span>
-            </label>
-            <div class="border rounded p-3 bg-light" *ngIf="selectedPaquete.equipos?.length">
-              <ul class="list-unstyled mb-0">
-                <li *ngFor="let equipo of selectedPaquete.equipos">
-                  {{ equipo.tipoEquipo }} · {{ equipo.cantidad }}
-                  <span class="text-muted" *ngIf="equipo.notas">({{ equipo.notas }})</span>
-                </li>
-              </ul>
+              @if (!selectedPaquete.equipos?.length) {
+                <span class="text-muted small">Sin equipamiento registrado</span>
+              }
             </div>
+            @if (selectedPaquete.equipos?.length) {
+              <div class="border rounded p-3 bg-light">
+                <ul class="list-unstyled mb-0">
+                  @for (equipo of selectedPaquete.equipos; track $index) {
+                    <li>
+                      {{ equipo.tipoEquipo }} · {{ equipo.cantidad }}
+                      @if (equipo.notas) {
+                        <span class="text-muted">({{ equipo.notas }})</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
           </div>
         </div>
-      </ng-container>
-      <ng-template #sinSeleccion>
+      } @else {
         <div class="text-muted">Selecciona un paquete para ver el detalle.</div>
-      </ng-template>
+      }
     </app-formulario-base>
 
     <div modal-footer class="d-flex justify-content-end mt-3">
@@ -159,46 +177,54 @@
       <form [formGroup]="form" (ngSubmit)="guardarPaquete()" class="paquete-form" novalidate>
         <div class="row g-3">
           <div class="col-12 col-md-6">
-            <label class="form-label">Título</label>
-            <input type="text" class="form-control" formControlName="titulo" required
+            <label class="form-label" for="paqueteTitulo">Título</label>
+            <input id="paqueteTitulo" type="text" class="form-control" formControlName="titulo" required
               [class.is-invalid]="form.get('titulo')?.invalid && form.get('titulo')?.touched"
               [attr.title]="form.get('titulo')?.invalid && form.get('titulo')?.touched ? 'Ingresa al menos 3 caracteres.' : null">
           </div>
 
           <div class="col-12 col-md-6">
-            <label class="form-label">Servicio</label>
-            <select class="form-select" formControlName="servicio" required
+            <label class="form-label" for="paqueteServicio">Servicio</label>
+            <select id="paqueteServicio" class="form-select" formControlName="servicio" required
               [class.is-invalid]="form.get('servicio')?.invalid && form.get('servicio')?.touched"
               [attr.title]="form.get('servicio')?.invalid && form.get('servicio')?.touched ? 'Selecciona un servicio.' : null">
               <option [ngValue]="null" disabled>Selecciona un servicio</option>
-              <option *ngFor="let servicio of servicios" [ngValue]="servicio.id">{{ servicio.nombre }}</option>
+              @for (servicio of servicios; track servicio.id) {
+                <option [ngValue]="servicio.id">{{ servicio.nombre }}</option>
+              }
             </select>
           </div>
 
           <div class="col-12 col-md-6">
-            <label class="form-label">Categoría</label>
-            <select class="form-select" formControlName="categoriaId" required
+            <label class="form-label" for="paqueteCategoria">Categoría</label>
+            <select id="paqueteCategoria" class="form-select" formControlName="categoriaId" required
               [class.is-invalid]="form.get('categoriaId')?.invalid && form.get('categoriaId')?.touched"
               [attr.title]="form.get('categoriaId')?.invalid && form.get('categoriaId')?.touched ? 'Selecciona una categoría.' : null">
               <option [ngValue]="null" disabled>Selecciona una categoría</option>
-              <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
-                {{ categoria.nombre }}
-              </option>
+              @for (categoria of categorias; track categoria.id) {
+                <option [ngValue]="categoria.id">
+                  {{ categoria.nombre }}
+                </option>
+              }
             </select>
           </div>
 
-          <div class="col-12 col-md-6" *ngIf="modalModo === 'editar'">
-            <label class="form-label">Estado</label>
-            <select class="form-select" formControlName="estadoId">
-              <option [ngValue]="null" disabled>Selecciona un estado</option>
-              <option *ngFor="let estado of estados" [ngValue]="estado.idEstado">
-                {{ estado.nombreEstado }}
-              </option>
-            </select>
-          </div>
+          @if (modalModo === 'editar') {
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="paqueteEstado">Estado</label>
+              <select id="paqueteEstado" class="form-select" formControlName="estadoId">
+                <option [ngValue]="null" disabled>Selecciona un estado</option>
+                @for (estado of estados; track estado.idEstado) {
+                  <option [ngValue]="estado.idEstado">
+                    {{ estado.nombreEstado }}
+                  </option>
+                }
+              </select>
+            </div>
+          }
 
           <div class="col-12 col-md-6">
-            <label class="form-label d-block">Tipo de paquete</label>
+            <div class="form-label d-block">Tipo de paquete</div>
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" role="switch" id="esAddonSwitch"
                 formControlName="esAddon">
@@ -207,115 +233,128 @@
           </div>
 
           <div class="col-12 col-md-6">
-            <label class="form-label">Precio (USD)</label>
-            <input type="number" class="form-control" formControlName="precio" min="1" step="1" required
+            <label class="form-label" for="paquetePrecio">Precio (USD)</label>
+            <input id="paquetePrecio" type="number" class="form-control" formControlName="precio" min="1" step="1"
+              required
               [class.is-invalid]="form.get('precio')?.invalid && form.get('precio')?.touched"
               [attr.title]="form.get('precio')?.invalid && form.get('precio')?.touched ? 'Ingresa un precio válido (mayor a 0).' : null">
           </div>
 
           <div class="col-12">
-            <label class="form-label">Descripción</label>
-            <textarea class="form-control" formControlName="descripcion" rows="3"></textarea>
+            <label class="form-label" for="paqueteDescripcion">Descripción</label>
+            <textarea id="paqueteDescripcion" class="form-control" formControlName="descripcion" rows="3"></textarea>
           </div>
 
           <div class="col-12 col-md-4">
-            <label class="form-label">Horas estimadas</label>
-            <input type="number" class="form-control" formControlName="horas" min="0" step="1" required
+            <label class="form-label" for="paqueteHoras">Horas estimadas</label>
+            <input id="paqueteHoras" type="number" class="form-control" formControlName="horas" min="0" step="1"
+              required
               [class.is-invalid]="form.get('horas')?.invalid && form.get('horas')?.touched"
               [attr.title]="form.get('horas')?.invalid && form.get('horas')?.touched ? 'Ingresa un número igual o mayor a 0.' : null">
           </div>
           <div class="col-12 col-md-4">
-            <label class="form-label">Fotos impresas</label>
-            <input type="number" class="form-control" formControlName="fotosImpresas" min="0" step="1">
+            <label class="form-label" for="paqueteFotosImpresas">Fotos impresas</label>
+            <input id="paqueteFotosImpresas" type="number" class="form-control" formControlName="fotosImpresas"
+              min="0" step="1">
           </div>
           <div class="col-12 col-md-4">
-            <label class="form-label">Trailer (min)</label>
-            <input type="number" class="form-control" formControlName="trailerMin" min="0" step="1">
+            <label class="form-label" for="paqueteTrailerMin">Trailer (min)</label>
+            <input id="paqueteTrailerMin" type="number" class="form-control" formControlName="trailerMin" min="0"
+              step="1">
           </div>
           <div class="col-12 col-md-4">
-            <label class="form-label">Filmación (min)</label>
-            <input type="number" class="form-control" formControlName="filmMin" min="0" step="1">
+            <label class="form-label" for="paqueteFilmMin">Filmación (min)</label>
+            <input id="paqueteFilmMin" type="number" class="form-control" formControlName="filmMin" min="0" step="1">
           </div>
         </div>
 
         <div class="form-section mt-4" formArrayName="staff">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <label class="form-label mb-0">Staff requerido</label>
+            <div class="form-label mb-0">Staff requerido</div>
             <button type="button" class="btn btn-link btn-sm px-0" (click)="agregarStaff()">
               <mat-icon>add</mat-icon>
               Agregar cargo
             </button>
           </div>
 
-          <div class="row g-3 align-items-end mb-3" *ngFor="let staffGroup of staffArray.controls; let i = index"
-            [formGroupName]="i">
-            <div class="col-12 col-md-6">
-              <label class="form-label">Cargo</label>
-              <select class="form-select" formControlName="cargo"
-                [class.is-invalid]="staffGroup.get('cargo')?.invalid && staffGroup.get('cargo')?.touched"
-                [attr.title]="staffGroup.get('cargo')?.invalid && staffGroup.get('cargo')?.touched ? 'Selecciona un cargo.' : null">
-                <option [ngValue]="null" disabled>Selecciona un cargo</option>
-                <option *ngFor="let cargo of cargos" [ngValue]="cargo.cargoNombre">{{ cargo.cargoNombre }}</option>
-                <option
-                  *ngIf="mostrarCargoFueraCatalogo(staffGroup.get('cargo')?.value)"
-                  [ngValue]="staffGroup.get('cargo')?.value">
-                  {{ staffGroup.get('cargo')?.value }}
-                </option>
-              </select>
+          @for (staffGroup of staffArray.controls; track $index) {
+            <div class="row g-3 align-items-end mb-3" [formGroupName]="$index">
+              <div class="col-12 col-md-6">
+                <label class="form-label" [attr.for]="'staffCargo' + $index">Cargo</label>
+                <select class="form-select" formControlName="cargo" [attr.id]="'staffCargo' + $index"
+                  [class.is-invalid]="staffGroup.get('cargo')?.invalid && staffGroup.get('cargo')?.touched"
+                  [attr.title]="staffGroup.get('cargo')?.invalid && staffGroup.get('cargo')?.touched ? 'Selecciona un cargo.' : null">
+                  <option [ngValue]="null" disabled>Selecciona un cargo</option>
+                  @for (cargo of cargos; track cargo.cargoNombre) {
+                    <option [ngValue]="cargo.cargoNombre">{{ cargo.cargoNombre }}</option>
+                  }
+                  @if (mostrarCargoFueraCatalogo(staffGroup.get('cargo')?.value)) {
+                    <option [ngValue]="staffGroup.get('cargo')?.value">
+                      {{ staffGroup.get('cargo')?.value }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="col-8 col-md-4">
+                <label class="form-label" [attr.for]="'staffCantidad' + $index">Cantidad</label>
+                <input [attr.id]="'staffCantidad' + $index" type="number" class="form-control"
+                  formControlName="cantidad" min="1" step="1"
+                  [class.is-invalid]="staffGroup.get('cantidad')?.invalid && staffGroup.get('cantidad')?.touched"
+                  [attr.title]="staffGroup.get('cantidad')?.invalid && staffGroup.get('cantidad')?.touched ? 'Ingresa una cantidad válida (mínimo 1).' : null">
+              </div>
+              <div class="col-4 col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger w-100" (click)="eliminarStaff($index)"
+                  [disabled]="staffArray.length <= 1">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
             </div>
-            <div class="col-8 col-md-4">
-              <label class="form-label">Cantidad</label>
-              <input type="number" class="form-control" formControlName="cantidad" min="1" step="1"
-                [class.is-invalid]="staffGroup.get('cantidad')?.invalid && staffGroup.get('cantidad')?.touched"
-                [attr.title]="staffGroup.get('cantidad')?.invalid && staffGroup.get('cantidad')?.touched ? 'Ingresa una cantidad válida (mínimo 1).' : null">
-            </div>
-            <div class="col-4 col-md-2 d-flex align-items-end">
-              <button type="button" class="btn btn-outline-danger w-100" (click)="eliminarStaff(i)"
-                [disabled]="staffArray.length <= 1">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
-          </div>
+          }
         </div>
 
         <div class="form-section mt-4" formArrayName="equipos">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <label class="form-label mb-0">Equipamiento requerido</label>
+            <div class="form-label mb-0">Equipamiento requerido</div>
             <button type="button" class="btn btn-link btn-sm px-0" (click)="agregarEquipo()">
               <mat-icon>add</mat-icon>
               Agregar equipo
             </button>
           </div>
 
-          <div class="row g-3 align-items-end mb-3" *ngFor="let equipoGroup of equiposArray.controls; let i = index"
-            [formGroupName]="i">
-            <div class="col-12 col-md-5">
-              <label class="form-label">Tipo de equipo</label>
-              <select class="form-select" formControlName="tipoEquipoId" (change)="onTipoEquipoSeleccionado(i)"
-                [class.is-invalid]="equipoGroup.get('tipoEquipoId')?.invalid && equipoGroup.get('tipoEquipoId')?.touched"
-                [attr.title]="equipoGroup.get('tipoEquipoId')?.invalid && equipoGroup.get('tipoEquipoId')?.touched ? 'Selecciona un tipo válido.' : null">
-                <option [ngValue]="null" disabled>Selecciona un tipo</option>
-                <option *ngFor="let tipo of tipoEquipos" [ngValue]="tipo.idTipoEquipo">{{ tipo.nombre }}</option>
-              </select>
-            </div>
+          @for (equipoGroup of equiposArray.controls; track $index) {
+            <div class="row g-3 align-items-end mb-3" [formGroupName]="$index">
+              <div class="col-12 col-md-5">
+                <label class="form-label" [attr.for]="'equipoTipo' + $index">Tipo de equipo</label>
+                <select class="form-select" formControlName="tipoEquipoId"
+                  [attr.id]="'equipoTipo' + $index" (change)="onTipoEquipoSeleccionado($index)"
+                  [class.is-invalid]="equipoGroup.get('tipoEquipoId')?.invalid && equipoGroup.get('tipoEquipoId')?.touched"
+                  [attr.title]="equipoGroup.get('tipoEquipoId')?.invalid && equipoGroup.get('tipoEquipoId')?.touched ? 'Selecciona un tipo válido.' : null">
+                  <option [ngValue]="null" disabled>Selecciona un tipo</option>
+                  @for (tipo of tipoEquipos; track tipo.idTipoEquipo) {
+                    <option [ngValue]="tipo.idTipoEquipo">{{ tipo.nombre }}</option>
+                  }
+                </select>
+              </div>
 
-            <div class="col-12 col-sm-6 col-md-2">
-              <label class="form-label">Cantidad</label>
-              <input type="number" class="form-control" formControlName="cantidad" min="1" step="1"
-                [class.is-invalid]="equipoGroup.get('cantidad')?.invalid && equipoGroup.get('cantidad')?.touched"
-                [attr.title]="equipoGroup.get('cantidad')?.invalid && equipoGroup.get('cantidad')?.touched ? 'Ingresa una cantidad válida (mínimo 1).' : null">
+              <div class="col-12 col-sm-6 col-md-2">
+                <label class="form-label" [attr.for]="'equipoCantidad' + $index">Cantidad</label>
+                <input [attr.id]="'equipoCantidad' + $index" type="number" class="form-control"
+                  formControlName="cantidad" min="1" step="1"
+                  [class.is-invalid]="equipoGroup.get('cantidad')?.invalid && equipoGroup.get('cantidad')?.touched"
+                  [attr.title]="equipoGroup.get('cantidad')?.invalid && equipoGroup.get('cantidad')?.touched ? 'Ingresa una cantidad válida (mínimo 1).' : null">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" [attr.for]="'equipoNotas' + $index">Notas</label>
+                <input [attr.id]="'equipoNotas' + $index" type="text" class="form-control" formControlName="notas">
+              </div>
+              <div class="col-6 col-sm-4 col-md-1 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger w-100" (click)="eliminarEquipo($index)"
+                  [disabled]="equiposArray.length <= 1">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
             </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">Notas</label>
-              <input type="text" class="form-control" formControlName="notas">
-            </div>
-            <div class="col-6 col-sm-4 col-md-1 d-flex align-items-end">
-              <button type="button" class="btn btn-outline-danger w-100" (click)="eliminarEquipo(i)"
-                [disabled]="equiposArray.length <= 1">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
-          </div>
+          }
         </div>
 
       </form>
@@ -326,7 +365,9 @@
         Cancelar
       </button>
       <button type="button" class="btn btn-primary" (click)="guardarPaquete()" [disabled]="modalSaving || form.invalid">
-        <span *ngIf="modalSaving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        @if (modalSaving) {
+          <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        }
         {{ modalModo === 'crear' ? 'Registrar paquete' : 'Guardar cambios' }}
       </button>
     </div>

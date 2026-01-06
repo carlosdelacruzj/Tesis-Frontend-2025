@@ -43,11 +43,6 @@ Linting "SWGODLC"...
 /home/carlos/Tesis-Frontend-2025/src/app/auth/services/auth.service.ts
   13:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
 
-/home/carlos/Tesis-Frontend-2025/src/app/components/add-evento/add-evento.component.html
-  18:17  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  21:17  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  24:17  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-
 /home/carlos/Tesis-Frontend-2025/src/app/components/add-evento/add-evento.component.ts
   19:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   20:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
@@ -77,59 +72,17 @@ Linting "SWGODLC"...
   262:32  error  '__' is defined but never used                                                                                                                                          @typescript-eslint/no-unused-vars
   262:36  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
 
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-equipos/administrar-equipos.component.html
-   35:18  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-   39:26  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-   53:36  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-   68:39  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  123:50  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  146:44  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  162:57  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  201:50  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  206:44  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  222:57  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  261:50  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  277:38  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-  281:50  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  297:39  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-  301:50  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  306:44  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  322:57  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-equipos/administrar-equipos.component.ts
   59:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   60:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   67:3   error  Lifecycle methods should not be empty                                                                                                                                   @angular-eslint/no-empty-lifecycle-method
   67:23  error  Unexpected empty method 'ngOnDestroy'                                                                                                                                   @typescript-eslint/no-empty-function
 
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-equipos/detalle-equipos/detalle-equipos.component.html
-  30:32  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  35:38  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  40:18  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  42:20  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-equipos/detalle-equipos/detalle-equipos.component.ts
   44:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   45:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   46:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   74:7  error  Literals should be exposed using readonly fields                                                                                                                        @typescript-eslint/class-literal-property-style
-
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-equipos/equipo-detalle/equipo-detalle.component.html
-   24:32  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-   29:38  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-   34:18  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-   37:20  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  118:50  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  125:26  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  142:42  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-  146:52  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  163:40  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-  181:50  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  186:44  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  202:57  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  234:40  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-  238:35  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  244:61  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
 
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-equipos/equipo-detalle/equipo-detalle.component.ts
   69:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
@@ -141,69 +94,12 @@ Linting "SWGODLC"...
    99:32  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
   100:26  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
 
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-paquete-servicio/administrar-paquete-servicio.component.html
-  16:20  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  19:30  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-  29:38  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-  32:33  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
-
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-paquete-servicio/administrar-paquete-servicio.component.ts
   22:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   23:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   24:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   25:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   55:25  error  Unnecessary escape character: \-                                                                                                                                        no-useless-escape
-
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-paquete-servicio/detalle-paquete-servicio/detalle-paquete-servicio.component.html
-   61:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   64:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   68:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   73:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   77:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   82:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   87:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   91:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   96:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  101:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  105:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  109:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  114:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  116:47  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  118:55  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  120:41  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  128:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  130:47  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  132:55  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  134:40  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  136:45  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  162:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  169:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  174:44  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  179:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  184:45  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  190:41  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  191:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  194:42  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  201:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  210:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  217:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  222:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  228:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  232:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  236:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  243:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  250:76  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  253:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  258:43  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  260:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  267:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  283:13  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  290:77  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  293:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  298:42  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  303:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  309:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  329:16  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
 
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/administrar-paquete-servicio/detalle-paquete-servicio/detalle-paquete-servicio.component.ts
   80:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
@@ -226,63 +122,9 @@ Linting "SWGODLC"...
    97:45  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
   101:62  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
 
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/dashboard/dashboard.component.html
-   22:52  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-   58:37  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-   85:59  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-  107:63  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-  125:37  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-  144:34  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
-
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/dashboard/service/dashboard.service.ts
   11:13  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
   13:36  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
-
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-cliente/gestionar-cliente.component.html
-   14:9   error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   16:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   82:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   85:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   86:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   87:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   92:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   95:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   96:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   97:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  102:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  105:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  106:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  107:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  112:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  115:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  116:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  117:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  122:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  125:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  126:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  127:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  132:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  134:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  149:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  171:12  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  175:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  181:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  186:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  191:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  194:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  195:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  196:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  201:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  206:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  210:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  211:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  212:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  217:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  221:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  227:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  230:40  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  238:11  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  255:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
 
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-cliente/gestionar-cliente.component.ts
     9:18  error  An interface declaring no members is equivalent to its supertype                                                                                                        @typescript-eslint/no-empty-object-type
@@ -297,53 +139,6 @@ Linting "SWGODLC"...
   35:44  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
   67:31  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
   97:36  error  '_' is defined but never used                                                                                                                                           @typescript-eslint/no-unused-vars
-
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component.html
-    1:7   error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   14:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   17:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   23:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   26:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   43:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   48:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   52:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   56:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   60:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   67:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   72:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   76:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   80:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   89:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   93:45  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-   96:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  103:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  108:48  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  113:47  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  134:60  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  155:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  159:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  166:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  171:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  178:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  184:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  188:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  192:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  199:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  234:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  238:46  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  248:40  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  259:18  error  Expected `!==` but received `!=`                          @angular-eslint/template/eqeqeq
-  263:18  error  Expected `!==` but received `!=`                          @angular-eslint/template/eqeqeq
-  267:18  error  Expected `!==` but received `!=`                          @angular-eslint/template/eqeqeq
-  274:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  290:34  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  311:32  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  312:19  error  Elements with interaction handlers must be focusable      @angular-eslint/template/interactive-supports-focus
-  331:23  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  331:29  error  Expected `!==` but received `!=`                          @angular-eslint/template/eqeqeq
-  368:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  382:16  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  383:16  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
 
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-cotizaciones/editar-cotizacion/editar-cotizacion.component.ts
     33:12  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
@@ -390,29 +185,6 @@ Linting "SWGODLC"...
   1207:28  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
   1227:28  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
 
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-cotizaciones/gestionar-cotizaciones.component.html
-   13:9   error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-   15:18  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-   29:36  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-   35:36  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-   59:14  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-   69:14  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-   78:24  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-   79:24  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  108:11  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  152:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  153:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  168:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  169:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  184:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  185:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  200:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  201:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  216:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  217:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  230:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-  251:10  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
-
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-cotizaciones/gestionar-cotizaciones.component.ts
    68:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
    69:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
@@ -430,82 +202,6 @@ Linting "SWGODLC"...
   106:13  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
   108:11  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
   109:13  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type
-
-/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component.html
-   16:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   21:58  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   30:56  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   34:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   40:43  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-   45:62  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   51:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   59:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   63:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   67:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   73:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-   77:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   81:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-   85:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  103:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  108:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  112:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  116:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  120:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  127:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  132:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  136:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  140:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  148:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  152:41  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  154:43  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  160:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  165:44  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  169:43  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  188:60  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  206:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  210:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  217:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  222:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  229:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  235:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  239:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  243:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  250:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  285:15  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  289:46  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  297:40  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  308:18  error  Expected `!==` but received `!=`                          @angular-eslint/template/eqeqeq
-  312:18  error  Expected `!==` but received `!=`                          @angular-eslint/template/eqeqeq
-  316:18  error  Expected `!==` but received `!=`                          @angular-eslint/template/eqeqeq
-  326:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  342:34  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  359:32  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  360:19  error  Elements with interaction handlers must be focusable      @angular-eslint/template/interactive-supports-focus
-  379:23  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  379:29  error  Expected `!==` but received `!=`                          @angular-eslint/template/eqeqeq
-  416:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  431:16  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  432:16  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  448:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  451:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  455:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  459:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  463:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  469:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  475:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  480:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  486:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  490:42  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  491:38  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  492:90  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  499:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  503:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  507:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  510:28  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  511:9   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
-  513:59  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
-  516:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
-  517:22  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
 
 /home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-cotizaciones/registrar-cotizacion/registrar-cotizacion.component.ts
     34:12  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
@@ -1301,6 +997,6 @@ Linting "SWGODLC"...
   13:3   error  Lifecycle methods should not be empty                                                                                                                                   @angular-eslint/no-empty-lifecycle-method
   13:20  error  Unexpected empty method 'ngOnInit'                                                                                                                                      @typescript-eslint/no-empty-function
 
-✖ 1126 problems (1126 errors, 0 warnings)
+✖ 844 problems (844 errors, 0 warnings)
   81 errors and 0 warnings potentially fixable with the `--fix` option.
 

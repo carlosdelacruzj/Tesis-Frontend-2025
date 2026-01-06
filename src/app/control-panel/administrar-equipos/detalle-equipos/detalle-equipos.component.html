@@ -27,19 +27,22 @@
     </div>
   </app-list-toolbar>
 
-  <div class="detalle-status" *ngIf="cargando">
+  @if (cargando) {
+  <div class="detalle-status">
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
     <span>Cargando resumen…</span>
   </div>
+  }
 
-  <div class="detalle-status error" *ngIf="error">
+  @if (error) {
+  <div class="detalle-status error">
     <mat-icon>error_outline</mat-icon>
     <span>No se pudo cargar la información. Intenta nuevamente.</span>
   </div>
+  }
 
-  <ng-container *ngIf="!cargando && !error">
-
-    <ng-container *ngIf="resumenModelos.length; else sinEquipos">
+  @if (!cargando && !error) {
+    @if (resumenModelos.length) {
       <app-table-base
         [columns]="columnasResumen"
         [data]="gruposFiltrados"
@@ -55,14 +58,12 @@
           </button>
         </ng-template>
       </app-table-base>
-    </ng-container>
-  </ng-container>
-
-  <ng-template #sinEquipos>
-    <div class="empty-state">
-      <mat-icon>inventory_2</mat-icon>
-      <p>No hay equipos registrados con estos filtros.</p>
-    </div>
-  </ng-template>
+    } @else {
+      <div class="empty-state">
+        <mat-icon>inventory_2</mat-icon>
+        <p>No hay equipos registrados con estos filtros.</p>
+      </div>
+    }
+  }
   </div>
 </div>
