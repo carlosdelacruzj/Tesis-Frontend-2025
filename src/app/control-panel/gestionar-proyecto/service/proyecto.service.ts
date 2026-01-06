@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
@@ -6,11 +6,16 @@ import { Proyecto, ProyectoDetalle, ProyectoPayload, ProyectoRecurso } from '../
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { ProyectoDisponibilidad } from '../model/proyecto-disponibilidad.model';
 
+export interface ProyectoEstado {
+  estadoId: number;
+  estadoNombre: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProyectoService {
   private readonly API = `${environment.baseUrl}/proyecto`;
 
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getProyectos(): Observable<Proyecto[]> {
     return this.http.get<Proyecto[]>(this.API);
@@ -39,8 +44,8 @@ export class ProyectoService {
     return this.http.patch<{ status: string; proyectoId: number }>(`${this.API}/${id}`, payload);
   }
 
-  getEstados(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.API}/estados`);
+  getEstados(): Observable<ProyectoEstado[]> {
+    return this.http.get<ProyectoEstado[]>(`${this.API}/estados`);
   }
 
   getDisponibilidad(params: { fechaInicio: string; fechaFin: string; proyectoId?: number | null }): Observable<ProyectoDisponibilidad> {
@@ -57,13 +62,13 @@ export class ProyectoService {
 
   guardarRecursos(payload: {
     proyectoId: number;
-    asignaciones: Array<{
+    asignaciones: {
       empleadoId: number | null;
       equipoId: number;
       fechaInicio: string;
       fechaFin: string;
       notas: string;
-    }>;
+    }[];
   }): Observable<void> {
     return this.http.post<void>(`${this.API}/recursos`, payload);
   }
@@ -74,7 +79,7 @@ export class ProyectoService {
 
   registrarDevoluciones(
     proyectoId: number,
-    payload: { devoluciones: Array<{ equipoId: number; estadoDevolucion: string; notas: string }> }
+    payload: { devoluciones: { equipoId: number; estadoDevolucion: string; notas: string }[] }
   ): Observable<void> {
     return this.http.post<void>(`${this.API}/${proyectoId}/devolucion`, payload);
   }

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
@@ -46,7 +46,7 @@ export interface ClientePedido {
 export class LandingClientPortalService {
   private readonly baseUrl = environment.baseUrl;
 
-  constructor(private readonly http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getCotizaciones(clienteId: number, estado?: string): Observable<ClienteCotizacion[]> {
     let params = new HttpParams();

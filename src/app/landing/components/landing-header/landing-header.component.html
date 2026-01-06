@@ -23,25 +23,31 @@
       <li>
         <a href="#" (click)="navigateToSection($event, 'faq')">FAQ</a>
       </li>
-      <li *ngIf="isCliente">
-        <a routerLink="/cotizaciones">Mis cotizaciones</a>
-      </li>
-      <li *ngIf="isCliente">
-        <a routerLink="/pedidos">Mis pedidos</a>
-      </li>
+      @if (isCliente) {
+        <li>
+          <a routerLink="/cotizaciones">Mis cotizaciones</a>
+        </li>
+        <li>
+          <a routerLink="/pedidos">Mis pedidos</a>
+        </li>
+      }
       <li>
         <button mat-stroked-button color="primary" type="button" (click)="handleCotizacion()">
           Cotización
         </button>
       </li>
-      <li *ngIf="!isAuthenticated">
-        <button class="site-header__login" type="button" (click)="openLogin()">Login</button>
-      </li>
-      <li *ngIf="isAuthenticated">
-        <button class="site-header__login" type="button" (click)="logout()">
-          Salir
-        </button>
-      </li>
+      @if (!isAuthenticated) {
+        <li>
+          <button class="site-header__login" type="button" (click)="openLogin()">Login</button>
+        </li>
+      }
+      @if (isAuthenticated) {
+        <li>
+          <button class="site-header__login" type="button" (click)="logout()">
+            Salir
+          </button>
+        </li>
+      }
     </ul>
   </div>
 </nav>

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../auth/services/auth.service';
 
@@ -6,9 +6,11 @@ import { AuthService } from '../auth/services/auth.service';
   providedIn: 'root'
 })
 export class RoleGuard {
-  constructor(private authService: AuthService, private router: Router) {}
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
-  canActivate(route: ActivatedRouteSnapshot, _state: RouterStateSnapshot): boolean {
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
+    void state;
     const allowedRoles = (route.data?.['roles'] as string[] | undefined) ?? [];
 
     if (allowedRoles.length === 0) {

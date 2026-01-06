@@ -30,76 +30,104 @@
                         <mat-label>Rol</mat-label>
                         <mat-select name="rol" #rol="ngModel" ngModel required>
                             <mat-option label=""></mat-option>
-                            <mat-option *ngFor="let rol of roles" [value]="rol.PK_Rol_Cod">
-                                {{rol.Rol_Nombre}}
-                            </mat-option>
+                            @for (rol of roles; track rol.PK_Rol_Cod) {
+                                <mat-option [value]="rol.PK_Rol_Cod">
+                                    {{rol.Rol_Nombre}}
+                                </mat-option>
+                            }
                         </mat-select>
-                        <mat-error *ngIf="selectFormControl.hasError('required')">
-                            <p>*Campo Requerido</p>
-                        </mat-error>
+                        @if (selectFormControl.hasError('required')) {
+                            <mat-error>
+                                <p>*Campo Requerido</p>
+                            </mat-error>
+                        }
                     </mat-form-field>
                     <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
                         <mat-label>Nombre</mat-label>
                         <input matInput type="text" name="nombre" #nombre="ngModel" ngModel [pattern]="nombrePattern" required>
-                        <mat-error *ngIf="nombre.errors?.pattern">
-                            <p>*Sólo letras</p>
-                        </mat-error>
-                        <mat-error *ngIf="nombre.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </mat-error>
+                        @if (nombre.errors?.pattern) {
+                            <mat-error>
+                                <p>*Sólo letras</p>
+                            </mat-error>
+                        }
+                        @if (nombre.errors?.required) {
+                            <mat-error>
+                                <p>*Campo Requerido</p>
+                            </mat-error>
+                        }
                     </mat-form-field>
                     <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
                         <mat-label>Apellido</mat-label>
                         <input matInput type="text" name="apellido" #apellido="ngModel" ngModel [pattern]="apellidoPattern" required>
-                        <mat-error *ngIf="apellido.errors?.pattern">
-                            <p>*Sólo letras</p>
-                        </mat-error>
-                        <mat-error *ngIf="apellido.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </mat-error>
+                        @if (apellido.errors?.pattern) {
+                            <mat-error>
+                                <p>*Sólo letras</p>
+                            </mat-error>
+                        }
+                        @if (apellido.errors?.required) {
+                            <mat-error>
+                                <p>*Campo Requerido</p>
+                            </mat-error>
+                        }
                     </mat-form-field>
 
                     <mat-form-field appearance="fill" class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2">
                         <mat-label>Correo</mat-label>
                         <input matInput type="text" name="correo" #correo="ngModel" ngModel [pattern]="correoPattern" required>
-                        <mat-error *ngIf="correo.errors?.pattern">
-                            <p>*Ingrese un email correcto</p>
-                        </mat-error>
-                        <mat-error *ngIf="correo.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </mat-error>
+                        @if (correo.errors?.pattern) {
+                            <mat-error>
+                                <p>*Ingrese un email correcto</p>
+                            </mat-error>
+                        }
+                        @if (correo.errors?.required) {
+                            <mat-error>
+                                <p>*Campo Requerido</p>
+                            </mat-error>
+                        }
                     </mat-form-field>
                     <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
                         <mat-label>Número de documento</mat-label>
                         <input matInput type="text" name="doc" #doc="ngModel" ngModel [pattern]="docPattern" required>
-                        <mat-error *ngIf="doc.errors?.pattern">
-                            <p>*Sólo números</p>
-                        </mat-error>
-                        <mat-error *ngIf="doc.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </mat-error>
+                        @if (doc.errors?.pattern) {
+                            <mat-error>
+                                <p>*Sólo números</p>
+                            </mat-error>
+                        }
+                        @if (doc.errors?.required) {
+                            <mat-error>
+                                <p>*Campo Requerido</p>
+                            </mat-error>
+                        }
                     </mat-form-field>
                     <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
                         <mat-label>Celular</mat-label>
                         <input matInput type="text" name="celular" #celular="ngModel" ngModel [pattern]="celularPattern" required>
-                        <mat-error *ngIf="celular.errors?.pattern">
-                            <p>*Sólo números</p>
-                        </mat-error>
-                        <mat-error *ngIf="celular.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </mat-error>
+                        @if (celular.errors?.pattern) {
+                            <mat-error>
+                                <p>*Sólo números</p>
+                            </mat-error>
+                        }
+                        @if (celular.errors?.required) {
+                            <mat-error>
+                                <p>*Campo Requerido</p>
+                            </mat-error>
+                        }
                     </mat-form-field>
                 </div>
                 <div class="form-row">
                     <mat-form-field class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 mb-12 " appearance="fill">
                         <mat-label>Dirección</mat-label>
                         <textarea matInput type="text" name="direccion" #direccion="ngModel" ngModel required></textarea>
-                        <mat-error *ngIf="direccion.errors?.pattern">
-                            <p>*Ingrese una dirección correcta</p>
-                        </mat-error>
-                        <mat-error *ngIf="direccion.errors?.required">
-                            <p>*Campo Requerido</p>
-                        </mat-error>
+                        @if (direccion.errors?.pattern) {
+                            <mat-error>
+                                <p>*Ingrese una dirección correcta</p>
+                            </mat-error>
+                        }
+                        @if (direccion.errors?.required) {
+                            <mat-error>
+                                <p>*Campo Requerido</p>
+                            </mat-error>
+                        }
                     </mat-form-field>
                 </div>
             </mat-card-content>

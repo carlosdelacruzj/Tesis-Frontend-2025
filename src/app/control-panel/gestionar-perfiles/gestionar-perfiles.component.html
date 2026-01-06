@@ -11,9 +11,11 @@
     (createClick)="navigateToCreate()">
   </app-list-toolbar>
 
-  <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
+  @if (error) {
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+  }
 
-  <ng-container *ngIf="!loadingList; else loadingState">
+  @if (!loadingList) {
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="25"
       emptyText="Sin perfiles registrados" (rowClick)="editarPerfil($any($event))" (sortChange)="onSortChange($event)"
       (pageChange)="onPageChange($event)" [showCreateButton]="false" [showSearch]="false"
@@ -59,13 +61,11 @@
       </ng-template>
 
     </app-table-base>
-  </ng-container>
+  } @else {
+    <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="mt-3 mb-0">Cargando perfiles…</p>
+    </div>
+  }
 
 </div>
-
-<ng-template #loadingState>
-  <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
-    <mat-spinner diameter="40"></mat-spinner>
-    <p class="mt-3 mb-0">Cargando perfiles…</p>
-  </div>
-</ng-template>

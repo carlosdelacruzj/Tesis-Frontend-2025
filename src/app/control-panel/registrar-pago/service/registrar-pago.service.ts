@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
@@ -28,7 +28,7 @@ export interface VoucherVM {
 export class RegistrarPagoService {
   private readonly API = environment.baseUrl;
 
-  constructor(private http: HttpClient) { }
+  private readonly http = inject(HttpClient);
 
   // === Tabs por estado de pago ===
   getPedidosPendientes(): Observable<PedidoLite[]> {
@@ -56,7 +56,7 @@ export class RegistrarPagoService {
     );
   }
 
-  getVoucherImageBlob(idVoucher: number) {
+  getVoucherImageBlob(idVoucher: number): Observable<Blob> {
     return this.http.get(`${this.API}/pagos/${idVoucher}/imagen`, {
       responseType: 'blob'
     });
@@ -75,7 +75,7 @@ export class RegistrarPagoService {
     metodoPagoId: number;
     estadoVoucherId?: number; // default 2 = Aprobado
     fecha?: string;
-  }): Promise<any> {
+  }): Promise<unknown> {
     const fd = new FormData();
 
     // ⬇️ Adjunta file SOLO si viene
@@ -90,7 +90,7 @@ export class RegistrarPagoService {
     if (params.fecha) fd.append('fecha', params.fecha);
 
     // Importante: NO seteas Content-Type; deja que el browser ponga el boundary del multipart
-    return this.http.post(`${this.API}/pagos`, fd).toPromise();
+    return this.http.post<unknown>(`${this.API}/pagos`, fd).toPromise();
   }
 
   crearProyecto(payload: {
@@ -102,8 +102,8 @@ export class RegistrarPagoService {
     responsableId?: number;
     notas?: string;
     enlace?: string;
-  }): Promise<any> {
-    return this.http.post(`${this.API}/proyecto`, payload).toPromise();
+  }): Promise<unknown> {
+    return this.http.post<unknown>(`${this.API}/proyecto`, payload).toPromise();
   }
 
 

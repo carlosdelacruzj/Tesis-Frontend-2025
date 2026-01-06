@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
@@ -30,10 +30,14 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
   ];
 
   proyectos: Proyecto[] = [];
-  estados: Array<{ estadoId: number; estadoNombre: string }> = [];
+  estados: { estadoId: number; estadoNombre: string }[] = [];
   loading = false;
   error: string | null = null;
   searchTerm = '';
+
+  private readonly fb = inject(UntypedFormBuilder);
+  private readonly proyectoService = inject(ProyectoService);
+  private readonly router = inject(Router);
 
   form: UntypedFormGroup = this.fb.group({
     proyectoNombre: ['', Validators.required],
@@ -50,12 +54,6 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
 
   modal: ModalState = { open: false, guardando: false, titulo: '', editId: null };
   private readonly destroy$ = new Subject<void>();
-
-  constructor(
-    private readonly fb: UntypedFormBuilder,
-    private readonly proyectoService: ProyectoService,
-    private readonly router: Router
-  ) {}
 
   ngOnInit(): void {
     this.loadProyectos();

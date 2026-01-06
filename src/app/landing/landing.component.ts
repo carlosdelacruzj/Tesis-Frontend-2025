@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, Validators, FormGroupDirective, ValidationErrors } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -6,7 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, take, takeUntil } from 'rxjs/operators';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE, DateAdapter, MatDateFormats, NativeDateAdapter } from '@angular/material/core';
-import { formatDisplayDate, formatIsoDate } from '../shared/utils/date-utils';
+import { DateInput, formatDisplayDate, formatIsoDate } from '../shared/utils/date-utils';
 import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload } from './services';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
@@ -48,7 +48,7 @@ interface FaqItem {
 
 // Formats calendar input as dd-MM-yyyy for the form
 class LandingDateAdapter extends NativeDateAdapter {
-  override format(date: Date, displayFormat: any): string {
+  override format(date: Date, displayFormat: unknown): string {
     if (displayFormat === 'input') {
       return formatDisplayDate(date, '');
     }
@@ -164,7 +164,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
   ];
 
-  readonly portfolioFilters: Array<'Todos' | PortfolioItem['type']> = ['Todos', 'Bodas', 'Eventos', 'Corporativo', 'Quinceañera', 'Religioso'];
+  readonly portfolioFilters: ('Todos' | PortfolioItem['type'])[] = ['Todos', 'Bodas', 'Eventos', 'Corporativo', 'Quinceañera', 'Religioso'];
 
   // Static showcase for the portfolio grid
   readonly portfolio: PortfolioItem[] = [
@@ -326,7 +326,32 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   eventOptions: LandingEventOption[] = FALLBACK_EVENT_OPTIONS;
 
-  readonly quoteForm: FormGroup;
+  private readonly fb = inject(FormBuilder);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly cotizacionService = inject(LandingCotizacionService);
+  private readonly route = inject(ActivatedRoute);
+
+  readonly quoteForm = this.fb.group({
+    nombreCompleto: ['', [Validators.required, Validators.minLength(3)]],
+    whatsappNumero: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
+    tipoEvento: ['', Validators.required],
+    eventoId: [null],
+    fechaEvento: [null, Validators.required],
+    distrito: ['', Validators.required],
+    mensaje: [''],
+    horas: ['', [Validators.required, this.horasValidator.bind(this)]],
+    invitados: [''],
+    presupuesto: [50],
+    extras: this.fb.group({
+      drone: [false],
+      segundoFotografo: [false],
+      entregaExpress: [false],
+      album: [false]
+    }),
+    comoNosConociste: [''],
+    consentimiento: [false, Validators.requiredTrue]
+  });
 
   submissionSuccess = false;
   isSubmitting = false;
@@ -335,84 +360,48 @@ export class LandingComponent implements OnInit, OnDestroy {
   selectedLightboxItem: PortfolioItem | null = null;
   activePortfolioFilter: PortfolioItem['type'] | 'Todos' = 'Todos';
   selectedPackageId: string | null = null;
-  readonly minQuoteDate: Date;
-  readonly maxQuoteDate: Date;
+  readonly minQuoteDate = this.addDays(this.startOfToday(), 1);
+  readonly maxQuoteDate = this.addMonths(this.startOfToday(), 6);
 
-  readonly localBusinessSchema: SafeHtml;
-  readonly faqSchema: SafeHtml;
+  readonly localBusinessSchema = this.createSchemaScript({
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: "D' La Cruz video y fotografía",
+    image: 'https://example.com/logo.webp',
+    url: 'https://dlacruz.pe',
+    telephone: '+51 999 999 999',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Av. Primavera 123',
+      addressLocality: 'Lima',
+      addressRegion: 'Lima',
+      postalCode: '15023',
+      addressCountry: 'PE'
+    },
+    openingHours: 'Mo-Su 09:00-21:00',
+    priceRange: '$$',
+    sameAs: [
+      'https://www.facebook.com/dlacruz',
+      'https://www.instagram.com/dlacruz',
+      'https://www.tiktok.com/@dlacruz'
+    ]
+  });
+
+  readonly faqSchema = this.createSchemaScript({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: this.faqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer
+      }
+    }))
+  });
 
   private readonly destroy$ = new Subject<void>();
   @ViewChild(FormGroupDirective, { static: false }) private quoteFormDirective?: FormGroupDirective;
-
-  constructor(
-    private readonly fb: FormBuilder,
-    private readonly snackBar: MatSnackBar,
-    private readonly sanitizer: DomSanitizer,
-    private readonly cotizacionService: LandingCotizacionService,
-    private readonly route: ActivatedRoute
-  ) {
-    const today = this.startOfToday();
-    this.minQuoteDate = this.addDays(today, 1);
-    this.maxQuoteDate = this.addMonths(today, 6);
-    // Primary quote form definition
-    this.quoteForm = this.fb.group({
-      nombreCompleto: ['', [Validators.required, Validators.minLength(3)]],
-      whatsappNumero: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
-      tipoEvento: ['', Validators.required],
-      eventoId: [null],
-      fechaEvento: [null, Validators.required],
-      distrito: ['', Validators.required],
-      mensaje: [''],
-      horas: ['', [Validators.required, this.horasValidator.bind(this)]],
-      invitados: [''],
-      presupuesto: [50],
-      extras: this.fb.group({
-        drone: [false],
-        segundoFotografo: [false],
-        entregaExpress: [false],
-        album: [false]
-      }),
-      comoNosConociste: [''],
-      consentimiento: [false, Validators.requiredTrue]
-    });
-
-    this.localBusinessSchema = this.createSchemaScript({
-      '@context': 'https://schema.org',
-      '@type': 'LocalBusiness',
-      name: "D' La Cruz video y fotografía",
-      image: 'https://example.com/logo.webp',
-      url: 'https://dlacruz.pe',
-      telephone: '+51 999 999 999',
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress: 'Av. Primavera 123',
-        addressLocality: 'Lima',
-        addressRegion: 'Lima',
-        postalCode: '15023',
-        addressCountry: 'PE'
-      },
-      openingHours: 'Mo-Su 09:00-21:00',
-      priceRange: '$$',
-      sameAs: [
-        'https://www.facebook.com/dlacruz',
-        'https://www.instagram.com/dlacruz',
-        'https://www.tiktok.com/@dlacruz'
-      ]
-    });
-
-    this.faqSchema = this.createSchemaScript({
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: this.faqs.map(faq => ({
-        '@type': 'Question',
-        name: faq.question,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: faq.answer
-        }
-      }))
-    });
-  }
 
   ngOnInit(): void {
     this.loadEventOptions();
@@ -543,10 +532,10 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   // Tracks GTM events if dataLayer is present
-  trackEvent(eventName: string, params?: Record<string, any>): void {
-    const win = window as any;
+  trackEvent(eventName: string, params?: Record<string, unknown>): void {
+    const win = window as Window & { dataLayer?: Record<string, unknown>[] };
     if (win && Array.isArray(win.dataLayer)) {
-      win.dataLayer.push({ event: eventName, ...params });
+      win.dataLayer.push({ event: eventName, ...(params ?? {}) });
     }
   }
 
@@ -678,12 +667,12 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   // Normalizes Date inputs coming from the Angular Material picker
-  private formatDate(value: unknown): string | null {
-    return formatIsoDate(value as any);
+  private formatDate(value: DateInput): string | null {
+    return formatIsoDate(value);
   }
 
-  private formatDateDisplay(value: unknown): string | null {
-    const formatted = formatDisplayDate(value as any, '');
+  private formatDateDisplay(value: DateInput): string | null {
+    const formatted = formatDisplayDate(value, '');
     return formatted || null;
   }
 
@@ -706,17 +695,17 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   // Shapes the final DTO that the landing service expects
-  private buildCotizacionPayload(value: any): LandingPublicCotizacionPayload {
-    const nombre = (value.nombreCompleto ?? '').toString().trim();
+  private buildCotizacionPayload(value: Record<string, unknown>): LandingPublicCotizacionPayload {
+    const nombre = String(value.nombreCompleto ?? '').trim();
     const celular = this.composePhoneNumber(value.whatsappNumero);
-    const fechaEvento = this.formatDate(value.fechaEvento) ?? new Date().toISOString().slice(0, 10);
+    const fechaEvento = this.formatDate(value.fechaEvento as DateInput) ?? new Date().toISOString().slice(0, 10);
 
-    const horasTexto = (value.horas ?? '').toString().trim();
+    const horasTexto = String(value.horas ?? '').trim();
     const horasNormalizadas = horasTexto.replace(/[^0-9.,]/g, '').replace(/,/g, '.');
     const horasNumber = horasNormalizadas ? Number(horasNormalizadas) : null;
     const horasEstimadas = Number.isFinite(horasNumber) ? horasNumber : null;
 
-    const selectedName = (value.tipoEvento ?? '').toString().trim();
+    const selectedName = String(value.tipoEvento ?? '').trim();
     const rawEventoId = value.eventoId;
     const parsedEventoId = rawEventoId !== undefined && rawEventoId !== null && rawEventoId !== ''
       ? Number(rawEventoId)
@@ -730,9 +719,9 @@ export class LandingComponent implements OnInit, OnDestroy {
     const eventoId = matchById?.id ?? matchByName?.id ?? eventoIdFromControl;
     const tipoEvento = selectedName || matchById?.name || matchByName?.name || 'Evento';
 
-    const lugar = (value.distrito ?? '').toString().trim();
+    const lugar = String(value.distrito ?? '').trim();
 
-    const origen = (value.comoNosConociste ?? '').toString().trim() || 'Web';
+    const origen = String(value.comoNosConociste ?? '').trim() || 'Web';
 
     const payload: LandingPublicCotizacionPayload = {
       lead: {
@@ -746,7 +735,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         fechaEvento,
         lugar,
         horasEstimadas,
-        mensaje: (value.mensaje ?? '').toString().trim() || undefined
+        mensaje: String(value.mensaje ?? '').trim() || undefined
       }
     };
 
@@ -769,20 +758,25 @@ export class LandingComponent implements OnInit, OnDestroy {
       .trim();
   }
 
-  private normalizeEventOptions(data: Array<LandingEventDto | LandingEventOption>): LandingEventOption[] {
+  private normalizeEventOptions(data: (LandingEventDto | LandingEventOption)[]): LandingEventOption[] {
     if (!Array.isArray(data)) {
       return [];
     }
     const mapped = data
       .map(item => {
-        const id = Number((item as any).PK_E_Cod ?? (item as any).id ?? (item as any).ID ?? (item as any).pk);
-        const name = (item as any).E_Nombre ?? (item as any).name ?? null;
+        const record = (item as unknown) as Record<string, unknown>;
+        const id = Number(record.PK_E_Cod ?? record.id ?? record.ID ?? record.pk);
+        const rawName = record.E_Nombre ?? record.name ?? null;
+        if (!rawName) {
+          return null;
+        }
+        const name = String(rawName).trim();
         if (!name) {
           return null;
         }
         return {
           id: Number.isFinite(id) ? id : Math.random(),
-          name: name.toString()
+          name
         } as LandingEventOption;
       })
       .filter((item): item is LandingEventOption => Boolean(item));

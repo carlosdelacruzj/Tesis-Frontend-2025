@@ -11,9 +11,11 @@
     (createClick)="navigateToCreate()">
   </app-list-toolbar>
 
-  <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
+  @if (error) {
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+  }
 
-  <ng-container *ngIf="!loadingList; else loadingState">
+  @if (!loadingList) {
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
       emptyText="Sin personal registrado"
        (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
@@ -60,15 +62,13 @@
       </ng-template>
 
     </app-table-base>
-  </ng-container>
+  } @else {
+    <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="mt-3 mb-0">Cargando personal…</p>
+    </div>
+  }
 </div>
-
-<ng-template #loadingState>
-  <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
-    <mat-spinner diameter="40"></mat-spinner>
-    <p class="mt-3 mb-0">Cargando personal…</p>
-  </div>
-</ng-template>
 
 <app-modal-base
   [open]="modalCrearOpen"
@@ -88,93 +88,125 @@
 
       <div class="row g-3">
         <div class="col-12 col-md-6">
-          <label class="form-label">Nombres</label>
-          <input type="text" class="form-control" name="nombre" required [pattern]="nombresPattern"
+          <label class="form-label" for="createNombre">Nombres</label>
+          <input id="createNombre" type="text" class="form-control" name="nombre" required [pattern]="nombresPattern"
             [(ngModel)]="nuevoEmpleado.nombre" #nombreCtrl="ngModel">
-          <div class="invalid-feedback d-block" *ngIf="nombreCtrl.invalid && (nombreCtrl.dirty || nombreCtrl.touched)">
-            <span *ngIf="nombreCtrl.errors?.required">Campo requerido</span>
-            <span *ngIf="nombreCtrl.errors?.pattern">Sólo letras (2-20)</span>
-          </div>
+          @if (nombreCtrl.invalid && (nombreCtrl.dirty || nombreCtrl.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (nombreCtrl.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (nombreCtrl.errors?.pattern) {
+                <span>Sólo letras (2-20)</span>
+              }
+            </div>
+          }
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Apellidos</label>
-          <input type="text" class="form-control" name="apellido" required [pattern]="apellidoPattern"
+          <label class="form-label" for="createApellido">Apellidos</label>
+          <input id="createApellido" type="text" class="form-control" name="apellido" required [pattern]="apellidoPattern"
             [(ngModel)]="nuevoEmpleado.apellido" #apellidoCtrl="ngModel">
-          <div class="invalid-feedback d-block"
-            *ngIf="apellidoCtrl.invalid && (apellidoCtrl.dirty || apellidoCtrl.touched)">
-            <span *ngIf="apellidoCtrl.errors?.required">Campo requerido</span>
-            <span *ngIf="apellidoCtrl.errors?.pattern">Sólo letras (2-30)</span>
-          </div>
+          @if (apellidoCtrl.invalid && (apellidoCtrl.dirty || apellidoCtrl.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (apellidoCtrl.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (apellidoCtrl.errors?.pattern) {
+                <span>Sólo letras (2-30)</span>
+              }
+            </div>
+          }
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Documento</label>
-          <input type="text" class="form-control" name="documento" required [pattern]="docPattern"
+          <label class="form-label" for="createDocumento">Documento</label>
+          <input id="createDocumento" type="text" class="form-control" name="documento" required [pattern]="docPattern"
             [(ngModel)]="nuevoEmpleado.documento" #documentoCtrl="ngModel">
-          <div class="invalid-feedback d-block"
-            *ngIf="documentoCtrl.invalid && (documentoCtrl.dirty || documentoCtrl.touched)">
-            <span *ngIf="documentoCtrl.errors?.required">Campo requerido</span>
-            <span *ngIf="documentoCtrl.errors?.pattern">Sólo números (8 dígitos)</span>
-          </div>
+          @if (documentoCtrl.invalid && (documentoCtrl.dirty || documentoCtrl.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (documentoCtrl.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (documentoCtrl.errors?.pattern) {
+                <span>Sólo números (8 dígitos)</span>
+              }
+            </div>
+          }
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Celular</label>
-          <input type="text" class="form-control" name="celular" required [pattern]="celularPattern"
+          <label class="form-label" for="createCelular">Celular</label>
+          <input id="createCelular" type="text" class="form-control" name="celular" required [pattern]="celularPattern"
             [(ngModel)]="nuevoEmpleado.celular" #celularCtrl="ngModel">
-          <div class="invalid-feedback d-block"
-            *ngIf="celularCtrl.invalid && (celularCtrl.dirty || celularCtrl.touched)">
-            <span *ngIf="celularCtrl.errors?.required">Campo requerido</span>
-            <span *ngIf="celularCtrl.errors?.pattern">Sólo números (7-9 dígitos)</span>
-          </div>
+          @if (celularCtrl.invalid && (celularCtrl.dirty || celularCtrl.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (celularCtrl.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (celularCtrl.errors?.pattern) {
+                <span>Sólo números (7-9 dígitos)</span>
+              }
+            </div>
+          }
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Correo</label>
-          <input type="email" class="form-control" name="correo" required [pattern]="correoPattern"
+          <label class="form-label" for="createCorreo">Correo</label>
+          <input id="createCorreo" type="email" class="form-control" name="correo" required [pattern]="correoPattern"
             [(ngModel)]="nuevoEmpleado.correo" #correoCtrl="ngModel">
-          <div class="invalid-feedback d-block" *ngIf="correoCtrl.invalid && (correoCtrl.dirty || correoCtrl.touched)">
-            <span *ngIf="correoCtrl.errors?.required">Campo requerido</span>
-            <span *ngIf="correoCtrl.errors?.pattern">Ingrese un correo válido</span>
-          </div>
+          @if (correoCtrl.invalid && (correoCtrl.dirty || correoCtrl.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (correoCtrl.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (correoCtrl.errors?.pattern) {
+                <span>Ingrese un correo válido</span>
+              }
+            </div>
+          }
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Autónomo</label>
-          <select class="form-select" name="autonomo" [(ngModel)]="nuevoEmpleado.autonomo" required>
+          <label class="form-label" for="createAutonomo">Autónomo</label>
+          <select id="createAutonomo" class="form-select" name="autonomo" [(ngModel)]="nuevoEmpleado.autonomo" required>
             <option [ngValue]="1">No</option>
             <option [ngValue]="2">Sí</option>
           </select>
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Estado</label>
-          <select class="form-select" name="idEstado" [(ngModel)]="nuevoEmpleado.idEstado" required>
+          <label class="form-label" for="createEstado">Estado</label>
+          <select id="createEstado" class="form-select" name="idEstado" [(ngModel)]="nuevoEmpleado.idEstado" required>
             <option [ngValue]="1">Activo</option>
             <option [ngValue]="2">Inactivo</option>
           </select>
         </div>
 
         <div class="col-12">
-          <label class="form-label">Cargo</label>
-          <select class="form-select" name="idCargo" required [(ngModel)]="nuevoEmpleado.idCargo" #cargoCtrl="ngModel">
+          <label class="form-label" for="createCargo">Cargo</label>
+          <select id="createCargo" class="form-select" name="idCargo" required [(ngModel)]="nuevoEmpleado.idCargo" #cargoCtrl="ngModel">
             <option [ngValue]="0" disabled>Seleccione un cargo</option>
-            <option *ngFor="let cargo of cargos" [ngValue]="cargo.idCargo">{{ cargo.cargoNombre }}</option>
+            @for (cargo of cargos; track cargo.idCargo) {
+              <option [ngValue]="cargo.idCargo">{{ cargo.cargoNombre }}</option>
+            }
           </select>
-          <div class="invalid-feedback d-block" *ngIf="cargoCtrl.invalid && (cargoCtrl.dirty || cargoCtrl.touched)">
-            <span>Seleccione un cargo</span>
-          </div>
+          @if (cargoCtrl.invalid && (cargoCtrl.dirty || cargoCtrl.touched)) {
+            <div class="invalid-feedback d-block">
+              <span>Seleccione un cargo</span>
+            </div>
+          }
         </div>
 
         <div class="col-12">
-          <label class="form-label">Dirección</label>
-          <textarea class="form-control" name="direccion" rows="3" required [(ngModel)]="nuevoEmpleado.direccion"
+          <label class="form-label" for="createDireccion">Dirección</label>
+          <textarea id="createDireccion" class="form-control" name="direccion" rows="3" required [(ngModel)]="nuevoEmpleado.direccion"
             #direccionCtrl="ngModel"></textarea>
-          <div class="invalid-feedback d-block"
-            *ngIf="direccionCtrl.invalid && (direccionCtrl.dirty || direccionCtrl.touched)">
-            <span>Campo requerido</span>
-          </div>
+          @if (direccionCtrl.invalid && (direccionCtrl.dirty || direccionCtrl.touched)) {
+            <div class="invalid-feedback d-block">
+              <span>Campo requerido</span>
+            </div>
+          }
         </div>
       </div>
     </form>
@@ -187,8 +219,9 @@
     </button>
     <button type="submit" class="btn btn-primary" form="createEmpleadoForm"
       [disabled]="modalCrearSaving || modalCrearLoading || createForm?.invalid">
-      <span *ngIf="modalCrearSaving" class="spinner-border spinner-border-sm me-1" role="status"
-        aria-hidden="true"></span>
+      @if (modalCrearSaving) {
+        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+      }
       Registrar
     </button>
   </div>
@@ -209,84 +242,104 @@
     [loadingMessage]="'Cargando empleado…'"
     [error]="!modalEditarLoading ? modalEditarError : null">
 
-    <form *ngIf="selected" #EmpleadoUpdateForm="ngForm" id="updateEmpleadoForm"
-      (ngSubmit)="UpdateEmpleado(EmpleadoUpdateForm)">
+    @if (selected) {
+      <form #EmpleadoUpdateForm="ngForm" id="updateEmpleadoForm"
+        (ngSubmit)="UpdateEmpleado(EmpleadoUpdateForm)">
 
-      <div class="row g-3">
-        <input type="hidden" name="ID" [(ngModel)]="selected.idEmpleado">
+        <div class="row g-3">
+          <input type="hidden" name="ID" [(ngModel)]="selected.idEmpleado">
 
-        <div class="col-12 col-md-6">
-          <label class="form-label">Nombres</label>
-          <input type="text" class="form-control" name="Nombres" [(ngModel)]="selected.nombre" disabled>
-        </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="updateNombres">Nombres</label>
+            <input id="updateNombres" type="text" class="form-control" name="Nombres" [(ngModel)]="selected.nombre" disabled>
+          </div>
 
-        <div class="col-12 col-md-6">
-          <label class="form-label">Apellidos</label>
-          <input type="text" class="form-control" name="Apellidos" [(ngModel)]="selected.apellido" disabled>
-        </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="updateApellidos">Apellidos</label>
+            <input id="updateApellidos" type="text" class="form-control" name="Apellidos" [(ngModel)]="selected.apellido" disabled>
+          </div>
 
-        <div class="col-12 col-md-6">
-          <label class="form-label">N° documento de identidad</label>
-          <input type="text" class="form-control" name="DNI" [(ngModel)]="selected.documento" disabled>
-        </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="updateDni">N° documento de identidad</label>
+            <input id="updateDni" type="text" class="form-control" name="DNI" [(ngModel)]="selected.documento" disabled>
+          </div>
 
-        <div class="col-12 col-md-6">
-          <label class="form-label">Celular</label>
-          <input type="text" class="form-control" name="Celular" #Celular="ngModel" [(ngModel)]="selected.celular"
-            [pattern]="celularPattern" required>
-          <div class="invalid-feedback d-block" *ngIf="Celular.invalid && (Celular.dirty || Celular.touched)">
-            <span *ngIf="Celular.errors?.required">Campo requerido</span>
-            <span *ngIf="Celular.errors?.pattern">Sólo números (7-9 dígitos)</span>
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="updateCelular">Celular</label>
+            <input id="updateCelular" type="text" class="form-control" name="Celular" #Celular="ngModel" [(ngModel)]="selected.celular"
+              [pattern]="celularPattern" required>
+            @if (Celular.invalid && (Celular.dirty || Celular.touched)) {
+              <div class="invalid-feedback d-block">
+                @if (Celular.errors?.required) {
+                  <span>Campo requerido</span>
+                }
+                @if (Celular.errors?.pattern) {
+                  <span>Sólo números (7-9 dígitos)</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="updateCorreo">Email</label>
+            <input id="updateCorreo" type="text" class="form-control" name="Correo" #Correo="ngModel" [(ngModel)]="selected.correo"
+              [pattern]="correoPattern" required>
+            @if (Correo.invalid && (Correo.dirty || Correo.touched)) {
+              <div class="invalid-feedback d-block">
+                @if (Correo.errors?.required) {
+                  <span>Campo requerido</span>
+                }
+                @if (Correo.errors?.pattern) {
+                  <span>Ingrese un email válido</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="updateEstado">Estado</label>
+            <select id="updateEstado" class="form-select" name="Estado" #Estado="ngModel" [(ngModel)]="selected.idEstado" required>
+              <option [ngValue]="1">Activo</option>
+              <option [ngValue]="2">Inactivo</option>
+            </select>
+            @if (Estado.invalid && (Estado.dirty || Estado.touched)) {
+              <div class="invalid-feedback d-block">
+                <span>Campo requerido</span>
+              </div>
+            }
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="updateAutonomo">Autónomo</label>
+            <input id="updateAutonomo" type="text" class="form-control" name="Autonomo"
+              [ngModel]="selected?.autonomo === 2 || selected?.autonomo === 'SI' ? 'Sí' : 'No'"
+              disabled>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="updateCargo">Cargo</label>
+            <input id="updateCargo" type="text" class="form-control" name="Cargo" [ngModel]="selected.cargo" disabled>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label" for="updateDireccion">Dirección</label>
+            <textarea id="updateDireccion" class="form-control" name="Direccion" rows="3" #Direccion="ngModel" [(ngModel)]="selected.direccion"
+              required></textarea>
+            @if (Direccion.invalid && (Direccion.dirty || Direccion.touched)) {
+              <div class="invalid-feedback d-block">
+                <span>Campo requerido</span>
+              </div>
+            }
           </div>
         </div>
+      </form>
+    }
 
-        <div class="col-12 col-md-6">
-          <label class="form-label">Email</label>
-          <input type="text" class="form-control" name="Correo" #Correo="ngModel" [(ngModel)]="selected.correo"
-            [pattern]="correoPattern" required>
-          <div class="invalid-feedback d-block" *ngIf="Correo.invalid && (Correo.dirty || Correo.touched)">
-            <span *ngIf="Correo.errors?.required">Campo requerido</span>
-            <span *ngIf="Correo.errors?.pattern">Ingrese un email válido</span>
-          </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-          <label class="form-label">Estado</label>
-          <select class="form-select" name="Estado" #Estado="ngModel" [(ngModel)]="selected.idEstado" required>
-            <option [ngValue]="1">Activo</option>
-            <option [ngValue]="2">Inactivo</option>
-          </select>
-          <div class="invalid-feedback d-block" *ngIf="Estado.invalid && (Estado.dirty || Estado.touched)">
-            <span>Campo requerido</span>
-          </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-          <label class="form-label">Autónomo</label>
-          <input type="text" class="form-control" name="Autonomo"
-            [ngModel]="selected?.autonomo === 2 || selected?.autonomo === 'SI' ? 'Sí' : 'No'"
-            disabled>
-        </div>
-
-        <div class="col-12 col-md-6">
-          <label class="form-label">Cargo</label>
-          <input type="text" class="form-control" name="Cargo" [ngModel]="selected.cargo" disabled>
-        </div>
-
-        <div class="col-12">
-          <label class="form-label">Dirección</label>
-          <textarea class="form-control" name="Direccion" rows="3" #Direccion="ngModel" [(ngModel)]="selected.direccion"
-            required></textarea>
-          <div class="invalid-feedback d-block" *ngIf="Direccion.invalid && (Direccion.dirty || Direccion.touched)">
-            <span>Campo requerido</span>
-          </div>
-        </div>
+    @if (!selected && !modalEditarLoading && !modalEditarError) {
+      <div class="text-muted">
+        Selecciona un empleado para editar.
       </div>
-    </form>
-
-    <div *ngIf="!selected && !modalEditarLoading && !modalEditarError" class="text-muted">
-      Selecciona un empleado para editar.
-    </div>
+    }
   </app-formulario-base>
 
   <div modal-footer class="d-flex justify-content-end gap-2">
@@ -296,8 +349,9 @@
     </button>
     <button type="submit" class="btn btn-primary" form="updateEmpleadoForm"
       [disabled]="modalEditarSaving || modalEditarLoading || !selected">
-      <span *ngIf="modalEditarSaving" class="spinner-border spinner-border-sm me-1" role="status"
-        aria-hidden="true"></span>
+      @if (modalEditarSaving) {
+        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+      }
       Actualizar
     </button>
   </div>
@@ -317,53 +371,55 @@
     [loadingMessage]="'Cargando empleado…'"
     [error]="!modalVerLoading ? modalVerError : null">
 
-    <ng-container *ngIf="selected">
+    @if (selected) {
       <div class="row g-3">
         <div class="col-12 col-md-6">
-          <label class="form-label">Nombres</label>
-          <input type="text" class="form-control" name="Nombres" [ngModel]="selected.nombre" disabled>
+          <label class="form-label" for="viewNombres">Nombres</label>
+          <input id="viewNombres" type="text" class="form-control" name="Nombres" [ngModel]="selected.nombre" disabled>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Apellidos</label>
-          <input type="text" class="form-control" name="Apellidos" [ngModel]="selected.apellido" disabled>
+          <label class="form-label" for="viewApellidos">Apellidos</label>
+          <input id="viewApellidos" type="text" class="form-control" name="Apellidos" [ngModel]="selected.apellido" disabled>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">N° documento de identidad</label>
-          <input type="text" class="form-control" name="DNI" [ngModel]="selected.documento" disabled>
+          <label class="form-label" for="viewDni">N° documento de identidad</label>
+          <input id="viewDni" type="text" class="form-control" name="DNI" [ngModel]="selected.documento" disabled>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Celular</label>
-          <input type="text" class="form-control" name="Celular" [ngModel]="selected.celular" disabled>
+          <label class="form-label" for="viewCelular">Celular</label>
+          <input id="viewCelular" type="text" class="form-control" name="Celular" [ngModel]="selected.celular" disabled>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Email</label>
-          <input type="text" class="form-control" name="Correo" [ngModel]="selected.correo" disabled>
+          <label class="form-label" for="viewCorreo">Email</label>
+          <input id="viewCorreo" type="text" class="form-control" name="Correo" [ngModel]="selected.correo" disabled>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Estado</label>
-          <input type="text" class="form-control" name="Estado"
+          <label class="form-label" for="viewEstado">Estado</label>
+          <input id="viewEstado" type="text" class="form-control" name="Estado"
             [ngModel]="getEstadoTexto(selected?.estado, selected?.idEstado)" disabled>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Autónomo</label>
-          <input type="text" class="form-control" name="Autonomo"
+          <label class="form-label" for="viewAutonomo">Autónomo</label>
+          <input id="viewAutonomo" type="text" class="form-control" name="Autonomo"
             [ngModel]="selected?.autonomo === 2 || selected?.autonomo === 'SI' ? 'Sí' : 'No'"
             disabled>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Cargo</label>
-          <input type="text" class="form-control" name="Cargo" [ngModel]="selected.cargo" disabled>
+          <label class="form-label" for="viewCargo">Cargo</label>
+          <input id="viewCargo" type="text" class="form-control" name="Cargo" [ngModel]="selected.cargo" disabled>
         </div>
         <div class="col-12">
-          <label class="form-label">Dirección</label>
-          <textarea class="form-control" name="Direccion" rows="3" [ngModel]="selected.direccion" disabled></textarea>
+          <label class="form-label" for="viewDireccion">Dirección</label>
+          <textarea id="viewDireccion" class="form-control" name="Direccion" rows="3" [ngModel]="selected.direccion" disabled></textarea>
         </div>
       </div>
-    </ng-container>
+    }
 
-    <div *ngIf="!selected && !modalVerLoading && !modalVerError" class="text-muted">
-      Selecciona un empleado para ver.
-    </div>
+    @if (!selected && !modalVerLoading && !modalVerError) {
+      <div class="text-muted">
+        Selecciona un empleado para ver.
+      </div>
+    }
   </app-formulario-base>
 
   <div modal-footer class="d-flex justify-content-end gap-2">

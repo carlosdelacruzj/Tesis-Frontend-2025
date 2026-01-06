@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/auth/services/auth.service';
 
@@ -8,11 +8,8 @@ import { AuthService } from 'src/app/auth/services/auth.service';
   styleUrls: ['./landing-header.component.css']
 })
 export class LandingHeaderComponent {
-
-  constructor(
-    private readonly router: Router,
-    private readonly authService: AuthService
-  ) {}
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   get isCliente(): boolean {
     return this.authService.esCliente();

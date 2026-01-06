@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
@@ -17,12 +17,9 @@ export class LandingClientCotizacionesComponent implements OnInit, OnDestroy {
   clienteNombre: string | null = null;
 
   private readonly destroy$ = new Subject<void>();
-
-  constructor(
-    private readonly authService: AuthService,
-    private readonly router: Router,
-    private readonly clientPortalService: LandingClientPortalService
-  ) {}
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly clientPortalService = inject(LandingClientPortalService);
 
   ngOnInit(): void {
     const usuario = this.authService.usuario;

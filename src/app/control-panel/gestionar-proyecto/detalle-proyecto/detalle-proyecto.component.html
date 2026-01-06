@@ -5,14 +5,12 @@
     [showCreateButton]="false">
   </app-list-toolbar>
 
-  <ng-container *ngIf="loading; else loaded">
+  @if (loading) {
     <div class="estado-centro">
       <ng-container *ngTemplateOutlet="loadingState"></ng-container>
     </div>
-  </ng-container>
-
-  <ng-template #loaded>
-    <ng-container *ngIf="proyecto; else errorState">
+  } @else {
+    @if (proyecto) {
       <section class="card">
         <header class="card-header">
           <div>
@@ -99,9 +97,11 @@
               <span class="label">Estado</span>
               <select class="form-select" formControlName="estadoId">
                 <option [ngValue]="null" disabled>Selecciona estado</option>
-                <option *ngFor="let est of estados" [ngValue]="est.estadoId" [disabled]="deshabilitarPlanificadoOption(est.estadoId)">
-                  {{ est.estadoNombre }}
-                </option>
+                @for (est of estados; track est.estadoId) {
+                  <option [ngValue]="est.estadoId" [disabled]="deshabilitarPlanificadoOption(est.estadoId)">
+                    {{ est.estadoNombre }}
+                  </option>
+                }
               </select>
             </label>
             <label class="form-field">
@@ -141,14 +141,17 @@
         </form>
       </section>
 
-      <section class="card" *ngIf="getEventosPedido().length">
+      @if (getEventosPedido().length) {
+      <section class="card">
         <header class="card-header">
           <div>
             <p class="eyebrow">Locaciones</p>
             <h3>Locaciones ({{ getEventosPedido().length }})</h3>
-            <p class="muted small" *ngIf="getPedidoRangoFechas() as rango">
-              Fechas: {{ formatFechaDisplay(rango.inicio) }} → {{ formatFechaDisplay(rango.fin) }}
-            </p>
+            @if (getPedidoRangoFechas(); as rango) {
+              <p class="muted small">
+                Fechas: {{ formatFechaDisplay(rango.inicio) }} → {{ formatFechaDisplay(rango.fin) }}
+              </p>
+            }
           </div>
         </header>
         <app-table-base
@@ -163,8 +166,10 @@
           </ng-template>
         </app-table-base>
       </section>
+      }
 
-      <section class="card" *ngIf="getServiciosContratados().length">
+      @if (getServiciosContratados().length) {
+      <section class="card">
         <header class="card-header">
           <div>
             <p class="eyebrow">Servicios contratados</p>
@@ -183,6 +188,7 @@
           </ng-template>
         </app-table-base>
       </section>
+      }
 
       <section class="card">
         <header class="card-header">
@@ -190,13 +196,17 @@
             <p class="eyebrow">Recursos y staff</p>
             <h3>Asignaciones ({{ proyecto.recursos?.length || 0 }})</h3>
           </div>
-          <button *ngIf="esPlanificadoActual()" mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
-            Asignar recursos
-          </button>
+          @if (esPlanificadoActual()) {
+            <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
+              Asignar recursos
+            </button>
+          }
         </header>
-        <p class="muted small" *ngIf="!esPlanificadoActual()">Las asignaciones solo se gestionan en estado Planificado.</p>
+        @if (!esPlanificadoActual()) {
+          <p class="muted small">Las asignaciones solo se gestionan en estado Planificado.</p>
+        }
 
-        <ng-container *ngIf="proyecto.recursos?.length; else sinRecursos">
+        @if (proyecto.recursos?.length) {
           <app-table-base
             [data]="proyecto.recursos | orderByEmpleado"
             [columns]="recursosColumns"
@@ -207,18 +217,20 @@
             [showSearch]="false"
             [showPagination]="false">
             <ng-template appCell="empleadoNombre" let-row>
-              <ng-container *ngIf="row.empleadoNombre; else reservaTag">
+              @if (row.empleadoNombre) {
                 {{ row.empleadoNombre }}
-              </ng-container>
-              <ng-template #reservaTag>
+              } @else {
                 <span class="pill pill-muted">Reserva / Repuesto</span>
-              </ng-template>
+              }
             </ng-template>
           </app-table-base>
-        </ng-container>
+        } @else {
+          <p class="muted">Sin recursos asignados.</p>
+        }
       </section>
 
-      <section class="card" *ngIf="proyecto.recursos?.length && !esPlanificadoActual()">
+      @if (proyecto.recursos?.length && !esPlanificadoActual()) {
+      <section class="card">
         <header class="card-header">
           <div>
             <p class="eyebrow">Seguimiento</p>
@@ -226,49 +238,58 @@
             <p class="muted small">Marca el estado al cierre del proyecto y agrega notas si falta o está dañado.</p>
           </div>
         </header>
-        <div class="alert alert-info" *ngIf="devolucionesRegistradas">
-          Las devoluciones ya fueron registradas y no se pueden volver a enviar.
-        </div>
-        <p class="muted small" *ngIf="!devolucionesRegistradas && !esEjecucionActual()">Solo lectura: la devolución se gestiona en estado Ejecución.</p>
+        @if (devolucionesRegistradas) {
+          <div class="alert alert-info">
+            Las devoluciones ya fueron registradas y no se pueden volver a enviar.
+          </div>
+        }
+        @if (!devolucionesRegistradas && !esEjecucionActual()) {
+          <p class="muted small">Solo lectura: la devolución se gestiona en estado Ejecución.</p>
+        }
         <form class="devolucion-form" [formGroup]="devolucionForm" (ngSubmit)="guardarDevoluciones()">
           <div class="devolucion-grid" formArrayName="devoluciones">
-            <div
-              class="devolucion-card"
-              *ngFor="let devolucion of devoluciones.controls; let i = index"
-              [formGroupName]="i"
-              [class.dev-disabled]="!puedeRegistrarDevolucion()">
-              <div class="dev-card-header">
-                <div>
-                  <div class="dev-title">{{ getEquipoLabel(devolucion.get('equipoId')?.value) }}</div>
-                  <div class="muted small">{{ getEquipoAsignadoA(devolucion.get('equipoId')?.value) }}</div>
+            @for (devolucion of devoluciones.controls; track $index; let i = $index) {
+              <div
+                class="devolucion-card"
+                [formGroupName]="i"
+                [class.dev-disabled]="!puedeRegistrarDevolucion()">
+                <div class="dev-card-header">
+                  <div>
+                    <div class="dev-title">{{ getEquipoLabel(devolucion.get('equipoId')?.value) }}</div>
+                    <div class="muted small">{{ getEquipoAsignadoA(devolucion.get('equipoId')?.value) }}</div>
+                  </div>
+                  <span [ngClass]="getEstadoClass(devolucion.get('estadoDevolucion')?.value)">
+                    {{ getEstadoLabel(devolucion.get('estadoDevolucion')?.value) || 'Sin estado' }}
+                  </span>
                 </div>
-                <span [ngClass]="getEstadoClass(devolucion.get('estadoDevolucion')?.value)">
-                  {{ getEstadoLabel(devolucion.get('estadoDevolucion')?.value) || 'Sin estado' }}
-                </span>
+                <div class="dev-card-body">
+                  <div class="estado-pills" role="group">
+                    @for (estado of estadosDevolucion; track estado.value) {
+                      <button
+                        type="button"
+                        class="estado-pill"
+                        [class.active]="devolucion.get('estadoDevolucion')?.value === estado.value"
+                        [disabled]="!puedeRegistrarDevolucion()"
+                        (click)="setEstadoDevolucion(i, estado.value)">
+                        {{ estado.label }}
+                      </button>
+                    }
+                  </div>
+                  <div class="form-field">
+                    <label class="label" [attr.for]="'devolucionNotas-' + i">
+                      Notas <span class="muted">(obligatorio si está dañado o faltante)</span>
+                    </label>
+                    <textarea
+                      [id]="'devolucionNotas-' + i"
+                      class="form-control"
+                      rows="2"
+                      placeholder="Observaciones (ej. golpe en lente)"
+                      formControlName="notas"
+                      [readonly]="!puedeRegistrarDevolucion()"></textarea>
+                  </div>
+                </div>
               </div>
-              <div class="dev-card-body">
-                <div class="estado-pills" role="group">
-                  <button
-                    type="button"
-                    class="estado-pill"
-                    *ngFor="let estado of estadosDevolucion"
-                    [class.active]="devolucion.get('estadoDevolucion')?.value === estado.value"
-                    [disabled]="!puedeRegistrarDevolucion()"
-                    (click)="setEstadoDevolucion(i, estado.value)">
-                    {{ estado.label }}
-                  </button>
-                </div>
-                <div class="form-field">
-                  <label class="label">Notas <span class="muted">(obligatorio si está dañado o faltante)</span></label>
-                  <textarea
-                    class="form-control"
-                    rows="2"
-                    placeholder="Observaciones (ej. golpe en lente)"
-                    formControlName="notas"
-                    [readonly]="!puedeRegistrarDevolucion()"></textarea>
-                </div>
-              </div>
-            </div>
+            }
           </div>
           <div class="acciones">
             <button mat-flat-button color="primary" type="submit" [disabled]="guardandoDevoluciones || !puedeRegistrarDevolucion()">
@@ -277,8 +298,11 @@
           </div>
         </form>
       </section>
-    </ng-container>
-  </ng-template>
+      }
+    } @else {
+      <p class="estado-centro">{{ error }}</p>
+    }
+  }
 </div>
 
 <app-modal-base
@@ -295,15 +319,18 @@
   </div>
 
   <div class="modal-content-grid">
-    <div *ngIf="stepIndex === 0">
+    @if (stepIndex === 0) {
       <p class="eyebrow">Personal operativo</p>
-      <div class="req-resumen" *ngIf="requerimientos?.totales?.personal?.length">
-        <div class="req-pill" *ngFor="let req of requerimientos.totales.personal"
-             [class.req-completo]="getSeleccionadosPorRol(req.rol) >= req.cantidad">
-          <div class="fw-semibold">{{ req.rol }}</div>
-          <div class="muted small">{{ getSeleccionadosPorRol(req.rol) }}/{{ req.cantidad }} requeridos</div>
+      @if (requerimientos?.totales?.personal?.length) {
+        <div class="req-resumen">
+          @for (req of requerimientos.totales.personal; track req.rol) {
+            <div class="req-pill" [class.req-completo]="getSeleccionadosPorRol(req.rol) >= req.cantidad">
+              <div class="fw-semibold">{{ req.rol }}</div>
+              <div class="muted small">{{ getSeleccionadosPorRol(req.rol) }}/{{ req.cantidad }} requeridos</div>
+            </div>
+          }
         </div>
-      </div>
+      }
       <div class="dual-panel">
         <div class="panel">
             <div class="panel-header">
@@ -312,19 +339,23 @@
               </div>
               <select class="form-select form-select-sm" [(ngModel)]="filtroRol">
                 <option [ngValue]="null">Todos los roles</option>
-                <option *ngFor="let rol of rolesOperativos" [ngValue]="rol">
-                  {{ rol }}
-                </option>
+                @for (rol of rolesOperativos; track rol) {
+                  <option [ngValue]="rol">
+                    {{ rol }}
+                  </option>
+                }
               </select>
             </div>
           <div class="lista">
-            <label *ngFor="let p of getPersonalFiltrado()" class="item-selectable">
-              <input type="checkbox" [checked]="seleccionados.includes(p.empleadoId)" (change)="toggleSeleccionEmpleado(p.empleadoId)" [disabled]="isEmpleadoDisabled(p)">
-              <div>
-                <div class="fw-semibold">{{ p.nombre }} {{ p.apellido }}</div>
-                <div class="text-muted small">{{ p.cargo }}</div>
-              </div>
-            </label>
+            @for (p of getPersonalFiltrado(); track p.empleadoId) {
+              <label class="item-selectable">
+                <input type="checkbox" [checked]="seleccionados.includes(p.empleadoId)" (change)="toggleSeleccionEmpleado(p.empleadoId)" [disabled]="isEmpleadoDisabled(p)">
+                <div>
+                  <div class="fw-semibold">{{ p.nombre }} {{ p.apellido }}</div>
+                  <div class="text-muted small">{{ p.cargo }}</div>
+                </div>
+              </label>
+            }
           </div>
         </div>
         <div class="panel">
@@ -335,30 +366,37 @@
               </div>
           </div>
           <div class="lista">
-            <div class="item-selectable selected-item" *ngFor="let id of seleccionados">
-              <div>
-                <div class="fw-semibold">{{ getNombreEmpleado(id) }}</div>
-                <div class="text-muted small">
-                  {{ getCargoEmpleado(id) }}
+            @for (id of seleccionados; track id) {
+              <div class="item-selectable selected-item">
+                <div>
+                  <div class="fw-semibold">{{ getNombreEmpleado(id) }}</div>
+                  <div class="text-muted small">
+                    {{ getCargoEmpleado(id) }}
+                  </div>
                 </div>
+                <button type="button" class="remove-btn" (click)="quitarSeleccion(id)">Quitar</button>
               </div>
-              <button type="button" class="remove-btn" (click)="quitarSeleccion(id)">Quitar</button>
-            </div>
-            <p class="muted" *ngIf="!seleccionados.length">Aún no seleccionas personal.</p>
+            }
+            @if (!seleccionados.length) {
+              <p class="muted">Aún no seleccionas personal.</p>
+            }
           </div>
         </div>
       </div>
-    </div>
+    }
 
-    <div *ngIf="stepIndex === 1">
+    @if (stepIndex === 1) {
       <p class="eyebrow">Equipos requeridos</p>
-      <div class="req-resumen" *ngIf="requerimientos?.totales?.equipos?.length">
-        <div class="req-pill" *ngFor="let req of requerimientos.totales.equipos"
-             [class.req-completo]="getSeleccionadosEquipoPorTipo(req.tipoEquipoId) >= req.cantidad">
-          <div class="fw-semibold">{{ req.tipoEquipo }}</div>
-          <div class="muted small">{{ getSeleccionadosEquipoPorTipo(req.tipoEquipoId) }}/{{ req.cantidad }} requeridos</div>
+      @if (requerimientos?.totales?.equipos?.length) {
+        <div class="req-resumen">
+          @for (req of requerimientos.totales.equipos; track req.tipoEquipoId) {
+            <div class="req-pill" [class.req-completo]="getSeleccionadosEquipoPorTipo(req.tipoEquipoId) >= req.cantidad">
+              <div class="fw-semibold">{{ req.tipoEquipo }}</div>
+              <div class="muted small">{{ getSeleccionadosEquipoPorTipo(req.tipoEquipoId) }}/{{ req.cantidad }} requeridos</div>
+            </div>
+          }
         </div>
-      </div>
+      }
 
       <div class="dual-panel">
         <div class="panel">
@@ -368,19 +406,23 @@
             </div>
             <select class="form-select form-select-sm" [(ngModel)]="filtroTipoEquipoId">
               <option [ngValue]="null">Todos los tipos</option>
-              <option *ngFor="let tipo of tiposEquipo" [ngValue]="tipo.idTipoEquipo">
-                {{ tipo.nombre }}
-              </option>
+              @for (tipo of tiposEquipo; track tipo.idTipoEquipo) {
+                <option [ngValue]="tipo.idTipoEquipo">
+                  {{ tipo.nombre }}
+                </option>
+              }
             </select>
           </div>
           <div class="lista">
-            <label *ngFor="let e of getEquiposFiltrados()" class="item-selectable">
-              <input type="checkbox" [checked]="selectedEquipos.includes(e.idEquipo)" (change)="toggleSeleccionEquipo(e.idEquipo)" [disabled]="isEquipoDisabled(e)">
-              <div>
-                <div class="fw-semibold">{{ e.nombreModelo }} ({{ e.nombreTipoEquipo }})</div>
-                <div class="text-muted small">Serie: {{ e.serie }}</div>
-              </div>
-            </label>
+            @for (e of getEquiposFiltrados(); track e.idEquipo) {
+              <label class="item-selectable">
+                <input type="checkbox" [checked]="selectedEquipos.includes(e.idEquipo)" (change)="toggleSeleccionEquipo(e.idEquipo)" [disabled]="isEquipoDisabled(e)">
+                <div>
+                  <div class="fw-semibold">{{ e.nombreModelo }} ({{ e.nombreTipoEquipo }})</div>
+                  <div class="text-muted small">Serie: {{ e.serie }}</div>
+                </div>
+              </label>
+            }
           </div>
         </div>
 
@@ -392,22 +434,26 @@
             </div>
           </div>
           <div class="lista">
-            <div class="item-selectable selected-item" *ngFor="let id of selectedEquipos">
-              <div>
-                <div class="fw-semibold">{{ getEquipoLabel(id) }}</div>
-                <div class="text-muted small">
-                  {{ getTipoEquipoNombre(id) }}
+            @for (id of selectedEquipos; track id) {
+              <div class="item-selectable selected-item">
+                <div>
+                  <div class="fw-semibold">{{ getEquipoLabel(id) }}</div>
+                  <div class="text-muted small">
+                    {{ getTipoEquipoNombre(id) }}
+                  </div>
                 </div>
+                <button type="button" class="remove-btn" (click)="toggleSeleccionEquipo(id)">Quitar</button>
               </div>
-              <button type="button" class="remove-btn" (click)="toggleSeleccionEquipo(id)">Quitar</button>
-            </div>
-            <p class="muted" *ngIf="!selectedEquipos.length">Aún no seleccionas equipos.</p>
+            }
+            @if (!selectedEquipos.length) {
+              <p class="muted">Aún no seleccionas equipos.</p>
+            }
           </div>
         </div>
       </div>
-    </div>
+    }
 
-    <div *ngIf="stepIndex === 2">
+    @if (stepIndex === 2) {
       <p class="eyebrow">Asignar equipos (Drag & Drop)</p>
       <div class="kanban-layout">
         <div class="kanban-column kanban-reserva">
@@ -422,16 +468,21 @@
             [cdkDropListData]="getListaReserva()"
             class="kanban-dropzone"
             (cdkDropListDropped)="dropEquipo($event, 'reserva')">
-            <div class="kanban-card" *ngFor="let eqId of getListaReserva()" cdkDrag>
-              <div class="fw-semibold">{{ getEquipoLabel(eqId) }}</div>
-              <div class="muted small">{{ getTipoEquipoNombre(eqId) }}</div>
-            </div>
-            <p class="muted" *ngIf="!getListaReserva().length">Arrastra equipos aquí para dejarlos en reserva.</p>
+            @for (eqId of getListaReserva(); track eqId) {
+              <div class="kanban-card" cdkDrag>
+                <div class="fw-semibold">{{ getEquipoLabel(eqId) }}</div>
+                <div class="muted small">{{ getTipoEquipoNombre(eqId) }}</div>
+              </div>
+            }
+            @if (!getListaReserva().length) {
+              <p class="muted">Arrastra equipos aquí para dejarlos en reserva.</p>
+            }
           </div>
         </div>
 
         <div class="kanban-empleados-grid">
-          <div class="kanban-column" *ngFor="let id of seleccionados">
+          @for (id of seleccionados; track id) {
+          <div class="kanban-column">
             <div class="kanban-header">
               <div class="fw-semibold">{{ getNombreEmpleado(id) }}</div>
               <div class="muted small">{{ getCargoEmpleado(id) }}</div>
@@ -444,46 +495,51 @@
               [cdkDropListData]="getListaEmpleado(id)"
               class="kanban-dropzone"
               (cdkDropListDropped)="dropEquipo($event, id)">
-              <div class="kanban-card" *ngFor="let eqId of getListaEmpleado(id)" cdkDrag>
-                <div class="fw-semibold">{{ getEquipoLabel(eqId) }}</div>
-                <div class="muted small">{{ getTipoEquipoNombre(eqId) }}</div>
-              </div>
-              <p class="muted" *ngIf="!getListaEmpleado(id).length">Arrastra equipos aquí para asignarlos.</p>
+              @for (eqId of getListaEmpleado(id); track eqId) {
+                <div class="kanban-card" cdkDrag>
+                  <div class="fw-semibold">{{ getEquipoLabel(eqId) }}</div>
+                  <div class="muted small">{{ getTipoEquipoNombre(eqId) }}</div>
+                </div>
+              }
+              @if (!getListaEmpleado(id).length) {
+                <p class="muted">Arrastra equipos aquí para asignarlos.</p>
+              }
             </div>
           </div>
+          }
         </div>
       </div>
 
-      <div class="alert alert-warning mt-2" *ngIf="faltanAsignaciones()">
-        Asigna al menos un equipo a cada empleado; los demás pueden quedar en reserva.
-      </div>
-    </div>
+      @if (faltanAsignaciones()) {
+        <div class="alert alert-warning mt-2">
+          Asigna al menos un equipo a cada empleado; los demás pueden quedar en reserva.
+        </div>
+      }
+    }
 
   </div>
 
   <div class="modal-footer-actions">
     <button mat-button type="button" (click)="cerrarModalAsignar()">Cancelar</button>
-    <button mat-button type="button" (click)="retrocederPaso()" *ngIf="stepIndex > 0">Atrás</button>
-    <button mat-flat-button color="primary" type="button" *ngIf="stepIndex < 2" (click)="avanzarPaso()" [disabled]="(stepIndex === 0 && !seleccionados.length) || (stepIndex === 1 && !selectedEquipos.length)">
-      Siguiente
-    </button>
-    <button mat-flat-button color="primary" type="button" *ngIf="stepIndex === 2" (click)="guardarAsignacionesEnModal()" [disabled]="faltanAsignaciones()">
-      Guardar
-    </button>
+    @if (stepIndex > 0) {
+      <button mat-button type="button" (click)="retrocederPaso()">Atrás</button>
+    }
+    @if (stepIndex < 2) {
+      <button mat-flat-button color="primary" type="button" (click)="avanzarPaso()" [disabled]="(stepIndex === 0 && !seleccionados.length) || (stepIndex === 1 && !selectedEquipos.length)">
+        Siguiente
+      </button>
+    }
+    @if (stepIndex === 2) {
+      <button mat-flat-button color="primary" type="button" (click)="guardarAsignacionesEnModal()" [disabled]="faltanAsignaciones()">
+        Guardar
+      </button>
+    }
   </div>
 </app-modal-base>
 
 <ng-template #loadingState>
   <mat-spinner diameter="40"></mat-spinner>
   <p>Cargando proyecto…</p>
-</ng-template>
-
-<ng-template #sinRecursos>
-  <p class="muted">Sin recursos asignados.</p>
-</ng-template>
-
-<ng-template #errorState>
-  <p class="estado-centro" *ngIf="error">{{ error }}</p>
 </ng-template>
 
 <ng-template #devolucionBloqueada>

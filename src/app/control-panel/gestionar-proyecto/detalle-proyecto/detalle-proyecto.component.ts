@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
@@ -19,12 +19,19 @@ import { DisponibilidadEmpleado, DisponibilidadEquipo } from '../model/proyecto-
   styleUrls: ['./detalle-proyecto.component.css']
 })
 export class DetalleProyectoComponent implements OnInit, OnDestroy {
+  private readonly route = inject(ActivatedRoute);
+  private readonly proyectoService = inject(ProyectoService);
+  private readonly personalService = inject(PersonalService);
+  private readonly equiposService = inject(AdministrarEquiposService);
+  private readonly visualizarService = inject(VisualizarService);
+  private readonly fb = inject(UntypedFormBuilder);
+
   loading = true;
   error: string | null = null;
   proyecto: ProyectoDetalle | null = null;
   requerimientos: PedidoRequerimientos | null = null;
-  pedidoDetalle: any = null;
-  estados: Array<{ estadoId: number; estadoNombre: string }> = [];
+  pedidoDetalle: Record<string, unknown> | null = null;
+  estados: { estadoId: number; estadoNombre: string }[] = [];
   guardandoDevoluciones = false;
   guardandoProyecto = false;
   devolucionesRegistradas = false;
@@ -58,13 +65,13 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   disponiblesPersonal: DisponibilidadEmpleado[] = [];
   equiposDisponibles: DisponibilidadEquipo[] = [];
-  asignacionesPendientes: Array<{
+  asignacionesPendientes: {
     empleadoId: number | null;
     equipoId: number;
     fechaInicio: string;
     fechaFin: string;
     notas: string;
-  }> = [];
+  }[] = [];
   modalAsignarAbierto = false;
   filtroRol: string | null = null;
   filtroTipoEquipoId: number | null = null;
@@ -96,15 +103,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   dropListIds: string[] = [];
 
   private readonly destroy$ = new Subject<void>();
-
-  constructor(
-    private readonly route: ActivatedRoute,
-    private readonly proyectoService: ProyectoService,
-    private readonly personalService: PersonalService,
-    private readonly equiposService: AdministrarEquiposService,
-    private readonly visualizarService: VisualizarService,
-    private readonly fb: UntypedFormBuilder
-  ) { }
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -251,13 +249,13 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.limpiarEquiposNoSeleccionados();
 
     const { inicio, fin } = this.getRangoPedido();
-    const asignaciones: Array<{
+    const asignaciones: {
       empleadoId: number | null;
       equipoId: number;
       fechaInicio: string;
       fechaFin: string;
       notas: string;
-    }> = [];
+    }[] = [];
 
     Object.entries(this.tableroAsignacion.empleados)
       .filter(([empleadoId]) => this.seleccionados.includes(Number(empleadoId)))
@@ -405,7 +403,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     if (this.stepIndex === 0 && !this.seleccionados.length) return;
     if (this.stepIndex === 1 && !this.selectedEquipos.length) return;
     if (this.stepIndex === 1) {
-      const empleadosActuales = new Set<number>(this.seleccionados);
       this.seleccionados.forEach(id => {
         if (!this.tableroAsignacion.empleados[id]) {
           this.tableroAsignacion.empleados[id] = [];
@@ -527,7 +524,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
-          this.pedidoDetalle = data;
+          this.pedidoDetalle = (data ?? null) as Record<string, unknown> | null;
           if (this.proyecto?.proyectoId) {
             this.loadDisponibilidad(this.proyecto.proyectoId);
           }
@@ -718,12 +715,11 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return this.dropListIds.filter(id => id !== targetId);
   }
 
-  getEventosPedido(): any[] {
-    const eventos = this.pedidoDetalle?.eventos;
-    if (!Array.isArray(eventos)) return [];
+  getEventosPedido(): Record<string, unknown>[] {
+    const eventos = this.getArray(this.pedidoDetalle?.eventos);
     return [...eventos].sort((a, b) => {
-      const fa = (a?.fecha ?? '').toString();
-      const fb = (b?.fecha ?? '').toString();
+      const fa = String(a?.fecha ?? '');
+      const fb = String(b?.fecha ?? '');
       return fa.localeCompare(fb);
     });
   }
@@ -754,7 +750,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   getPedidoRangoFechas(): { inicio: string; fin: string } | null {
-    const eventos = (this.pedidoDetalle?.eventos ?? []) as Array<{ fecha?: string | null }>;
+    const eventos = this.getArray(this.pedidoDetalle?.eventos) as { fecha?: string | null }[];
     const fechas = eventos
       .map(e => e.fecha)
       .filter(f => !!f)
@@ -765,7 +761,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   private getRangoPedido(): { inicio: string; fin: string } {
-    const eventos = (this.pedidoDetalle?.eventos ?? []) as Array<{ fecha?: string | null }>;
+    const eventos = this.getArray(this.pedidoDetalle?.eventos) as { fecha?: string | null }[];
     const fechas = eventos
       .map(e => e.fecha)
       .filter(f => !!f)
@@ -780,14 +776,16 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return { inicio, fin };
   }
 
-  getServiciosContratados(): Array<{ nombre: string; evento: string; precio: number; notas: string }> {
-    const items = (this.pedidoDetalle?.items ?? this.pedidoDetalle?.pedido?.items ?? []) as any[];
+  getServiciosContratados(): { nombre: string; evento: string; precio: number; notas: string }[] {
+    const pedido = this.pedidoDetalle as Record<string, unknown> | null;
+    const nestedPedido = (pedido?.pedido ?? null) as Record<string, unknown> | null;
+    const items = this.getArray(pedido?.items ?? nestedPedido?.items);
     if (!Array.isArray(items)) return [];
     return items.map(it => ({
-      nombre: it.nombre ?? it.descripcion ?? it.titulo ?? '',
-      evento: it.eventoNombre ?? it.evento ?? it.eventoCodigo ?? '',
+      nombre: String(it.nombre ?? it.descripcion ?? it.titulo ?? ''),
+      evento: String(it.eventoNombre ?? it.evento ?? it.eventoCodigo ?? ''),
       precio: Number(it.precioUnit ?? it.precio ?? it.costo ?? 0),
-      notas: it.notas ?? ''
+      notas: String(it.notas ?? '')
     }));
   }
 
@@ -817,8 +815,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return `${day}-${month}-${year}`;
   }
 
-  toDateInput(value: string | null): string {
+  toDateInput(value: string | Date | null | undefined): string {
     if (!value) return '';
+    if (value instanceof Date) {
+      const iso = value.toISOString();
+      return iso.split('T')[0];
+    }
     const trimmed = value.trim();
     const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
     return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
@@ -906,18 +908,25 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return !this.esPlanificadoActual() && this.isEstadoPlanificado(id, this.getEstadoNombre(id));
   }
 
-  private normalizeValue(value: any, type: 'string' | 'number' | 'date'): any {
+  private normalizeValue(value: unknown, type: 'string' | 'number' | 'date'): string | number | null {
     if (type === 'number') return this.toNumberOrNull(value);
-    if (type === 'date') return this.toDateInput(value);
+    if (type === 'date') {
+      if (value === null || value === undefined) return null;
+      if (value instanceof Date || typeof value === 'string') {
+        return this.toDateInput(value);
+      }
+      return null;
+    }
     if (value === undefined || value === null) return null;
     if (typeof value === 'string') {
       const trimmed = value.trim();
       return trimmed === '' ? null : trimmed;
     }
-    return value;
+    const coerced = String(value).trim();
+    return coerced === '' ? null : coerced;
   }
 
-  private toNumberOrNull(value: any): number | null {
+  private toNumberOrNull(value: unknown): number | null {
     if (value === null || value === undefined || value === '') return null;
     const num = Number(value);
     return isNaN(num) ? null : num;
@@ -995,8 +1004,13 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     });
     if (!confirm.isConfirmed) return;
 
+    const formItems = items.value as {
+      equipoId: number;
+      estadoDevolucion: string;
+      notas?: string | null;
+    }[];
     const payload = {
-      devoluciones: items.value.map((item: any) => ({
+      devoluciones: formItems.map(item => ({
         equipoId: item.equipoId,
         estadoDevolucion: item.estadoDevolucion,
         notas: item.notas ?? ''
@@ -1016,7 +1030,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           });
           this.devolucionesRegistradas = true;
           const recursosActualizados = (this.proyecto?.recursos ?? []).map(r => {
-            const dev = items.value.find((d: any) => d.equipoId === r.equipoId);
+            const dev = formItems.find(d => d.equipoId === r.equipoId);
             if (!dev) return r;
             return {
               ...r,
@@ -1066,8 +1080,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private addIfChanged(
     target: Partial<ProyectoDetalle>,
     key: keyof ProyectoDetalle,
-    formValue: any,
-    currentValue: any,
+    formValue: unknown,
+    currentValue: unknown,
     type: 'string' | 'number' | 'date'
   ): void {
     const control = this.proyectoForm.get(key as string);
@@ -1075,7 +1089,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const normalizedForm = this.normalizeValue(formValue, type);
     const normalizedCurrent = this.normalizeValue(currentValue, type);
     if (normalizedForm !== normalizedCurrent) {
-      (target as Record<string, any>)[key as string] = normalizedForm;
+      (target as Record<string, unknown>)[key as string] = normalizedForm;
     }
   }
 
@@ -1105,5 +1119,9 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           this.estados = [];
         }
       });
+  }
+
+  private getArray(value: unknown): Record<string, unknown>[] {
+    return Array.isArray(value) ? (value as Record<string, unknown>[]) : [];
   }
 }

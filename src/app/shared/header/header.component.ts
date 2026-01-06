@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/auth/services/auth.service';
 
@@ -7,22 +7,17 @@ import { AuthService } from 'src/app/auth/services/auth.service';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent {
 
   dropdownOpen = false;
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+  private readonly elementRef = inject(ElementRef<HTMLElement>);
 
   get usuario(){
     return this.authService.usuario;
   }
-  
-  constructor(
-    private readonly router: Router,
-    private readonly authService: AuthService,
-    private readonly elementRef: ElementRef<HTMLElement>
-  ) { }
 
-  ngOnInit(): void {
-  }
   toggleDropdown(): void {
     this.dropdownOpen = !this.dropdownOpen;
   }

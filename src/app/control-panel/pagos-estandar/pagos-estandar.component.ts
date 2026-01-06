@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
@@ -30,7 +30,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '140px', class: 'text-center' }
   ];
 
-  readonly tabs: Array<{ key: TabKey; label: string }> = [
+  readonly tabs: { key: TabKey; label: string }[] = [
     { key: 'pendientes', label: 'Pendientes' },
     { key: 'parciales', label: 'Parciales' },
     { key: 'pagados', label: 'Pagados' }
@@ -53,7 +53,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     pagadoCompleto: false,
     resumen: null as ResumenPago | null,
     vouchers: [] as VoucherVM[],
-    metodos: [] as Array<{ idMetodoPago: number; nombre: string }>,
+    metodos: [] as { idMetodoPago: number; nombre: string }[],
     pedido: null as PagoRow | null,
     error: null as string | null,
     monto: '',
@@ -68,7 +68,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
-  constructor(private readonly pagoService: RegistrarPagoService) { }
+  private readonly pagoService = inject(RegistrarPagoService);
 
   ngOnInit(): void {
     this.loadTab(this.selectedTab);

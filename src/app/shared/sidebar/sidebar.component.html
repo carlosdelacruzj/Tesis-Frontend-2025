@@ -15,51 +15,55 @@
     <i class="fas fa-fw fa-tachometer-alt"></i>Dashboard
   </a>
 </li>
-<li class="nav-item" *ngIf="puedeVerVentas">
-  <a class="nav-link" routerLink="gestionar-cliente">
-    <i class="fas fa-fw fa-users"></i>Clientes
-  </a>
-</li>
-<li class="nav-item" *ngIf="puedeVerVentas">
-  <a class="nav-link" routerLink="gestionar-cotizaciones">
-    <i class="fas fa-fw fa-file-invoice-dollar"></i>Cotizaciones
-  </a>
-</li>
-<li class="nav-item" *ngIf="puedeVerVentas">
-  <a class="nav-link" routerLink="gestionar-pedido">
-    <i class="fas fa-fw fa-clipboard-list"></i>Pedidos
-  </a>
-</li>
-<li class="nav-item" *ngIf="puedeVerVentas">
-  <a class="nav-link" routerLink="gestionar-proyecto">
-    <i class="fas fa-fw fa-project-diagram"></i>Proyectos
-  </a>
-</li>
-<li class="nav-item" *ngIf="puedeVerVentas">
-  <a class="nav-link" routerLink="pagos-estandar">
-    <i class="fas fa-fw fa-money-bill-wave"></i>Pagos
-  </a>
-</li>
-<li class="nav-item" *ngIf="puedeVerAdmin">
-  <a class="nav-link" routerLink="gestionar-personal">
-    <i class="fas fa-fw fa-user-tie"></i>Personal
-  </a>
-</li>
-<li class="nav-item" *ngIf="puedeVerAdmin">
-  <a class="nav-link" routerLink="administrar-equipos">
-    <i class="fas fa-fw fa-tools"></i>Equipos
-  </a>
-</li>
-<li class="nav-item" *ngIf="puedeVerAdmin">
-  <a class="nav-link" routerLink="gestionar-perfiles">
-    <i class="fas fa-fw fa-user-shield"></i>Perfiles
-  </a>
-</li>
-<li class="nav-item" *ngIf="puedeVerAdmin">
-  <a class="nav-link" routerLink="administrar-paquete-servicio">
-    <i class="fas fa-fw fa-box-open"></i>Paquetes de servicio
-  </a>
-</li>
+@if (puedeVerVentas) {
+  <li class="nav-item">
+    <a class="nav-link" routerLink="gestionar-cliente">
+      <i class="fas fa-fw fa-users"></i>Clientes
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" routerLink="gestionar-cotizaciones">
+      <i class="fas fa-fw fa-file-invoice-dollar"></i>Cotizaciones
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" routerLink="gestionar-pedido">
+      <i class="fas fa-fw fa-clipboard-list"></i>Pedidos
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" routerLink="gestionar-proyecto">
+      <i class="fas fa-fw fa-project-diagram"></i>Proyectos
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" routerLink="pagos-estandar">
+      <i class="fas fa-fw fa-money-bill-wave"></i>Pagos
+    </a>
+  </li>
+}
+@if (puedeVerAdmin) {
+  <li class="nav-item">
+    <a class="nav-link" routerLink="gestionar-personal">
+      <i class="fas fa-fw fa-user-tie"></i>Personal
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" routerLink="administrar-equipos">
+      <i class="fas fa-fw fa-tools"></i>Equipos
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" routerLink="gestionar-perfiles">
+      <i class="fas fa-fw fa-user-shield"></i>Perfiles
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" routerLink="administrar-paquete-servicio">
+      <i class="fas fa-fw fa-box-open"></i>Paquetes de servicio
+    </a>
+  </li>
+}
                 </ul>
             </div>
         </nav>
