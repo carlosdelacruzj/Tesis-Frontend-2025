@@ -1,16 +1,14 @@
 <div class="formulario-registro" modal-body>
-  <ng-container *ngIf="error">
+  @if (error) {
     <div class="alert alert-danger" role="alert">{{ error }}</div>
-  </ng-container>
+  }
 
-  <ng-container *ngIf="loading; else content">
+  @if (loading) {
     <div class="d-flex flex-column align-items-center justify-content-center py-4 text-muted gap-2">
       <mat-spinner diameter="32"></mat-spinner>
       <p class="mt-2 mb-0">{{ loadingMessage }}</p>
     </div>
-  </ng-container>
-
-  <ng-template #content>
+  } @else {
     <ng-content></ng-content>
-  </ng-template>
+  }
 </div>

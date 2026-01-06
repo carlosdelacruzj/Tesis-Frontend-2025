@@ -4,7 +4,6 @@ import { finalize, Subject, takeUntil } from 'rxjs';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import Swal from 'sweetalert2';
-
 import { ProyectoDetalle, ProyectoRecurso } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
 import { PersonalService, Cargo } from '../../gestionar-personal/service/personal.service';

@@ -3,13 +3,9 @@ import { Router } from '@angular/router';
 import { Subject, forkJoin, of, takeUntil } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { formatIsoDate, parseDateInput } from '../../shared/utils/date-utils';
-
 import { PedidoService } from './service/pedido.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
-import {
-  RegistrarPagoService,
-  ResumenPago
-} from '../registrar-pago/service/registrar-pago.service';
+import { RegistrarPagoService, ResumenPago } from '../registrar-pago/service/registrar-pago.service';
 import { MetodoPago } from '../registrar-pago/model/metodopago.model';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 

@@ -2,7 +2,6 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-
 import { AngularMaterialModule } from '../shared/angular-material/angular-material.module';
 import { LandingComponent } from './landing.component';
 import { LandingRoutingModule } from './landing-routing.module';

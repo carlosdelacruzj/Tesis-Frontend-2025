@@ -1,7 +1,10 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "cli": {
-    "analytics": "665f8fe5-d86d-460f-894f-49f82bcce441"
+    "analytics": "665f8fe5-d86d-460f-894f-49f82bcce441",
+    "schematicCollections": [
+      "angular-eslint"
+    ]
   },
   "version": 1,
   "newProjectRoot": "projects",
@@ -38,10 +41,7 @@
             "scripts": [
               "./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
             ],
-            "allowedCommonJsDependencies": [
-              "pdfmake/build/pdfmake",
-              "pdfmake/build/vfs_fonts"
-            ]
+            "allowedCommonJsDependencies": []
           },
           "configurations": {
             "production": {
@@ -107,6 +107,15 @@
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
             "buildTarget": "SWGODLC:build"
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
           }
         }
       }

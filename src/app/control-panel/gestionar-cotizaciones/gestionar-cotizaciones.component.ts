@@ -2,18 +2,15 @@
 import { Router } from '@angular/router';
 import { NgForm } from '@angular/forms';
 import { Subject, takeUntil, firstValueFrom, take } from 'rxjs';
-
 import { Cotizacion } from './model/cotizacion.model';
 import { CotizacionService } from './service/cotizacion.service';
-
-// TableBase
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
-
-// Util: convertir assets a base64
 import { urlToBase64 } from 'src/app/utils/url-to-base64';
 import { HttpClient } from '@angular/common/http';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
+// TableBase
+// Util: convertir assets a base64
 @Component({
   selector: 'app-gestionar-cotizaciones',
   templateUrl: './gestionar-cotizaciones.component.html',

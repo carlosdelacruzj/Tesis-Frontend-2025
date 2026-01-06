@@ -1,11 +1,9 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
-
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { Cliente, EstadoCliente } from './model/cliente.model';
 import { ClienteService } from './service/cliente.service';
-
 import { from, Subject, takeUntil } from 'rxjs';
 
 export interface ClienteRow extends Cliente { }

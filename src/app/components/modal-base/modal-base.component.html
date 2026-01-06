@@ -1,9 +1,14 @@
+@if (open) {
 <!-- Backdrop -->
-<div *ngIf="open" class="modal-backdrop fade show" (click)="onClickBackdrop($event)"></div>
+<button type="button"
+        class="modal-backdrop fade show"
+        aria-label="Cerrar"
+        (click)="onClickBackdrop($event)"
+        (keydown.enter)="onClickBackdrop($event)"
+        (keydown.space)="onClickBackdrop($event)"></button>
 
 <!-- Contenedor del diálogo -->
-<div *ngIf="open"
-     class="modal d-block fade show"
+<div class="modal d-block fade show"
      role="dialog"
      aria-modal="true"
      [attr.aria-labelledby]="title ? 'modal-title' : null"
@@ -17,15 +22,19 @@
         <ng-content select="[modal-header]"></ng-content>
 
         <!-- Título por defecto si no inyectas header -->
-        <h5 *ngIf="title" id="modal-title" class="modal-title">{{ title }}</h5>
+        @if (title) {
+        <h5 id="modal-title" class="modal-title">{{ title }}</h5>
+        }
 
-        <button *ngIf="showCloseButton"
+        @if (showCloseButton) {
+        <button
                 #closeBtn
                 type="button"
                 class="btn-close"
                 aria-label="Cerrar"
                 (click)="close('close')">
         </button>
+        }
       </div>
 
       <!-- Body -->
@@ -40,26 +49,33 @@
         <ng-content select="[modal-footer]"></ng-content>
 
         <!-- Botones por defecto -->
-        <ng-container *ngIf="useDefaultFooter">
-          <button *ngIf="showSecondary"
+        @if (useDefaultFooter) {
+          @if (showSecondary) {
+          <button
                   type="button"
                   class="btn btn-outline-secondary"
                   [disabled]="loading"
                   (click)="onCancel()">
             {{ secondaryLabel }}
           </button>
+          }
 
-          <button *ngIf="showPrimary"
+          @if (showPrimary) {
+          <button
                   type="button"
                   class="btn"
                   [ngClass]="'btn-' + primaryVariant"
                   [disabled]="loading"
                   (click)="onConfirm()">
-            <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            @if (loading) {
+            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            }
             {{ primaryLabel }}
           </button>
-        </ng-container>
+          }
+        }
       </div>
     </div>
   </div>
 </div>
+}

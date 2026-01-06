@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { map, tap } from "rxjs/operators";
-
 import { AuthResponse, Usuario } from '../interfaces/auth.interface';
 import { Observable, of } from 'rxjs';
 

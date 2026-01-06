@@ -9,6 +9,7 @@ import { MAT_DATE_FORMATS, MAT_DATE_LOCALE, DateAdapter, MatDateFormats, NativeD
 import { formatDisplayDate, formatIsoDate } from '../shared/utils/date-utils';
 import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload } from './services';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
+
 // Landing copy decks for cards and sections
 interface LandingServiceCard {
   id: string;

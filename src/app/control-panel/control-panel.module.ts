@@ -2,8 +2,6 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
-
 import { ControlPanelRoutingModule } from './control-panel-routing.module';
 import { AngularMaterialModule } from '../shared/angular-material/angular-material.module';
 import { MatSelectModule } from '@angular/material/select';
@@ -87,7 +85,6 @@ import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.componen
     MatFormFieldModule,
     MatInputModule,
     DragDropModule,
-    NgbModule,
     TableBaseComponent,
     CellTemplateDirective,
     OrderByEmpleadoPipe,

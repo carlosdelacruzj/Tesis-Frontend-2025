@@ -2,16 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import {
-  Evento,
-  EventoServicioDetalle,
-  EventoServicioCategoria,
-  Servicio,
-  CrearEventoServicioRequest,
-  ActualizarEventoServicioRequest,
-  EstadoEventoServicio,
-  ActualizarEstadoEventoServicioResponse
-} from '../model/evento-servicio.model';
+import { Evento, EventoServicioDetalle, EventoServicioCategoria, Servicio, CrearEventoServicioRequest, ActualizarEventoServicioRequest, EstadoEventoServicio, ActualizarEstadoEventoServicioResponse } from '../model/evento-servicio.model';
 import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 
 @Injectable({ providedIn: 'root' })

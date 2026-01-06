@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-
 import { LandingComponent } from './landing.component';
 import { LandingLayoutComponent } from './layout/landing-layout.component';
 import { LandingClientCotizacionesComponent } from './portal/landing-client-cotizaciones.component';

@@ -152,7 +152,7 @@ export class ModalBaseComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.close('cancel');
   }
 
-  onClickBackdrop(e: MouseEvent): void {
+  onClickBackdrop(e: Event): void {
     if (this.disableClose || !this.closeOnBackdrop) return;
     if ((e.target as HTMLElement)?.classList?.contains('modal-backdrop')) {
       this.close('backdrop');

@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
-
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { Proyecto, ProyectoPayload } from './model/proyecto.model';
 import { ProyectoService } from './service/proyecto.service';

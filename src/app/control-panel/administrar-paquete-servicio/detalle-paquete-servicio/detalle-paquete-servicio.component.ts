@@ -5,15 +5,7 @@ import { Subject, of } from 'rxjs';
 import { finalize, switchMap, takeUntil } from 'rxjs/operators';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
-import {
-  Evento,
-  EventoServicioCategoria,
-  EventoServicioDetalle,
-  EventoServicioEquipo,
-  EstadoEventoServicio,
-  EventoServicioStaff,
-  Servicio
-} from '../model/evento-servicio.model';
+import { Evento, EventoServicioCategoria, EventoServicioDetalle, EventoServicioEquipo, EstadoEventoServicio, EventoServicioStaff, Servicio } from '../model/evento-servicio.model';
 import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 import { EventoServicioDataService } from '../service/evento-servicio-data.service';
 import { Cargo, PersonalService } from '../../gestionar-personal/service/personal.service';

@@ -1,14 +1,13 @@
 {
   "name": "swgodlc",
-  "version": "0.0.0",
   "scripts": {
     "start": "ng serve",
+    "test": "echo \"No tests configured\" && exit 0",
+    "build:prod": "ng build -c production",
     "start:prod": "ng serve -c production",
     "build": "ng build",
-    "build:prod": "ng build -c production",
-    "test": "echo \"No tests configured\" && exit 0"
+    "lint": "ng lint"
   },
-  "private": true,
   "dependencies": {
     "@angular/animations": "~18.2.13",
     "@angular/cdk": "^18.2.14",
@@ -22,10 +21,8 @@
     "@angular/platform-browser-dynamic": "~18.2.13",
     "@angular/router": "~18.2.13",
     "@fortawesome/fontawesome-free": "^7.1.0",
-    "@ng-bootstrap/ng-bootstrap": "^17.0.1",
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.8",
-    "pdfmake": "^0.2.2",
     "rxjs": "~7.8",
     "sweetalert2": "^11.22.5",
     "tslib": "^2.2.0",
@@ -37,12 +34,17 @@
     "@angular/compiler-cli": "~18.2.13",
     "@types/jasmine": "~5.1.0",
     "@types/node": "^18.19.0",
+    "angular-eslint": "21.0.1",
+    "eslint": "^9.39.1",
     "jasmine-core": "~5.1.1",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.1.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "^5.1.0",
     "karma-jasmine-html-reporter": "^2.1.0",
-    "typescript": "~5.5"
-  }
+    "typescript": "~5.5",
+    "typescript-eslint": "8.46.4"
+  },
+  "version": "0.0.0",
+  "private": true
 }

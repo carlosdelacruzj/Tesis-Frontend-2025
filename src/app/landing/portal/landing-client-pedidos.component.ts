@@ -2,7 +2,6 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
-
 import { AuthService } from 'src/app/auth/services/auth.service';
 import { ClientePedido, LandingClientPortalService } from '../services';
 

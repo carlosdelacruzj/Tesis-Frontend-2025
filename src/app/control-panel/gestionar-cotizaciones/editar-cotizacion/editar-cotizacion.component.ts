@@ -2,14 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, finalize, switchMap, takeUntil } from 'rxjs';
-
-import {
-  Cotizacion,
-  CotizacionPayload,
-  CotizacionAdminItemPayload,
-  CotizacionAdminUpdatePayload,
-  CotizacionAdminEventoPayload
-} from '../model/cotizacion.model';
+import { Cotizacion, CotizacionPayload, CotizacionAdminItemPayload, CotizacionAdminUpdatePayload, CotizacionAdminEventoPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { formatIsoDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
