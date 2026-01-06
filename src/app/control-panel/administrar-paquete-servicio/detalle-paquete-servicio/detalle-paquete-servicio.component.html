@@ -207,7 +207,7 @@
           </div>
 
           <div class="col-12 col-md-6">
-            <label class="form-label">Precio estimado (USD)</label>
+            <label class="form-label">Precio (USD)</label>
             <input type="number" class="form-control" formControlName="precio" min="1" step="1" required
               [class.is-invalid]="form.get('precio')?.invalid && form.get('precio')?.touched"
               [attr.title]="form.get('precio')?.invalid && form.get('precio')?.touched ? 'Ingresa un precio válido (mayor a 0).' : null">

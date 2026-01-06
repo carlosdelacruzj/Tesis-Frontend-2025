@@ -22,6 +22,7 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
 import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proyecto.component';
 import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/detalle-proyecto.component';
 import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.component';
+import { RoleGuard } from '../guards/role.guard';
 
 const routes: Routes = [
   {
@@ -30,27 +31,27 @@ const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
-      { path: 'administrar-equipos', component: AdministrarEquiposComponent },
-      { path: 'administrar-equipos/detalle', component: DetalleEquiposComponent },
-      { path: 'administrar-equipos/equipos', component: EquipoDetalleComponent },
-      { path: 'administrar-paquete-servicio', component: AdministrarPaqueteServicioComponent },
-      { path: 'administrar-paquete-servicio/:eventoId', component: DetallePaqueteServicioComponent },
+      { path: 'administrar-equipos', component: AdministrarEquiposComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
+      { path: 'administrar-equipos/detalle', component: DetalleEquiposComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
+      { path: 'administrar-equipos/equipos', component: EquipoDetalleComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
+      { path: 'administrar-paquete-servicio', component: AdministrarPaqueteServicioComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
+      { path: 'administrar-paquete-servicio/:eventoId', component: DetallePaqueteServicioComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
       { path: 'administrar-paquete-servicio-2', pathMatch: 'full', redirectTo: 'administrar-paquete-servicio' },
-      { path: 'gestionar-pedido', component: GestionarPedidoComponent },
-      { path: 'gestionar-pedido/agregar', component: AgregarPedidoComponent },
-      { path: 'gestionar-pedido/actualizar/:id', component: ActualizarPedidoComponent },
-      { path: 'gestionar-pedido/detalle/:id', component: DetallePedidoComponent },
-      { path: 'gestionar-personal', component: GestionarPersonalComponent },
-      { path: 'pagos-estandar', component: PagosEstandarComponent },
-      { path: 'gestionar-cliente', component: GestionarClienteComponent },
-      { path: 'gestionar-perfiles', component: GestionarPerfilesComponent },
-      { path: 'gestionar-perfiles/registrar-perfil', component: RegistrarPerfilComponent },
-      { path: 'gestionar-perfiles/editar-perfil', component: EditarPerfilComponent },
-      { path: 'gestionar-cotizaciones', component: GestionarCotizacionesComponent },
-      { path: 'gestionar-cotizaciones/registrar', component: RegistrarCotizacionComponent },
-      { path: 'gestionar-cotizaciones/editar/:id', component: EditarCotizacionComponent },
-      { path: 'gestionar-proyecto', component: GestionarProyectoComponent },
-      { path: 'gestionar-proyecto/:id', component: DetalleProyectoComponent },
+      { path: 'gestionar-pedido', component: GestionarPedidoComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-pedido/agregar', component: AgregarPedidoComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-pedido/actualizar/:id', component: ActualizarPedidoComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-pedido/detalle/:id', component: DetallePedidoComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-personal', component: GestionarPersonalComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
+      { path: 'pagos-estandar', component: PagosEstandarComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-cliente', component: GestionarClienteComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-perfiles', component: GestionarPerfilesComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
+      { path: 'gestionar-perfiles/registrar-perfil', component: RegistrarPerfilComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
+      { path: 'gestionar-perfiles/editar-perfil', component: EditarPerfilComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
+      { path: 'gestionar-cotizaciones', component: GestionarCotizacionesComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-cotizaciones/registrar', component: RegistrarCotizacionComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-cotizaciones/editar/:id', component: EditarCotizacionComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-proyecto', component: GestionarProyectoComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-proyecto/:id', component: DetalleProyectoComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
       { path: '**', redirectTo: 'dashboard' },
     ]
   }

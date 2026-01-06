@@ -19,6 +19,27 @@ export class AuthService {
     return this._usuario ? { ...this._usuario } : null;
   }
 
+  get tipoEmpleado(): string | null {
+    const usuario = this.ensureUsuario();
+    return usuario?.tipoEmpleado ?? null;
+  }
+
+  isAdmin(): boolean {
+    return this.matchesRole(['admin', 'administrador']);
+  }
+
+  isVendedor(): boolean {
+    return this.matchesRole(['vendedor']);
+  }
+
+  isAdminOrVendedor(): boolean {
+    return this.isAdmin() || this.isVendedor();
+  }
+
+  hasAnyRole(roles: string[]): boolean {
+    return this.matchesRole(roles);
+  }
+
   esCliente(): boolean {
     const usuario = this.ensureUsuario();
     return !!usuario && usuario.clienteId != null;
@@ -80,6 +101,22 @@ export class AuthService {
       this._usuario = this.getUsuarioFromStorage();
     }
     return this._usuario;
+  }
+
+  private matchesRole(roles: string[]): boolean {
+    const normalized = this.normalizeRole(this.tipoEmpleado);
+    if (!normalized) {
+      return false;
+    }
+    return roles.some(role => this.normalizeRole(role) === normalized);
+  }
+
+  private normalizeRole(value: string | null | undefined): string {
+    return (value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
   }
 
 }

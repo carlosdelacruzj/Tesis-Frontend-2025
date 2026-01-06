@@ -145,10 +145,10 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
   }
 
   convert(strOrDate: string | Date) {
-    const date = new Date(strOrDate);
-    const mnth = ('0' + (date.getMonth() + 1)).slice(-2);
-    const day = ('0' + date.getDate()).slice(-2);
-    return [date.getFullYear(), mnth, day].join('-');
+    const parsed = parseDateInput(strOrDate) ?? new Date();
+    const mnth = ('0' + (parsed.getMonth() + 1)).slice(-2);
+    const day = ('0' + parsed.getDate()).slice(-2);
+    return [parsed.getFullYear(), mnth, day].join('-');
   }
 
   addDaysToDate(date: Date, days: number) {
@@ -217,8 +217,9 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
       this.visualizarService.selectAgregarPedido.NombrePedido = cab?.nombrePedido ?? cab?.nombre ?? '';
       this.visualizarService.selectAgregarPedido.Observacion = cab?.observaciones ?? '';
       this.CodigoEmpleado = cab?.empleadoId ?? this.CodigoEmpleado;
-      this.fechaCreate = new Date(cab?.fechaCreacion ?? new Date());
-      this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(this.fechaCreate, '');
+      const fechaCreacionParsed = parseDateInput(cab?.fechaCreacion) ?? new Date();
+      this.fechaCreate = fechaCreacionParsed;
+      this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(fechaCreacionParsed, '');
 
       // Cliente
       this.infoCliente = {

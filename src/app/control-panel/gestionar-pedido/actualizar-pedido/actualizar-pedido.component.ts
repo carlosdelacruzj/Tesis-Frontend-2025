@@ -16,9 +16,15 @@ type PedidoPaqueteSeleccionado = {
   key: string | number;
   eventKey: string | number | null;
   ID?: number;
+  id?: number;
   descripcion: string;
   precio: number;
   notas: string;
+  eventoCodigo?: string | number | null;
+  moneda?: string;
+  cantidad?: number;
+  descuento?: number;
+  recargo?: number;
 };
 
 @Component({
@@ -90,6 +96,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Pedido actual ======
   private pedidoId!: number;
+  private estadoPedidoId: number | null = null;
+  private estadoPagoId: number | null = null;
 
   private toOptionalString(value: unknown): string | undefined {
     if (value == null) {
@@ -270,10 +278,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   convert(strOrDate: string | Date) {
-    const date = new Date(strOrDate);
-    const mnth = ('0' + (date.getMonth() + 1)).slice(-2);
-    const day = ('0' + date.getDate()).slice(-2);
-    return [date.getFullYear(), mnth, day].join('-');
+    const parsed = parseDateInput(strOrDate) ?? new Date();
+    const mnth = ('0' + (parsed.getMonth() + 1)).slice(-2);
+    const day = ('0' + parsed.getDate()).slice(-2);
+    return [parsed.getFullYear(), mnth, day].join('-');
   }
 
   addDaysToDate(date: Date, days: number) {
@@ -398,18 +406,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const ek = eventoKey ?? null;
     return this.selectedPaquetes.some(p => p.key === key && (p.eventKey ?? null) === ek);
   }
-
-  // addPaquete(el: any, eventoKey: any = this.currentEventoKey) {
-  //   if (this.isInSeleccion(el, eventoKey)) { /* ... */ return; }
-  //   this.selectedPaquetes.push({
-  //     key: this.getPkgKey(el),
-  //     eventKey: eventoKey ?? null,
-  //     ID: el.idEventoServicio ?? el.exsId ?? el.PK_ExS_Cod ?? null, // ← consistente
-  //     descripcion: el.descripcion ?? el.nombre ?? '',
-  //     precio: Number(el.precio ?? el.precioUnit ?? 0),
-  //     notas: ''
-  //   });
-  // }
 
   addPaquete(el: any, eventoKey: any = this.currentEventoKey) {
     if (this.isInSeleccion(el, eventoKey)) {
@@ -579,8 +575,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.visualizarService.selectAgregarPedido.NombrePedido = cab?.nombrePedido ?? cab?.nombre ?? '';
       this.visualizarService.selectAgregarPedido.Observacion = cab?.observaciones ?? '';
       this.CodigoEmpleado = cab?.empleadoId ?? this.CodigoEmpleado;
-      this.fechaCreate = new Date(cab?.fechaCreacion ?? new Date());
-      this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(this.fechaCreate, '');
+      this.estadoPedidoId = cab?.estadoPedidoId ?? cab?.estadoPedido?.id ?? cab?.estadoPedido?.idEstado ?? null;
+      this.estadoPagoId = cab?.estadoPagoId ?? cab?.estadoPago?.id ?? cab?.estadoPago?.idEstado ?? null;
+      const fechaCreacionParsed = parseDateInput(cab?.fechaCreacion) ?? new Date();
+      this.fechaCreate = fechaCreacionParsed;
+      this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(fechaCreacionParsed, '');
 
       // Fecha base del evento (cabecera)
       const fechaEventoCab = cab?.fechaEvento ?? cab?.fecha_evento ?? null;
@@ -657,10 +656,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         id: it.id,                                       // <-- PK_PS_Cod real
         key: this.getPkgKey(it),                         // <-- clave consistente
         eventKey: it.eventoCodigo ?? null,               // si asocias por evento
+        eventoCodigo: it.eventoCodigo ?? null,
         ID: it.exsId ?? it.id ?? null,                   // FK a T_EventoServicio
         descripcion: it.nombre ?? it.descripcion ?? '',
         precio: Number(it.precioUnit ?? it.precio ?? 0),
-        notas: it.notas ?? ''
+        notas: it.notas ?? '',
+        moneda: it.moneda ?? 'USD',
+        cantidad: Number(it.cantidad ?? 1),
+        descuento: Number(it.descuento ?? 0),
+        recargo: Number(it.recargo ?? 0)
       }));
       // Cargar tags del cliente (si procede)
       if (this.dniCliente) this.loadTagsCliente();
@@ -717,8 +721,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         empleadoId: this.CodigoEmpleado ?? 1,
         fechaCreacion: fechaCreacion,
         observaciones: this.visualizarService.selectAgregarPedido?.Observacion || '',
-        estadoPedidoId: 1,
-        estadoPagoId: 1,
+        estadoPedidoId: this.estadoPedidoId ?? 1,
+        estadoPagoId: this.estadoPagoId ?? 1,
         nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || ''
       },
       eventos: (this.ubicacion || [])
@@ -734,14 +738,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       items: (this.selectedPaquetes || []).map(it => ({
         // id: it.id ?? null,
         exsId: it.ID ?? null,
-        eventoCodigo: null,
-        moneda: 'USD',
+        eventoCodigo: it.eventoCodigo ?? it.eventKey ?? null,
+        moneda: it.moneda ?? 'USD',
         nombre: String(it.descripcion || '').trim(),
         descripcion: String(it.descripcion || '').trim(),
         precioUnit: Number(it.precio || 0),
-        cantidad: 1,
-        descuento: 0,
-        recargo: 0,
+        cantidad: Number(it.cantidad ?? 1),
+        descuento: Number(it.descuento ?? 0),
+        recargo: Number(it.recargo ?? 0),
         notas: String(it.notas || '').trim()
       }))
     };
@@ -761,8 +765,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
 
     // Logs
-    console.log('%c[PUT PEDIDO] payload compuesto', 'color:#5c940d;font-weight:bold;');
-    console.log(JSON.stringify(payload, null, 2));
+    // console.log('%c[PUT PEDIDO] payload compuesto', 'color:#5c940d;font-weight:bold;');
+    // console.log(JSON.stringify(payload, null, 2));
+    // Modo prueba: solo mostrar en consola, sin enviar al API.
 
     const obs: any = this.visualizarService.updatePedido?.(this.pedidoId, payload);
     if (!obs || typeof obs.subscribe !== 'function') {

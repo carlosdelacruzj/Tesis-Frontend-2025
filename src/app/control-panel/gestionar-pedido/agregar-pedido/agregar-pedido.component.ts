@@ -271,11 +271,11 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     this.maximo = this.addDaysToDate(date, 365);
   }
 
-  convert(str) {
-    var date = new Date(str),
-      mnth = ('0' + (date.getMonth() + 1)).slice(-2),
-      day = ('0' + date.getDate()).slice(-2);
-    return [date.getFullYear(), mnth, day].join('-');
+  convert(str: string | Date) {
+    const parsed = parseDateInput(str) ?? new Date();
+    const mnth = ('0' + (parsed.getMonth() + 1)).slice(-2);
+    const day = ('0' + parsed.getDate()).slice(-2);
+    return [parsed.getFullYear(), mnth, day].join('-');
   }
 
   addDaysToDate(date, days) {

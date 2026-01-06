@@ -8,6 +8,7 @@ export interface PedidoLite {
   IdPed: number;
   Nombre: string;
   Fecha: string; // YYYY-MM-DD
+  FechaCreacion?: string; // YYYY-MM-DD
 }
 export interface ResumenPago {
   CostoTotal: number;

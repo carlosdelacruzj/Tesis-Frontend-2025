@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { AdministrarEquiposService } from '../service/administrar-equipos.service';
+import { parseDateInput } from '../../../shared/utils/date-utils';
 import { EquipoInventario } from '../models/equipo-inventario.model';
 import { Modelo } from '../models/modelo.model';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
@@ -480,6 +481,11 @@ export class EquipoDetalleComponent implements OnInit, OnDestroy {
     if (!fechaIso) {
       return '';
     }
-    return new Date(fechaIso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    const parsed = parseDateInput(fechaIso);
+    if (!parsed) {
+      return '';
+    }
+    const midDay = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0);
+    return midDay.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }

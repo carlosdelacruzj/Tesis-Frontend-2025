@@ -3,6 +3,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { RegistrarPagoService, PedidoLite, ResumenPago, VoucherVM } from '../registrar-pago/service/registrar-pago.service';
+import { formatIsoDate, parseDateInput } from '../../shared/utils/date-utils';
 
 type TabKey = 'pendientes' | 'parciales' | 'pagados';
 
@@ -11,6 +12,7 @@ interface PagoRow {
   codigo: string | number;
   cliente: string;
   fecha?: string;
+  fechaCreacion?: string;
   estado: string;
 }
 
@@ -58,6 +60,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     montoError: null as string | null,
     metodoId: null as number | null,
     fecha: '',
+    fechaMin: '',
     file: null as File | null,
     fileName: null as string | null,
     faltanteDeposito: 0
@@ -111,7 +114,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
 
   abrirGestionPago(row: PagoRow): void {
     if (!row?.id) return;
-    const today = new Date().toISOString().split('T')[0];
+    const fechaMin = this.getFechaMinPago(row);
     this.modal = {
       ...this.modal,
       open: true,
@@ -125,7 +128,8 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
       monto: '',
       montoError: null,
       metodoId: null,
-      fecha: today,
+      fecha: fechaMin,
+      fechaMin,
       file: null,
       fileName: null,
       faltanteDeposito: 0,
@@ -397,7 +401,14 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
       codigo: item.IdPed ?? item.Nombre ?? '--',
       cliente: item.Nombre ?? '--',
       fecha: item.Fecha ?? '',
+      fechaCreacion: item.FechaCreacion ?? undefined,
       estado
     }));
+  }
+
+  private getFechaMinPago(row: PagoRow | null | undefined): string {
+    const fechaRaw = row?.fechaCreacion ?? row?.fecha;
+    const parsed = parseDateInput(fechaRaw) ?? new Date();
+    return formatIsoDate(parsed) ?? new Date().toISOString().slice(0, 10);
   }
 }

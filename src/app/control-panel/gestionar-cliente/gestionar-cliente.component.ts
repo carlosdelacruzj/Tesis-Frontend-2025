@@ -46,8 +46,8 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   editUiReady = false;
   estadosCliente: EstadoCliente[] = [];
   selectedEstadoClienteId: number | null = null;
-  nombrePattern = '^[a-zA-Z ]{2,20}$';
-  apellidoPattern = '^[a-zA-Z ]{2,30}$';
+  nombrePattern = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,20}$';
+  apellidoPattern = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,30}$';
   docPattern = '^[0-9]{1}[0-9]{7}$';
   celularPattern = '^[1-9]{1}[0-9]{6,8}$';
   correoPattern = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';

@@ -2,6 +2,7 @@
 import { Router } from '@angular/router';
 import { Subject, forkJoin, of, takeUntil } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { formatIsoDate, parseDateInput } from '../../shared/utils/date-utils';
 
 import { PedidoService } from './service/pedido.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
@@ -39,6 +40,7 @@ interface ModalPagoState {
   montoError: string | null;
   metodoId: number | null;
   fecha: string;
+  fechaMin: string;
   file: File | null;
   error: string | null;
   fileName: string | null;
@@ -128,12 +130,14 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     if (!id) {
       return;
     }
+    const fechaMin = this.getFechaMinPago(row);
     this.modalPago = {
       ...this.crearEstadoModal(),
       open: true,
       cargando: true,
       pedido: row,
-      fecha: new Date().toISOString().split('T')[0]
+      fecha: fechaMin,
+      fechaMin
     };
 
     forkJoin({
@@ -407,6 +411,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       montoError: null,
       metodoId: null,
       fecha: '',
+      fechaMin: '',
       file: null,
       error: null,
       fileName: null,
@@ -510,6 +515,20 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     if (!row) return null;
     const id = this.parseNumber((row as any).id ?? row.ID ?? (row as any).idPedido ?? (row as any).pedidoId);
     return id;
+  }
+
+  private getFechaMinPago(row: PedidoRow | null | undefined): string {
+    const raw = row as any;
+    const fechaRaw =
+      raw?.fechaCreacion ??
+      raw?.fecha_creacion ??
+      raw?.FechaCreacion ??
+      raw?.Creado ??
+      raw?.fecha ??
+      raw?.createdAt ??
+      raw?.created_at;
+    const parsed = parseDateInput(fechaRaw) ?? new Date();
+    return formatIsoDate(parsed) ?? new Date().toISOString().slice(0, 10);
   }
 
   private parseNumber(value: unknown): number | null {

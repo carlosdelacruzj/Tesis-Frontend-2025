@@ -1,517 +1,437 @@
 <div class="dashboard-content">
-  <app-list-toolbar
-    [title]="'Registrar cotización'"
-    [showSearch]="false"
-    [showCreateButton]="false">
+  <app-list-toolbar [title]="'Registrar cotización'" [showSearch]="false" [showCreateButton]="false">
   </app-list-toolbar>
 
   <form class="cotizacion-form" [formGroup]="form" (ngSubmit)="submit()">
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <mat-card class="card">
-            <mat-card-header>
-              <mat-card-title>Datos del solicitante</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title>Datos del solicitante</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
 
-              <!-- ===== Cliente existente (Autocomplete) ===== -->
-              <div class="form-group mb-3">
-                <label class="col-form-label">Cliente existente (opcional)</label>
+            <!-- ===== Cliente existente (Autocomplete) ===== -->
+            <div class="form-group mb-3">
+              <label class="col-form-label">Cliente existente (opcional)</label>
 
-                <div class="input-group mb-1">
-                  <input type="text"
-                         class="form-control"
-                         placeholder="Buscar por nombre, razón social o contacto"
-                         [formControl]="clienteSearchControl"
-                         [matAutocomplete]="auto">
-                  <span class="input-group-text bg-white" *ngIf="clienteSearchLoading">
-                    <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                  </span>
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    (click)="clearClienteSeleccionado()"
-                    [disabled]="clienteSearchLoading || (!clienteSeleccionado && !clienteBusquedaTermino)">
-                    Limpiar
-                  </button>
-                </div>
-
-                <small class="text-danger d-block mt-1" *ngIf="clienteSearchError">
-                  {{ clienteSearchError }}
-                </small>
-                <small class="text-muted d-block mt-1"
-                       *ngIf="!clienteSearchLoading && !clienteSearchError && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled">
-                  Sin resultados para “{{ clienteBusquedaTermino }}”.
-                </small>
-
-                <mat-autocomplete #auto="matAutocomplete"
-                                  [displayWith]="clienteDisplay"
-                                  (optionSelected)="onClienteSelected($event.option.value)">
-                  <mat-option *ngFor="let c of clienteResultados" [value]="c">
-                    <div class="d-flex flex-column">
-                      <span class="fw-semibold">{{ (c.nombreCompleto || c.nombre || c.razonSocial || c.contacto || c.email) }}</span>
-                      <small class="text-muted">
-                        {{ resolveClienteContacto(c) }} <span *ngIf="resolveClienteDocumento(c)">· {{ resolveClienteDocumento(c) }}</span>
-                      </small>
-                    </div>
-                  </mat-option>
-                  <mat-option
-                    *ngIf="!clienteSearchLoading && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled"
-                    disabled>
-                    Sin resultados para “{{ clienteBusquedaTermino }}”
-                  </mat-option>
-                </mat-autocomplete>
-              </div>
-              <!-- ===== Fin Cliente existente (Autocomplete) ===== -->
-              <div class="form-group">
-                <label class="col-form-label">Nombre completo</label>
-                <input type="text"
-                       class="form-control"
-                       formControlName="clienteNombre"
-                       placeholder="Nombre y apellidos"
-                       [class.is-invalid]="form.get('clienteNombre')?.invalid && form.get('clienteNombre')?.touched">
-                <small class="text-danger"
-                       *ngIf="form.get('clienteNombre')?.hasError('required') && form.get('clienteNombre')?.touched">
-                  Ingresa el nombre del solicitante.
-                </small>
-                <small class="text-danger"
-                       *ngIf="form.get('clienteNombre')?.hasError('minlength') && form.get('clienteNombre')?.touched">
-                  Ingresa al menos 2 caracteres.
-                </small>
-              </div>
-
-              <div class="form-group">
-                <label class="col-form-label">WhatsApp / contacto</label>
-                <input type="tel"
-                       class="form-control"
-                       formControlName="clienteContacto"
-                       placeholder="Ej. 999 999 999"
-                       [class.is-invalid]="form.get('clienteContacto')?.invalid && form.get('clienteContacto')?.touched">
-                <small class="text-danger"
-                       *ngIf="form.get('clienteContacto')?.hasError('required') && form.get('clienteContacto')?.touched">
-                  Ingresa un número de contacto.
-                </small>
-                <small class="text-danger"
-                       *ngIf="form.get('clienteContacto')?.hasError('minlength') && form.get('clienteContacto')?.touched">
-                  Debe tener al menos 6 dígitos.
-                </small>
-                <small class="text-danger"
-                       *ngIf="form.get('clienteContacto')?.hasError('pattern') && form.get('clienteContacto')?.touched">
-                  Usa solo dígitos (6 a 15).
-                </small>
-              </div>
-
-            </mat-card-content>
-          </mat-card>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <mat-card class="card">
-            <mat-card-header>
-              <mat-card-title>Detalles del evento</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <div class="row g-3">
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label class="col-form-label">Fecha del evento</label>
-                <input type="date"
-                       class="form-control"
-                       formControlName="fechaEvento"
-                       [min]="fechaMinimaEvento"
-                       [max]="fechaMaximaEvento"
-                       [class.is-invalid]="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
-                <small class="text-danger"
-                      *ngIf="form.get('fechaEvento')?.hasError('required') && form.get('fechaEvento')?.touched">
-                      Selecciona una fecha.
-                    </small>
-                <small class="text-danger"
-                      *ngIf="form.get('fechaEvento')?.hasError('fechaEventoAnterior') && form.get('fechaEvento')?.touched">
-                      La fecha debe ser al menos un día después de hoy.
-                    </small>
-                    <small class="text-danger"
-                      *ngIf="form.get('fechaEvento')?.hasError('fechaEventoPosterior') && form.get('fechaEvento')?.touched">
-                      La fecha no puede superar los 6 meses desde hoy.
-                    </small>
-                    <small class="text-danger"
-                      *ngIf="form.get('fechaEvento')?.hasError('fechaEventoInvalida') && form.get('fechaEvento')?.touched">
-                      Selecciona una fecha válida.
-                    </small>
-                  </div>
-                </div>
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label class="col-form-label">Horas estimadas</label>
-                    <input type="number"
-                           class="form-control"
-                           formControlName="horasEstimadas"
-                           placeholder="Ej. 6"
-                           min="1"
-                           step="1"
-                           inputmode="numeric"
-                           [class.is-invalid]="form.get('horasEstimadas')?.invalid && form.get('horasEstimadas')?.touched">
-                    <small class="text-danger"
-                           *ngIf="form.get('horasEstimadas')?.hasError('required') && form.get('horasEstimadas')?.touched">
-                      Ingresa las horas estimadas.
-                    </small>
-                    <small class="text-danger"
-                           *ngIf="form.get('horasEstimadas')?.hasError('pattern') && form.get('horasEstimadas')?.touched">
-                      Usa solo números enteros.
-                    </small>
-                    <small class="text-danger"
-                           *ngIf="form.get('horasEstimadas')?.hasError('min') && form.get('horasEstimadas')?.touched">
-                      Ingresa un número mayor a 0.
-                    </small>
-                  </div>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="col-form-label">Departamento</label>
-                <select class="form-control"
-                        formControlName="departamento"
-                        [class.is-invalid]="form.get('departamento')?.invalid && form.get('departamento')?.touched">
-                  <option value="">Selecciona un departamento</option>
-                  <option *ngFor="let dep of departamentos" [value]="dep">{{ dep }}</option>
-                </select>
-                <small class="text-danger" *ngIf="form.get('departamento')?.invalid && form.get('departamento')?.touched">
-                  Selecciona el departamento del evento.
-                </small>
-              </div>
-
-              <div class="form-group mt-3">
-                <label class="col-form-label">Tipo de evento</label>
-                <select class="form-control"
-                        [value]="selectedEventoId ?? ''"
-                        (change)="onEventoDropdownChange($any($event.target).value)"
-                        [disabled]="!eventos.length"
-                        [ngClass]="{'is-invalid': eventoSelectTouched && !selectedEventoId}">
-                  <option value="" disabled>Selecciona un tipo de evento</option>
-                  <option *ngFor="let evento of eventos" [value]="evento.id ?? ''">
-                    {{ evento.nombre ?? 'Evento' }}
-                  </option>
-                </select>
-                <small class="text-danger"
-                       *ngIf="eventoSelectTouched && !selectedEventoId">
-                  Selecciona un tipo de evento.
-                </small>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-      </div>
-
-      <mat-card class="card mb-3">
-        <mat-card-header class="programacion-header">
-          <mat-card-title>Programación del evento</mat-card-title>
-          <mat-card-subtitle>
-            Define las locaciones clave y los horarios estimados. Siempre considera al menos {{ programacionMinimaRecomendada }} puntos principales.
-          </mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <p class="text-muted small mb-3">
-            Agrega o quita locaciones según necesites. Más adelante podrás reordenarlas y marcar prioridades.
-          </p>
-
-          <div formArrayName="programacion" class="programacion-list">
-            <div class="programacion-item" *ngFor="let grupo of programacion.controls; let i = index" [formGroupName]="i">
-              <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
-                <div class="d-flex align-items-center gap-2">
-                  <h6 class="mb-0">
-                    {{ grupo.get('nombre')?.value || ('Locación ' + (i + 1)) }}
-                  </h6>
-                  <span class="badge"
-                        [ngClass]="grupo.get('esPrincipal')?.value ? 'bg-primary' : 'bg-secondary'">
-                    {{ grupo.get('esPrincipal')?.value ? 'Principal' : 'Opcional' }}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  class="btn btn-link btn-sm text-danger"
-                  (click)="removeProgramacionItem(i)"
-                  [disabled]="programacion.length <= 1"
-                  [attr.aria-label]="'Eliminar locación ' + (grupo.get('nombre')?.value || ('Locación ' + (i + 1)))"
-                  [attr.title]="programacion.length <= 1 ? 'Mantén al menos una locación' : 'Eliminar locación'">
-                  Eliminar
+              <div class="input-group mb-1">
+                <input type="text" class="form-control" placeholder="Buscar por nombre, razón social o contacto"
+                  [formControl]="clienteSearchControl" [matAutocomplete]="auto">
+                <span class="input-group-text bg-white" *ngIf="clienteSearchLoading">
+                  <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+                </span>
+                <button type="button" class="btn btn-outline-secondary" (click)="clearClienteSeleccionado()"
+                  [disabled]="clienteSearchLoading || (!clienteSeleccionado && !clienteBusquedaTermino)">
+                  Limpiar
                 </button>
               </div>
 
-              <div class="row g-3 mt-2">
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label class="col-form-label">Nombre de la locación</label>
-                    <input type="text"
-                           class="form-control"
-                           formControlName="nombre"
-                           placeholder="Ej. Recepción en casona"
-                           [class.is-invalid]="grupo.get('nombre')?.invalid && grupo.get('nombre')?.touched">
-                    <small class="text-danger"
-                           *ngIf="grupo.get('nombre')?.hasError('required') && grupo.get('nombre')?.touched">
-                      Ingresa la locación.
+              <small class="text-danger d-block mt-1" *ngIf="clienteSearchError">
+                {{ clienteSearchError }}
+              </small>
+              <small class="text-muted d-block mt-1"
+                *ngIf="!clienteSearchLoading && !clienteSearchError && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled">
+                Sin resultados para “{{ clienteBusquedaTermino }}”.
+              </small>
+
+              <mat-autocomplete #auto="matAutocomplete" [displayWith]="clienteDisplay"
+                (optionSelected)="onClienteSelected($event.option.value)">
+                <mat-option *ngFor="let c of clienteResultados" [value]="c">
+                  <div class="d-flex flex-column">
+                    <span class="fw-semibold">{{ (c.nombreCompleto || c.nombre || c.razonSocial || c.contacto ||
+                      c.email) }}</span>
+                    <small class="text-muted">
+                      {{ resolveClienteContacto(c) }} <span *ngIf="resolveClienteDocumento(c)">· {{
+                        resolveClienteDocumento(c) }}</span>
                     </small>
                   </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label class="col-form-label">Dirección o punto de encuentro</label>
-                    <input type="text"
-                           class="form-control"
-                           formControlName="direccion"
-                           placeholder="Ej. Av. La Marina 1234"
-                           [class.is-invalid]="grupo.get('direccion')?.invalid && grupo.get('direccion')?.touched">
-                    <small class="text-danger"
-                           *ngIf="grupo.get('direccion')?.hasError('required') && grupo.get('direccion')?.touched">
-                      Ingresa la dirección.
-                    </small>
-                  </div>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                  <div class="form-group">
-                    <label class="col-form-label">Fecha</label>
-                    <input type="date" class="form-control" formControlName="fecha">
-                  </div>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                  <div class="form-group">
-                    <label class="col-form-label">Hora</label>
-                    <input type="time"
-                           class="form-control"
-                           formControlName="hora"
-                           min="06:00"
-                           max="22:00"
-                           [class.is-invalid]="grupo.get('hora')?.invalid && grupo.get('hora')?.touched">
-                    <small class="text-danger"
-                           *ngIf="grupo.get('hora')?.hasError('required') && grupo.get('hora')?.touched">
-                      Ingresa la hora.
-                    </small>
-                    <small class="text-danger"
-                           *ngIf="grupo.get('hora')?.hasError('pattern') && grupo.get('hora')?.touched">
-                      Usa el formato HH:MM.
-                    </small>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-group mb-0">
-                    <label class="col-form-label">Notas internas</label>
-                    <textarea class="form-control" rows="2" formControlName="notas"
-                              placeholder="Detalles adicionales para el equipo (opcional)"></textarea>
-                  </div>
+                </mat-option>
+                <mat-option
+                  *ngIf="!clienteSearchLoading && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSearchControl.disabled"
+                  disabled>
+                  Sin resultados para “{{ clienteBusquedaTermino }}”
+                </mat-option>
+              </mat-autocomplete>
+            </div>
+            <!-- ===== Fin Cliente existente (Autocomplete) ===== -->
+            <div class="form-group">
+              <label class="col-form-label">Nombre completo</label>
+              <input type="text" class="form-control" formControlName="clienteNombre" placeholder="Nombre y apellidos"
+                [class.is-invalid]="form.get('clienteNombre')?.invalid && form.get('clienteNombre')?.touched">
+              <small class="text-danger"
+                *ngIf="form.get('clienteNombre')?.hasError('required') && form.get('clienteNombre')?.touched">
+                Ingresa el nombre del solicitante.
+              </small>
+              <small class="text-danger"
+                *ngIf="form.get('clienteNombre')?.hasError('minlength') && form.get('clienteNombre')?.touched">
+                Ingresa al menos 2 caracteres.
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label class="col-form-label">WhatsApp / contacto</label>
+              <input type="tel" class="form-control" formControlName="clienteContacto" placeholder="Ej. 999 999 999"
+                [class.is-invalid]="form.get('clienteContacto')?.invalid && form.get('clienteContacto')?.touched">
+              <small class="text-danger"
+                *ngIf="form.get('clienteContacto')?.hasError('required') && form.get('clienteContacto')?.touched">
+                Ingresa un número de contacto.
+              </small>
+              <small class="text-danger"
+                *ngIf="form.get('clienteContacto')?.hasError('minlength') && form.get('clienteContacto')?.touched">
+                Debe tener al menos 6 dígitos.
+              </small>
+              <small class="text-danger"
+                *ngIf="form.get('clienteContacto')?.hasError('pattern') && form.get('clienteContacto')?.touched">
+                Usa solo dígitos (6 a 15).
+              </small>
+            </div>
+
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <div class="col-md-6 mb-3">
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title>Detalles del evento</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="form-group">
+                  <label class="col-form-label">Fecha del evento</label>
+                  <input type="date" class="form-control" formControlName="fechaEvento" [min]="fechaMinimaEvento"
+                    [max]="fechaMaximaEvento"
+                    [class.is-invalid]="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
+                  <small class="text-danger"
+                    *ngIf="form.get('fechaEvento')?.hasError('required') && form.get('fechaEvento')?.touched">
+                    Selecciona una fecha.
+                  </small>
+                  <small class="text-danger"
+                    *ngIf="form.get('fechaEvento')?.hasError('fechaEventoAnterior') && form.get('fechaEvento')?.touched">
+                    La fecha debe ser al menos un día después de hoy.
+                  </small>
+                  <small class="text-danger"
+                    *ngIf="form.get('fechaEvento')?.hasError('fechaEventoPosterior') && form.get('fechaEvento')?.touched">
+                    La fecha no puede superar los 6 meses desde hoy.
+                  </small>
+                  <small class="text-danger"
+                    *ngIf="form.get('fechaEvento')?.hasError('fechaEventoInvalida') && form.get('fechaEvento')?.touched">
+                    Selecciona una fecha válida.
+                  </small>
                 </div>
               </div>
+              <div class="col-sm-6">
+                <div class="form-group">
+                  <label class="col-form-label">Horas estimadas</label>
+                  <input type="number" class="form-control" formControlName="horasEstimadas" placeholder="Ej. 6" min="1"
+                    step="1" inputmode="numeric"
+                    [class.is-invalid]="form.get('horasEstimadas')?.invalid && form.get('horasEstimadas')?.touched">
+                  <small class="text-danger"
+                    *ngIf="form.get('horasEstimadas')?.hasError('required') && form.get('horasEstimadas')?.touched">
+                    Ingresa las horas estimadas.
+                  </small>
+                  <small class="text-danger"
+                    *ngIf="form.get('horasEstimadas')?.hasError('pattern') && form.get('horasEstimadas')?.touched">
+                    Usa solo números enteros.
+                  </small>
+                  <small class="text-danger"
+                    *ngIf="form.get('horasEstimadas')?.hasError('min') && form.get('horasEstimadas')?.touched">
+                    Ingresa un número mayor a 0.
+                  </small>
+                </div>
+              </div>
+            </div>
 
-              <p class="text-muted small mb-0 mt-3">
-                Aún no es posible reordenar las locaciones o cambiar prioridades. Próximamente se habilitará.
-              </p>
+            <div class="form-group">
+              <label class="col-form-label">Departamento</label>
+              <select class="form-control" formControlName="departamento"
+                [class.is-invalid]="form.get('departamento')?.invalid && form.get('departamento')?.touched">
+                <option value="">Selecciona un departamento</option>
+                <option *ngFor="let dep of departamentos" [value]="dep">{{ dep }}</option>
+              </select>
+              <small class="text-danger" *ngIf="form.get('departamento')?.invalid && form.get('departamento')?.touched">
+                Selecciona el departamento del evento.
+              </small>
+            </div>
+
+            <div class="form-group mt-3">
+              <label class="col-form-label">Tipo de evento</label>
+              <select class="form-control" [value]="selectedEventoId ?? ''"
+                (change)="onEventoDropdownChange($any($event.target).value)" [disabled]="!eventos.length"
+                [ngClass]="{'is-invalid': eventoSelectTouched && !selectedEventoId}">
+                <option value="" disabled>Selecciona un tipo de evento</option>
+                <option *ngFor="let evento of eventos" [value]="evento.id ?? ''">
+                  {{ evento.nombre ?? 'Evento' }}
+                </option>
+              </select>
+              <small class="text-danger" *ngIf="eventoSelectTouched && !selectedEventoId">
+                Selecciona un tipo de evento.
+              </small>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    <mat-card class="card mb-3">
+      <mat-card-header class="programacion-header">
+        <mat-card-title>Programación del evento</mat-card-title>
+        <mat-card-subtitle>
+          Define las locaciones clave y los horarios estimados. Siempre considera al menos {{
+          programacionMinimaRecomendada }} puntos principales.
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div formArrayName="programacion" class="programacion-list">
+          <div class="programacion-item" *ngFor="let grupo of programacion.controls; let i = index" [formGroupName]="i">
+            <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <h4 class="mb-0">
+                  {{ grupo.get('nombre')?.value || ('Locación ' + (i + 1)) }}
+                </h4>
+              </div>
+              <button type="button" class="btn btn-link btn-sm text-danger" (click)="removeProgramacionItem(i)"
+                [disabled]="programacion.length <= 1"
+                [attr.aria-label]="'Eliminar locación ' + (grupo.get('nombre')?.value || ('Locación ' + (i + 1)))"
+                [attr.title]="programacion.length <= 1 ? 'Mantén al menos una locación' : 'Eliminar locación'">
+                Eliminar
+              </button>
+            </div>
+
+            <div class="row g-3 mt-2">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="col-form-label">Nombre de la locación</label>
+                  <input type="text" class="form-control" formControlName="nombre" placeholder="Ej. Recepción en casona"
+                    [class.is-invalid]="grupo.get('nombre')?.invalid && grupo.get('nombre')?.touched">
+                  <small class="text-danger"
+                    *ngIf="grupo.get('nombre')?.hasError('required') && grupo.get('nombre')?.touched">
+                    Ingresa la locación.
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="col-form-label">Dirección o punto de encuentro</label>
+                  <input type="text" class="form-control" formControlName="direccion"
+                    placeholder="Ej. Av. La Marina 1234"
+                    [class.is-invalid]="grupo.get('direccion')?.invalid && grupo.get('direccion')?.touched">
+                  <small class="text-danger"
+                    *ngIf="grupo.get('direccion')?.hasError('required') && grupo.get('direccion')?.touched">
+                    Ingresa la dirección.
+                  </small>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <div class="form-group">
+                  <label class="col-form-label">Fecha</label>
+                  <input type="date" class="form-control" formControlName="fecha">
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <div class="form-group">
+                  <label class="col-form-label">Hora</label>
+                  <input type="time" class="form-control" formControlName="hora" min="06:00" max="22:00"
+                    [class.is-invalid]="grupo.get('hora')?.invalid && grupo.get('hora')?.touched">
+                  <small class="text-danger"
+                    *ngIf="grupo.get('hora')?.hasError('required') && grupo.get('hora')?.touched">
+                    Ingresa la hora.
+                  </small>
+                  <small class="text-danger"
+                    *ngIf="grupo.get('hora')?.hasError('pattern') && grupo.get('hora')?.touched">
+                    Usa el formato HH:MM.
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group mb-0">
+                  <label class="col-form-label">Notas internas</label>
+                  <textarea class="form-control" rows="2" formControlName="notas"
+                    placeholder="Detalles adicionales para el equipo (opcional)"></textarea>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div class="text-end mt-3">
-            <button type="button" class="btn btn-outline-primary btn-sm" (click)="addProgramacionItem()">
-              Agregar otra locación
-            </button>
-          </div>
-        </mat-card-content>
-      </mat-card>
+        <div class="text-end mt-3">
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="addProgramacionItem()">
+            Agregar locación
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-      <mat-card class="card mb-3">
-        <mat-card-header>
-          <mat-card-title>Mensaje del solicitante</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <textarea class="form-control" rows="3" formControlName="descripcion"
-                    placeholder="Mensaje proporcionado en la solicitud"></textarea>
-        </mat-card-content>
-      </mat-card>
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <mat-card-title>Mensaje del solicitante</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <textarea class="form-control" rows="3" formControlName="descripcion"
+          placeholder="Mensaje proporcionado en la solicitud"></textarea>
+      </mat-card-content>
+    </mat-card>
 
     <mat-card class="card mb-3">
       <mat-card-header>
         <mat-card-title>Servicios y paquetes</mat-card-title>
       </mat-card-header>
       <mat-card-content>
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label class="col-form-label">Servicio</label>
-                <select class="form-control"
-                        [value]="selectedServicioId ?? ''"
-                        (change)="onServicioDropdownChange($any($event.target).value)"
-                        [disabled]="!servicios.length">
-                  <option value="" disabled>Selecciona un servicio</option>
-                  <option *ngFor="let servicio of servicios" [value]="servicio.id ?? ''">
-                    {{ servicio.nombre ?? 'Servicio' }}
-                  </option>
-                </select>
-              </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="col-form-label">Servicio</label>
+              <select class="form-control" [value]="selectedServicioId ?? ''"
+                (change)="onServicioDropdownChange($any($event.target).value)" [disabled]="!servicios.length">
+                <option value="" disabled>Selecciona un servicio</option>
+                <option *ngFor="let servicio of servicios" [value]="servicio.id ?? ''">
+                  {{ servicio.nombre ?? 'Servicio' }}
+                </option>
+              </select>
             </div>
           </div>
-
-          <div class="table-responsive" *ngIf="!loadingPaquetes; else paquetesLoading">
-            <app-table-base
-              [columns]="paquetesColumns"
-              [data]="paquetesRows"
-              [showSearch]="false"
-              [showFooterInfo]="false"
-              [showPagination]="false"
-              [showPageSizeSelector]="false"
-              [showCreateButton]="false"
-              [pageSize]="paquetesRows.length || 10"
-              [pageSizeOptions]="[paquetesRows.length || 10]"
-              emptyText="Sin paquetes disponibles">
-
-              <ng-template appCell="titulo" let-row>
-                {{ row.titulo || '—' }}
-              </ng-template>
-
-              <ng-template appCell="precio" let-row>
-                {{ row.precio != null ? (row.precio | number:'1.2-2') : '—' }}
-              </ng-template>
-
-              <ng-template appCell="staff" let-row>
-                {{ row.staff != null ? row.staff : '—' }}
-              </ng-template>
-
-              <ng-template appCell="horas" let-row>
-                {{ row.horas != null ? row.horas : '—' }}
-              </ng-template>
-
-              <ng-template appCell="acciones" let-row>
-                <div class="d-flex justify-content-center gap-2">
-                  <button type="button"
-                          class="btn btn-outline-secondary btn-sm"
-                          (click)="mostrarDetallePaquete(row)">
-                    Mostrar
-                  </button>
-                  <button type="button"
-                          class="btn btn-outline-primary btn-sm"
-                          [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
-                          *ngIf="!isInSeleccion(row.raw); else quitarBtn"
-                          (click)="addPaquete(row.raw)">
-                    {{ hasOtroPaqueteDelServicio(row.raw) ? 'Reemplazar' : 'Agregar' }}
-                  </button>
-                  <ng-template #quitarBtn>
-                    <button type="button" class="btn btn-outline-danger btn-sm"
-                            (click)="removePaquete(pkgKey(row.raw))">
-                      Quitar
-                    </button>
-                  </ng-template>
-                </div>
-              </ng-template>
-
-            </app-table-base>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <mat-card class="card mb-3" *ngIf="selectedPaquetes.length">
-        <mat-card-header>
-          <mat-card-title>Paquetes seleccionados ({{ selectedPaquetes.length }})</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="table-responsive">
-            <app-table-base
-              [columns]="selectedPaquetesColumns"
-              [data]="selectedPaquetes"
-              [showSearch]="false"
-              [showFooterInfo]="false"
-              [showPagination]="false"
-              [showPageSizeSelector]="false"
-              [showCreateButton]="false"
-              [pageSize]="selectedPaquetes.length || 10"
-              [pageSizeOptions]="[selectedPaquetes.length || 10]"
-              emptyText="Sin paquetes seleccionados">
-
-              <ng-template appCell="titulo" let-row>
-                {{ row.titulo }}
-              </ng-template>
-
-              <ng-template appCell="precioUnit" let-row>
-                <div class="text-end">
-                  <ng-container *ngIf="!row.editandoPrecio; else precioUnitEditor">
-                    <span role="button" class="text-decoration-underline"
-                          (click)="enablePrecioEdit(row)"
-                          title="Haz clic para editar">
-                      {{ row.precio | number:'1.2-2' }}
-                    </span>
-                  </ng-container>
-                  <ng-template #precioUnitEditor>
-                    <input type="number"
-                           class="form-control form-control-sm text-end"
-                           [id]="getPrecioInputId(row)"
-                           [value]="row.precio"
-                           step="0.01"
-                           [attr.min]="getPrecioMinimo(row)"
-                           (blur)="confirmPrecioEdit(row, $any($event.target).value)"
-                           (keydown.enter)="confirmPrecioEdit(row, $any($event.target).value)"
-                           (keydown.escape)="cancelPrecioEdit(row)">
-                    <small class="text-muted">Mínimo: {{ getPrecioMinimo(row) | number:'1.2-2' }}</small>
-                  </ng-template>
-                </div>
-              </ng-template>
-
-              <ng-template appCell="precioOriginal" let-row>
-                <div class="text-end">
-                  <div>{{ row.precioOriginal | number:'1.2-2' }}</div>
-                  <div *ngIf="getDescuentoPorcentaje(row) != null" class="text-success small">
-                    −{{ getDescuentoPorcentaje(row) | number:'1.0-1' }}%
-                  </div>
-                </div>
-              </ng-template>
-
-              <ng-template appCell="horas" let-row>
-                <div class="text-center">{{ row.horas ?? '—' }}</div>
-              </ng-template>
-
-              <ng-template appCell="staff" let-row>
-                <div class="text-center">{{ row.staff ?? '—' }}</div>
-              </ng-template>
-
-              <ng-template appCell="subtotal" let-row>
-                <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | number:'1.2-2' }}</div>
-              </ng-template>
-
-              <ng-template appCell="notas" let-row>
-                <input type="text"
-                       class="form-control form-control-sm"
-                       [(ngModel)]="row.notas"
-                       [ngModelOptions]="{standalone:true}"
-                       maxlength="200"
-                       placeholder="Notas opcionales">
-              </ng-template>
-
-              <ng-template appCell="quitar" let-row>
-                <button type="button" class="btn btn-link text-danger p-0"
-                        (click)="removePaquete(row.key)">✖</button>
-              </ng-template>
-
-            </app-table-base>
-          </div>
-          <div class="text-end mt-2">
-            <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <div class="row mb-3">
-        <div class="col-md-4 ms-auto">
-          <label class="col-form-label">Total estimado</label>
-          <div class="input-group">
-            <span class="input-group-text">US$</span>
-            <input type="number" class="form-control" formControlName="totalEstimado" min="0" step="0.01">
-          </div>
-          <small class="text-muted">
-            Se calcula automáticamente con los paquetes seleccionados, pero puedes ajustarlo manualmente.
-          </small>
         </div>
-      </div>
 
-      <div class="text-end">
-        <button type="button" class="btn btn-outline-secondary me-2" (click)="cancel()"
-                [disabled]="loading">Cancelar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="loading">
-          <span *ngIf="!loading">Guardar cotización</span>
-          <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        </button>
+        <div class="table-responsive" *ngIf="!loadingPaquetes; else paquetesLoading">
+          <app-table-base [columns]="paquetesColumns" [data]="paquetesRows" [showSearch]="false"
+            [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false" [showCreateButton]="false"
+            [pageSize]="paquetesRows.length || 10" [pageSizeOptions]="[paquetesRows.length || 10]"
+            emptyText="Sin paquetes disponibles">
+
+            <ng-template appCell="titulo" let-row>
+              {{ row.titulo || '—' }}
+            </ng-template>
+
+            <ng-template appCell="precio" let-row>
+              {{ row.precio != null ? (row.precio | number:'1.2-2') : '—' }}
+            </ng-template>
+
+            <ng-template appCell="staff" let-row>
+              {{ row.staff != null ? row.staff : '—' }}
+            </ng-template>
+
+            <ng-template appCell="horas" let-row>
+              {{ row.horas != null ? row.horas : '—' }}
+            </ng-template>
+
+            <ng-template appCell="acciones" let-row>
+              <div class="d-flex justify-content-center gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="mostrarDetallePaquete(row)">
+                  Mostrar
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm"
+                  [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
+                  *ngIf="!isInSeleccion(row.raw); else quitarBtn" (click)="addPaquete(row.raw)">
+                  {{ hasOtroPaqueteDelServicio(row.raw) ? 'Reemplazar' : 'Agregar' }}
+                </button>
+                <ng-template #quitarBtn>
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removePaquete(pkgKey(row.raw))">
+                    Quitar
+                  </button>
+                </ng-template>
+              </div>
+            </ng-template>
+
+          </app-table-base>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="card mb-3" *ngIf="selectedPaquetes.length">
+      <mat-card-header>
+        <mat-card-title>Paquetes seleccionados ({{ selectedPaquetes.length }})</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-responsive">
+          <app-table-base [columns]="selectedPaquetesColumns" [data]="selectedPaquetes" [showSearch]="false"
+            [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false" [showCreateButton]="false"
+            [pageSize]="selectedPaquetes.length || 10" [pageSizeOptions]="[selectedPaquetes.length || 10]"
+            emptyText="Sin paquetes seleccionados">
+
+            <ng-template appCell="titulo" let-row>
+              {{ row.titulo }}
+            </ng-template>
+
+            <ng-template appCell="precioUnit" let-row>
+              <div class="text-end">
+                <ng-container *ngIf="!row.editandoPrecio; else precioUnitEditor">
+                  <span role="button" class="text-decoration-underline" (click)="enablePrecioEdit(row)"
+                    title="Haz clic para editar">
+                    {{ row.precio | number:'1.2-2' }}
+                  </span>
+                </ng-container>
+                <ng-template #precioUnitEditor>
+                  <input type="number" class="form-control form-control-sm text-end" [id]="getPrecioInputId(row)"
+                    [value]="row.precio" step="0.01" [attr.min]="getPrecioMinimo(row)"
+                    (blur)="confirmPrecioEdit(row, $any($event.target).value)"
+                    (keydown.enter)="confirmPrecioEdit(row, $any($event.target).value)"
+                    (keydown.escape)="cancelPrecioEdit(row)">
+                  <small class="text-muted">Mínimo: {{ getPrecioMinimo(row) | number:'1.2-2' }}</small>
+                </ng-template>
+              </div>
+            </ng-template>
+
+            <ng-template appCell="precioOriginal" let-row>
+              <div class="text-end">
+                <div>{{ row.precioOriginal | number:'1.2-2' }}</div>
+                <div *ngIf="getDescuentoPorcentaje(row) != null" class="text-success small">
+                  −{{ getDescuentoPorcentaje(row) | number:'1.0-1' }}%
+                </div>
+              </div>
+            </ng-template>
+
+            <ng-template appCell="horas" let-row>
+              <div class="text-center">{{ row.horas ?? '—' }}</div>
+            </ng-template>
+
+            <ng-template appCell="staff" let-row>
+              <div class="text-center">{{ row.staff ?? '—' }}</div>
+            </ng-template>
+
+            <ng-template appCell="subtotal" let-row>
+              <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | number:'1.2-2' }}</div>
+            </ng-template>
+
+            <ng-template appCell="notas" let-row>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="row.notas"
+                [ngModelOptions]="{standalone:true}" maxlength="200" placeholder="Notas opcionales">
+            </ng-template>
+
+            <ng-template appCell="quitar" let-row>
+              <button type="button" class="btn btn-link text-danger p-0" (click)="removePaquete(row.key)">✖</button>
+            </ng-template>
+
+          </app-table-base>
+        </div>
+        <div class="text-end mt-2">
+          <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="row mb-3">
+      <div class="col-md-4 ms-auto">
+        <label class="col-form-label">Total estimado</label>
+        <div class="input-group">
+          <span class="input-group-text">US$</span>
+          <input type="number" class="form-control" formControlName="totalEstimado" min="0" step="0.01">
+        </div>
+        <small class="text-muted">
+          Se calcula automáticamente con los paquetes seleccionados, pero puedes ajustarlo manualmente.
+        </small>
       </div>
+    </div>
+
+    <div class="text-end">
+      <button type="button" class="btn btn-outline-secondary me-2" (click)="cancel()"
+        [disabled]="loading">Cancelar</button>
+      <button type="submit" class="btn btn-primary" [disabled]="loading">
+        <span *ngIf="!loading">Guardar cotización</span>
+        <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      </button>
+    </div>
   </form>
 </div>
 
@@ -522,14 +442,8 @@
   </div>
 </ng-template>
 
-<app-modal-base
-  [open]="detallePaqueteAbierto"
-  [disableClose]="false"
-  [loading]="false"
-  [useDefaultFooter]="true"
-  size="lg"
-  title="Detalle del paquete"
-  (closed)="cerrarDetallePaquete()">
+<app-modal-base [open]="detallePaqueteAbierto" [disableClose]="false" [loading]="false" [useDefaultFooter]="true"
+  size="lg" title="Detalle del paquete" (closed)="cerrarDetallePaquete()">
 
   <ng-container *ngIf="detallePaqueteSeleccionado; else sinPaqueteDetalle">
     <div class="row g-3">
@@ -547,27 +461,36 @@
       </div>
       <div class="col-md-6">
         <label class="form-label">Servicio</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.servicioNombre ?? detallePaqueteSeleccionado?.servicio?.nombre ?? '—'" disabled>
+        <input class="form-control"
+          [value]="detallePaqueteSeleccionado?.servicioNombre ?? detallePaqueteSeleccionado?.servicio?.nombre ?? '—'"
+          disabled>
       </div>
       <div class="col-md-6">
         <label class="form-label">Categoría</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.categoriaNombre ?? detallePaqueteSeleccionado?.categoriaTipo ?? '—'" disabled>
+        <input class="form-control"
+          [value]="detallePaqueteSeleccionado?.categoriaNombre ?? detallePaqueteSeleccionado?.categoriaTipo ?? '—'"
+          disabled>
       </div>
       <div class="col-md-6">
         <label class="form-label">Tipo de paquete</label>
-        <input class="form-control" [value]="detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'" disabled>
+        <input class="form-control" [value]="detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'"
+          disabled>
       </div>
       <div class="col-12">
         <label class="form-label">Descripción</label>
-        <textarea class="form-control" rows="3" [value]="detallePaqueteSeleccionado?.descripcion || detallePaqueteSeleccionado?.Descripcion || '—'" disabled></textarea>
+        <textarea class="form-control" rows="3"
+          [value]="detallePaqueteSeleccionado?.descripcion || detallePaqueteSeleccionado?.Descripcion || '—'"
+          disabled></textarea>
       </div>
       <div class="col-12">
         <label class="form-label">Staff</label>
         <div class="form-control" style="height: auto;" disabled>
-          {{ (detallePaqueteSeleccionado?.staff?.total ?? detallePaqueteSeleccionado?.eventoServicio?.staff?.total ?? detallePaqueteSeleccionado?.personal ?? '—') }}
+          {{ (detallePaqueteSeleccionado?.staff?.total ?? detallePaqueteSeleccionado?.eventoServicio?.staff?.total ??
+          detallePaqueteSeleccionado?.personal ?? '—') }}
           <div class="small text-muted" *ngIf="getDetalleStaffLista(detallePaqueteSeleccionado).length">
             <div *ngFor="let miembro of getDetalleStaffLista(detallePaqueteSeleccionado)">
-              {{ (miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? 'Rol') }} <span *ngIf="miembro?.cantidad">({{ miembro?.cantidad }})</span>
+              {{ (miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? 'Rol') }} <span *ngIf="miembro?.cantidad">({{
+                miembro?.cantidad }})</span>
             </div>
           </div>
         </div>

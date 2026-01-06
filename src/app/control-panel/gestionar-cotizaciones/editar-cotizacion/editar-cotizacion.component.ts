@@ -11,7 +11,7 @@ import {
   CotizacionAdminEventoPayload
 } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
-import { formatIsoDate } from '../../../shared/utils/date-utils';
+import { formatIsoDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
@@ -984,12 +984,15 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       if (!raw) {
         return null;
       }
-      const date = new Date(raw);
-      if (Number.isNaN(date.valueOf())) {
+      const date = parseDateInput(raw);
+      if (!date) {
         return { fechaEventoInvalida: true };
       }
-      const min = new Date(this.fechaMinimaEvento);
-      const max = new Date(this.fechaMaximaEvento);
+      const min = parseDateInput(this.fechaMinimaEvento);
+      const max = parseDateInput(this.fechaMaximaEvento);
+      if (!min || !max) {
+        return null;
+      }
       if (date < min) {
         return { fechaEventoAnterior: true };
       }

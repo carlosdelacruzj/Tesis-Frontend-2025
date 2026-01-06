@@ -338,7 +338,8 @@ downloadPdf(
       (api.cotizacion as any)?.codigoCotizacion
     );
 
-    const normalized = this.buildCotizacion(id, payload, codigoApi ?? undefined);
+    const codigoCache = this.cotizaciones.find(item => item.id === id)?.codigo;
+    const normalized = this.buildCotizacion(id, payload, codigoApi ?? codigoCache ?? undefined);
 
     const estado = api.estado ?? payload.cotizacion.estado;
     if (estado) {
@@ -439,7 +440,7 @@ downloadPdf(
 
     const normalized: Cotizacion & { raw?: CotizacionPayload } = {
       id,
-      codigo: codigo ?? `COT-${String(id).padStart(3, '0')}`,
+      codigo: codigo ?? `COT-${String(id).padStart(6, '0')}`,
       cliente: clienteDisplay,
       contactoResumen,
       contacto: contactoNormalized,
