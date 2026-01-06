@@ -10,18 +10,21 @@
     (createClick)="navigateToCreate()">
   </app-list-toolbar>
 
-  <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
+  @if (error) {
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+  }
 
-  <ng-container *ngIf="!loadingList; else loadingState">
+  @if (!loadingList) {
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
       emptyText="Sin resultados"
-      (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
-      [showCreateButton]="false" [showSearch]="false"
-      [externalSearchTerm]="searchTerm">
+      (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)" [showCreateButton]="false"
+      [showSearch]="false" [externalSearchTerm]="searchTerm">
 
             <ng-template appCell="Cliente" let-row>
         <span>{{ row.Cliente || '--' }}</span>
-        <small class="text-muted" *ngIf="row.Documento"> {{ row.Documento }}</small>
+        @if (row.Documento) {
+          <small class="text-muted"> {{ row.Documento }}</small>
+        }
       </ng-template>
 
       <ng-template appCell="Creado" let-row>
@@ -29,11 +32,14 @@
       </ng-template>
 
       <ng-template appCell="ProxFecha" let-row>
-        <ng-container *ngIf="row.ProxFecha; else noDate">
+        @if (row.ProxFecha) {
           {{ row.ProxFecha | date:'dd-MM-yyyy' }}
-          <small class="text-muted" *ngIf="row.ProxDia"> ({{ row.ProxDia }})</small>
-        </ng-container>
-        <ng-template #noDate>--</ng-template>
+          @if (row.ProxDia) {
+            <small class="text-muted"> ({{ row.ProxDia }})</small>
+          }
+        } @else {
+          --
+        }
       </ng-template>
 
       <ng-template appCell="ProxHora" let-row>
@@ -83,7 +89,12 @@
       </ng-template>
 
     </app-table-base>
-  </ng-container>
+  } @else {
+    <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="mt-3 mb-0">Cargando pedidos</p>
+    </div>
+  }
 </div>
 
 <app-modal-base
@@ -94,17 +105,19 @@
   [loading]="modalPago.guardando"
   (closed)="onModalPagoClosed()"
 >
-  <div *ngIf="modalPago.cargando" class="d-flex flex-column align-items-center justify-content-center p-4 text-muted">
-    <mat-spinner diameter="36"></mat-spinner>
-    <p class="mt-3 mb-0">Cargando información</p>
-  </div>
-
-  <ng-container *ngIf="!modalPago.cargando">
-    <div *ngIf="modalPago.error" class="alert alert-danger" role="alert">
-      {{ modalPago.error }}
+  @if (modalPago.cargando) {
+    <div class="d-flex flex-column align-items-center justify-content-center p-4 text-muted">
+      <mat-spinner diameter="36"></mat-spinner>
+      <p class="mt-3 mb-0">Cargando información</p>
     </div>
+  } @else {
+    @if (modalPago.error) {
+      <div class="alert alert-danger" role="alert">
+        {{ modalPago.error }}
+      </div>
+    }
 
-    <ng-container *ngIf="modalPago.resumen">
+    @if (modalPago.resumen) {
       <form id="registrarPagoForm" class="row g-3" (ngSubmit)="registrarPago()">
         <div class="col-12">
           <div class="card border-0 shadow-sm">
@@ -130,9 +143,11 @@
         </div>
 
         <div class="col-12">
-          <div class="alert alert-warning" *ngIf="modalPago.faltanteDeposito > 0" role="status">
-            Debes registrar al menos {{ faltanteDepositoTexto }} para cumplir con el 50% del pedido.
-          </div>
+          @if (modalPago.faltanteDeposito > 0) {
+            <div class="alert alert-warning" role="status">
+              Debes registrar al menos {{ faltanteDepositoTexto }} para cumplir con el 50% del pedido.
+            </div>
+          }
         </div>
 
         <div class="col-12 col-md-6">
@@ -148,7 +163,9 @@
             (ngModelChange)="onMontoChange()"
             required
           />
-          <div *ngIf="modalPago.montoError" class="text-danger small mt-1">{{ modalPago.montoError }}</div>
+          @if (modalPago.montoError) {
+            <div class="text-danger small mt-1">{{ modalPago.montoError }}</div>
+          }
           <div class="form-text">Saldo disponible: {{ saldoPendienteTexto }}</div>
         </div>
 
@@ -162,9 +179,11 @@
             [(ngModel)]="modalPago.metodoId"
           >
             <option [ngValue]="null" disabled>Selecciona un método</option>
-            <option *ngFor="let metodo of modalPago.metodos" [ngValue]="metodo.idMetodoPago">
-              {{ metodo.nombre }}
-            </option>
+            @for (metodo of modalPago.metodos; track metodo.idMetodoPago) {
+              <option [ngValue]="metodo.idMetodoPago">
+                {{ metodo.nombre }}
+              </option>
+            }
           </select>
         </div>
 
@@ -189,15 +208,17 @@
             accept="image/png,image/jpeg,application/pdf"
             (change)="onFileSelected($event)"
           />
-          <div class="mt-2 d-flex align-items-center gap-2" *ngIf="modalPago.fileName">
-            <mat-icon class="text-muted">attach_file</mat-icon>
-            <span class="text-truncate">{{ modalPago.fileName }}</span>
-            <button type="button" class="btn btn-link btn-sm p-0" (click)="limpiarArchivo()">Quitar</button>
-          </div>
+          @if (modalPago.fileName) {
+            <div class="mt-2 d-flex align-items-center gap-2">
+              <mat-icon class="text-muted">attach_file</mat-icon>
+              <span class="text-truncate">{{ modalPago.fileName }}</span>
+              <button type="button" class="btn btn-link btn-sm p-0" (click)="limpiarArchivo()">Quitar</button>
+            </div>
+          }
         </div>
       </form>
-    </ng-container>
-  </ng-container>
+    }
+  }
 
   <div modal-footer class="d-flex justify-content-end gap-2">
     <button class="btn btn-outline-secondary" type="button" (click)="onModalPagoClosed()" [disabled]="modalPago.guardando">
@@ -213,10 +234,3 @@
     </button>
   </div>
 </app-modal-base>
-
-<ng-template #loadingState>
-  <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
-    <mat-spinner diameter="40"></mat-spinner>
-    <p class="mt-3 mb-0">Cargando pedidos</p>
-  </div>
-</ng-template>

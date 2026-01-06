@@ -12,20 +12,20 @@
             </mat-card-header>
             <mat-card-content class="card-body">
               <div class="form-group">
-                <label class='col-form-label'>Pedido</label>
-                <input type="text" class="form-control" name="NombrePedido"
+                <label class="col-form-label" for="pedidoNombre">Pedido</label>
+                <input id="pedidoNombre" type="text" class="form-control" name="NombrePedido"
                   [(ngModel)]="visualizarService.selectAgregarPedido.NombrePedido" required disabled readonly>
               </div>
 
               <div class="form-group">
-                <label class='col-form-label'>Empleado</label>
-                <input type="text" name="CodigoEmpleado" [(ngModel)]="CodigoEmpleado" class="form-control" disabled
-                  readonly>
+                <label class="col-form-label" for="codigoEmpleado">Empleado</label>
+                <input id="codigoEmpleado" type="text" name="CodigoEmpleado" [(ngModel)]="CodigoEmpleado"
+                  class="form-control" disabled readonly>
               </div>
 
               <div class="form-group">
-                <label class='col-form-label'>Fecha de registro</label>
-                <input type="text" class="form-control" name="fechaCreate"
+                <label class="col-form-label" for="fechaCreate">Fecha de registro</label>
+                <input id="fechaCreate" type="text" class="form-control" name="fechaCreate"
                   [(ngModel)]="visualizarService.selectAgregarPedido.fechaCreate" disabled readonly>
               </div>
             </mat-card-content>
@@ -39,9 +39,10 @@
             </mat-card-header>
             <mat-card-content class="card-body">
               <div class="form-group">
-                <label class="col-form-label">Cliente</label>
+                <label class="col-form-label" for="clienteNombreCompleto">Cliente</label>
                 <div class="input-group mb-1">
                   <input
+                    id="clienteNombreCompleto"
                     type="text"
                     class="form-control"
                     [value]="clienteNombreCompleto"
@@ -50,8 +51,9 @@
                 </div>
               </div>
               <div class="form-group">
-                <label class='col-form-label'>Documento de identidad</label>
+                <label class="col-form-label" for="clienteDocumento">Documento de identidad</label>
                 <input
+                  id="clienteDocumento"
                   type="text"
                   class="form-control"
                   [value]="clienteDocumento"
@@ -59,8 +61,9 @@
                   readonly>
               </div>
               <div class="form-group">
-                <label class='col-form-label'>Celular</label>
+                <label class="col-form-label" for="clienteCelular">Celular</label>
                 <input
+                  id="clienteCelular"
                   type="text"
                   class="form-control"
                   [value]="clienteCelular"
@@ -135,47 +138,51 @@
           <mat-card-title>Servicios contratados</mat-card-title>
         </mat-card-header>
         <mat-card-content class="card-body">
-          <div class="row mt-3" *ngIf="selectedPaquetes.length">
-            <div class="col">
-              <h6>Seleccionados ({{selectedPaquetes.length}})</h6>
+          @if (selectedPaquetes.length) {
+            <div class="row mt-3">
+              <div class="col">
+                <h6>Seleccionados ({{selectedPaquetes.length}})</h6>
 
-              <table class="table table-sm align-middle">
-                <thead>
-                  <tr>
-                    <th>Descripción</th>
-                    <th class="text-end">Precio</th>
-                    <th class="text-center">Cant.</th>
-                    <th class="text-end">Subtotal</th>
-                    <th style="width:28%">Notas</th>
+                <table class="table table-sm align-middle">
+                  <thead>
+                    <tr>
+                      <th>Descripción</th>
+                      <th class="text-end">Precio</th>
+                      <th class="text-center">Cant.</th>
+                      <th class="text-end">Subtotal</th>
+                      <th style="width:28%">Notas</th>
 
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let it of selectedPaquetes">
-                    <td>{{ it.descripcion }}</td>
-                    <td class="text-end">{{ it.precio | number:'1.2-2' }}</td>
-                    <td class="text-center">1</td>
-                    <td class="text-end">{{ it.precio | number:'1.2-2' }}</td>
-                    <td>
-                      <input type="text" class="form-control form-control-sm" [(ngModel)]="it.notas"
-                        [ngModelOptions]="{standalone:true}" maxlength="255" disabled readonly>
-                    </td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th colspan="3" class="text-end">Total</th>
-                    <th class="text-end">{{ totalSeleccion | number:'1.2-2' }}</th>
-                    <th colspan="2"></th>
-                  </tr>
-                </tfoot>
-              </table>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (it of selectedPaquetes; track $index) {
+                      <tr>
+                        <td>{{ it.descripcion }}</td>
+                        <td class="text-end">{{ it.precio | number:'1.2-2' }}</td>
+                        <td class="text-center">1</td>
+                        <td class="text-end">{{ it.precio | number:'1.2-2' }}</td>
+                        <td>
+                          <input type="text" class="form-control form-control-sm" [(ngModel)]="it.notas"
+                            [ngModelOptions]="{standalone:true}" maxlength="255" disabled readonly>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th colspan="3" class="text-end">Total</th>
+                      <th class="text-end">{{ totalSeleccion | number:'1.2-2' }}</th>
+                      <th colspan="2"></th>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
-          </div>
+          }
 
           <div class="form-group">
-            <label class='col-form-label'>Observaciones</label>
-            <textarea type="text" class="form-control" name="Observacion" rows="5"
+            <label class="col-form-label" for="observacionesPedido">Observaciones</label>
+            <textarea id="observacionesPedido" type="text" class="form-control" name="Observacion" rows="5"
               [(ngModel)]="visualizarService.selectAgregarPedido.Observacion" disabled readonly>
             </textarea>
           </div>
