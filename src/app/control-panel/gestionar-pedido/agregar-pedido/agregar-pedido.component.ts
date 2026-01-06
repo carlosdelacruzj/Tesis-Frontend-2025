@@ -304,7 +304,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   addDaysToDate(date, days) {
-    var res = new Date(date);
+    const res = new Date(date);
     res.setDate(res.getDate() + days);
     return this.convert(res);
   }
@@ -768,8 +768,6 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       });
       this.dataSource.data = this.ubicacion; // ✅ no recrear
       this.bindSorts();
-    } else {
-      this.ubicacion;
     }
   }
 
@@ -921,7 +919,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
 
     // ====== Envío ======
     this.visualizarService.postPedidos(payload).subscribe(
-      (res) => {
+      () => {
         Swal.fire({
           text: 'Registro exitoso',
           icon: 'success',

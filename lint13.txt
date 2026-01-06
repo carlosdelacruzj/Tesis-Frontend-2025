@@ -1,0 +1,528 @@
+
+Linting "SWGODLC"...
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-pedido/detalle-pedido/detalle-pedido.component.ts
+   22:3   error  Type string trivially inferred from a string literal, remove type annotation                                                                                            @typescript-eslint/no-inferrable-types
+   23:3   error  Type string trivially inferred from a string literal, remove type annotation                                                                                            @typescript-eslint/no-inferrable-types
+   24:3   error  Type string trivially inferred from a string literal, remove type annotation                                                                                            @typescript-eslint/no-inferrable-types
+   26:14  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   27:11  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   31:34  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   31:64  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   32:35  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   32:65  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   43:3   error  Type number trivially inferred from a number literal, remove type annotation                                                                                            @typescript-eslint/no-inferrable-types
+   45:15  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   53:14  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+   56:21  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+  103:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  104:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  105:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  106:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  176:16  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  178:56  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  182:16  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  184:56  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  188:16  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  190:56  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  198:16  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  202:24  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  213:24  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  238:53  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  251:59  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-pedido/gestionar-pedido.component.ts
+   74:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   75:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   76:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  112:16  error  '_' is defined but never used                                                                                                                                           @typescript-eslint/no-unused-vars
+  116:16  error  '_' is defined but never used                                                                                                                                           @typescript-eslint/no-unused-vars
+  296:37  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  297:37  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  358:46  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  419:36  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  512:41  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  512:70  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  512:95  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  517:24  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-pedido/model/pedido.model.ts
+   5:20  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+   7:22  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+   8:20  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+   9:21  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  10:20  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  16:20  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  17:22  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  26:20  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  36:22  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-pedido/model/visualizar.model.ts
+   4:23  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+   6:22  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+   7:25  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+   8:27  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  11:25  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  12:21  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  13:23  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  15:26  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  16:25  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  17:26  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  18:28  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  19:24  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  22:23  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  23:26  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  24:24  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  25:24  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  80:19  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  82:22  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+  83:17  error  Prefer using the primitive `string` as a type name, rather than the upper-cased `String`  @typescript-eslint/no-wrapper-object-types
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-pedido/service/pedido.service.ts
+  70:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  73:38  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  80:50  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  83:36  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  86:37  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  89:35  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-pedido/service/visualizar.service.ts
+  37:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  44:57  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  45:26  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  52:50  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  52:67  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  54:26  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  61:28  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  61:45  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  62:27  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  73:77  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  77:26  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-perfiles/editar-perfil/editar-perfil.component.html
+   37:57  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
+   41:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   48:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   51:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   58:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   61:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   69:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   72:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   79:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   82:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   89:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   92:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  101:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  104:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-perfiles/editar-perfil/editar-perfil.component.ts
+  24:45  error  Unnecessary escape character: \.                                                                                                                                        no-useless-escape
+  26:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  33:9   error  'data' is never reassigned. Use 'const' instead                                                                                                                         prefer-const
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-perfiles/gestionar-perfiles.component.html
+  14:9   error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  16:18  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-perfiles/gestionar-perfiles.component.ts
+  38:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  39:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  76:16  error  '_' is defined but never used                                                                                                                                           @typescript-eslint/no-unused-vars
+  80:16  error  '_' is defined but never used                                                                                                                                           @typescript-eslint/no-unused-vars
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-perfiles/registrar-perfil/registrar-perfil.component.html
+   33:57  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
+   37:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   44:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   47:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   54:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   57:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   65:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   68:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   75:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   78:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   85:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   88:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   97:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  100:37  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-perfiles/registrar-perfil/registrar-perfil.component.ts
+  24:45  error  Unnecessary escape character: \.                                                                                                                                        no-useless-escape
+  26:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  33:9   error  'data' is never reassigned. Use 'const' instead                                                                                                                         prefer-const
+  45:8   error  'res' is defined but never used                                                                                                                                         @typescript-eslint/no-unused-vars
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-perfiles/service/perfil.service.ts
+  24:17  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  26:38  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  30:38  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  35:29  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  35:46  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  40:29  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  40:46  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  44:29  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  44:46  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  46:28  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-personal/gestionar-personal.component.html
+   14:9   error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   16:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   91:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+   94:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   95:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   96:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  101:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  105:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  106:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  107:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  112:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  116:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  117:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  118:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  123:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  127:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  128:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  129:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  134:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  137:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  138:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  139:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  144:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  152:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  160:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  163:39  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  165:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  171:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  175:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  190:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  212:12  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  219:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  224:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  229:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  234:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  237:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  238:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  239:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  244:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  247:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  248:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  249:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  254:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  259:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  265:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  272:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  277:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  280:50  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  287:11  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  299:14  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  320:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  323:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  327:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  331:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  335:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  339:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  343:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  348:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  354:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  358:11  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  364:11  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-personal/gestionar-personal.component.ts
+   11:6   error  Use an `interface` instead of a `type`                                                                                                                                  @typescript-eslint/consistent-type-definitions
+   12:6   error  Use an `interface` instead of a `type`                                                                                                                                  @typescript-eslint/consistent-type-definitions
+   83:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  118:16  error  '_' is defined but never used                                                                                                                                           @typescript-eslint/no-unused-vars
+  122:16  error  '_' is defined but never used                                                                                                                                           @typescript-eslint/no-unused-vars
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-personal/service/personal.service.ts
+  32:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-proyecto/detalle-proyecto/detalle-proyecto.component.html
+    8:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   15:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  102:41  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  144:30  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  149:37  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  167:30  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  193:20  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  197:33  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  199:24  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  210:30  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  221:30  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  229:40  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  232:33  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  237:38  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  254:40  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  262:19  error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  298:11  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  300:33  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  301:47  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  315:41  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  321:34  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  338:71  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  347:31  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  353:11  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  355:33  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  356:47  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  371:40  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  377:34  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  395:71  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  404:31  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  410:11  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  425:55  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  429:31  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  434:53  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  447:57  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+  451:33  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  457:46  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  466:66  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  467:60  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  470:60  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  486:29  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-proyecto/detalle-proyecto/detalle-proyecto.component.ts
+    26:18  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+    27:12  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+    61:27  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+   101:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   102:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   103:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   104:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   105:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   106:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   254:25  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+   408:13  error  'empleadosActuales' is assigned a value but never used                                                                                                                  @typescript-eslint/no-unused-vars
+   721:23  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   757:60  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+   768:60  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+   783:30  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+   784:93  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   909:33  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   909:75  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   920:33  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+   999:44  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  1019:46  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  1069:16  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  1070:19  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  1078:33  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-proyecto/gestionar-proyecto.component.html
+   13:9   error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   15:18  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   26:40  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   50:15  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   51:15  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   52:15  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+   80:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+   85:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+   90:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+   93:33  error  Use built-in control flow instead of directive ngForOf    @angular-eslint/template/prefer-control-flow
+   98:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  103:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  108:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  113:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  118:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  123:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  128:7   error  A label component must be associated with a form element  @angular-eslint/template/label-has-associated-control
+  135:16  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+  136:16  error  Use built-in control flow instead of directive ngIf       @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-proyecto/gestionar-proyecto.component.ts
+  33:12  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+  55:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  56:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  57:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/gestionar-proyecto/service/proyecto.service.ts
+  13:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  42:28  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  43:26  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  60:19  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+  77:30  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/home/home.component.ts
+  10:17  error  Unexpected empty constructor           @typescript-eslint/no-empty-function
+  12:3   error  Lifecycle methods should not be empty  @angular-eslint/no-empty-lifecycle-method
+  12:20  error  Unexpected empty method 'ngOnInit'     @typescript-eslint/no-empty-function
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/pagos-estandar/pagos-estandar.component.html
+   18:25   error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
+   29:9    error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   31:9    error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   69:24   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   92:9    error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   97:18   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+   98:11   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  102:11   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  125:39   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  130:10   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  137:57   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  139:43   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  157:15   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  171:38   error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
+  198:60   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  214:13   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  216:102  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/pagos-estandar/pagos-estandar.component.ts
+  33:18  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+  56:20  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+  71:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/registrar-pago/open-dialog-img/open-dialog.component.ts
+  5:13  error  The selector should start with one of these prefixes: "app" (https://angular.dev/style-guide#choosing-component-selectors)                                              @angular-eslint/component-selector
+  9:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  9:53  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/control-panel/registrar-pago/service/registrar-pago.service.ts
+   31:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   78:15  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  105:15  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/guards/role.guard.ts
+   9:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+   9:49  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  11:46  error  '_state' is defined but never used                                                                                                                                      @typescript-eslint/no-unused-vars
+
+/home/carlos/Tesis-Frontend-2025/src/app/guards/validar-token.guard.ts
+  13:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  13:49  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/components/landing-header/landing-header.component.html
+  26:12  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  29:12  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  37:12  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  40:12  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/components/landing-header/landing-header.component.ts
+  13:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  14:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/landing.component.html
+   24:31  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+   38:57  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+   43:36  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+   57:34  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+   63:57  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+   80:93  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+   92:35  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+  148:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  156:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  157:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  165:45  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+  167:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  177:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  178:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  180:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  195:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  198:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  201:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  204:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  214:25  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  241:47  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+  254:46  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+  268:50  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  274:39  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  287:44  error  Use built-in control flow instead of directive ngForOf                                  @angular-eslint/template/prefer-control-flow
+  320:1   error  click must be accompanied by either keyup, keydown or keypress event for accessibility  @angular-eslint/template/click-events-have-key-events
+  320:1   error  Elements with interaction handlers must be focusable                                    @angular-eslint/template/interactive-supports-focus
+  320:24  error  Use built-in control flow instead of directive ngIf                                     @angular-eslint/template/prefer-control-flow
+  321:3   error  click must be accompanied by either keyup, keydown or keypress event for accessibility  @angular-eslint/template/click-events-have-key-events
+  321:3   error  Elements with interaction handlers must be focusable                                    @angular-eslint/template/interactive-supports-focus
+  325:19  error  Use built-in control flow instead of directive ngSwitch                                 @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/landing.component.ts
+   51:46   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  167:30   error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+  348:5    error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  349:5    error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  350:5    error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  351:5    error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  352:5    error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  546:57   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  547:27   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  682:35   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  686:50   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  709:41   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  772:39   error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                                                                             @typescript-eslint/array-type
+  778:36   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  778:62   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  778:82   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  778:102  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  779:31   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  779:57   error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/portal/landing-client-cotizaciones.component.html
+  14:9   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  15:9   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  16:9   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  20:9   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  21:62  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
+  45:45  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/portal/landing-client-cotizaciones.component.ts
+  22:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  23:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  24:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/portal/landing-client-pedidos.component.html
+  14:9   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  15:9   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  16:9   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  20:9   error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  21:58  error  Use built-in control flow instead of directive ngForOf  @angular-eslint/template/prefer-control-flow
+  25:13  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  45:45  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+  48:44  error  Use built-in control flow instead of directive ngIf     @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/portal/landing-client-pedidos.component.ts
+  22:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  23:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  24:5  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/services/landing-client-portal.service.ts
+  49:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+
+/home/carlos/Tesis-Frontend-2025/src/app/landing/services/landing-cotizacion.service.ts
+  33:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  35:22  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  39:44  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  43:69  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  48:40  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  48:57  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+  53:43  error  Unexpected any. Specify a different type                                                                                                                                @typescript-eslint/no-explicit-any
+
+/home/carlos/Tesis-Frontend-2025/src/app/shared/footer/footer.component.ts
+   9:17  error  Unexpected empty constructor           @typescript-eslint/no-empty-function
+  11:3   error  Lifecycle methods should not be empty  @angular-eslint/no-empty-lifecycle-method
+  11:20  error  Unexpected empty method 'ngOnInit'     @typescript-eslint/no-empty-function
+
+/home/carlos/Tesis-Frontend-2025/src/app/shared/header/header.component.html
+  3:103  error  <img/> element must have a text alternative  @angular-eslint/template/alt-text
+
+/home/carlos/Tesis-Frontend-2025/src/app/shared/header/header.component.ts
+  19:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  20:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  21:5   error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  24:3   error  Lifecycle methods should not be empty                                                                                                                                   @angular-eslint/no-empty-lifecycle-method
+  24:20  error  Unexpected empty method 'ngOnInit'                                                                                                                                      @typescript-eslint/no-empty-function
+
+/home/carlos/Tesis-Frontend-2025/src/app/shared/sidebar/sidebar.component.html
+  18:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  23:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  28:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  33:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  38:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  43:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  48:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  53:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+  58:23  error  Use built-in control flow instead of directive ngIf  @angular-eslint/template/prefer-control-flow
+
+/home/carlos/Tesis-Frontend-2025/src/app/shared/sidebar/sidebar.component.ts
+  11:15  error  Prefer using the inject() function over constructor parameter injection. Use Angular's migration schematic to automatically refactor: ng generate @angular/core:inject  @angular-eslint/prefer-inject
+  13:3   error  Lifecycle methods should not be empty                                                                                                                                   @angular-eslint/no-empty-lifecycle-method
+  13:20  error  Unexpected empty method 'ngOnInit'                                                                                                                                      @typescript-eslint/no-empty-function
+
+✖ 436 problems (436 errors, 0 warnings)
+  51 errors and 0 warnings potentially fixable with the `--fix` option.
+

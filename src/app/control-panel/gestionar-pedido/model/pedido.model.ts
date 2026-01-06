@@ -2,19 +2,19 @@ export class Proyecto {
   constructor(
 
     public ID: number,
-    public Nombre: String,
+    public Nombre: string,
     public Fecha: string,
-    public Servicio: String,
-    public Evento: String,
-    public Cliente: String,
-    public Estado: String,
+    public Servicio: string,
+    public Evento: string,
+    public Cliente: string,
+    public Estado: string,
 
   ) { }
 }
 export class DatosCliente {
   constructor(
-    public Nombre: String,
-    public Apellido: String,
+    public Nombre: string,
+    public Apellido: string,
     public Cod_Cli: number
   ) {
 
@@ -23,7 +23,7 @@ export class DatosCliente {
 export class Servi {
   constructor(
     public ID: number,
-    public Nombre: String
+    public Nombre: string
   ) {
 
   }
@@ -33,7 +33,7 @@ export class Eventos {
   constructor(
 
     public PK_E_Cod: number,
-    public E_Nombre: String
+    public E_Nombre: string
 
   ) {
 
@@ -52,4 +52,3 @@ export class Eventos {
 
 //   }
 // }
-

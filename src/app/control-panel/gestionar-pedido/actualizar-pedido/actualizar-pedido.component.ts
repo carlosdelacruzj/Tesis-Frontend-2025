@@ -841,7 +841,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       take(1),
       finalize(() => { this.saving = false; }) // ← libéralo siempre
     ).subscribe(
-      (res: unknown) => {
+      () => {
         Swal.fire({
           text: 'Pedido actualizado correctamente.',
           icon: 'success',

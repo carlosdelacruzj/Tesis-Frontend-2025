@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AgregarPedido, EditarPedido, Proyecto } from '../model/visualizar.model';
@@ -6,6 +6,7 @@ import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class VisualizarService {
+  private readonly http = inject(HttpClient);
   // =========================
   // Estado compartido (sin cambios)
   // =========================
@@ -30,36 +31,34 @@ export class VisualizarService {
   // =========================
   // Endpoints (estandarizados)
   // =========================
-  private readonly API_BASE = environment.baseUrl;                 // e.g. https://tp2021database.herokuapp.com
-  private readonly API_PEDIDO = `${this.API_BASE}/pedido`;         // /pedido
-  private readonly API_EVENTOS_SERV = `${this.API_BASE}/eventos_servicios`; // /eventos_servicios
-
-  constructor(private http: HttpClient) {}
+  private readonly apiBase = environment.baseUrl;                 // e.g. https://tp2021database.herokuapp.com
+  private readonly apiPedido = `${this.apiBase}/pedido`;         // /pedido
+  private readonly apiEventosServ = `${this.apiBase}/eventos_servicios`; // /eventos_servicios
 
   // =========================
   // Pedidos
   // =========================
 
   /** Traer pedido por id */
-  public getPedidoById(id: number | string): Observable<any> {
-    return this.http.get<any>(`${this.API_PEDIDO}/${id}`);
+  public getPedidoById(id: number | string): Observable<unknown> {
+    return this.http.get<unknown>(`${this.apiPedido}/${id}`);
   }
 
   /**
    * Actualizar pedido compuesto (PUT /pedido/:id)
    * Mantiene la firma que ya usas: updatePedido(id, data)
    */
-  public updatePedido(id: number | string, data: any): Observable<any> {
+  public updatePedido(id: number | string, data: unknown): Observable<unknown> {
     // Antes apuntabas a /pedido/actualiza/putByIdPedido (legacy). Ahora usamos /pedido/:id
-    return this.http.put<any>(`${this.API_PEDIDO}/${id}`, data);
+    return this.http.put<unknown>(`${this.apiPedido}/${id}`, data);
   }
 
   /**
    * Crear pedido compuesto (POST /pedido)
    * Mantiene tu firma postPedidos(data)
    */
-  public postPedidos(data: any): Observable<any> {
-    return this.http.post<any>(this.API_PEDIDO, data);
+  public postPedidos(data: unknown): Observable<unknown> {
+    return this.http.post<unknown>(this.apiPedido, data);
   }
 
   // =========================
@@ -70,10 +69,10 @@ export class VisualizarService {
    * Consulta de eventos por servicio (GET /eventos_servicios?evento=&servicio=)
    * Tipamos el retorno como any[] para no romper a quienes ya consumen sin modelo fuerte.
    */
-  public getEventosServicio(evento?: number, servicio?: number): Observable<any[]> {
+  public getEventosServicio(evento?: number, servicio?: number): Observable<unknown[]> {
     let params = new HttpParams();
     if (evento != null) params = params.set('evento', String(evento));
     if (servicio != null) params = params.set('servicio', String(servicio));
-    return this.http.get<any[]>(this.API_EVENTOS_SERV, { params });
+    return this.http.get<unknown[]>(this.apiEventosServ, { params });
   }
 }

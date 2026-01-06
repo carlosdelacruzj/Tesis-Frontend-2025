@@ -1,13 +1,35 @@
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { MatSort } from '@angular/material/sort';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
-import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
+import { DateInput, formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
+
+type AnyRecord = Record<string, unknown>;
+
+interface UbicacionRow {
+  ID: number;
+  dbId: number;
+  Direccion: string;
+  Fecha: string;
+  Hora: string;
+  DireccionExacta: string;
+  Notas: string;
+}
+
+interface PaqueteResumenRow {
+  id?: number;
+  key: string | number;
+  eventKey: string | number | null;
+  ID?: number;
+  descripcion: string;
+  precio: number;
+  notas: string;
+}
 
 @Component({
   selector: 'app-detalle-pedido',
@@ -19,17 +41,17 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
   columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas']; // sin Editar/Quitar
   columnsToDisplay1 = ['Descripcion', 'Precio']; // sin Seleccionar
   // Campos “sólo lectura” para los inputs de cabecera de evento
-  Direccion: string = '';
-  DireccionExacta: string = '';
-  NotasEvento: string = '';
+  Direccion = '';
+  DireccionExacta = '';
+  NotasEvento = '';
   // ====== Catálogos (solo para mostrar combos deshabilitados) ======
-  servicios: any[] = [];
-  evento: any[] = [];
+  servicios: AnyRecord[] = [];
+  evento: AnyRecord[] = [];
   servicioSeleccionado = 1;
   eventoSeleccionado = 1;
 
-  dataSource: MatTableDataSource<any> = new MatTableDataSource<any>([]);
-  dataSource1: MatTableDataSource<any> = new MatTableDataSource<any>([]);
+  dataSource: MatTableDataSource<UbicacionRow> = new MatTableDataSource<UbicacionRow>([]);
+  dataSource1: MatTableDataSource<AnyRecord> = new MatTableDataSource<AnyRecord>([]);
 
   @ViewChild('sortUbic') sortUbic!: MatSort;
   @ViewChild('sortPaq') sortPaq!: MatSort;
@@ -40,31 +62,27 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
   }
 
   // ====== Estado general ======
-  CodigoEmpleado: number = 1;
+  CodigoEmpleado = 1;
   infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
-  dniCliente: any;
+  dniCliente = '';
 
   // ====== Fechas visibles ======
-  fechaCreate: Date = new Date();
+  fechaCreate = new Date();
   minimo = '';
   maximo = '';
 
   // ====== Ubicaciones ======
-  ubicacion: Array<{ ID: number; dbId: number; Direccion: string; Fecha: string; Hora: string; DireccionExacta: string; Notas: string; }> = [];
+  ubicacion: UbicacionRow[] = [];
 
   // ====== Paquetes seleccionados (solo para mostrar) ======
-  selectedPaquetes: Array<{
-    id?: number;
-    key: string | number;
-    eventKey: string | number | null;
-    ID?: number;
-    descripcion: string;
-    precio: number;
-    notas: string;
-  }> = [];
+  selectedPaquetes: PaqueteResumenRow[] = [];
 
   // ====== Pedido actual ======
   private pedidoId!: number;
+  private readonly pedidoService = inject(PedidoService);
+  readonly visualizarService = inject(VisualizarService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   private toOptionalString(value: unknown): string | undefined {
     if (value == null) {
@@ -98,13 +116,6 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
   get clienteCelular(): string {
     return this.toOptionalString(this.infoCliente?.celular) ?? '-';
   }
-
-  constructor(
-    public pedidoService: PedidoService,
-    public visualizarService: VisualizarService,
-    private route: ActivatedRoute,
-    private router: Router,
-  ) { }
 
   // ====== Ciclo de vida ======
   ngOnInit(): void {
@@ -173,33 +184,49 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Catálogos (solo carga) ======
   getServicio() {
-    const obs: any = this.pedidoService.getServicios?.();
-    if (!obs || typeof obs.subscribe !== 'function') { this.servicios = []; return; }
-    obs.pipe(catchError(() => of([]))).subscribe((res: any) => { this.servicios = res ?? []; });
+    const obs = this.pedidoService.getServicios?.() as Observable<unknown> | undefined;
+    if (!obs) {
+      this.servicios = [];
+      return;
+    }
+    obs.pipe(catchError(() => of([]))).subscribe((res) => {
+      this.servicios = this.toRecordArray(res);
+    });
   }
 
   getEventos() {
-    const obs: any = this.pedidoService.getEventos?.();
-    if (!obs || typeof obs.subscribe !== 'function') { this.evento = []; return; }
-    obs.pipe(catchError(() => of([]))).subscribe((res: any) => { this.evento = res ?? []; });
+    const obs = this.pedidoService.getEventos?.() as Observable<unknown> | undefined;
+    if (!obs) {
+      this.evento = [];
+      return;
+    }
+    obs.pipe(catchError(() => of([]))).subscribe((res) => {
+      this.evento = this.toRecordArray(res);
+    });
   }
 
   getEventoxServicio() {
-    const obs: any = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado);
-    if (!obs || typeof obs.subscribe !== 'function') { this.dataSource1.data = []; this.bindSorts(); return; }
-    obs.pipe(catchError(() => of([]))).subscribe((res: any) => {
-      this.dataSource1.data = res ?? [];
+    const obs = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado) as Observable<unknown> | undefined;
+    if (!obs) {
+      this.dataSource1.data = [];
+      this.bindSorts();
+      return;
+    }
+    obs.pipe(catchError(() => of([]))).subscribe((res) => {
+      this.dataSource1.data = this.toRecordArray(res);
       this.bindSorts();
     });
   }
 
   // ====== Carga del pedido existente (solo mapeo) ======
   private loadPedido(id: number) {
-    const obs: any = this.visualizarService.getPedidoById?.(id);
-    if (!obs || typeof obs.subscribe !== 'function') return;
+    const obs = this.visualizarService.getPedidoById?.(id) as Observable<unknown> | undefined;
+    if (!obs) {
+      return;
+    }
 
     obs.pipe(
-      catchError((err: any) => {
+      catchError((err) => {
         console.error('[getPedidoById] error', err);
         Swal.fire({
           text: 'No se pudo cargar el pedido.',
@@ -210,58 +237,109 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
         });
         return of(null);
       })
-    ).subscribe((data: any) => {
-      if (!data) return;
+    ).subscribe((data) => {
+      if (!data) {
+        return;
+      }
 
-      const cab = data.pedido || data;
-      this.visualizarService.selectAgregarPedido.NombrePedido = cab?.nombrePedido ?? cab?.nombre ?? '';
-      this.visualizarService.selectAgregarPedido.Observacion = cab?.observaciones ?? '';
-      this.CodigoEmpleado = cab?.empleadoId ?? this.CodigoEmpleado;
-      const fechaCreacionParsed = parseDateInput(cab?.fechaCreacion) ?? new Date();
+      const payload = this.asRecord(data);
+      const cab = this.asRecord(payload['pedido'] ?? payload);
+      this.visualizarService.selectAgregarPedido.NombrePedido =
+        this.toOptionalString(cab['nombrePedido'] ?? cab['nombre']) ?? '';
+      this.visualizarService.selectAgregarPedido.Observacion =
+        this.toOptionalString(cab['observaciones']) ?? '';
+      this.CodigoEmpleado = this.toNumber(cab['empleadoId']) ?? this.CodigoEmpleado;
+      const fechaCreacionParsed = parseDateInput(this.toDateInput(cab['fechaCreacion'])) ?? new Date();
       this.fechaCreate = fechaCreacionParsed;
       this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(fechaCreacionParsed, '');
 
       // Cliente
+      const cliente = this.asRecord(cab['cliente']);
       this.infoCliente = {
-        nombre: cab?.cliente?.nombres ?? '-',
-        apellido: cab?.cliente?.apellidos ?? '-',
-        celular: cab?.cliente?.celular ?? '-',
-        correo: cab?.cliente?.correo ?? '-',
-        documento: cab?.cliente?.documento ?? '-',
-        direccion: cab?.cliente?.direccion ?? '-',
-        idCliente: cab?.clienteId ?? cab?.cliente?.id ?? 0,
+        nombre: this.toOptionalString(cliente['nombres']) ?? '-',
+        apellido: this.toOptionalString(cliente['apellidos']) ?? '-',
+        celular: this.toOptionalString(cliente['celular']) ?? '-',
+        correo: this.toOptionalString(cliente['correo']) ?? '-',
+        documento: this.toOptionalString(cliente['documento']) ?? '-',
+        direccion: this.toOptionalString(cliente['direccion']) ?? '-',
+        idCliente: this.toNumber(cab['clienteId']) ?? this.toNumber(cliente['id']) ?? 0,
         idUsuario: 0
       };
       this.dniCliente = this.infoCliente.documento || '';
 
       // Eventos
-      this.ubicacion = (data.eventos || []).map((e: any, idx: number) => ({
-        ID: idx + 1,
-        dbId: e.id ?? e.dbId ?? 0,
-        Direccion: e.ubicacion ?? '',
-        Fecha: String(e.fecha).slice(0, 10),
-        Hora: String(e.hora).slice(0, 5),
-        DireccionExacta: e.direccion ?? '',
-        Notas: e.notas ?? ''
-      }));
+      const eventos = this.toRecordArray(payload['eventos']);
+      this.ubicacion = eventos.map((item, idx) => {
+        const e = this.asRecord(item);
+        return {
+          ID: idx + 1,
+          dbId: Number(e['id'] ?? e['dbId'] ?? 0) || 0,
+          Direccion: String(e['ubicacion'] ?? ''),
+          Fecha: String(e['fecha'] ?? '').slice(0, 10),
+          Hora: String(e['hora'] ?? '').slice(0, 5),
+          DireccionExacta: String(e['direccion'] ?? ''),
+          Notas: String(e['notas'] ?? '')
+        };
+      });
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
 
       // Items/paquetes seleccionados (para mostrar tabla resumen)
-      this.selectedPaquetes = (data.items || []).map((it: any) => ({
-        id: it.id,
-        key: it.exsId ?? it.id ?? `${it.nombre ?? it.descripcion}|${it.precioUnit ?? it.precio ?? 0}`,
-        eventKey: it.eventoCodigo ?? null,
-        ID: it.exsId ?? it.id ?? null,
-        descripcion: it.nombre ?? it.descripcion ?? '',
-        precio: Number(it.precioUnit ?? it.precio ?? 0),
-        notas: it.notas ?? ''
-      }));
+      const items = this.toRecordArray(payload['items']);
+      this.selectedPaquetes = items.map((item) => {
+        const it = this.asRecord(item);
+        const key =
+          (it['exsId'] as string | number | undefined) ??
+          (it['id'] as string | number | undefined) ??
+          `${this.toOptionalString(it['nombre'] ?? it['descripcion']) ?? ''}|${it['precioUnit'] ?? it['precio'] ?? 0}`;
+        const eventKey =
+          (it['eventoCodigo'] as string | number | undefined) ??
+          (it['evento_codigo'] as string | number | undefined) ??
+          null;
+        return {
+          id: this.toNumber(it['id']),
+          key,
+          eventKey,
+          ID: (it['exsId'] as number | undefined) ?? this.toNumber(it['id']) ?? undefined,
+          descripcion: String(it['nombre'] ?? it['descripcion'] ?? ''),
+          precio: Number(it['precioUnit'] ?? it['precio'] ?? 0),
+          notas: String(it['notas'] ?? '')
+        };
+      });
     });
   }
 
   // ====== Helpers de plantilla (solo lectura) ======
   get totalSeleccion(): number {
     return this.selectedPaquetes.reduce((sum, p) => sum + (+p.precio || 0), 0);
+  }
+
+  private asRecord(value: unknown): AnyRecord {
+    return value && typeof value === 'object' ? (value as AnyRecord) : {};
+  }
+
+  private toRecordArray(value: unknown): AnyRecord[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value.filter(Boolean).map(item => this.asRecord(item));
+  }
+
+  private toDateInput(value: unknown): DateInput {
+    if (value instanceof Date) {
+      return value;
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+      return value;
+    }
+    return null;
+  }
+
+  private toNumber(value: unknown): number | undefined {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    const num = Number(value);
+    return Number.isFinite(num) ? num : undefined;
   }
 }

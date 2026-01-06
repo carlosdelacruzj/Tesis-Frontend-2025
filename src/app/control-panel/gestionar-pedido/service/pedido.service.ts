@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Proyecto, DatosCliente, Eventos, Servi } from '../model/pedido.model';
@@ -8,6 +8,7 @@ import { environment } from 'src/environments/environment';
   providedIn: 'root'
 })
 export class PedidoService {
+  private readonly http = inject(HttpClient);
   selectProyecto: Proyecto = {
 
     ID: 0,
@@ -50,44 +51,41 @@ export class PedidoService {
   //   Titulo: '',
   // };
 
-  private API_PRUEBA = `${environment.baseUrl}/pedido`;
+  private readonly apiBase = `${environment.baseUrl}/pedido`;
   // private API_PRUEBA =
   //   'https://tp2021database.herokuapp.com/pedido/consulta/getAllPedido';
-  private API_N_Pedido =
+  private readonly apiNumeroPedido =
     'https://tp2021database.herokuapp.com/pedido/consulta/getIndexPedido';
 
-  private API_DNI =
+  private readonly apiDni =
     'https://tp2021database.herokuapp.com/cliente/consulta/getDataCliente/';
-  private API_CLIENTES = `${environment.baseUrl}/clientes/by-doc`;
+  private readonly apiClientes = `${environment.baseUrl}/clientes/by-doc`;
 
-  private API_SERVICIOS =`${environment.baseUrl}/servicios`;
+  private readonly apiServicios =`${environment.baseUrl}/servicios`;
 
-  private API_EVENTOS =`${environment.baseUrl}/eventos`;
+  private readonly apiEventos =`${environment.baseUrl}/eventos`;
 
   // private API_SERVICIOSxEVENTOS =
   //   'https://tp2021database.herokuapp.com/eventos_servicios/consulta/getAllServiciosByEventoServ/';
 
-  constructor(private http: HttpClient) { }
-
-
-  public getAllPedidos(): Observable<any> {
-    return this.http.get(this.API_PRUEBA);
+  public getAllPedidos(): Observable<unknown> {
+    return this.http.get(this.apiBase);
   }
   // public getDni(id: any): Observable<any> {
   //   return this.http.get(this.API_DNI + id)
   // }
     // GET /clientes/{id}
-  public getDni(id: number | string): Observable<any> {
-    return this.http.get(`${this.API_CLIENTES}/${id}`);
+  public getDni(id: number | string): Observable<unknown> {
+    return this.http.get(`${this.apiClientes}/${id}`);
   }
-  public getN_Pedido(): Observable<any> {
-    return this.http.get(this.API_N_Pedido);
+  public getN_Pedido(): Observable<unknown> {
+    return this.http.get(this.apiNumeroPedido);
   }
-  public getServicios(): Observable<any> {
-    return this.http.get(this.API_SERVICIOS);
+  public getServicios(): Observable<unknown> {
+    return this.http.get(this.apiServicios);
   }
-  public getEventos(): Observable<any> {
-    return this.http.get(this.API_EVENTOS);
+  public getEventos(): Observable<unknown> {
+    return this.http.get(this.apiEventos);
   }
   // public getEventServicios(): Observable<any> {
   //   return this.http.get(this.API_SERVICIOSxEVENTOS);

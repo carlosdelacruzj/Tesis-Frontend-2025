@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { PerfilService } from '../service/perfil.service';
 import { NgForm, UntypedFormControl, Validators } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
-interface roles {
+interface Rol {
   PK_Rol_Cod: number;
   Rol_Nombre: string;
 }
@@ -14,23 +14,23 @@ interface roles {
 })
 export class RegistrarPerfilComponent implements OnInit {
 
-  rol=[];
-  roles: roles[] = [];
+  rol: Rol[] = [];
+  roles: Rol[] = [];
   selectFormControl = new UntypedFormControl('', Validators.required);
-  nombrePattern = "^[a-zA-Z ]{2,20}$"; 
-  apellidoPattern = "^[a-zA-Z ]{2,30}$"; 
-  docPattern = "^[0-9]{1}[0-9]{7}$"; 
-  celularPattern = "^[1-9]{1}[0-9]{6,8}$"; 
-  correoPattern = "^[a-z]+[a-z0-9._]+@[a-z]+\.[a-z.]{2,5}$"; 
+  nombrePattern = '^[a-zA-Z ]{2,20}$';
+  apellidoPattern = '^[a-zA-Z ]{2,30}$';
+  docPattern = '^[0-9]{1}[0-9]{7}$';
+  celularPattern = '^[1-9]{1}[0-9]{6,8}$';
+  correoPattern = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
 
-  constructor(public service: PerfilService) { }
+  readonly service = inject(PerfilService);
 
   ngOnInit(): void {
     this.getAllRoles();
   }
 
   postPermiso(PerfilForm: NgForm) {
-    let data = {
+    const data = {
       nombre: PerfilForm.value.nombre,
       apellido: PerfilForm.value.apellido,
       correo: PerfilForm.value.correo,
@@ -42,7 +42,7 @@ export class RegistrarPerfilComponent implements OnInit {
     };
     console.log(data);
     this.service.postPermiso(data).subscribe(
-      (res) => { 
+      () => {
       this.clear(PerfilForm);
       Swal.fire({
         text: 'Registro exitoso',
@@ -68,10 +68,10 @@ export class RegistrarPerfilComponent implements OnInit {
     );
   }
 
-  getAllRoles(){
+    getAllRoles() {
     this.service.getAllRoles().subscribe(
       (res) => {
-        this.roles = res;
+        this.roles = this.mapRoles(res);
       },
       (err) => console.error(err)
     );
@@ -80,4 +80,13 @@ export class RegistrarPerfilComponent implements OnInit {
     ClienteForm.reset();
  }
 
+  private mapRoles(value: Record<string, unknown>[] | null | undefined): Rol[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value.map((item) => ({
+      PK_Rol_Cod: Number(item?.PK_Rol_Cod ?? item?.id ?? 0) || 0,
+      Rol_Nombre: String(item?.Rol_Nombre ?? item?.nombre ?? '')
+    }));
+  }
 }

@@ -274,6 +274,7 @@ downloadPdf(
 
   getServicios(): Observable<Record<string, unknown>[]> {
     return this.pedidoService.getServicios().pipe(
+      map(items => this.toRecordArray(items)),
       catchError(err => {
         console.error('[cotizaciones] getServicios', err);
         return of([]);
@@ -283,6 +284,7 @@ downloadPdf(
 
   getEventos(): Observable<Record<string, unknown>[]> {
     return this.pedidoService.getEventos().pipe(
+      map(items => this.toRecordArray(items)),
       catchError(err => {
         console.error('[cotizaciones] getEventos', err);
         return of([]);
@@ -292,6 +294,7 @@ downloadPdf(
 
   getEventosServicio(eventoId?: number | null, servicioId?: number | null): Observable<Record<string, unknown>[]> {
     return this.visualizarService.getEventosServicio(eventoId ?? undefined, servicioId ?? undefined).pipe(
+      map(items => this.toRecordArray(items)),
       catchError(err => {
         console.error('[cotizaciones] getEventosServicio', err);
         return of([]);
@@ -300,6 +303,14 @@ downloadPdf(
   }
 
   // --------------- helpers internos (no tocados) ---------------
+  private toRecordArray(value: unknown): Record<string, unknown>[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value
+      .filter(item => item != null)
+      .map(item => (item as Record<string, unknown>));
+  }
 
   private normalizeApiCotizacion(api: CotizacionApiResponse): Cotizacion & { raw?: CotizacionPayload } {
     const payload = this.extractPayloadFromApi(api);

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { Subject, takeUntil } from 'rxjs';
@@ -6,10 +6,19 @@ import { TableColumn } from 'src/app/components/table-base/table-base.component'
 import { PersonalService, Cargo } from './service/personal.service';
 import { Empleado, EmpleadoUpdateDto } from './model/personal.model';
 
-type EmpleadoRow = Empleado & { nombreCompleto: string };
+interface EmpleadoRow extends Empleado {
+  nombreCompleto: string;
+}
 
-type SortPayload = { key: string; direction: 'asc' | 'desc' | '' };
-type PagePayload = { page: number; pageSize: number };
+interface SortPayload {
+  key: string;
+  direction: 'asc' | 'desc' | '';
+}
+
+interface PagePayload {
+  page: number;
+  pageSize: number;
+}
 
 type ModalMode = 'view' | 'edit';
 
@@ -79,9 +88,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
     idEstado: 1
   };
 
-  constructor(
-    private readonly personalService: PersonalService
-  ) {}
+  private readonly personalService = inject(PersonalService);
 
   ngOnInit(): void {
     this.loadEmpleados();
@@ -115,12 +122,14 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
     this.searchTerm = term ?? '';
   }
 
-  onSortChange(_: SortPayload): void {
+  onSortChange(event: SortPayload): void {
     // Hook disponible para telemetría futura
+    void event;
   }
 
-  onPageChange(_: PagePayload): void {
+  onPageChange(event: PagePayload): void {
     // Hook disponible para telemetría futura
+    void event;
   }
 
   reload(): void {

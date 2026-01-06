@@ -1,8 +1,8 @@
-﻿import { Component, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, forkJoin, of, takeUntil } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { formatIsoDate, parseDateInput } from '../../shared/utils/date-utils';
+import { DateInput, formatIsoDate, parseDateInput } from '../../shared/utils/date-utils';
 import { PedidoService } from './service/pedido.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { RegistrarPagoService, ResumenPago } from '../registrar-pago/service/registrar-pago.service';
@@ -70,11 +70,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
-  constructor(
-    private readonly pedidoService: PedidoService,
-    private readonly router: Router,
-    private readonly registrarPagoService: RegistrarPagoService
-  ) { }
+  private readonly pedidoService = inject(PedidoService);
+  private readonly router = inject(Router);
+  private readonly registrarPagoService = inject(RegistrarPagoService);
 
   ngOnInit(): void {
     this.loadPedidos();
@@ -109,12 +107,14 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     this.router.navigate(['/home/gestionar-pedido/actualizar', id]);
   }
 
-  onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {
+  onSortChange(event: { key: string; direction: 'asc' | 'desc' | '' }): void {
     // Hook disponible para telemetría futura
+    void event;
   }
 
-  onPageChange(_: { page: number; pageSize: number }): void {
+  onPageChange(event: { page: number; pageSize: number }): void {
     // Hook disponible para telemetría futura
+    void event;
   }
 
   reload(): void {
@@ -292,11 +292,11 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       });
 
       if (esPrimerPago) {
+        const pedidoRecord = this.asRecord(this.modalPago.pedido);
         const proyectoNombre =
-          (this.modalPago.pedido as any)?.Nombre ??
-          (this.modalPago.pedido as any)?.NombrePedido ??
-          this.modalPago.pedido.Cliente ??
-          `Pedido ${this.modalPago.pedido.ID}`;
+          this.toOptionalString(pedidoRecord['Nombre'] ?? pedidoRecord['NombrePedido']) ??
+          this.modalPago.pedido?.Cliente ??
+          `Pedido ${this.modalPago.pedido?.ID ?? ''}`;
         try {
           await this.registrarPagoService.crearProyecto({
             proyectoNombre,
@@ -355,7 +355,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (rows) => {
-          this.rows = (rows ?? []).map((raw: any) => {
+          const list = Array.isArray(rows) ? rows : [];
+          this.rows = list.map((item) => {
+            const raw = this.asRecord(item);
             const codigo = this.toOptionalString(
               raw?.codigo ??
               raw?.codigoPedido ??
@@ -416,27 +418,27 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     };
   }
 
-  private buildClienteDisplay(raw: any): { clienteLabel: string; clienteSub: string | undefined } {
-    const clienteObj = raw?.cliente ?? {};
+  private buildClienteDisplay(raw: Record<string, unknown>): { clienteLabel: string; clienteSub: string | undefined } {
+    const clienteObj = this.asRecord(raw['cliente']);
     const nombre = this.toOptionalString(
-      raw?.Cliente ??
-      raw?.cliente ??
-      clienteObj?.nombres ??
-      clienteObj?.nombre
+      raw['Cliente'] ??
+      raw['cliente'] ??
+      clienteObj['nombres'] ??
+      clienteObj['nombre']
     );
-    const apellido = this.toOptionalString(clienteObj?.apellidos ?? clienteObj?.apellido);
-    const razonSocial = this.toOptionalString(clienteObj?.razonSocial ?? clienteObj?.razon_social);
+    const apellido = this.toOptionalString(clienteObj['apellidos'] ?? clienteObj['apellido']);
+    const razonSocial = this.toOptionalString(clienteObj['razonSocial'] ?? clienteObj['razon_social']);
     const doc = this.toOptionalString(
-      raw?.Documento ??
-      raw?.documento ??
-      clienteObj?.documento ??
-      clienteObj?.doc ??
-      clienteObj?.dni
+      raw['Documento'] ??
+      raw['documento'] ??
+      clienteObj['documento'] ??
+      clienteObj['doc'] ??
+      clienteObj['dni']
     );
-    const celular = this.toOptionalString(clienteObj?.celular ?? raw?.celular ?? raw?.Celular);
+    const celular = this.toOptionalString(clienteObj['celular'] ?? raw['celular'] ?? raw['Celular']);
 
     const nombreCompuesto = [nombre, apellido].filter(Boolean).join(' ').trim();
-    const etiqueta = nombreCompuesto || razonSocial || nombre || raw?.Cliente || '--';
+    const etiqueta = nombreCompuesto || razonSocial || nombre || this.toOptionalString(raw['Cliente']) || '--';
     const subtitulo = doc || celular || undefined;
 
     return {
@@ -509,21 +511,22 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
 
   private extractId(row: PedidoRow | null | undefined): number | null {
     if (!row) return null;
-    const id = this.parseNumber((row as any).id ?? row.ID ?? (row as any).idPedido ?? (row as any).pedidoId);
+    const record = this.asRecord(row);
+    const id = this.parseNumber(record['id'] ?? row.ID ?? record['idPedido'] ?? record['pedidoId']);
     return id;
   }
 
   private getFechaMinPago(row: PedidoRow | null | undefined): string {
-    const raw = row as any;
+    const raw = this.asRecord(row);
     const fechaRaw =
-      raw?.fechaCreacion ??
-      raw?.fecha_creacion ??
-      raw?.FechaCreacion ??
-      raw?.Creado ??
-      raw?.fecha ??
-      raw?.createdAt ??
-      raw?.created_at;
-    const parsed = parseDateInput(fechaRaw) ?? new Date();
+      raw['fechaCreacion'] ??
+      raw['fecha_creacion'] ??
+      raw['FechaCreacion'] ??
+      raw['Creado'] ??
+      raw['fecha'] ??
+      raw['createdAt'] ??
+      raw['created_at'];
+    const parsed = parseDateInput(this.toDateInput(fechaRaw)) ?? new Date();
     return formatIsoDate(parsed) ?? new Date().toISOString().slice(0, 10);
   }
 
@@ -536,6 +539,20 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     }
     const parsed = Number(String(value).trim().replace(',', '.'));
     return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private asRecord(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  }
+
+  private toDateInput(value: unknown): DateInput {
+    if (value instanceof Date) {
+      return value;
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+      return value;
+    }
+    return null;
   }
 
   private toOptionalString(value: unknown): string | undefined {

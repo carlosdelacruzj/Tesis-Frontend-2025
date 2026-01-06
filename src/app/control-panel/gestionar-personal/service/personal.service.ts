@@ -1,5 +1,5 @@
 // src/app/gestionar-personal/service/personal.service.ts
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
@@ -29,7 +29,7 @@ export class PersonalService {
   private readonly base = `${environment.baseUrl}/empleados`;
   private readonly baseOperativos = `${environment.baseUrl}/empleados/operativos`;
 
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   // POST /empleados
   createEmpleado(data: Partial<Empleado>): Observable<Empleado> {

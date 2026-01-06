@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { from, Subject, takeUntil } from 'rxjs';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
@@ -34,10 +34,8 @@ export class GestionarPerfilesComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
-  constructor(
-    private readonly perfilService: PerfilService,
-    private readonly router: Router
-  ) {}
+  private readonly perfilService = inject(PerfilService);
+  private readonly router = inject(Router);
 
   ngOnInit(): void {
     this.loadPerfiles();
@@ -73,12 +71,14 @@ export class GestionarPerfilesComponent implements OnInit, OnDestroy {
       });
   }
 
-  onSortChange(_: { key: string; direction: 'asc' | 'desc' | '' }): void {
+  onSortChange(event: { key: string; direction: 'asc' | 'desc' | '' }): void {
     // Hook disponible para telemetría futura
+    void event;
   }
 
-  onPageChange(_: { page: number; pageSize: number }): void {
+  onPageChange(event: { page: number; pageSize: number }): void {
     // Hook disponible para telemetría futura
+    void event;
   }
 
   reload(): void {

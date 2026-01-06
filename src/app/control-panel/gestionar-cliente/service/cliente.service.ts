@@ -98,7 +98,7 @@ export class ClienteService {
   }
 }
 
-type ClienteCreateInput = {
+interface ClienteCreateInput {
   nombre: string;
   apellido: string;
   correo: string;
@@ -106,13 +106,13 @@ type ClienteCreateInput = {
   doc?: string;
   celular: string;
   direccion?: string | null;
-};
+}
 
-type ClientePutInput = {
+interface ClientePutInput {
   idCliente?: number | string;
   id?: number | string;
   ID?: number | string;
   correo?: string | null;
   celular?: string | null;
   direccion?: string | null;
-};
+}

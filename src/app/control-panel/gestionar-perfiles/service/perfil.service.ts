@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Perfil } from '../model/perfil.model';
@@ -19,30 +19,31 @@ export class PerfilService {
     direccion: '',
   };
   
-    private API_PRUEBA =
-      'https://tp2021database.herokuapp.com/perfiles/consulta/getAllPerfiles';
-    constructor(private http: HttpClient) {}
-  
-    public getAllPerfiles(): Promise<any> {
-      return this.http.get(this.API_PRUEBA).toPromise();
-    }
+  private readonly http = inject(HttpClient);
+  private readonly apiBase = 'https://tp2021database.herokuapp.com/perfiles';
+  private readonly apiPerfiles = `${this.apiBase}/consulta/getAllPerfiles`;
+  private readonly apiRoles = `${this.apiBase}/consulta/getAllRoles`;
+  private readonly apiRegistrar = `${this.apiBase}/registro/postPermiso`;
+  private readonly apiDetalle = `${this.apiBase}/consulta/getByIdPerfil`;
+  private readonly apiActualizar = `${this.apiBase}/actualiza/putPermiso`;
 
-    public getAllRoles(): Observable<any> {
-      const url = 'https://tp2021database.herokuapp.com/perfiles/consulta/getAllRoles';
-      return this.http.get(url);
-    }
-  
-    public postPermiso(data:any): Observable<any> {
-      const url = 'https://tp2021database.herokuapp.com/perfiles/registro/postPermiso';
-      return this.http.post(url, data);
-    }
-  
-    public getByIdPerfil(id:any): Observable<any>{
-      return this.http.get('https://tp2021database.herokuapp.com/perfiles/consulta/getByIdPerfil/'+id);
-    }
-  
-    public putPermiso(data: any): Observable<any> {
-      const url = 'https://tp2021database.herokuapp.com/perfiles/actualiza/putPermiso';
-      return this.http.put<any>(url, data);
-    }
+  public getAllPerfiles(): Promise<Perfil[]> {
+    return this.http.get<Perfil[]>(this.apiPerfiles).toPromise();
+  }
+
+  public getAllRoles(): Observable<Record<string, unknown>[]> {
+    return this.http.get<Record<string, unknown>[]>(this.apiRoles);
+  }
+
+  public postPermiso(data: Record<string, unknown>): Observable<unknown> {
+    return this.http.post<unknown>(this.apiRegistrar, data);
+  }
+
+  public getByIdPerfil(id: number | string): Observable<unknown> {
+    return this.http.get<unknown>(`${this.apiDetalle}/${id}`);
+  }
+
+  public putPermiso(data: Record<string, unknown>): Observable<unknown> {
+    return this.http.put<unknown>(this.apiActualizar, data);
+  }
 }
