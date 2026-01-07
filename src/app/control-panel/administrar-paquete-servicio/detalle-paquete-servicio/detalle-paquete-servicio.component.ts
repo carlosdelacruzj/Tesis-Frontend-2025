@@ -237,15 +237,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       trailerMin: this.form.value.trailerMin ?? null,
       filmMin: this.form.value.filmMin ?? null
     };
-    const staffFallback: EventoServicioStaff[] = (this.paqueteEditando?.staff?.detalle ?? []).map(item => ({
-      rol: item.rol,
-      cantidad: item.cantidad
-    }));
-    const equiposFallback = (this.paqueteEditando?.equipos ?? []).map(item => ({
-      tipoEquipoId: item.tipoEquipoId,
-      cantidad: item.cantidad,
-      notas: item.notas ?? null
-    }));
     const payloadCrear = {
       ...payloadBase,
       staff: staffPayload,
@@ -253,8 +244,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     };
     const payloadEditar = {
       ...payloadBase,
-      staff: staffFallback,
-      equipos: equiposFallback
+      staff: staffPayload,
+      equipos: equiposPayload
     };
 
     const estadoSeleccionado = this.form.value.estadoId != null ? Number(this.form.value.estadoId) : null;
@@ -374,6 +365,49 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         }
       });
+  }
+
+  private normalizeServicioNombre(nombre: string | null | undefined): string {
+    if (!nombre) return '';
+    return nombre
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+
+  private getServicioNombrePorId(id: number | null | undefined): string | null {
+    if (id == null) return null;
+    const match = this.servicios.find(servicio => servicio.id === id);
+    return match?.nombre ?? null;
+  }
+
+  private isServicioVideo(nombre: string | null | undefined): boolean {
+    return this.normalizeServicioNombre(nombre).includes('video');
+  }
+
+  private isServicioFotografia(nombre: string | null | undefined): boolean {
+    const normalized = this.normalizeServicioNombre(nombre);
+    return normalized.includes('fotografia');
+  }
+
+  showFotosImpresasForm(): boolean {
+    const nombre = this.getServicioNombrePorId(this.form.value.servicio ?? null);
+    return !this.isServicioVideo(nombre);
+  }
+
+  showTrailerFilmForm(): boolean {
+    const nombre = this.getServicioNombrePorId(this.form.value.servicio ?? null);
+    return !this.isServicioFotografia(nombre);
+  }
+
+  showFotosImpresasDetalle(): boolean {
+    const nombre = this.selectedPaquete?.servicio?.nombre ?? null;
+    return !this.isServicioVideo(nombre);
+  }
+
+  showTrailerFilmDetalle(): boolean {
+    const nombre = this.selectedPaquete?.servicio?.nombre ?? null;
+    return !this.isServicioFotografia(nombre);
   }
 
   private crearStaffFormGroup(miembro?: EventoServicioStaff): FormGroup {

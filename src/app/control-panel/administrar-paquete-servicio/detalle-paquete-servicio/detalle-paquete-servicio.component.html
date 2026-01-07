@@ -96,11 +96,14 @@
             disabled></textarea>
         </div>
 
+        @if (showFotosImpresasDetalle()) {
         <div class="col-12 col-md-4">
           <label class="form-label" for="detalleFotosImpresas">Fotos impresas</label>
           <input id="detalleFotosImpresas" type="text" class="form-control"
             [value]="selectedPaquete.fotosImpresas ?? '—'" disabled>
         </div>
+        }
+        @if (showTrailerFilmDetalle()) {
         <div class="col-12 col-md-4">
           <label class="form-label" for="detalleTrailerMin">Trailer (min)</label>
           <input id="detalleTrailerMin" type="text" class="form-control" [value]="selectedPaquete.trailerMin ?? '—'"
@@ -110,6 +113,7 @@
           <label class="form-label" for="detalleFilmMin">Filmación (min)</label>
           <input id="detalleFilmMin" type="text" class="form-control" [value]="selectedPaquete.filmMin ?? '—'" disabled>
         </div>
+        }
 
         <div class="col-12">
           <div class="form-label d-flex justify-content-between">
@@ -246,11 +250,14 @@
               required [class.is-invalid]="form.get('horas')?.invalid && form.get('horas')?.touched"
               [attr.title]="form.get('horas')?.invalid && form.get('horas')?.touched ? 'Ingresa un número igual o mayor a 0.' : null">
           </div>
+          @if (showFotosImpresasForm()) {
           <div class="col-12 col-md-4">
             <label class="form-label" for="paqueteFotosImpresas">Fotos impresas</label>
             <input id="paqueteFotosImpresas" type="number" class="form-control" formControlName="fotosImpresas" min="0"
               step="1">
           </div>
+          }
+          @if (showTrailerFilmForm()) {
           <div class="col-12 col-md-4">
             <label class="form-label" for="paqueteTrailerMin">Trailer (min)</label>
             <input id="paqueteTrailerMin" type="number" class="form-control" formControlName="trailerMin" min="0"
@@ -260,9 +267,9 @@
             <label class="form-label" for="paqueteFilmMin">Filmación (min)</label>
             <input id="paqueteFilmMin" type="number" class="form-control" formControlName="filmMin" min="0" step="1">
           </div>
+          }
         </div>
 
-        @if (modalModo === 'crear') {
         <div class="form-section mt-4" formArrayName="staff">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="form-label mb-0">Staff requerido</div>
@@ -301,9 +308,6 @@
           </div>
           }
         </div>
-        }
-
-        @if (modalModo === 'crear') {
         <div class="form-section mt-4" formArrayName="equipos">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="form-label mb-0">Equipamiento requerido</div>
@@ -347,7 +351,6 @@
           </div>
           }
         </div>
-        }
 
       </form>
     </app-formulario-base>
