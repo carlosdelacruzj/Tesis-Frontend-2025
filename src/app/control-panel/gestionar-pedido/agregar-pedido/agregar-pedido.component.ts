@@ -912,8 +912,6 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     }
 
     // ====== Logs para inspección ======
-    console.log('%c[POST PEDIDO] payload compuesto', 'color:#0b7285;font-weight:bold;');
-    console.log(JSON.stringify(payload, null, 2));
     console.table(payload.eventos);
     console.table(payload.items);
 

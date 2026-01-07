@@ -40,7 +40,6 @@ export class RegistrarPerfilComponent implements OnInit {
       direccion: PerfilForm.value.direccion,
       rol: PerfilForm.value.rol,
     };
-    console.log(data);
     this.service.postPermiso(data).subscribe(
       () => {
       this.clear(PerfilForm);

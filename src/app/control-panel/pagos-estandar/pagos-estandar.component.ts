@@ -258,6 +258,9 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     this.modal.guardando = true;
     this.modal.error = null;
     try {
+      const abonadoPrevio = this.parseMonto(this.modal.resumen?.MontoAbonado ?? 0);
+      const esPrimerPago = abonadoPrevio <= 0;
+
       await this.pagoService.postPago({
         file: this.modal.file ?? undefined,
         monto,
@@ -265,6 +268,27 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
         metodoPagoId: this.modal.metodoId,
         fecha: this.modal.fecha || undefined
       });
+
+      if (esPrimerPago) {
+        const proyectoNombre = `Pedido ${this.modal.pedido?.codigo ?? id} - ${this.modal.pedido?.cliente ?? ''}`.trim();
+        try {
+          await this.pagoService.crearProyecto({
+            proyectoNombre,
+            pedidoId: id,
+            estadoId: 1
+          });
+        } catch (error) {
+          console.error('[proyecto] crear', error);
+          await Swal.fire({
+            icon: 'warning',
+            title: 'Pago registrado',
+            text: 'El proyecto no pudo crearse automaticamente. Intenta crearlo manualmente.',
+            confirmButtonText: 'Entendido',
+            buttonsStyling: false,
+            customClass: { confirmButton: 'btn btn-warning' }
+          });
+        }
+      }
 
       await this.refrescarDetalle(id);
       this.loadTab(this.selectedTab, true);

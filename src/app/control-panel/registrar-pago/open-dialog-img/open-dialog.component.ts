@@ -17,6 +17,5 @@ export class OpenDialogComponent implements OnInit {
   }
 
   logAge(): void {
-    console.log(this.data.img);
   }
 }

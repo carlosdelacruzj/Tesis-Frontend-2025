@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subject, of } from 'rxjs';
 import { finalize, switchMap, takeUntil } from 'rxjs/operators';
@@ -118,6 +118,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   abrirModalCrear(): void {
     if (!this.evento?.id) return;
     this.modalModo = 'crear';
+    this.setStaffEquiposValidators(true);
     this.modalError = null;
     this.paqueteEditando = null;
     this.form.reset({
@@ -142,6 +143,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
 
   abrirModalEditar(paquete: EventoServicioDetalle): void {
     this.modalModo = 'editar';
+    this.setStaffEquiposValidators(false);
     this.modalError = null;
     this.paqueteEditando = paquete;
     this.form.reset({
@@ -173,6 +175,12 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     this.modalOpen = false;
     this.modalError = null;
     this.paqueteEditando = null;
+    this.setStaffEquiposValidators(true);
+    this.form.reset();
+    this.resetStaffForm();
+    this.resetEquiposForm();
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
   }
 
   abrirModalDetalle(paquete: EventoServicioDetalle): void {
@@ -188,7 +196,11 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   }
 
   async guardarPaquete(): Promise<void> {
+    if (this.modalModo === 'crear') {
+      this.normalizeCantidades();
+    }
     if (this.form.invalid || !this.evento?.id) {
+      this.modalError = `Campos pendientes: ${this.collectInvalidControls(true).join(', ')}`;
       this.form.markAllAsTouched();
       this.staffArray.markAllAsTouched();
       this.equiposArray.markAllAsTouched();
@@ -198,8 +210,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     const staffPayload: EventoServicioStaff[] = this.staffArray.controls.map(control => {
       const value = control.value;
       return {
-        rol: (value.cargo || '').trim(),
-        cantidad: Number(value.cantidad) || 0
+        rol: String(value.cargo ?? '').trim(),
+        cantidad: Number(value.cantidad)
       };
     });
 
@@ -207,12 +219,12 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       const value = control.value;
       return {
         tipoEquipoId: Number(value.tipoEquipoId),
-        cantidad: Number(value.cantidad) || 0,
+        cantidad: Number(value.cantidad),
         notas: value.notas?.trim() || null
       };
     });
 
-    const payload = {
+    const payloadBase = {
       servicio: this.form.value.servicio!,
       evento: this.evento.id,
       titulo: (this.form.value.titulo || '').trim(),
@@ -223,9 +235,26 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       horas: this.form.value.horas ?? null,
       fotosImpresas: this.form.value.fotosImpresas ?? null,
       trailerMin: this.form.value.trailerMin ?? null,
-      filmMin: this.form.value.filmMin ?? null,
+      filmMin: this.form.value.filmMin ?? null
+    };
+    const staffFallback: EventoServicioStaff[] = (this.paqueteEditando?.staff?.detalle ?? []).map(item => ({
+      rol: item.rol,
+      cantidad: item.cantidad
+    }));
+    const equiposFallback = (this.paqueteEditando?.equipos ?? []).map(item => ({
+      tipoEquipoId: item.tipoEquipoId,
+      cantidad: item.cantidad,
+      notas: item.notas ?? null
+    }));
+    const payloadCrear = {
+      ...payloadBase,
       staff: staffPayload,
       equipos: equiposPayload
+    };
+    const payloadEditar = {
+      ...payloadBase,
+      staff: staffFallback,
+      equipos: equiposFallback
     };
 
     const estadoSeleccionado = this.form.value.estadoId != null ? Number(this.form.value.estadoId) : null;
@@ -249,10 +278,10 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
 
     this.modalSaving = true;
     const request$: Observable<unknown> = this.modalModo === 'crear'
-      ? this.dataService.crearEventoServicio(payload)
+      ? this.dataService.crearEventoServicio(payloadCrear)
       : (soloEstadoCambiado
           ? this.dataService.actualizarEstadoEventoServicio(this.paqueteEditando!.id, estadoSeleccionado!)
-          : this.dataService.actualizarEventoServicio(this.paqueteEditando!.id, payload).pipe(
+          : this.dataService.actualizarEventoServicio(this.paqueteEditando!.id, payloadEditar).pipe(
               switchMap(() => debeActualizarEstado
                 ? this.dataService.actualizarEstadoEventoServicio(this.paqueteEditando!.id, estadoSeleccionado!)
                 : of(null))
@@ -293,6 +322,14 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+
+  onStaffCantidadBlur(index: number): void {
+    const cantidadControl = this.staffArray.at(index)?.get('cantidad');
+    if (!cantidadControl) return;
+    this.ensureCantidadMinima(cantidadControl);
+    this.cdr.markForCheck();
+  }
+
   eliminarStaff(index: number): void {
     if (this.staffArray.length <= 1) return;
     this.staffArray.removeAt(index);
@@ -300,9 +337,14 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   }
 
   agregarEquipo(): void {
-    const nuevo = this.crearEquipoFormGroup();
-    this.ensureTipoEquipoDefault(nuevo);
-    this.equiposArray.push(nuevo);
+    this.equiposArray.push(this.crearEquipoFormGroup());
+    this.cdr.markForCheck();
+  }
+
+  onEquipoCantidadBlur(index: number): void {
+    const cantidadControl = this.equiposArray.at(index)?.get('cantidad');
+    if (!cantidadControl) return;
+    this.ensureCantidadMinima(cantidadControl);
     this.cdr.markForCheck();
   }
 
@@ -310,11 +352,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     if (this.equiposArray.length <= 1) return;
     this.equiposArray.removeAt(index);
     this.cdr.markForCheck();
-  }
-
-  onTipoEquipoSeleccionado(index: number): void {
-    const control = this.equiposArray.at(index) as FormGroup;
-    this.syncEquipoNombre(control);
   }
 
   private cargarEvento(id: number): void {
@@ -338,50 +375,149 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   }
 
   private crearStaffFormGroup(miembro?: EventoServicioStaff): FormGroup {
-    return this.fb.group({
-      cargo: [miembro?.rol ?? '', [Validators.required]],
-      cantidad: [miembro?.cantidad ?? 1, [Validators.required, Validators.min(1)]]
+    const group = this.fb.group({
+      cargo: [miembro?.rol ?? null, Validators.required],
+      cantidad: [miembro?.cantidad ?? '']
     });
+    const hasCargo = !!(miembro?.rol ?? '');
+    this.toggleCantidadValidators(group.get('cantidad'), hasCargo);
+    return group;
   }
 
+
   private crearEquipoFormGroup(equipo?: EventoServicioEquipo): FormGroup {
-    return this.fb.group({
+    const group = this.fb.group({
       tipoEquipoId: [equipo?.tipoEquipoId ?? null, [Validators.required, Validators.min(1)]],
       tipoEquipo: [equipo?.tipoEquipo ?? ''],
-      cantidad: [equipo?.cantidad ?? 1, [Validators.required, Validators.min(1)]],
+      cantidad: [equipo?.cantidad ?? ''],
       notas: [equipo?.notas ?? '']
     });
+    const hasTipo = !!equipo?.tipoEquipoId;
+    this.toggleCantidadValidators(group.get('cantidad'), hasTipo);
+    return group;
   }
 
   private resetStaffForm(miembros?: EventoServicioStaff[]): void {
-    const staffArray = this.staffArray;
-    while (staffArray.length) {
-      staffArray.removeAt(0);
-    }
-    if (miembros?.length) {
-      miembros.forEach(miembro => staffArray.push(this.crearStaffFormGroup(miembro)));
-    } else {
-      staffArray.push(this.crearStaffFormGroup());
-    }
+    const controls = miembros?.length
+      ? miembros.map(miembro => this.crearStaffFormGroup(miembro))
+      : [this.crearStaffFormGroup()];
+    const staffArray = this.fb.array(controls, Validators.minLength(1));
+    this.form.setControl('staff', staffArray as unknown as FormArray);
     staffArray.markAsPristine();
     staffArray.markAsUntouched();
   }
 
   private resetEquiposForm(equipos?: EventoServicioEquipo[]): void {
-    const equiposArray = this.equiposArray;
-    while (equiposArray.length) {
-      equiposArray.removeAt(0);
-    }
-    if (equipos?.length) {
-      equipos.forEach(item => equiposArray.push(this.crearEquipoFormGroup(item)));
-    } else {
-      const grupo = this.crearEquipoFormGroup();
-      this.ensureTipoEquipoDefault(grupo);
-      equiposArray.push(grupo);
-    }
-    this.equiposArray.controls.forEach(ctrl => this.syncEquipoNombre(ctrl as FormGroup));
+    const controls = equipos?.length
+      ? equipos.map(item => this.crearEquipoFormGroup(item))
+      : [this.crearEquipoFormGroup()];
+    const equiposArray = this.fb.array(controls, Validators.minLength(1));
+    this.form.setControl('equipos', equiposArray as unknown as FormArray);
     equiposArray.markAsPristine();
     equiposArray.markAsUntouched();
+  }
+
+  private ensureCantidadMinima(control: AbstractControl): void {
+    const raw = control.value;
+    const value = raw == null || raw === '' ? 0 : Number(raw);
+    const next = Number.isFinite(value) && value >= 1 ? value : 1;
+    control.setValue(next);
+    control.markAsDirty();
+    control.updateValueAndValidity();
+  }
+
+  private toggleCantidadValidators(control: AbstractControl | null | undefined, active: boolean): void {
+    if (!control) return;
+    if (active) {
+      control.setValidators([Validators.required, Validators.min(1)]);
+    } else {
+      control.clearValidators();
+    }
+    control.updateValueAndValidity();
+  }
+
+  private setStaffEquiposValidators(required: boolean): void {
+    const staff = this.form.get('staff');
+    const equipos = this.form.get('equipos');
+    if (required) {
+      staff?.setValidators(Validators.minLength(1));
+      equipos?.setValidators(Validators.minLength(1));
+    } else {
+      staff?.clearValidators();
+      equipos?.clearValidators();
+    }
+    staff?.updateValueAndValidity();
+    equipos?.updateValueAndValidity();
+  }
+
+  private normalizeCantidades(): void {
+    this.staffArray.controls.forEach(control => {
+      const group = control as FormGroup;
+      const hasCargo = !!group.get('cargo')?.value;
+      if (!hasCargo) return;
+      const cantidadControl = group.get('cantidad');
+      if (!cantidadControl) return;
+      this.toggleCantidadValidators(cantidadControl, true);
+      cantidadControl.markAsTouched();
+      cantidadControl.updateValueAndValidity();
+    });
+    this.equiposArray.controls.forEach(control => {
+      const group = control as FormGroup;
+      const hasTipo = !!group.get('tipoEquipoId')?.value;
+      if (!hasTipo) return;
+      const cantidadControl = group.get('cantidad');
+      if (!cantidadControl) return;
+      this.toggleCantidadValidators(cantidadControl, true);
+      cantidadControl.markAsTouched();
+      cantidadControl.updateValueAndValidity();
+    });
+  }
+
+  getInvalidFieldLabels(): string[] {
+    return this.collectInvalidControls(true);
+  }
+
+  private collectInvalidControls(verbose: boolean): string[] {
+    const labels: Record<string, string> = {
+      titulo: 'Título',
+      servicio: 'Servicio',
+      categoriaId: 'Categoría',
+      precio: 'Precio',
+      horas: 'Horas estimadas',
+      staff: 'Staff',
+      equipos: 'Equipos',
+      cargo: 'Cargo',
+      cantidad: 'Cantidad',
+      tipoEquipoId: 'Tipo de equipo',
+      notas: 'Notas'
+    };
+    const invalid: string[] = [];
+    const visit = (control: AbstractControl, path: string[]): void => {
+      if (control instanceof FormGroup) {
+        Object.entries(control.controls).forEach(([key, child]) => visit(child, [...path, key]));
+        return;
+      }
+      if (control instanceof FormArray) {
+        control.controls.forEach((child, index) => visit(child, [...path, String(index)]));
+        if (control.invalid && !control.controls.length) {
+          invalid.push(labels[path[path.length - 1]] ?? path.join('.'));
+        }
+        return;
+      }
+      if (control.invalid) {
+        const label = labels[path[path.length - 1]] ?? path.join('.');
+        if (verbose) {
+          const pathLabel = path.length ? `${path.join('.')}` : label;
+          const value = control.value;
+          const valueText = value === null || value === undefined ? 'vacío' : String(value).trim() || 'vacío';
+          invalid.push(`${label} (${pathLabel}, valor: ${valueText})`);
+        } else {
+          invalid.push(label);
+        }
+      }
+    };
+    visit(this.form, []);
+    return Array.from(new Set(invalid));
   }
 
   private cargarPaquetes(eventoId: number): void {
@@ -466,7 +602,7 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (cargos) => {
-          this.cargos = (cargos ?? []).filter(cargo => cargo.esOperativoCampo === 1);
+          this.cargos = cargos ?? [];
           this.cdr.markForCheck();
         },
         error: (err) => {
@@ -483,8 +619,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (tipos) => {
           this.tipoEquipos = tipos ?? [];
-          this.equiposArray.controls.forEach(ctrl => this.syncEquipoNombre(ctrl as FormGroup));
-          this.equiposArray.controls.forEach(ctrl => this.ensureTipoEquipoDefault(ctrl as FormGroup));
           this.cdr.markForCheck();
         },
         error: (err) => {
@@ -495,27 +629,4 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       });
   }
 
-  private ensureTipoEquipoDefault(control: FormGroup): void {
-    const controlId = control.get('tipoEquipoId');
-    if (controlId && !controlId.value && this.tipoEquipos.length) {
-      controlId.setValue(this.tipoEquipos[0].idTipoEquipo);
-      this.syncEquipoNombre(control);
-    }
-  }
-
-  private syncEquipoNombre(control: FormGroup): void {
-    const tipoId = Number(control.get('tipoEquipoId')?.value);
-    if (!tipoId) return;
-    const tipo = this.tipoEquipos.find(item => item.idTipoEquipo === tipoId);
-    if (tipo) {
-      control.get('tipoEquipo')?.setValue(tipo.nombre);
-    }
-  }
-
-  mostrarCargoFueraCatalogo(valor: string | null | undefined): boolean {
-    if (!valor) {
-      return false;
-    }
-    return !this.cargos.some(item => item.cargoNombre === valor);
-  }
 }

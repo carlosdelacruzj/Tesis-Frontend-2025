@@ -1,5 +1,0 @@
-
-Linting "SWGODLC"...
-
-All files pass linting.
-

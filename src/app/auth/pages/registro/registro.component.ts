@@ -24,15 +24,11 @@ export class RegistroComponent {
 
   });
   validacion(){
-    console.log(this.miFormulario.value);
     const { pas1, pas2, pas3, pas4, pas5, pas6 } = this.miFormulario.value;
     this.codigo = parseInt(`${pas1}${pas2}${pas3}${pas4}${pas5}${pas6}`);
     this.authService.validacion(localStorage.getItem('correo'),this.codigo).subscribe(
       resp => {
-        console.log(localStorage.getItem('correo'));
-        console.log(this.codigo);
         
-        console.log(resp.validacion)
         if (resp.validacion===0) {
           this.miFormulario.reset();
 

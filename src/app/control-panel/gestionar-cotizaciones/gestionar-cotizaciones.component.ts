@@ -195,17 +195,10 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
     this.leadConversionPending = false;
 
-    console.debug('[cotizaciones] ejecutarCambioEstado -> updateEstado', {
-      id,
-      destino,
-      estadoActual
-    });
-
     this.cotizacionService.updateEstado(id, destino, estadoActual)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (actualizada) => {
-          console.debug('[cotizaciones] updateEstado OK', actualizada);
           this.error = null;
           if (actualizada) {
             this.rows = this.rows.map(item =>
@@ -225,7 +218,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                 .pipe(takeUntil(this.destroy$))
                 .subscribe({
                   next: ({ pedidoId }) => {
-                    console.debug('[cotizaciones] pedido creado desde Cotización', { pedidoId, cotizacionId: actualizada.id });
                     const baseTexto = pedidoId
                       ? `Pedido #${pedidoId} creado correctamente.`
                       : 'Pedido creado correctamente.';
@@ -278,7 +270,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
             .pipe(take(1), takeUntil(this.destroy$))
             .subscribe({
               next: detalle => {
-                console.log('[cotizaciones] getCotizacion detalle actualizado', detalle);
               },
               error: err => {
                 console.error('[cotizaciones] getCotizacion error al obtener detalle actualizado', err);
@@ -297,10 +288,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
           this.leadConversionDestino = '';
         }
       });
-    console.log('[cotizaciones] aceptar â€“ target completo', target);
-    console.log('[cotizaciones] aceptar â€“ raw del backend', target.raw);
-    console.log('[cotizaciones] aceptar â€“ contacto normalizado', target.contacto);
-    console.log('[cotizaciones] aceptar â€“ destino', destino);
   }
 
   get estadoModalMessage(): string {
@@ -326,7 +313,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
         next: (cotizaciones) => {
           this.rows = (cotizaciones ?? []).map(c => this.withClienteDisplay(c));
           this.loadingList = false;
-          console.log('[cotizaciones] list', cotizaciones);
         },
         error: (err) => {
           console.error('[cotizaciones] list', err);
@@ -352,10 +338,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.leadConversionTarget = cotizacion;
     this.leadConversionDestino = this.estadoDestino;
     const contacto = cotizacion.contacto ?? null;
-    console.log('[cotizaciones] openLeadRegistroModal contacto', {
-      cotizacionId: cotizacion?.id,
-      contacto
-    });
     const nombreCompleto = (contacto?.nombre ?? cotizacion.cliente ?? '').toString().trim();
     const partesNombre = nombreCompleto ? nombreCompleto.split(/\s+/).filter(Boolean) : [];
     const nombre = partesNombre.shift() ?? '';
@@ -437,7 +419,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     }
 
     const target = this.estadoTarget ?? this.leadConversionTarget;
-    console.debug('[cotizaciones] submitLeadRegistro target', { target });
     const contactoId = target.contacto?.id ?? null;
     if (contactoId == null) {
       this.registroClienteError = 'No pudimos identificar el lead asociado a la Cotización.';
@@ -461,7 +442,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (resp) => {
-          console.debug('[cotizaciones] convertLeadToCliente resp', resp);
           const response = resp as { usuarioAccion?: unknown; clienteAccion?: unknown } | null;
           const usuarioAccion = response?.usuarioAccion;
           const clienteAccion = response?.clienteAccion;
@@ -478,12 +458,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
             this.registroClienteError = 'La respuesta del backend no confirma la conversión del lead.';
             return;
           }
-
-          console.debug('[cotizaciones] conversión de lead exitosa, continuando con updateEstado', {
-            contactoId,
-            destino: this.estadoDestino,
-            cotizacionId: this.estadoTarget?.id ?? this.leadConversionTarget?.id
-          });
           this.clienteCreadoEnAceptacion = true;
           this.registroClienteLoading = false;
           this.leadConversionPending = false;

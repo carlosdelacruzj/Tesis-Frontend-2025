@@ -743,7 +743,6 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       payload.cliente = { id: clienteIdSeleccionado };
     }
 
-    console.log('[cotizacion] payload listo para enviar', payload);
     // Detener envío real para pruebas: solo mostramos el payload.
 
     this.loading = true;

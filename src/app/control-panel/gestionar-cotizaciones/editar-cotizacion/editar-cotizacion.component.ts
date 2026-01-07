@@ -553,7 +553,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       payload.cliente = { id: clienteId };
     }
 
-    console.log('[cotizacion] payload listo para enviar', payload);
 
     this.saving = true;
     this.cotizacionService.updateCotizacion(this.cotizacion.id, payload)

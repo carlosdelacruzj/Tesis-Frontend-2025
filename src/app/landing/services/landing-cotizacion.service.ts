@@ -41,23 +41,19 @@ export class LandingCotizacionService {
   }
 
   createPublic(payload: LandingPublicCotizacionPayload): Observable<unknown> {
-    console.log('[LandingCotizacionService] POST /cotizaciones/public', payload);
     return this.http.post<unknown>(`${this.baseUrl}/public`, payload);
   }
 
   update(id: number | string, payload: Record<string, unknown>): Observable<unknown> {
-    console.log('[LandingCotizacionService] PUT /cotizaciones/' + id, payload);
     return this.http.put<unknown>(`${this.baseUrl}/${id}`, payload);
   }
 
   delete(id: number | string): Observable<unknown> {
-    console.log('[LandingCotizacionService] DELETE /cotizaciones/' + id);
     return this.http.delete<unknown>(`${this.baseUrl}/${id}`);
   }
 
   getEventos(): Observable<LandingEventDto[]> {
     const url = `${environment.baseUrl}/eventos`;
-    console.log('[LandingCotizacionService] GET', url);
     return this.http.get<LandingEventDto[]>(url);
   }
 }

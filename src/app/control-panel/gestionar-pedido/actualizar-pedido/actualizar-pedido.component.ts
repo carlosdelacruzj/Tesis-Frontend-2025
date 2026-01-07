@@ -593,8 +593,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       })
     ).subscribe((data: AnyRecord | null) => {
       if (!data) return;
-      console.log('Pedido cargado:', data);
-      console.log('Pedido (raw):', data.pedido || data);
 
 
       // === Mapear cabecera ===
@@ -656,7 +654,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         Notas: String(record['notas'] ?? '')
         };
       });
-      console.log('Eventos mapeados:', this.ubicacion);
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
 

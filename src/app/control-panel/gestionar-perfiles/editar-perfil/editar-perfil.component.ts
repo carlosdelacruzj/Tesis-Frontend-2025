@@ -29,7 +29,6 @@ export class EditarPerfilComponent implements OnInit {
     this.getAllRoles();
   }
   public putPermiso(perfilForm: NgForm) {
-    console.log(perfilForm.value);
     const data = {
       Correo: perfilForm.value.correo,
       Celular: perfilForm.value.celular,
@@ -38,7 +37,6 @@ export class EditarPerfilComponent implements OnInit {
       rol: perfilForm.value.ROL,
 
     };
-    console.log(data);
     try {
       this.service.putPermiso(data).subscribe();
       Swal.fire({
@@ -52,7 +50,6 @@ export class EditarPerfilComponent implements OnInit {
       });
     }
     catch (err) {
-      console.log(err);
     }
   }
   getAllRoles() {

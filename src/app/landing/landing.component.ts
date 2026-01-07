@@ -479,7 +479,6 @@ export class LandingComponent implements OnInit, OnDestroy {
   submitQuote(): void {
     this.handleQuoteStart();
     this.whatsAppLink = null;
-    console.log('[landing] submitQuote', this.quoteForm.value);
     
     if (this.quoteForm.invalid) {
       this.quoteForm.markAllAsTouched();
@@ -509,7 +508,6 @@ export class LandingComponent implements OnInit, OnDestroy {
         if (!res) {
           return;
         }
-        console.log('[LandingComponent] cotización registrada correctamente', res);
         this.submissionSuccess = true;
         this.trackEvent('quote_submit', { package: this.selectedPackageId });
         this.createWhatsAppLink();
@@ -739,7 +737,6 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     };
 
-    console.log('[LandingComponent] payload cotizacion listo', payload);
     return payload;
   }
 
