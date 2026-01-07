@@ -40,7 +40,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
 
   modalOpen = false;
   modalSaving = false;
-  modalError: string | null = null;
   modalModo: 'crear' | 'editar' = 'crear';
   paqueteEditando: EventoServicioDetalle | null = null;
   detalleModalAbierto = false;
@@ -119,7 +118,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     if (!this.evento?.id) return;
     this.modalModo = 'crear';
     this.setStaffEquiposValidators(true);
-    this.modalError = null;
     this.paqueteEditando = null;
     this.form.reset({
       titulo: '',
@@ -144,7 +142,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   abrirModalEditar(paquete: EventoServicioDetalle): void {
     this.modalModo = 'editar';
     this.setStaffEquiposValidators(false);
-    this.modalError = null;
     this.paqueteEditando = paquete;
     this.form.reset({
       titulo: paquete.titulo,
@@ -173,7 +170,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   cerrarModal(): void {
     if (this.modalSaving) return;
     this.modalOpen = false;
-    this.modalError = null;
     this.paqueteEditando = null;
     this.setStaffEquiposValidators(true);
     this.form.reset();
@@ -200,10 +196,14 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       this.normalizeCantidades();
     }
     if (this.form.invalid || !this.evento?.id) {
-      this.modalError = `Campos pendientes: ${this.collectInvalidControls(true).join(', ')}`;
+
       this.form.markAllAsTouched();
       this.staffArray.markAllAsTouched();
       this.equiposArray.markAllAsTouched();
+      return;
+    }
+    if (this.hasDuplicateSelections()) {
+      this.markDuplicateSelectionsTouched();
       return;
     }
 
@@ -298,7 +298,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error guardando paquete', err);
-          this.modalError = 'No pudimos guardar el paquete. Intenta nuevamente.';
           void Swal.fire({
             icon: 'error',
             title: 'Error',
@@ -504,7 +503,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
       cargo: 'Cargo',
       cantidad: 'Cantidad',
       tipoEquipoId: 'Tipo de equipo',
-      notas: 'Notas'
+      notas: 'Notas',
+      duplicado: 'Duplicado'
     };
     const invalid: string[] = [];
     const visit = (control: AbstractControl, path: string[]): void => {
@@ -533,6 +533,57 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     };
     visit(this.form, []);
     return Array.from(new Set(invalid));
+  }
+
+  private hasDuplicateSelections(): boolean {
+    const staffValues = this.staffArray.controls
+      .map(ctrl => String((ctrl as FormGroup).get('cargo')?.value ?? '').trim())
+      .filter(value => value.length > 0);
+    const equiposValues = this.equiposArray.controls
+      .map(ctrl => String((ctrl as FormGroup).get('tipoEquipoId')?.value ?? '').trim())
+      .filter(value => value.length > 0);
+    return this.hasDuplicates(staffValues) || this.hasDuplicates(equiposValues);
+  }
+
+  private hasDuplicates(values: string[]): boolean {
+    const seen = new Set<string>();
+    for (const value of values) {
+      if (seen.has(value)) return true;
+      seen.add(value);
+    }
+    return false;
+  }
+
+  private markDuplicateSelectionsTouched(): void {
+    this.staffArray.controls.forEach(control => {
+      (control as FormGroup).get('cargo')?.markAsTouched();
+    });
+    this.equiposArray.controls.forEach(control => {
+      (control as FormGroup).get('tipoEquipoId')?.markAsTouched();
+    });
+  }
+
+  availableCargos(currentValue: string | null | undefined): Cargo[] {
+    const selected = new Set(
+      this.staffArray.controls
+        .map(ctrl => String((ctrl as FormGroup).get('cargo')?.value ?? '').trim())
+        .filter(value => value.length > 0)
+    );
+    const current = String(currentValue ?? '').trim();
+    if (current) selected.delete(current);
+    return this.cargos
+      .filter(cargo => cargo.esOperativoCampo === 1)
+      .filter(cargo => !selected.has(cargo.cargoNombre));
+  }
+
+  availableTiposEquipo(currentValue: number | null | undefined): TipoEquipo[] {
+    const selected = new Set(
+      this.equiposArray.controls
+        .map(ctrl => Number((ctrl as FormGroup).get('tipoEquipoId')?.value))
+        .filter(value => Number.isFinite(value) && value > 0)
+    );
+    if (currentValue != null) selected.delete(Number(currentValue));
+    return this.tipoEquipos.filter(tipo => !selected.has(tipo.idTipoEquipo));
   }
 
   private cargarPaquetes(eventoId: number): void {

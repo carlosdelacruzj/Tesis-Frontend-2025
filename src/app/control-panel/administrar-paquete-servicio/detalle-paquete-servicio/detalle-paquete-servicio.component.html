@@ -172,7 +172,7 @@
   <app-modal-base [open]="modalOpen" [disableClose]="modalSaving" [loading]="modalSaving" [useDefaultFooter]="false"
     size="xxl" [title]="modalModo === 'crear' ? 'Registrar paquete' : 'Editar paquete'" (closed)="cerrarModal()">
 
-    <app-formulario-base [open]="modalOpen" [loading]="false" [error]="modalError">
+    <app-formulario-base [open]="modalOpen" [loading]="false">
 
       <form [formGroup]="form" (ngSubmit)="guardarPaquete()" class="paquete-form" novalidate>
         <div class="row g-3">
@@ -287,7 +287,7 @@
                 [class.is-invalid]="staffGroup.get('cargo')?.invalid && staffGroup.get('cargo')?.touched"
                 [attr.title]="staffGroup.get('cargo')?.invalid && staffGroup.get('cargo')?.touched ? 'Selecciona un cargo.' : null">
                 <option [ngValue]="null" disabled>Selecciona un cargo</option>
-                @for (cargo of cargos; track cargo.idCargo) {
+                @for (cargo of availableCargos(staffGroup.get('cargo')?.value); track cargo.idCargo) {
                 <option [ngValue]="cargo.cargoNombre">{{ cargo.cargoNombre }}</option>
                 }
               </select>
@@ -325,7 +325,7 @@
                 [class.is-invalid]="equipoGroup.get('tipoEquipoId')?.invalid && equipoGroup.get('tipoEquipoId')?.touched"
                 [attr.title]="equipoGroup.get('tipoEquipoId')?.invalid && equipoGroup.get('tipoEquipoId')?.touched ? 'Selecciona un tipo válido.' : null">
                 <option [ngValue]="null" disabled>Selecciona un tipo</option>
-                @for (tipo of tipoEquipos; track tipo.idTipoEquipo) {
+                @for (tipo of availableTiposEquipo(equipoGroup.get('tipoEquipoId')?.value); track tipo.idTipoEquipo) {
                 <option [ngValue]="tipo.idTipoEquipo">{{ tipo.nombre }}</option>
                 }
               </select>
