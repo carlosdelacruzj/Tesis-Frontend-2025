@@ -326,7 +326,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   onStaffCantidadBlur(index: number): void {
     const cantidadControl = this.staffArray.at(index)?.get('cantidad');
     if (!cantidadControl) return;
-    this.ensureCantidadMinima(cantidadControl);
+    cantidadControl.markAsTouched();
+    cantidadControl.updateValueAndValidity();
     this.cdr.markForCheck();
   }
 
@@ -344,7 +345,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   onEquipoCantidadBlur(index: number): void {
     const cantidadControl = this.equiposArray.at(index)?.get('cantidad');
     if (!cantidadControl) return;
-    this.ensureCantidadMinima(cantidadControl);
+    cantidadControl.markAsTouched();
+    cantidadControl.updateValueAndValidity();
     this.cdr.markForCheck();
   }
 
@@ -377,10 +379,8 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
   private crearStaffFormGroup(miembro?: EventoServicioStaff): FormGroup {
     const group = this.fb.group({
       cargo: [miembro?.rol ?? null, Validators.required],
-      cantidad: [miembro?.cantidad ?? '']
+      cantidad: [miembro?.cantidad ?? '', [Validators.required, Validators.min(1)]]
     });
-    const hasCargo = !!(miembro?.rol ?? '');
-    this.toggleCantidadValidators(group.get('cantidad'), hasCargo);
     return group;
   }
 
@@ -389,11 +389,9 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     const group = this.fb.group({
       tipoEquipoId: [equipo?.tipoEquipoId ?? null, [Validators.required, Validators.min(1)]],
       tipoEquipo: [equipo?.tipoEquipo ?? ''],
-      cantidad: [equipo?.cantidad ?? ''],
+      cantidad: [equipo?.cantidad ?? '', [Validators.required, Validators.min(1)]],
       notas: [equipo?.notas ?? '']
     });
-    const hasTipo = !!equipo?.tipoEquipoId;
-    this.toggleCantidadValidators(group.get('cantidad'), hasTipo);
     return group;
   }
 
@@ -415,15 +413,6 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
     this.form.setControl('equipos', equiposArray as unknown as FormArray);
     equiposArray.markAsPristine();
     equiposArray.markAsUntouched();
-  }
-
-  private ensureCantidadMinima(control: AbstractControl): void {
-    const raw = control.value;
-    const value = raw == null || raw === '' ? 0 : Number(raw);
-    const next = Number.isFinite(value) && value >= 1 ? value : 1;
-    control.setValue(next);
-    control.markAsDirty();
-    control.updateValueAndValidity();
   }
 
   private toggleCantidadValidators(control: AbstractControl | null | undefined, active: boolean): void {
@@ -452,22 +441,14 @@ export class DetallePaqueteServicioComponent implements OnInit, OnDestroy {
 
   private normalizeCantidades(): void {
     this.staffArray.controls.forEach(control => {
-      const group = control as FormGroup;
-      const hasCargo = !!group.get('cargo')?.value;
-      if (!hasCargo) return;
-      const cantidadControl = group.get('cantidad');
+      const cantidadControl = (control as FormGroup).get('cantidad');
       if (!cantidadControl) return;
-      this.toggleCantidadValidators(cantidadControl, true);
       cantidadControl.markAsTouched();
       cantidadControl.updateValueAndValidity();
     });
     this.equiposArray.controls.forEach(control => {
-      const group = control as FormGroup;
-      const hasTipo = !!group.get('tipoEquipoId')?.value;
-      if (!hasTipo) return;
-      const cantidadControl = group.get('cantidad');
+      const cantidadControl = (control as FormGroup).get('cantidad');
       if (!cantidadControl) return;
-      this.toggleCantidadValidators(cantidadControl, true);
       cantidadControl.markAsTouched();
       cantidadControl.updateValueAndValidity();
     });
