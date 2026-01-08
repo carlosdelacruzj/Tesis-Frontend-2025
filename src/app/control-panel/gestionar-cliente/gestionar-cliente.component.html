@@ -81,7 +81,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteNombre">Nombre</label>
           <input id="clienteNombre" type="text" class="form-control" name="nombre" required
-            [pattern]="nombrePattern" ngModel #nombre="ngModel">
+            [pattern]="nombrePattern" ngModel #nombre="ngModel"
+            [class.is-invalid]="nombre.invalid && nombre.touched"
+            [attr.title]="nombre.invalid && nombre.touched ? (nombre.errors?.required ? 'Campo requerido' : 'Solo letras (2-20)') : null">
           @if (nombre.invalid && (nombre.dirty || nombre.touched)) {
             <div class="invalid-feedback d-block">
               @if (nombre.errors?.required) {
@@ -97,7 +99,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteApellido">Apellido</label>
           <input id="clienteApellido" type="text" class="form-control" name="apellido" required
-            [pattern]="apellidoPattern" ngModel #apellido="ngModel">
+            [pattern]="apellidoPattern" ngModel #apellido="ngModel"
+            [class.is-invalid]="apellido.invalid && apellido.touched"
+            [attr.title]="apellido.invalid && apellido.touched ? (apellido.errors?.required ? 'Campo requerido' : 'Solo letras (2-30)') : null">
           @if (apellido.invalid && (apellido.dirty || apellido.touched)) {
             <div class="invalid-feedback d-block">
               @if (apellido.errors?.required) {
@@ -113,7 +117,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteCorreo">Correo</label>
           <input id="clienteCorreo" type="email" class="form-control" name="correo" required
-            [pattern]="correoPattern" ngModel #correo="ngModel">
+            [pattern]="correoPattern" ngModel #correo="ngModel"
+            [class.is-invalid]="correo.invalid && correo.touched"
+            [attr.title]="correo.invalid && correo.touched ? (correo.errors?.required ? 'Campo requerido' : 'Ingrese un correo valido') : null">
           @if (correo.invalid && (correo.dirty || correo.touched)) {
             <div class="invalid-feedback d-block">
               @if (correo.errors?.required) {
@@ -129,7 +135,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteDoc">Número de documento</label>
           <input id="clienteDoc" type="text" class="form-control" name="doc" required [pattern]="docPattern" ngModel
-            #doc="ngModel">
+            #doc="ngModel"
+            [class.is-invalid]="doc.invalid && doc.touched"
+            [attr.title]="doc.invalid && doc.touched ? (doc.errors?.required ? 'Campo requerido' : 'Solo numeros (8 digitos)') : null">
           @if (doc.invalid && (doc.dirty || doc.touched)) {
             <div class="invalid-feedback d-block">
               @if (doc.errors?.required) {
@@ -145,7 +153,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteCelular">Celular</label>
           <input id="clienteCelular" type="text" class="form-control" name="celular" required
-            [pattern]="celularPattern" ngModel #celular="ngModel">
+            [pattern]="celularPattern" ngModel #celular="ngModel"
+            [class.is-invalid]="celular.invalid && celular.touched"
+            [attr.title]="celular.invalid && celular.touched ? (celular.errors?.required ? 'Campo requerido' : 'Solo numeros (7-9 digitos)') : null">
           @if (celular.invalid && (celular.dirty || celular.touched)) {
             <div class="invalid-feedback d-block">
               @if (celular.errors?.required) {
@@ -161,7 +171,9 @@
         <div class="col-12">
           <label class="form-label" for="clienteDireccion">Dirección</label>
           <textarea id="clienteDireccion" class="form-control" name="direccion" required ngModel
-            #direccion="ngModel"></textarea>
+            #direccion="ngModel"
+            [class.is-invalid]="direccion.invalid && direccion.touched"
+            [attr.title]="direccion.invalid && direccion.touched ? 'Campo requerido' : null"></textarea>
           @if (direccion.invalid && (direccion.dirty || direccion.touched)) {
             <div class="invalid-feedback d-block">
               <span>Campo requerido</span>
@@ -177,8 +189,7 @@
       [disabled]="modalRegistroLoading">
       Cancelar
     </button>
-    <button type="submit" class="btn btn-primary" form="createClienteForm"
-      [disabled]="modalRegistroLoading || createForm?.invalid">
+    <button type="submit" class="btn btn-primary" form="createClienteForm">
       @if (modalRegistroLoading) {
         <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
       }
@@ -227,7 +238,9 @@
           <div class="col-12 col-md-6">
             <label class="form-label" for="editCorreoCliente">Correo</label>
             <input id="editCorreoCliente" type="email" class="form-control" name="correo" required
-              [pattern]="correoPattern" [(ngModel)]="editFormModel.correo" #correoEdit="ngModel">
+              [pattern]="correoPattern" [(ngModel)]="editFormModel.correo" #correoEdit="ngModel"
+              [class.is-invalid]="correoEdit.invalid && correoEdit.touched"
+              [attr.title]="correoEdit.invalid && correoEdit.touched ? (correoEdit.errors?.required ? 'Campo requerido' : 'Ingrese un correo valido') : null">
             @if (correoEdit.invalid && (correoEdit.dirty || correoEdit.touched)) {
               <div class="invalid-feedback d-block">
                 @if (correoEdit.errors?.required) {
@@ -249,7 +262,9 @@
           <div class="col-12 col-md-6">
             <label class="form-label" for="editCelularCliente">Celular</label>
             <input id="editCelularCliente" type="text" class="form-control" name="celular" required
-              [pattern]="celularPattern" [(ngModel)]="editFormModel.celular" #celularEdit="ngModel">
+              [pattern]="celularPattern" [(ngModel)]="editFormModel.celular" #celularEdit="ngModel"
+              [class.is-invalid]="celularEdit.invalid && celularEdit.touched"
+              [attr.title]="celularEdit.invalid && celularEdit.touched ? (celularEdit.errors?.required ? 'Campo requerido' : 'Solo numeros (7-9 digitos)') : null">
             @if (celularEdit.invalid && (celularEdit.dirty || celularEdit.touched)) {
               <div class="invalid-feedback d-block">
                 @if (celularEdit.errors?.required) {
@@ -265,7 +280,9 @@
           <div class="col-12">
             <label class="form-label" for="editDireccionCliente">Dirección</label>
             <textarea id="editDireccionCliente" class="form-control" name="direccion" required
-              [(ngModel)]="editFormModel.direccion" #direccionEdit="ngModel"></textarea>
+              [(ngModel)]="editFormModel.direccion" #direccionEdit="ngModel"
+              [class.is-invalid]="direccionEdit.invalid && direccionEdit.touched"
+              [attr.title]="direccionEdit.invalid && direccionEdit.touched ? 'Campo requerido' : null"></textarea>
             @if (direccionEdit.invalid && (direccionEdit.dirty || direccionEdit.touched)) {
               <div class="invalid-feedback d-block">
                 <span>Campo requerido</span>

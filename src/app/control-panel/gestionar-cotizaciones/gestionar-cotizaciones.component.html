@@ -150,10 +150,10 @@
             [pattern]="registroNombrePattern"
             [(ngModel)]="registroClienteFormModel.nombre"
             #registroNombre="ngModel">
-          @if (registroNombre.errors?.required) {
+          @if (registroNombre.touched && registroNombre.errors?.required) {
             <mat-error>Campo requerido</mat-error>
           }
-          @if (registroNombre.errors?.pattern) {
+          @if (registroNombre.touched && registroNombre.errors?.pattern) {
             <mat-error>Sólo letras (2-20)</mat-error>
           }
         </mat-form-field>
@@ -170,10 +170,10 @@
             [pattern]="registroApellidoPattern"
             [(ngModel)]="registroClienteFormModel.apellido"
             #registroApellido="ngModel">
-          @if (registroApellido.errors?.required) {
+          @if (registroApellido.touched && registroApellido.errors?.required) {
             <mat-error>Campo requerido</mat-error>
           }
-          @if (registroApellido.errors?.pattern) {
+          @if (registroApellido.touched && registroApellido.errors?.pattern) {
             <mat-error>Sólo letras (2-30)</mat-error>
           }
         </mat-form-field>
@@ -190,10 +190,10 @@
             [pattern]="registroCorreoPattern"
             [(ngModel)]="registroClienteFormModel.correo"
             #registroCorreo="ngModel">
-          @if (registroCorreo.errors?.required) {
+          @if (registroCorreo.touched && registroCorreo.errors?.required) {
             <mat-error>Campo requerido</mat-error>
           }
-          @if (registroCorreo.errors?.pattern) {
+          @if (registroCorreo.touched && registroCorreo.errors?.pattern) {
             <mat-error>Ingrese un correo válido</mat-error>
           }
         </mat-form-field>
@@ -210,10 +210,10 @@
             [pattern]="registroDocPattern"
             [(ngModel)]="registroClienteFormModel.numDoc"
             #registroNumDoc="ngModel">
-          @if (registroNumDoc.errors?.required) {
+          @if (registroNumDoc.touched && registroNumDoc.errors?.required) {
             <mat-error>Campo requerido</mat-error>
           }
-          @if (registroNumDoc.errors?.pattern) {
+          @if (registroNumDoc.touched && registroNumDoc.errors?.pattern) {
             <mat-error>Sólo números (8 dígitos)</mat-error>
           }
         </mat-form-field>
@@ -230,10 +230,10 @@
             [pattern]="registroCelularPattern"
             [(ngModel)]="registroClienteFormModel.celular"
             #registroCelular="ngModel">
-          @if (registroCelular.errors?.required) {
+          @if (registroCelular.touched && registroCelular.errors?.required) {
             <mat-error>Campo requerido</mat-error>
           }
-          @if (registroCelular.errors?.pattern) {
+          @if (registroCelular.touched && registroCelular.errors?.pattern) {
             <mat-error>Sólo números (7-9 dígitos)</mat-error>
           }
         </mat-form-field>
@@ -248,7 +248,7 @@
             required
             [(ngModel)]="registroClienteFormModel.direccion"
             #registroDireccion="ngModel"></textarea>
-          @if (registroDireccion.errors?.required) {
+          @if (registroDireccion.touched && registroDireccion.errors?.required) {
             <mat-error>Campo requerido</mat-error>
           }
         </mat-form-field>
@@ -269,7 +269,7 @@
       type="submit"
       class="btn btn-primary"
       form="registroClienteForm"
-      [disabled]="registroClienteLoading || registroClienteForm?.invalid">
+      [disabled]="registroClienteLoading">
       @if (registroClienteLoading) {
         <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
       }
