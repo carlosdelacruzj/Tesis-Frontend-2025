@@ -273,17 +273,42 @@
               <div class="col-sm-6 col-md-3">
                 <div class="form-group">
                   <label class="col-form-label" [attr.for]="'programacionHora' + $index">Hora</label>
-                  <input [attr.id]="'programacionHora' + $index" type="time" class="form-control" formControlName="hora"
-                    min="06:00" max="22:00"
-                    [class.is-invalid]="grupo.get('hora')?.invalid && grupo.get('hora')?.touched">
-                  @if (grupo.get('hora')?.hasError('required') && grupo.get('hora')?.touched) {
+                  <div class="d-flex gap-2">
+                    <select class="form-select" formControlName="hora12"
+                      [class.is-invalid]="grupo.get('hora12')?.invalid && grupo.get('hora12')?.touched">
+                      <option [ngValue]="null" disabled>Hora</option>
+                      @for (hora of horaOptions; track hora) {
+                      <option [ngValue]="hora">{{ hora }}</option>
+                      }
+                    </select>
+                    <select class="form-select" formControlName="minuto"
+                      [class.is-invalid]="grupo.get('minuto')?.invalid && grupo.get('minuto')?.touched">
+                      <option [ngValue]="null" disabled>Min</option>
+                      @for (minuto of minutoOptions; track minuto) {
+                      <option [ngValue]="minuto">{{ minuto }}</option>
+                      }
+                    </select>
+                    <select class="form-select" formControlName="ampm"
+                      [class.is-invalid]="grupo.get('ampm')?.invalid && grupo.get('ampm')?.touched">
+                      <option [ngValue]="null" disabled>AM/PM</option>
+                      @for (meridiem of ampmOptions; track meridiem) {
+                      <option [ngValue]="meridiem">{{ meridiem }}</option>
+                      }
+                    </select>
+                  </div>
+                  <input type="hidden" formControlName="hora">
+                  @if (
+                  (grupo.get('hora12')?.invalid || grupo.get('minuto')?.invalid || grupo.get('ampm')?.invalid)
+                  && (grupo.get('hora12')?.touched || grupo.get('minuto')?.touched || grupo.get('ampm')?.touched)
+                  ) {
                   <small class="text-danger">
                     Ingresa la hora.
                   </small>
                   }
-                  @if (grupo.get('hora')?.hasError('pattern') && grupo.get('hora')?.touched) {
+                  @if (grupo.get('hora')?.hasError('rangoHora')
+                  && (grupo.get('hora12')?.touched || grupo.get('minuto')?.touched || grupo.get('ampm')?.touched)) {
                   <small class="text-danger">
-                    Usa el formato HH:MM.
+                    La hora debe estar entre 06:00 y 22:00.
                   </small>
                   }
                 </div>
@@ -497,7 +522,7 @@
   </form>
 </div>
 
-<app-modal-base [open]="detallePaqueteAbierto" [disableClose]="false" [loading]="false" [useDefaultFooter]="true"
+<app-modal-base [open]="detallePaqueteAbierto" [disableClose]="false" [loading]="false" [useDefaultFooter]="false"
   size="lg" title="Detalle del paquete" (closed)="cerrarDetallePaquete()">
 
   @if (detallePaqueteSeleccionado) {
@@ -595,4 +620,8 @@
   } @else {
   <p class="text-muted mb-0">Selecciona un paquete para ver el detalle.</p>
   }
+
+  <div modal-footer class="d-flex justify-content-end">
+    <button type="button" class="btn btn-outline-secondary" (click)="cerrarDetallePaquete()">Cerrar</button>
+  </div>
 </app-modal-base>

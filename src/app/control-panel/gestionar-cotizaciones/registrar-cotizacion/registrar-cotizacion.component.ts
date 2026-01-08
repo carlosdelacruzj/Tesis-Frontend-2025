@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { UntypedFormArray, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, UntypedFormArray, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, ValidatorFn, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
@@ -85,6 +85,9 @@ interface PaqueteDetalle {
 export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   readonly fechaMinimaEvento = RegistrarCotizacionComponent.computeFechaMinimaEvento();
   readonly fechaMaximaEvento = RegistrarCotizacionComponent.computeFechaMaximaEvento();
+  readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
+  readonly minutoOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
+  readonly ampmOptions = ['AM', 'PM'] as const;
   form: UntypedFormGroup;
 
   servicios: AnyRecord[] = [];
@@ -786,14 +789,105 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private createProgramacionItem(config: ProgramacionEventoItemConfig = {}): UntypedFormGroup {
-    return this.fb.group({
+    const hora24 = this.normalizeHora24(config.hora ?? '');
+    const horaParts = this.splitHoraTo12(hora24);
+    const grupo = this.fb.group({
       nombre: [config.nombre ?? '', Validators.required],
       direccion: [config.direccion ?? '', Validators.required],
       fecha: [{ value: config.fecha ?? '', disabled: true }],
-      hora: [config.hora ?? '', [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/)]],
+      hora: [hora24, [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/), this.horaRangoValidator()]],
+      hora12: [horaParts.hora12, Validators.required],
+      minuto: [horaParts.minuto, Validators.required],
+      ampm: [horaParts.ampm, Validators.required],
       notas: [config.notas ?? ''],
       esPrincipal: [config.esPrincipal ?? false]
     });
+    this.bindHoraControls(grupo);
+    return grupo;
+  }
+
+  private bindHoraControls(grupo: UntypedFormGroup): void {
+    const updateHora = () => {
+      const hora12 = grupo.get('hora12')?.value;
+      const minuto = grupo.get('minuto')?.value;
+      const ampm = grupo.get('ampm')?.value;
+      const hora24 = this.toHora24(hora12, minuto, ampm);
+      grupo.get('hora')?.setValue(hora24, { emitEvent: false });
+    };
+
+    ['hora12', 'minuto', 'ampm'].forEach(controlName => {
+      grupo.get(controlName)?.valueChanges
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(updateHora);
+    });
+
+    updateHora();
+  }
+
+  private normalizeHora24(value: string): string {
+    const texto = value.toString().trim();
+    const match = /^(\d{1,2}):(\d{2})/.exec(texto);
+    if (!match) {
+      return '';
+    }
+    const horas = Number(match[1]);
+    const minutos = match[2];
+    if (!Number.isFinite(horas)) {
+      return '';
+    }
+    return `${String(horas).padStart(2, '0')}:${minutos}`;
+  }
+
+  private splitHoraTo12(value: string): { hora12: number | null; minuto: string | null; ampm: 'AM' | 'PM' | null } {
+    const texto = this.normalizeHora24(value);
+    const match = /^(\d{2}):(\d{2})$/.exec(texto);
+    if (!match) {
+      return { hora12: null, minuto: null, ampm: null };
+    }
+    let horas = Number(match[1]);
+    const minutos = match[2];
+    const ampm = horas >= 12 ? 'PM' : 'AM';
+    horas = horas % 12;
+    if (horas === 0) {
+      horas = 12;
+    }
+    return { hora12: horas, minuto: minutos, ampm };
+  }
+
+  private toHora24(hora12Value: unknown, minutoValue: unknown, ampmValue: unknown): string {
+    const hora12 = Number(hora12Value);
+    const minuto = typeof minutoValue === 'string' ? minutoValue : `${minutoValue ?? ''}`;
+    const ampm = ampmValue === 'PM' || ampmValue === 'AM' ? ampmValue : '';
+    if (!Number.isFinite(hora12) || hora12 < 1 || hora12 > 12 || minuto.length !== 2 || !ampm) {
+      return '';
+    }
+    let horas24 = hora12 % 12;
+    if (ampm === 'PM') {
+      horas24 += 12;
+    }
+    return `${String(horas24).padStart(2, '0')}:${minuto}`;
+  }
+
+  private horaRangoValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = (control.value ?? '').toString().trim();
+      if (!value) {
+        return null;
+      }
+      const match = /^(\d{2}):(\d{2})$/.exec(value);
+      if (!match) {
+        return null;
+      }
+      const horas = Number(match[1]);
+      const minutos = Number(match[2]);
+      if (!Number.isFinite(horas) || !Number.isFinite(minutos)) {
+        return null;
+      }
+      const total = horas * 60 + minutos;
+      const min = 6 * 60;
+      const max = 22 * 60;
+      return total < min || total > max ? { rangoHora: true } : null;
+    };
   }
 
   private ensureProgramacionPrincipales(): void {

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, ValidatorFn, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, finalize, switchMap, takeUntil } from 'rxjs';
 import { Cotizacion, CotizacionPayload, CotizacionAdminItemPayload, CotizacionAdminUpdatePayload, CotizacionAdminEventoPayload } from '../model/cotizacion.model';
@@ -62,6 +62,27 @@ interface EventoCatalogo {
   raw: AnyRecord;
 }
 
+type StaffDetalle = number | { total?: number };
+
+interface PaqueteDetalle {
+  precio?: number;
+  titulo?: string;
+  horas?: number;
+  categoriaNombre?: string;
+  categoriaTipo?: string;
+  esAddon?: boolean;
+  descripcion?: string;
+  Descripcion?: string;
+  personal?: number;
+  fotosImpresas?: number;
+  trailerMin?: number;
+  filmMin?: number;
+  servicioNombre?: string;
+  servicio?: { nombre?: string };
+  staff?: StaffDetalle;
+  eventoServicio?: { staff?: StaffDetalle };
+}
+
 @Component({
   selector: 'app-editar-cotizacion',
   templateUrl: './editar-cotizacion.component.html',
@@ -70,6 +91,9 @@ interface EventoCatalogo {
 export class EditarCotizacionComponent implements OnInit, OnDestroy {
   readonly fechaMinimaEvento = EditarCotizacionComponent.computeFechaMinimaEvento();
   readonly fechaMaximaEvento = EditarCotizacionComponent.computeFechaMaximaEvento();
+  readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
+  readonly minutoOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
+  readonly ampmOptions = ['AM', 'PM'] as const;
 
   form: UntypedFormGroup;
 
@@ -96,6 +120,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   loadingPaquetes = false;
   loading = true;
   saving = false;
+  detallePaqueteAbierto = false;
+  detallePaqueteSeleccionado: PaqueteDetalle | null = null;
 
   private cotizacion: Cotizacion | null = null;
   private pendingServicioId: number | null = null;
@@ -330,6 +356,43 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   removePaquete(key: string | number): void {
     this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
     this.syncTotalEstimado();
+  }
+
+  mostrarDetallePaquete(row: PaqueteRow): void {
+    this.detallePaqueteSeleccionado = (row?.raw as PaqueteDetalle) ?? null;
+    this.detallePaqueteAbierto = !!this.detallePaqueteSeleccionado;
+  }
+
+  cerrarDetallePaquete(): void {
+    this.detallePaqueteAbierto = false;
+    this.detallePaqueteSeleccionado = null;
+  }
+
+  getDetalleStaffLista(paquete: unknown): AnyRecord[] {
+    const record = this.asRecord(paquete);
+    const staff = this.asRecord(record['staff']);
+    const lista = staff['detalle'] ?? record['staff'] ?? [];
+    return Array.isArray(lista) ? lista : [];
+  }
+
+  getEquiposLista(paquete: unknown): AnyRecord[] {
+    const record = this.asRecord(paquete);
+    const lista = record['equipos'] ?? [];
+    return Array.isArray(lista) ? lista : [];
+  }
+
+  getDetalleStaffTotal(paquete: PaqueteDetalle | null | undefined): string | number {
+    if (!paquete) {
+      return '—';
+    }
+    const staff = paquete.staff;
+    if (typeof staff === 'number') {
+      return staff;
+    }
+    const eventoStaff = paquete.eventoServicio?.staff;
+    const eventoTotal = typeof eventoStaff === 'number' ? eventoStaff : eventoStaff?.total;
+    const total = staff?.total ?? eventoTotal ?? paquete.personal;
+    return total ?? '—';
   }
 
   pkgKey = (el: AnyRecord) => this.getPkgKey(el);
@@ -881,14 +944,105 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private createProgramacionItem(config: ProgramacionEventoItem): UntypedFormGroup {
-    return this.fb.group({
+    const hora24 = this.normalizeHora24(config.hora ?? '');
+    const horaParts = this.splitHoraTo12(hora24);
+    const grupo = this.fb.group({
       nombre: [config.nombre ?? '', Validators.required],
       direccion: [config.direccion ?? '', Validators.required],
       fecha: [{ value: config.fecha ?? '', disabled: true }],
-      hora: [config.hora ?? '', [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/)]],
+      hora: [hora24, [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/), this.horaRangoValidator()]],
+      hora12: [horaParts.hora12, Validators.required],
+      minuto: [horaParts.minuto, Validators.required],
+      ampm: [horaParts.ampm, Validators.required],
       notas: [config.notas ?? ''],
       esPrincipal: [config.esPrincipal ?? false]
     });
+    this.bindHoraControls(grupo);
+    return grupo;
+  }
+
+  private bindHoraControls(grupo: UntypedFormGroup): void {
+    const updateHora = () => {
+      const hora12 = grupo.get('hora12')?.value;
+      const minuto = grupo.get('minuto')?.value;
+      const ampm = grupo.get('ampm')?.value;
+      const hora24 = this.toHora24(hora12, minuto, ampm);
+      grupo.get('hora')?.setValue(hora24, { emitEvent: false });
+    };
+
+    ['hora12', 'minuto', 'ampm'].forEach(controlName => {
+      grupo.get(controlName)?.valueChanges
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(updateHora);
+    });
+
+    updateHora();
+  }
+
+  private normalizeHora24(value: string): string {
+    const texto = value.toString().trim();
+    const match = /^(\d{1,2}):(\d{2})/.exec(texto);
+    if (!match) {
+      return '';
+    }
+    const horas = Number(match[1]);
+    const minutos = match[2];
+    if (!Number.isFinite(horas)) {
+      return '';
+    }
+    return `${String(horas).padStart(2, '0')}:${minutos}`;
+  }
+
+  private splitHoraTo12(value: string): { hora12: number | null; minuto: string | null; ampm: 'AM' | 'PM' | null } {
+    const texto = this.normalizeHora24(value);
+    const match = /^(\d{2}):(\d{2})$/.exec(texto);
+    if (!match) {
+      return { hora12: null, minuto: null, ampm: null };
+    }
+    let horas = Number(match[1]);
+    const minutos = match[2];
+    const ampm = horas >= 12 ? 'PM' : 'AM';
+    horas = horas % 12;
+    if (horas === 0) {
+      horas = 12;
+    }
+    return { hora12: horas, minuto: minutos, ampm };
+  }
+
+  private toHora24(hora12Value: unknown, minutoValue: unknown, ampmValue: unknown): string {
+    const hora12 = Number(hora12Value);
+    const minuto = typeof minutoValue === 'string' ? minutoValue : `${minutoValue ?? ''}`;
+    const ampm = ampmValue === 'PM' || ampmValue === 'AM' ? ampmValue : '';
+    if (!Number.isFinite(hora12) || hora12 < 1 || hora12 > 12 || minuto.length !== 2 || !ampm) {
+      return '';
+    }
+    let horas24 = hora12 % 12;
+    if (ampm === 'PM') {
+      horas24 += 12;
+    }
+    return `${String(horas24).padStart(2, '0')}:${minuto}`;
+  }
+
+  private horaRangoValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = (control.value ?? '').toString().trim();
+      if (!value) {
+        return null;
+      }
+      const match = /^(\d{2}):(\d{2})$/.exec(value);
+      if (!match) {
+        return null;
+      }
+      const horas = Number(match[1]);
+      const minutos = Number(match[2]);
+      if (!Number.isFinite(horas) || !Number.isFinite(minutos)) {
+        return null;
+      }
+      const total = horas * 60 + minutos;
+      const min = 6 * 60;
+      const max = 22 * 60;
+      return total < min || total > max ? { rangoHora: true } : null;
+    };
   }
 
   private hasProgramacionContent(config: ProgramacionEventoItemConfig): boolean {

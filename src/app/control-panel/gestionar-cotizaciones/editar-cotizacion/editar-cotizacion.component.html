@@ -206,18 +206,43 @@
                 </div>
                 <div class="col-sm-6 col-md-3">
                   <div class="form-group">
-                    <label class="col-form-label" [attr.for]="'programacionHora' + $index">Hora</label>
-                    <input [attr.id]="'programacionHora' + $index" type="time" class="form-control"
-                      formControlName="hora" min="06:00" max="22:00"
-                      [class.is-invalid]="grupo.get('hora')?.invalid && grupo.get('hora')?.touched">
-                    @if (grupo.get('hora')?.hasError('required') && grupo.get('hora')?.touched) {
+                  <label class="col-form-label" [attr.for]="'programacionHora' + $index">Hora</label>
+                    <div class="d-flex gap-2">
+                      <select class="form-select" formControlName="hora12"
+                        [class.is-invalid]="grupo.get('hora12')?.invalid && grupo.get('hora12')?.touched">
+                        <option [ngValue]="null" disabled>Hora</option>
+                        @for (hora of horaOptions; track hora) {
+                          <option [ngValue]="hora">{{ hora }}</option>
+                        }
+                      </select>
+                      <select class="form-select" formControlName="minuto"
+                        [class.is-invalid]="grupo.get('minuto')?.invalid && grupo.get('minuto')?.touched">
+                        <option [ngValue]="null" disabled>Min</option>
+                        @for (minuto of minutoOptions; track minuto) {
+                          <option [ngValue]="minuto">{{ minuto }}</option>
+                        }
+                      </select>
+                      <select class="form-select" formControlName="ampm"
+                        [class.is-invalid]="grupo.get('ampm')?.invalid && grupo.get('ampm')?.touched">
+                        <option [ngValue]="null" disabled>AM/PM</option>
+                        @for (meridiem of ampmOptions; track meridiem) {
+                          <option [ngValue]="meridiem">{{ meridiem }}</option>
+                        }
+                      </select>
+                    </div>
+                    <input type="hidden" formControlName="hora">
+                    @if (
+                      (grupo.get('hora12')?.invalid || grupo.get('minuto')?.invalid || grupo.get('ampm')?.invalid)
+                      && (grupo.get('hora12')?.touched || grupo.get('minuto')?.touched || grupo.get('ampm')?.touched)
+                    ) {
                       <small class="text-danger">
                         Ingresa la hora.
                       </small>
                     }
-                    @if (grupo.get('hora')?.hasError('pattern') && grupo.get('hora')?.touched) {
+                    @if (grupo.get('hora')?.hasError('rangoHora')
+                      && (grupo.get('hora12')?.touched || grupo.get('minuto')?.touched || grupo.get('ampm')?.touched)) {
                       <small class="text-danger">
-                        Usa el formato HH:MM.
+                        La hora debe estar entre 06:00 y 22:00.
                       </small>
                     }
                   </div>
@@ -301,6 +326,9 @@
 
               <ng-template appCell="acciones" let-row>
                 <div class="d-flex justify-content-center gap-2">
+                  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="mostrarDetallePaquete(row)">
+                    Mostrar
+                  </button>
                   @if (!isInSeleccion(row.raw)) {
                     <button type="button" class="btn btn-outline-primary btn-sm"
                       [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
@@ -438,3 +466,109 @@
     <p class="mt-3 mb-0">Cargando cotización…</p>
   </div>
 }
+
+<app-modal-base [open]="detallePaqueteAbierto" [disableClose]="false" [loading]="false" [useDefaultFooter]="false"
+  size="lg" title="Detalle del paquete" (closed)="cerrarDetallePaquete()">
+
+  @if (detallePaqueteSeleccionado) {
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label" for="detallePaqueteTituloEdit">Título</label>
+        <input id="detallePaqueteTituloEdit" class="form-control" [value]="detallePaqueteSeleccionado?.titulo ?? '—'"
+          disabled>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="detallePaquetePrecioEdit">Precio</label>
+        <input id="detallePaquetePrecioEdit" class="form-control"
+          [value]="(detallePaqueteSeleccionado?.precio ?? 0) | number:'1.0-0'" disabled>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="detallePaqueteHorasEdit">Horas</label>
+        <input id="detallePaqueteHorasEdit" class="form-control"
+          [value]="detallePaqueteSeleccionado?.horas ?? '—'" disabled>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="detallePaqueteServicioEdit">Servicio</label>
+        <input id="detallePaqueteServicioEdit" class="form-control"
+          [value]="detallePaqueteSeleccionado?.servicioNombre ?? detallePaqueteSeleccionado?.servicio?.nombre ?? '—'"
+          disabled>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="detallePaqueteCategoriaEdit">Categoría</label>
+        <input id="detallePaqueteCategoriaEdit" class="form-control"
+          [value]="detallePaqueteSeleccionado?.categoriaNombre ?? detallePaqueteSeleccionado?.categoriaTipo ?? '—'"
+          disabled>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="detallePaqueteTipoEdit">Tipo de paquete</label>
+        <input id="detallePaqueteTipoEdit" class="form-control"
+          [value]="detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'" disabled>
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="detallePaqueteDescripcionEdit">Descripción</label>
+        <textarea id="detallePaqueteDescripcionEdit" class="form-control" rows="3"
+          [value]="detallePaqueteSeleccionado?.descripcion || detallePaqueteSeleccionado?.Descripcion || '—'"
+          disabled></textarea>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="detallePaqueteFotosEdit">Fotos impresas</label>
+        <input id="detallePaqueteFotosEdit" class="form-control"
+          [value]="detallePaqueteSeleccionado?.fotosImpresas ?? '—'" disabled>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="detallePaqueteTrailerEdit">Trailer (min)</label>
+        <input id="detallePaqueteTrailerEdit" class="form-control"
+          [value]="detallePaqueteSeleccionado?.trailerMin ?? '—'" disabled>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="detallePaqueteFilmEdit">Filmación (min)</label>
+        <input id="detallePaqueteFilmEdit" class="form-control" [value]="detallePaqueteSeleccionado?.filmMin ?? '—'"
+          disabled>
+      </div>
+      <div class="col-12">
+        <div class="form-label">Staff</div>
+        <div class="form-control" style="height: auto;" disabled>
+          {{ getDetalleStaffTotal(detallePaqueteSeleccionado) }}
+          @if (getDetalleStaffLista(detallePaqueteSeleccionado).length) {
+            <div class="small text-muted">
+              @for (miembro of getDetalleStaffLista(detallePaqueteSeleccionado); track $index) {
+                <div>
+                  {{ (miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? 'Rol') }}
+                  @if (miembro?.cantidad) {
+                    <span>({{ miembro?.cantidad }})</span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+      @if (getEquiposLista(detallePaqueteSeleccionado).length) {
+        <div class="col-12">
+          <div class="form-label">Equipamiento requerido</div>
+          <ul class="list-group">
+            @for (eq of getEquiposLista(detallePaqueteSeleccionado); track $index) {
+              <li class="list-group-item py-2">
+                <div class="fw-semibold">{{ eq?.tipoEquipo ?? eq?.tipo }}</div>
+                <div class="small text-muted">
+                  @if (eq?.cantidad) {
+                    <span>Cantidad: {{ eq?.cantidad }}</span>
+                  }
+                  @if (eq?.notas) {
+                    <span class="ms-2">({{ eq?.notas }})</span>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="text-muted mb-0">Selecciona un paquete para ver el detalle.</p>
+  }
+
+  <div modal-footer class="d-flex justify-content-end">
+    <button type="button" class="btn btn-outline-secondary" (click)="cerrarDetallePaquete()">Cerrar</button>
+  </div>
+</app-modal-base>

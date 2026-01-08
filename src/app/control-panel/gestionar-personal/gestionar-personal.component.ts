@@ -47,8 +47,8 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
 
   celularPattern = '^[1-9]{1}[0-9]{6,8}$';
   correoPattern = '^[\\w.+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$';
-  nombresPattern = '^[a-zA-Z ]{2,20}$';
-  apellidoPattern = '^[a-zA-Z ]{2,30}$';
+  nombresPattern = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,20}$';
+  apellidoPattern = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,30}$';
   docPattern = '^[0-9]{1}[0-9]{7}$';
 
   getEstadoTexto(estado?: string, idEstado?: number): string {

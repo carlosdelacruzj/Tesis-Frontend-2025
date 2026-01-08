@@ -90,7 +90,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="createNombre">Nombres</label>
           <input id="createNombre" type="text" class="form-control" name="nombre" required [pattern]="nombresPattern"
-            [(ngModel)]="nuevoEmpleado.nombre" #nombreCtrl="ngModel">
+            [(ngModel)]="nuevoEmpleado.nombre" #nombreCtrl="ngModel"
+            [class.is-invalid]="nombreCtrl.invalid && nombreCtrl.touched"
+            [attr.title]="nombreCtrl.invalid && nombreCtrl.touched ? (nombreCtrl.errors?.required ? 'Campo requerido' : 'Solo letras (2-20)') : null">
           @if (nombreCtrl.invalid && (nombreCtrl.dirty || nombreCtrl.touched)) {
             <div class="invalid-feedback d-block">
               @if (nombreCtrl.errors?.required) {
@@ -106,7 +108,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="createApellido">Apellidos</label>
           <input id="createApellido" type="text" class="form-control" name="apellido" required [pattern]="apellidoPattern"
-            [(ngModel)]="nuevoEmpleado.apellido" #apellidoCtrl="ngModel">
+            [(ngModel)]="nuevoEmpleado.apellido" #apellidoCtrl="ngModel"
+            [class.is-invalid]="apellidoCtrl.invalid && apellidoCtrl.touched"
+            [attr.title]="apellidoCtrl.invalid && apellidoCtrl.touched ? (apellidoCtrl.errors?.required ? 'Campo requerido' : 'Solo letras (2-30)') : null">
           @if (apellidoCtrl.invalid && (apellidoCtrl.dirty || apellidoCtrl.touched)) {
             <div class="invalid-feedback d-block">
               @if (apellidoCtrl.errors?.required) {
@@ -122,7 +126,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="createDocumento">Documento</label>
           <input id="createDocumento" type="text" class="form-control" name="documento" required [pattern]="docPattern"
-            [(ngModel)]="nuevoEmpleado.documento" #documentoCtrl="ngModel">
+            [(ngModel)]="nuevoEmpleado.documento" #documentoCtrl="ngModel"
+            [class.is-invalid]="documentoCtrl.invalid && documentoCtrl.touched"
+            [attr.title]="documentoCtrl.invalid && documentoCtrl.touched ? (documentoCtrl.errors?.required ? 'Campo requerido' : 'Solo numeros (8 digitos)') : null">
           @if (documentoCtrl.invalid && (documentoCtrl.dirty || documentoCtrl.touched)) {
             <div class="invalid-feedback d-block">
               @if (documentoCtrl.errors?.required) {
@@ -138,7 +144,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="createCelular">Celular</label>
           <input id="createCelular" type="text" class="form-control" name="celular" required [pattern]="celularPattern"
-            [(ngModel)]="nuevoEmpleado.celular" #celularCtrl="ngModel">
+            [(ngModel)]="nuevoEmpleado.celular" #celularCtrl="ngModel"
+            [class.is-invalid]="celularCtrl.invalid && celularCtrl.touched"
+            [attr.title]="celularCtrl.invalid && celularCtrl.touched ? (celularCtrl.errors?.required ? 'Campo requerido' : 'Solo numeros (7-9 digitos)') : null">
           @if (celularCtrl.invalid && (celularCtrl.dirty || celularCtrl.touched)) {
             <div class="invalid-feedback d-block">
               @if (celularCtrl.errors?.required) {
@@ -154,7 +162,9 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="createCorreo">Correo</label>
           <input id="createCorreo" type="email" class="form-control" name="correo" required [pattern]="correoPattern"
-            [(ngModel)]="nuevoEmpleado.correo" #correoCtrl="ngModel">
+            [(ngModel)]="nuevoEmpleado.correo" #correoCtrl="ngModel"
+            [class.is-invalid]="correoCtrl.invalid && correoCtrl.touched"
+            [attr.title]="correoCtrl.invalid && correoCtrl.touched ? (correoCtrl.errors?.required ? 'Campo requerido' : 'Ingrese un correo valido') : null">
           @if (correoCtrl.invalid && (correoCtrl.dirty || correoCtrl.touched)) {
             <div class="invalid-feedback d-block">
               @if (correoCtrl.errors?.required) {
@@ -169,7 +179,9 @@
 
         <div class="col-12 col-md-6">
           <label class="form-label" for="createAutonomo">Autónomo</label>
-          <select id="createAutonomo" class="form-select" name="autonomo" [(ngModel)]="nuevoEmpleado.autonomo" required>
+          <select id="createAutonomo" class="form-select" name="autonomo" [(ngModel)]="nuevoEmpleado.autonomo" required
+            #autonomoCtrl="ngModel" [class.is-invalid]="autonomoCtrl.invalid && autonomoCtrl.touched"
+            [attr.title]="autonomoCtrl.invalid && autonomoCtrl.touched ? 'Selecciona una opcion' : null">
             <option [ngValue]="1">No</option>
             <option [ngValue]="2">Sí</option>
           </select>
@@ -177,7 +189,9 @@
 
         <div class="col-12 col-md-6">
           <label class="form-label" for="createEstado">Estado</label>
-          <select id="createEstado" class="form-select" name="idEstado" [(ngModel)]="nuevoEmpleado.idEstado" required>
+          <select id="createEstado" class="form-select" name="idEstado" [(ngModel)]="nuevoEmpleado.idEstado" required
+            #estadoCtrl="ngModel" [class.is-invalid]="estadoCtrl.invalid && estadoCtrl.touched"
+            [attr.title]="estadoCtrl.invalid && estadoCtrl.touched ? 'Selecciona un estado' : null">
             <option [ngValue]="1">Activo</option>
             <option [ngValue]="2">Inactivo</option>
           </select>
@@ -185,7 +199,9 @@
 
         <div class="col-12">
           <label class="form-label" for="createCargo">Cargo</label>
-          <select id="createCargo" class="form-select" name="idCargo" required [(ngModel)]="nuevoEmpleado.idCargo" #cargoCtrl="ngModel">
+          <select id="createCargo" class="form-select" name="idCargo" required [(ngModel)]="nuevoEmpleado.idCargo"
+            #cargoCtrl="ngModel" [class.is-invalid]="cargoCtrl.invalid && cargoCtrl.touched"
+            [attr.title]="cargoCtrl.invalid && cargoCtrl.touched ? 'Selecciona un cargo' : null">
             <option [ngValue]="0" disabled>Seleccione un cargo</option>
             @for (cargo of cargos; track cargo.idCargo) {
               <option [ngValue]="cargo.idCargo">{{ cargo.cargoNombre }}</option>
@@ -201,7 +217,8 @@
         <div class="col-12">
           <label class="form-label" for="createDireccion">Dirección</label>
           <textarea id="createDireccion" class="form-control" name="direccion" rows="3" required [(ngModel)]="nuevoEmpleado.direccion"
-            #direccionCtrl="ngModel"></textarea>
+            #direccionCtrl="ngModel" [class.is-invalid]="direccionCtrl.invalid && direccionCtrl.touched"
+            [attr.title]="direccionCtrl.invalid && direccionCtrl.touched ? 'Campo requerido' : null"></textarea>
           @if (direccionCtrl.invalid && (direccionCtrl.dirty || direccionCtrl.touched)) {
             <div class="invalid-feedback d-block">
               <span>Campo requerido</span>
@@ -218,7 +235,7 @@
       Cancelar
     </button>
     <button type="submit" class="btn btn-primary" form="createEmpleadoForm"
-      [disabled]="modalCrearSaving || modalCrearLoading || createForm?.invalid">
+      [disabled]="modalCrearSaving || modalCrearLoading">
       @if (modalCrearSaving) {
         <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
       }
