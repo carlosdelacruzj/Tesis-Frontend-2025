@@ -258,23 +258,27 @@
                     <div class="dev-title">{{ getEquipoLabel(devolucion.get('equipoId')?.value) }}</div>
                     <div class="muted small">{{ getEquipoAsignadoA(devolucion.get('equipoId')?.value) }}</div>
                   </div>
-                  <span [ngClass]="getEstadoClass(devolucion.get('estadoDevolucion')?.value)">
-                    {{ getEstadoLabel(devolucion.get('estadoDevolucion')?.value) || 'Sin estado' }}
-                  </span>
+                  @if (devolucionesRegistradas || !puedeRegistrarDevolucion()) {
+                    <span [ngClass]="getEstadoClass(devolucion.get('estadoDevolucion')?.value)">
+                      {{ getEstadoLabel(devolucion.get('estadoDevolucion')?.value) || 'Sin estado' }}
+                    </span>
+                  }
                 </div>
                 <div class="dev-card-body">
-                  <div class="estado-pills" role="group">
-                    @for (estado of estadosDevolucion; track estado.value) {
-                      <button
-                        type="button"
-                        class="estado-pill"
-                        [class.active]="devolucion.get('estadoDevolucion')?.value === estado.value"
-                        [disabled]="!puedeRegistrarDevolucion()"
-                        (click)="setEstadoDevolucion(i, estado.value)">
-                        {{ estado.label }}
-                      </button>
-                    }
-                  </div>
+                  @if (puedeRegistrarDevolucion()) {
+                    <div class="estado-pills" role="group">
+                      @for (estado of estadosDevolucion; track estado.value) {
+                        <button
+                          type="button"
+                          class="estado-pill"
+                          [class.active]="devolucion.get('estadoDevolucion')?.value === estado.value"
+                          [disabled]="!puedeRegistrarDevolucion()"
+                          (click)="setEstadoDevolucion(i, estado.value)">
+                          {{ estado.label }}
+                        </button>
+                      }
+                    </div>
+                  }
                   <div class="form-field">
                     <label class="label" [attr.for]="'devolucionNotas-' + i">
                       Notas <span class="muted">(obligatorio si está dañado o faltante)</span>
@@ -283,7 +287,6 @@
                       [id]="'devolucionNotas-' + i"
                       class="form-control"
                       rows="2"
-                      placeholder="Observaciones (ej. golpe en lente)"
                       formControlName="notas"
                       [readonly]="!puedeRegistrarDevolucion()"></textarea>
                   </div>
