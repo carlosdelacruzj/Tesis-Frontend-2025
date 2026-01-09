@@ -383,7 +383,7 @@
                             </ng-template>
 
                             <ng-template appCell="precio" let-row>
-                                {{ row.precio !== null && row.precio !== undefined ? (row.precio | number:'1.2-2') : '—' }}
+                                {{ row.precio | usd:'1.2-2' }}
                             </ng-template>
 
                             <ng-template appCell="staff" let-row>
@@ -434,7 +434,7 @@
                                 </ng-template>
 
                                 <ng-template appCell="precio" let-row>
-                                    <div class="text-end">{{ row.precio | number:'1.2-2' }}</div>
+                                    <div class="text-end">{{ row.precio | usd:'1.2-2' }}</div>
                                 </ng-template>
 
                                 <ng-template appCell="cantidad">
@@ -442,7 +442,7 @@
                                 </ng-template>
 
                                 <ng-template appCell="subtotal" let-row>
-                                    <div class="text-end">{{ row.precio | number:'1.2-2' }}</div>
+                                    <div class="text-end">{{ row.precio | usd:'1.2-2' }}</div>
                                 </ng-template>
 
                                 <ng-template appCell="notas" let-row>
@@ -463,7 +463,7 @@
 
                             </app-table-base>
                             <div class="text-end mt-2">
-                                <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>
+                                <strong>Total: {{ totalSeleccion | usd:'1.2-2' }}</strong>
                             </div>
                         </div>
                     </div>

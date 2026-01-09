@@ -41,6 +41,7 @@ import { EditarCotizacionComponent } from './gestionar-cotizaciones/editar-cotiz
 import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proyecto.component';
 import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/detalle-proyecto.component';
 import { OrderByEmpleadoPipe } from '../pipes/order-by-empleado.pipe';
+import { UsdPipe } from '../pipes/usd.pipe';
 import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.component';
 
 @NgModule({
@@ -88,6 +89,7 @@ import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.componen
     TableBaseComponent,
     CellTemplateDirective,
     OrderByEmpleadoPipe,
+    UsdPipe,
     ListToolbarComponent,
     ModalBaseComponent,
     FormularioBaseComponent,

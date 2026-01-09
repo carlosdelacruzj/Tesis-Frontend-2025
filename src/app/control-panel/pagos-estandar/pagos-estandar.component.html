@@ -1,6 +1,6 @@
 <div class="dashboard-content">
   <app-list-toolbar
-    [title]="'Pagos (nuevo diseño)'"
+    [title]="'Pagos'"
     [showSearch]="true"
     [searchPlaceholder]="'Buscar: cliente, código'"
     [searchValue]="searchTerm"
@@ -113,19 +113,19 @@
           <div>
             <h6 class="text-muted mb-1">Total</h6>
             <p class="fs-5 fw-semibold mb-0">
-              {{ (modal.resumen?.CostoTotal || 0) | currency:'USD':'symbol':'1.2-2':'en-US' }}
+              {{ (modal.resumen?.CostoTotal || 0) | usd:'1.2-2' }}
             </p>
           </div>
           <div>
             <h6 class="text-muted mb-1">Abonado</h6>
             <p class="fs-5 fw-semibold mb-0">
-              {{ (modal.resumen?.MontoAbonado || 0) | currency:'USD':'symbol':'1.2-2':'en-US' }}
+              {{ (modal.resumen?.MontoAbonado || 0) | usd:'1.2-2' }}
             </p>
           </div>
           <div>
             <h6 class="text-muted mb-1">Saldo</h6>
             <p class="fs-5 fw-semibold mb-0">
-              {{ (modal.resumen?.SaldoPendiente || 0) | currency:'USD':'symbol':'1.2-2':'en-US' }}
+              {{ (modal.resumen?.SaldoPendiente || 0) | usd:'1.2-2' }}
             </p>
           </div>
         </div>
@@ -152,7 +152,7 @@
         <div class="col-12">
           @if (modal.faltanteDeposito > 0) {
             <div class="alert alert-warning" role="status">
-              Debes registrar al menos {{ (modal.faltanteDeposito) }} para cumplir con el 50% del pedido.
+              Debes registrar al menos {{ modal.faltanteDeposito | usd:'1.2-2' }} para cumplir con el 50% del pedido.
             </div>
           }
         </div>
@@ -173,7 +173,7 @@
           @if (modal.montoError) {
             <div class="text-danger small mt-1">{{ modal.montoError }}</div>
           }
-          <div class="form-text">Saldo disponible: {{ (modal.resumen?.SaldoPendiente || 0) }}</div>
+          <div class="form-text">Saldo disponible: {{ (modal.resumen?.SaldoPendiente || 0) | usd:'1.2-2' }}</div>
         </div>
 
         <div class="col-12 col-md-6">
@@ -242,7 +242,7 @@
           <div class="list-group-item d-flex justify-content-between align-items-center">
             <div>
               <div class="fw-semibold">{{ v.Fecha | date:'dd-MM-yyyy' }} · {{ v.MetodoPago }}</div>
-              <div class="text-muted">Monto: {{ v.Monto | currency:'USD':'symbol':'1.2-2':'en-US' }}</div>
+              <div class="text-muted">Monto: {{ v.Monto | usd:'1.2-2' }}</div>
             </div>
             <a class="btn btn-link btn-sm" [href]="v.Link" target="_blank" rel="noopener">Ver voucher</a>
           </div>

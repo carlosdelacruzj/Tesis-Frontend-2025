@@ -184,7 +184,7 @@
           [showPagination]="false"
           [showFooterInfo]="false">
           <ng-template appCell="precio" let-row>
-            {{ row.precio | currency:'PEN':'symbol-narrow':'1.2-2' }}
+            {{ row.precio | usd:'1.2-2' }}
           </ng-template>
         </app-table-base>
       </section>

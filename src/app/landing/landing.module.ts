@@ -9,6 +9,7 @@ import { LandingLayoutComponent } from './layout/landing-layout.component';
 import { LandingHeaderComponent } from './components/landing-header/landing-header.component';
 import { LandingClientCotizacionesComponent } from './portal/landing-client-cotizaciones.component';
 import { LandingClientPedidosComponent } from './portal/landing-client-pedidos.component';
+import { UsdPipe } from '../pipes/usd.pipe';
 
 @NgModule({
   declarations: [
@@ -24,6 +25,7 @@ import { LandingClientPedidosComponent } from './portal/landing-client-pedidos.c
     ReactiveFormsModule,
     RouterModule,
     AngularMaterialModule,
+    UsdPipe,
     LandingRoutingModule
   ]
 })

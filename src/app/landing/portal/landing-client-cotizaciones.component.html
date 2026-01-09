@@ -47,7 +47,7 @@
         </div>
         <div>
           <dt>Total estimado</dt>
-          <dd>S/ {{ cotizacion.total }}</dd>
+          <dd>{{ cotizacion.total | usd:'1.2-2' }}</dd>
         </div>
       </dl>
           @if (cotizacion.mensaje) {

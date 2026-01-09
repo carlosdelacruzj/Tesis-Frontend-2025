@@ -45,11 +45,11 @@
         </div>
         <div>
           <dt>Total</dt>
-          <dd>S/ {{ pedido.total }}</dd>
+          <dd>{{ pedido.total | usd:'1.2-2' }}</dd>
         </div>
         <div>
           <dt>Saldo pendiente</dt>
-          <dd>S/ {{ pedido.saldoPendiente }}</dd>
+          <dd>{{ pedido.saldoPendiente | usd:'1.2-2' }}</dd>
         </div>
       </dl>
           @if (pedido.observaciones) {

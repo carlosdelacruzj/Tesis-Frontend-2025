@@ -471,12 +471,11 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   }
 
   private formatearMoneda(valor: number): string {
-    return new Intl.NumberFormat('es-PE', {
-      style: 'currency',
-      currency: 'USD',
+    const formatter = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(valor);
+    });
+    return `US$ ${formatter.format(valor)}`;
   }
 
   get saldoPendienteActual(): number {

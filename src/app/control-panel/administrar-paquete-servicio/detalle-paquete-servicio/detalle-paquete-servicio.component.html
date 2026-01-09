@@ -29,7 +29,7 @@
     </ng-template>
 
     <ng-template appCell="precio" let-row>
-      USD {{ (row.precio ?? 0) | number: '1.0-0' }}
+      {{ row.precio | usd:'1.0-0' }}
     </ng-template>
 
     <ng-template appCell="horas" let-row>
@@ -77,9 +77,9 @@
             [value]="selectedPaquete.categoriaNombre || 'Sin categoría'" disabled>
         </div>
         <div class="col-12 col-md-3">
-          <label class="form-label" for="detallePrecio">Precio (USD)</label>
+          <label class="form-label" for="detallePrecio">Precio (US$)</label>
           <input id="detallePrecio" type="text" class="form-control"
-            [value]="'USD ' + ((selectedPaquete.precio ?? 0) | number : '1.0-0')" disabled>
+            [value]="(selectedPaquete.precio ?? 0) | usd:'1.0-0'" disabled>
         </div>
         <div class="col-12 col-md-3">
           <label class="form-label" for="detalleHoras">Horas</label>
@@ -233,7 +233,7 @@
           </div>
 
           <div class="col-12 col-md-6">
-            <label class="form-label" for="paquetePrecio">Precio (USD)</label>
+            <label class="form-label" for="paquetePrecio">Precio (US$)</label>
             <input id="paquetePrecio" type="number" class="form-control" formControlName="precio" min="1" step="1"
               required [class.is-invalid]="form.get('precio')?.invalid && form.get('precio')?.touched"
               [attr.title]="form.get('precio')?.invalid && form.get('precio')?.touched ? 'Ingresa un precio válido (mayor a 0).' : null">

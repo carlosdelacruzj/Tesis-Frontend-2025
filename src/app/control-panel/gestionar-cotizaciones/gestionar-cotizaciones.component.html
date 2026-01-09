@@ -47,7 +47,7 @@
 
       <!-- total en USD -->
       <ng-template appCell="total" let-row>
-        {{ row.total | currency:'USD':'symbol':'1.2-2' }}
+        {{ row.total | usd:'1.2-2' }}
       </ng-template>
 
       <!-- acciones: puedes mantener Angular Material si prefieres -->

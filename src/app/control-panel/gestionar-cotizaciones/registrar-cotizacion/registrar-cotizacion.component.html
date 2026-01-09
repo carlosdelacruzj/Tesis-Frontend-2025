@@ -378,7 +378,7 @@
             </ng-template>
 
             <ng-template appCell="precio" let-row>
-              {{ row.precio !== null ? (row.precio | number:'1.2-2') : '—' }}
+              {{ row.precio | usd:'1.2-2' }}
             </ng-template>
 
             <ng-template appCell="staff" let-row>
@@ -439,7 +439,7 @@
                 @if (!row.editandoPrecio) {
                 <button type="button" class="btn btn-link p-0 text-decoration-underline" (click)="enablePrecioEdit(row)"
                   title="Haz clic para editar">
-                  {{ row.precio | number:'1.2-2' }}
+                  {{ row.precio | usd:'1.2-2' }}
                 </button>
                 } @else {
                 <input type="number" class="form-control form-control-sm text-end" [id]="getPrecioInputId(row)"
@@ -454,7 +454,7 @@
 
             <ng-template appCell="precioOriginal" let-row>
               <div class="text-end">
-                <div>{{ row.precioOriginal | number:'1.2-2' }}</div>
+                <div>{{ row.precioOriginal | usd:'1.2-2' }}</div>
                 @if (getDescuentoPorcentaje(row) !== null) {
                 <div class="text-success small">
                   −{{ getDescuentoPorcentaje(row) | number:'1.0-1' }}%
@@ -472,7 +472,7 @@
             </ng-template>
 
             <ng-template appCell="subtotal" let-row>
-              <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | number:'1.2-2' }}</div>
+              <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | usd:'1.2-2' }}</div>
             </ng-template>
 
             <ng-template appCell="notas" let-row>
@@ -487,7 +487,7 @@
           </app-table-base>
         </div>
         <div class="text-end mt-2">
-          <strong>Total: {{ totalSeleccion | number:'1.2-2' }}</strong>
+          <strong>Total: {{ totalSeleccion | usd:'1.2-2' }}</strong>
         </div>
       </mat-card-content>
     </mat-card>
@@ -499,11 +499,8 @@
         <div class="input-group">
           <span class="input-group-text">US$</span>
           <input id="totalEstimado" type="number" class="form-control" formControlName="totalEstimado" min="0"
-            step="0.01">
+            step="1">
         </div>
-        <small class="text-muted">
-          Se calcula automáticamente con los paquetes seleccionados, pero puedes ajustarlo manualmente.
-        </small>
       </div>
     </div>
 
@@ -535,7 +532,7 @@
     <div class="col-md-3">
       <label class="form-label" for="detallePaquetePrecio">Precio</label>
       <input id="detallePaquetePrecio" class="form-control"
-        [value]="(detallePaqueteSeleccionado?.precio ?? 0) | number:'1.0-0'" disabled>
+        [value]="(detallePaqueteSeleccionado?.precio ?? 0) | usd:'1.0-0'" disabled>
     </div>
     <div class="col-md-3">
       <label class="form-label" for="detallePaqueteHoras">Horas</label>
