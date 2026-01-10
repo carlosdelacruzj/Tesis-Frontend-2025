@@ -17,8 +17,8 @@ import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
   styleUrls: ['./gestionar-cotizaciones.component.css']
 })
 export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
-  private static readonly NOMBRE_PATTERN = '^[a-zA-Z ]{2,20}$';
-  private static readonly APELLIDO_PATTERN = '^[a-zA-Z ]{2,30}$';
+  private static readonly NOMBRE_PATTERN = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,20}$';
+  private static readonly APELLIDO_PATTERN = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,30}$';
   private static readonly DOC_PATTERN = '^[0-9]{1}[0-9]{7}$';
   private static readonly CELULAR_PATTERN = '^[1-9]{1}[0-9]{6,8}$';
   private static readonly CORREO_PATTERN = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
@@ -62,7 +62,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private leadConversionDestino: 'Enviada' | 'Aceptada' | 'Rechazada' | '' = '';
   private clienteCreadoEnAceptacion = false;
 
-  @ViewChild('registroClienteForm') registroClienteForm?: NgForm;
+  @ViewChild('createForm') registroClienteForm?: NgForm;
   readonly estadoModalTitle = 'Confirmar cambio de estado';
 
   private readonly cotizacionService = inject(CotizacionService);
@@ -327,7 +327,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       nombre: '',
       apellido: '',
       correo: '',
-      numDoc: '',
+      doc: '',
       celular: '',
       direccion: '',
       ...initial
@@ -430,7 +430,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       nombre: form.value.nombre,
       apellido: form.value.apellido,
       correo: form.value.correo,
-      numDoc: form.value.numDoc,
+      numDoc: form.value.doc,
       celular: form.value.celular,
       direccion: form.value.direccion
     };
@@ -548,7 +548,7 @@ interface RegistroClienteFormModel {
   nombre: string;
   apellido: string;
   correo: string;
-  numDoc: string;
+  doc: string;
   celular: string;
   direccion: string;
 }

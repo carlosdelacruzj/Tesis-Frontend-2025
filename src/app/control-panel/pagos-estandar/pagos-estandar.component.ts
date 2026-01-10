@@ -210,6 +210,14 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     this.modal.montoError = null;
   }
 
+  onMetodoPagoChange(metodoId: number | null): void {
+    this.modal.metodoId = metodoId;
+    if (!this.esTransferenciaSeleccionada()) {
+      this.modal.file = null;
+      this.modal.fileName = null;
+    }
+  }
+
   get puedeRegistrar(): boolean {
     if (this.modal.guardando || this.modal.loading) return false;
     if (this.modal.montoError) return false;
@@ -218,6 +226,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     const saldo = this.obtenerSaldoPendiente();
     if (!monto || monto <= 0) return false;
     if (!this.modal.metodoId) return false;
+    if (this.esTransferenciaSeleccionada() && !this.modal.file) return false;
     if (saldo <= 0) return false;
     if (monto > saldo + 0.01) return false;
     if (this.modal.faltanteDeposito > 0 && monto < this.modal.faltanteDeposito) return false;
@@ -233,6 +242,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     const monto = this.parseMonto(this.modal.monto);
     const saldo = this.obtenerSaldoPendiente();
     if (!monto || monto <= 0 || !this.modal.metodoId) return;
+    if (this.esTransferenciaSeleccionada() && !this.modal.file) return;
     if (saldo <= 0 || monto > saldo + 0.01) {
       this.modal.montoError = 'El monto supera el saldo pendiente.';
       return;
@@ -387,6 +397,14 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(valor);
+  }
+
+  esTransferenciaSeleccionada(): boolean {
+    const metodoId = this.modal.metodoId;
+    if (!metodoId) return false;
+    const metodo = this.modal.metodos.find(m => m.idMetodoPago === metodoId);
+    const nombre = (metodo?.nombre || '').toLowerCase();
+    return nombre.includes('transfer');
   }
 
   private loadTab(tab: TabKey, force = false): void {

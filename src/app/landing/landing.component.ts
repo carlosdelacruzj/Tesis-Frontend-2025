@@ -323,6 +323,33 @@ export class LandingComponent implements OnInit, OnDestroy {
   ];
 
   readonly sourceOptions = ['Recomendación', 'Instagram', 'TikTok', 'Google', 'Evento en vivo', 'Otro'];
+  readonly departamentos: string[] = [
+    'Amazonas',
+    'Ancash',
+    'Apurimac',
+    'Arequipa',
+    'Ayacucho',
+    'Cajamarca',
+    'Callao',
+    'Cusco',
+    'Huancavelica',
+    'Huanuco',
+    'Ica',
+    'Junin',
+    'La Libertad',
+    'Lambayeque',
+    'Lima',
+    'Loreto',
+    'Madre de Dios',
+    'Moquegua',
+    'Pasco',
+    'Piura',
+    'Puno',
+    'San Martin',
+    'Tacna',
+    'Tumbes',
+    'Ucayali'
+  ];
 
   eventOptions: LandingEventOption[] = FALLBACK_EVENT_OPTIONS;
 
@@ -338,7 +365,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     tipoEvento: ['', Validators.required],
     eventoId: [null],
     fechaEvento: [null, Validators.required],
-    distrito: ['', Validators.required],
+    departamento: ['', Validators.required],
     mensaje: [''],
     horas: ['', [Validators.required, this.horasValidator.bind(this)]],
     invitados: [''],
@@ -564,7 +591,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     const value = this.quoteForm.getRawValue();
     const service = value.tipoEvento || 'servicio de foto y video';
     const date = this.formatDateDisplay(value.fechaEvento) || 'fecha por definir';
-    const district = value.distrito || 'Lima';
+    const district = value.departamento || 'Lima';
     const baseNumber = '51931764349';
     const base = `https://wa.me/${baseNumber}`;
     const message = encodeURIComponent(`¡Hola! Busco una cotización para ${service} el ${date} en ${district}.`);
@@ -578,7 +605,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       tipoEvento: '',
       eventoId: null,
       fechaEvento: null,
-      distrito: '',
+      departamento: '',
       mensaje: '',
       horas: null,
       invitados: '',
@@ -717,7 +744,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     const eventoId = matchById?.id ?? matchByName?.id ?? eventoIdFromControl;
     const tipoEvento = selectedName || matchById?.name || matchByName?.name || 'Evento';
 
-    const lugar = String(value.distrito ?? '').trim();
+    const lugar = String(value.departamento ?? '').trim();
 
     const origen = String(value.comoNosConociste ?? '').trim() || 'Web';
 

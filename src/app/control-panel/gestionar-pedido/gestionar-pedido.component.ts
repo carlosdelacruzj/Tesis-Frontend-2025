@@ -197,6 +197,14 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     this.modalPago.fileName = null;
   }
 
+  onMetodoPagoChange(metodoId: number | null): void {
+    this.modalPago.metodoId = metodoId;
+    if (!this.esTransferenciaSeleccionada()) {
+      this.modalPago.file = null;
+      this.modalPago.fileName = null;
+    }
+  }
+
   onMontoChange(): void {
     const monto = this.parseMonto(this.modalPago.monto);
     const saldo = this.obtenerSaldoPendiente();
@@ -233,6 +241,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     if (!this.modalPago.metodoId) {
       return false;
     }
+    if (this.esTransferenciaSeleccionada() && !this.modalPago.file) {
+      return false;
+    }
     const saldo = this.obtenerSaldoPendiente();
     if (saldo <= 0) {
       return false;
@@ -255,6 +266,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     // Revalida antes de enviar por si el usuario no modificó el monto después de abrir el modal
     this.onMontoChange();
     if (this.modalPago.montoError) {
+      return;
+    }
+    if (this.esTransferenciaSeleccionada() && !this.modalPago.file) {
       return;
     }
 
@@ -476,6 +490,14 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       maximumFractionDigits: 2
     });
     return `US$ ${formatter.format(valor)}`;
+  }
+
+  esTransferenciaSeleccionada(): boolean {
+    const metodoId = this.modalPago.metodoId;
+    if (!metodoId) return false;
+    const metodo = this.modalPago.metodos.find(m => m.idMetodoPago === metodoId);
+    const nombre = (metodo?.nombre || '').toLowerCase();
+    return nombre.includes('transfer');
   }
 
   get saldoPendienteActual(): number {

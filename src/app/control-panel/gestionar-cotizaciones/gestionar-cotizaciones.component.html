@@ -133,126 +133,150 @@
     [loadingMessage]="'Preparando formulario…'"
     [error]="registroClienteError">
 
-    <form
-      #registroClienteForm="ngForm"
-      id="registroClienteForm"
-      (ngSubmit)="submitLeadRegistro(registroClienteForm)">
-
+    <form #createForm="ngForm" id="createClienteForm" (ngSubmit)="submitLeadRegistro(createForm)">
       <div class="row g-3">
-      <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Nombre</mat-label>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="clienteNombre">Nombre</label>
           <input
-            matInput
+            id="clienteNombre"
             type="text"
+            class="form-control"
             name="nombre"
             required
             [pattern]="registroNombrePattern"
             [(ngModel)]="registroClienteFormModel.nombre"
-            #registroNombre="ngModel">
-          @if (registroNombre.touched && registroNombre.errors?.required) {
-            <mat-error>Campo requerido</mat-error>
+            #nombre="ngModel"
+            [class.is-invalid]="nombre.invalid && nombre.touched"
+            [attr.title]="nombre.invalid && nombre.touched ? (nombre.errors?.required ? 'Campo requerido' : 'Solo letras (2-20)') : null">
+          @if (nombre.invalid && (nombre.dirty || nombre.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (nombre.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (nombre.errors?.pattern) {
+                <span>Sólo letras (2-20)</span>
+              }
+            </div>
           }
-          @if (registroNombre.touched && registroNombre.errors?.pattern) {
-            <mat-error>Sólo letras (2-20)</mat-error>
-          }
-        </mat-form-field>
-      </div>
+        </div>
 
-      <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Apellido</mat-label>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="clienteApellido">Apellido</label>
           <input
-            matInput
+            id="clienteApellido"
             type="text"
+            class="form-control"
             name="apellido"
             required
             [pattern]="registroApellidoPattern"
             [(ngModel)]="registroClienteFormModel.apellido"
-            #registroApellido="ngModel">
-          @if (registroApellido.touched && registroApellido.errors?.required) {
-            <mat-error>Campo requerido</mat-error>
+            #apellido="ngModel"
+            [class.is-invalid]="apellido.invalid && apellido.touched"
+            [attr.title]="apellido.invalid && apellido.touched ? (apellido.errors?.required ? 'Campo requerido' : 'Solo letras (2-30)') : null">
+          @if (apellido.invalid && (apellido.dirty || apellido.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (apellido.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (apellido.errors?.pattern) {
+                <span>Sólo letras (2-30)</span>
+              }
+            </div>
           }
-          @if (registroApellido.touched && registroApellido.errors?.pattern) {
-            <mat-error>Sólo letras (2-30)</mat-error>
-          }
-        </mat-form-field>
-      </div>
+        </div>
 
-      <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Correo</mat-label>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="clienteCorreo">Correo</label>
           <input
-            matInput
+            id="clienteCorreo"
             type="email"
+            class="form-control"
             name="correo"
             required
             [pattern]="registroCorreoPattern"
             [(ngModel)]="registroClienteFormModel.correo"
-            #registroCorreo="ngModel">
-          @if (registroCorreo.touched && registroCorreo.errors?.required) {
-            <mat-error>Campo requerido</mat-error>
+            #correo="ngModel"
+            [class.is-invalid]="correo.invalid && correo.touched"
+            [attr.title]="correo.invalid && correo.touched ? (correo.errors?.required ? 'Campo requerido' : 'Ingrese un correo valido') : null">
+          @if (correo.invalid && (correo.dirty || correo.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (correo.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (correo.errors?.pattern) {
+                <span>Ingrese un correo válido</span>
+              }
+            </div>
           }
-          @if (registroCorreo.touched && registroCorreo.errors?.pattern) {
-            <mat-error>Ingrese un correo válido</mat-error>
-          }
-        </mat-form-field>
-      </div>
+        </div>
 
-      <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Número de documento</mat-label>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="clienteDoc">Número de documento</label>
           <input
-            matInput
+            id="clienteDoc"
             type="text"
-            name="numDoc"
+            class="form-control"
+            name="doc"
             required
             [pattern]="registroDocPattern"
-            [(ngModel)]="registroClienteFormModel.numDoc"
-            #registroNumDoc="ngModel">
-          @if (registroNumDoc.touched && registroNumDoc.errors?.required) {
-            <mat-error>Campo requerido</mat-error>
+            [(ngModel)]="registroClienteFormModel.doc"
+            #doc="ngModel"
+            [class.is-invalid]="doc.invalid && doc.touched"
+            [attr.title]="doc.invalid && doc.touched ? (doc.errors?.required ? 'Campo requerido' : 'Solo numeros (8 digitos)') : null">
+          @if (doc.invalid && (doc.dirty || doc.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (doc.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (doc.errors?.pattern) {
+                <span>Sólo números (8 dígitos)</span>
+              }
+            </div>
           }
-          @if (registroNumDoc.touched && registroNumDoc.errors?.pattern) {
-            <mat-error>Sólo números (8 dígitos)</mat-error>
-          }
-        </mat-form-field>
-      </div>
+        </div>
 
-      <div class="col-12 col-md-6">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Celular</mat-label>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="clienteCelular">Celular</label>
           <input
-            matInput
+            id="clienteCelular"
             type="text"
+            class="form-control"
             name="celular"
             required
             [pattern]="registroCelularPattern"
             [(ngModel)]="registroClienteFormModel.celular"
-            #registroCelular="ngModel">
-          @if (registroCelular.touched && registroCelular.errors?.required) {
-            <mat-error>Campo requerido</mat-error>
+            #celular="ngModel"
+            [class.is-invalid]="celular.invalid && celular.touched"
+            [attr.title]="celular.invalid && celular.touched ? (celular.errors?.required ? 'Campo requerido' : 'Solo numeros (7-9 digitos)') : null">
+          @if (celular.invalid && (celular.dirty || celular.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (celular.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (celular.errors?.pattern) {
+                <span>Sólo números (7-9 dígitos)</span>
+              }
+            </div>
           }
-          @if (registroCelular.touched && registroCelular.errors?.pattern) {
-            <mat-error>Sólo números (7-9 dígitos)</mat-error>
-          }
-        </mat-form-field>
-      </div>
+        </div>
 
-      <div class="col-12">
-        <mat-form-field appearance="fill" class="w-100">
-          <mat-label>Dirección</mat-label>
+        <div class="col-12">
+          <label class="form-label" for="clienteDireccion">Dirección</label>
           <textarea
-            matInput
+            id="clienteDireccion"
+            class="form-control"
             name="direccion"
             required
             [(ngModel)]="registroClienteFormModel.direccion"
-            #registroDireccion="ngModel"></textarea>
-          @if (registroDireccion.touched && registroDireccion.errors?.required) {
-            <mat-error>Campo requerido</mat-error>
+            #direccion="ngModel"
+            [class.is-invalid]="direccion.invalid && direccion.touched"
+            [attr.title]="direccion.invalid && direccion.touched ? 'Campo requerido' : null"></textarea>
+          @if (direccion.invalid && (direccion.dirty || direccion.touched)) {
+            <div class="invalid-feedback d-block">
+              <span>Campo requerido</span>
+            </div>
           }
-        </mat-form-field>
-      </div>
+        </div>
       </div>
     </form>
   </app-formulario-base>
@@ -268,12 +292,11 @@
     <button
       type="submit"
       class="btn btn-primary"
-      form="registroClienteForm"
-      [disabled]="registroClienteLoading">
+      form="createClienteForm">
       @if (registroClienteLoading) {
         <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
       }
-      Registrar y aceptar
+      Registrar
     </button>
   </div>
 

@@ -177,6 +177,7 @@
             class="form-select"
             required
             [(ngModel)]="modalPago.metodoId"
+            (ngModelChange)="onMetodoPagoChange($event)"
           >
             <option [ngValue]="null" disabled>Selecciona un método</option>
             @for (metodo of modalPago.metodos; track metodo.idMetodoPago) {
@@ -199,23 +200,26 @@
           />
         </div>
 
-        <div class="col-12">
-          <label class="form-label" for="voucherPago">Comprobante (opcional)</label>
-          <input
-            id="voucherPago"
-            type="file"
-            class="form-control"
-            accept="image/png,image/jpeg,application/pdf"
-            (change)="onFileSelected($event)"
-          />
-          @if (modalPago.fileName) {
-            <div class="mt-2 d-flex align-items-center gap-2">
-              <mat-icon class="text-muted">attach_file</mat-icon>
-              <span class="text-truncate">{{ modalPago.fileName }}</span>
-              <button type="button" class="btn btn-link btn-sm p-0" (click)="limpiarArchivo()">Quitar</button>
-            </div>
-          }
-        </div>
+        @if (esTransferenciaSeleccionada()) {
+          <div class="col-12">
+            <label class="form-label" for="voucherPago">Comprobante (obligatorio)</label>
+            <input
+              id="voucherPago"
+              type="file"
+              class="form-control"
+              accept="image/png,image/jpeg,application/pdf"
+              required
+              (change)="onFileSelected($event)"
+            />
+            @if (modalPago.fileName) {
+              <div class="mt-2 d-flex align-items-center gap-2">
+                <mat-icon class="text-muted">attach_file</mat-icon>
+                <span class="text-truncate">{{ modalPago.fileName }}</span>
+                <button type="button" class="btn btn-link btn-sm p-0" (click)="limpiarArchivo()">Quitar</button>
+              </div>
+            }
+          </div>
+        }
       </form>
     }
   }

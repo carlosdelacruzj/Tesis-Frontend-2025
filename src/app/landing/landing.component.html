@@ -236,10 +236,15 @@
 
 
           <mat-form-field appearance="outline">
-            <mat-label>Distrito o lugar</mat-label>
-            <input matInput formControlName="distrito" placeholder="Ej. Miraflores, Pachacámac" required />
-            @if (quoteForm.get('distrito')?.hasError('required')) {
-              <mat-error>Indica el lugar.</mat-error>
+            <mat-label>Departamento</mat-label>
+            <mat-select formControlName="departamento" required>
+              <mat-option value="" disabled>Selecciona un departamento</mat-option>
+              @for (dep of departamentos; track dep) {
+                <mat-option [value]="dep">{{ dep }}</mat-option>
+              }
+            </mat-select>
+            @if (quoteForm.get('departamento')?.hasError('required')) {
+              <mat-error>Selecciona un departamento.</mat-error>
             }
           </mat-form-field>
 
