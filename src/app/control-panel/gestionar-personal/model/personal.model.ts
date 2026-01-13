@@ -8,6 +8,7 @@ export interface Empleado {
   correo: string;
   celular: string;
   documento: string;
+  tipoDocumentoId?: number;
   direccion: string;
   autonomo: 1 | 2 | 'SI' | 'NO';
   idCargo: number;

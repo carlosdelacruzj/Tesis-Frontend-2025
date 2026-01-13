@@ -1,13 +1,25 @@
 import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { NgForm } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { Subject, takeUntil } from 'rxjs';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { PersonalService, Cargo } from './service/personal.service';
 import { Empleado, EmpleadoUpdateDto } from './model/personal.model';
+import { environment } from 'src/environments/environment';
 
 interface EmpleadoRow extends Empleado {
   nombreCompleto: string;
+}
+
+interface TipoDocumento {
+  id: number;
+  codigo: string;
+  nombre: string;
+  tipoDato: 'N' | 'A';
+  tamMin: number;
+  tamMax: number;
+  activo: number;
 }
 
 interface SortPayload {
@@ -50,6 +62,12 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
   nombresPattern = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,20}$';
   apellidoPattern = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,30}$';
   docPattern = '^[0-9]{1}[0-9]{7}$';
+  docMinLength = 8;
+  docMaxLength = 8;
+  docInputMode: 'text' | 'numeric' = 'numeric';
+  docPatternMessage = 'Solo numeros (8 digitos)';
+  tiposDocumento: TipoDocumento[] = [];
+  selectedTipoDocumento: TipoDocumento | null = null;
 
   getEstadoTexto(estado?: string, idEstado?: number): string {
     if (estado) return estado;
@@ -85,13 +103,16 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
     direccion: '',
     autonomo: 1 as 1 | 2,
     idCargo: 0,
-    idEstado: 1
+    idEstado: 1,
+    tipoDocumentoId: null as number | null
   };
 
   private readonly personalService = inject(PersonalService);
+  private readonly http = inject(HttpClient);
 
   ngOnInit(): void {
     this.loadEmpleados();
+    this.loadTiposDocumento();
   }
 
   ngOnDestroy(): void {
@@ -113,9 +134,11 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       direccion: '',
       autonomo: 1 as 1 | 2,
       idCargo: 0,
-      idEstado: 1
+      idEstado: 1,
+      tipoDocumentoId: null
     };
     this.loadCargosForCreate();
+    this.onTipoDocumentoChange(null);
   }
 
   onToolbarSearch(term: string): void {
@@ -329,6 +352,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
     this.modalCrearSaving = false;
     this.modalCrearError = null;
     this.createForm?.resetForm();
+    this.onTipoDocumentoChange(null);
   }
 
   closeCreateModal(): void {
@@ -354,6 +378,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
       ...this.nuevoEmpleado,
       idCargo: Number(this.nuevoEmpleado.idCargo),
       idEstado: this.nuevoEmpleado.idEstado !== undefined ? Number(this.nuevoEmpleado.idEstado) as 1 | 2 : undefined,
+      tipoDocumentoId: this.selectedTipoDocumento?.id,
       autonomo: Number(this.nuevoEmpleado.autonomo) as 1 | 2
     };
 
@@ -378,8 +403,10 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
             direccion: '',
             autonomo: 1,
             idCargo: 0,
-            idEstado: 1
+            idEstado: 1,
+            tipoDocumentoId: null
           });
+          this.onTipoDocumentoChange(null);
           this.modalCrearOpen = false;
           this.loadEmpleados();
         },
@@ -390,5 +417,50 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
           this.modalCrearError = msg;
         }
       });
+  }
+
+  private loadTiposDocumento(): void {
+    this.http.get<TipoDocumento[]>(`${environment.baseUrl}/tipos-documento`)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (tipos) => {
+          const activos = (tipos ?? []).filter(tipo => tipo.activo === 1);
+          this.tiposDocumento = activos;
+          this.onTipoDocumentoChange(null);
+        },
+        error: (err) => {
+          console.error('[personal] tipos-documento', err);
+          this.tiposDocumento = [];
+          this.onTipoDocumentoChange(null);
+        }
+      });
+  }
+
+  onTipoDocumentoChange(tipo: TipoDocumento | null): void {
+    this.selectedTipoDocumento = tipo;
+    if (!tipo) {
+      this.docPattern = '';
+      this.docMinLength = 0;
+      this.docMaxLength = 0;
+      this.docInputMode = 'text';
+      this.docPatternMessage = 'Formato invalido';
+      return;
+    }
+
+    const min = Number(tipo.tamMin) || 1;
+    const max = Number(tipo.tamMax) || min;
+    const isNumeric = tipo.tipoDato === 'N';
+    const quantifier = min === max ? `{${min}}` : `{${min},${max}}`;
+    this.docPattern = isNumeric
+      ? `^[0-9]${quantifier}$`
+      : `^[a-zA-Z0-9]${quantifier}$`;
+    this.docMinLength = min;
+    this.docMaxLength = max;
+    this.docInputMode = isNumeric ? 'numeric' : 'text';
+
+    const label = isNumeric ? 'Solo numeros' : 'Solo letras y numeros';
+    const range = min === max ? `${min}` : `${min}-${max}`;
+    const unit = isNumeric ? 'digitos' : 'caracteres';
+    this.docPatternMessage = `${label} (${range} ${unit})`;
   }
 }

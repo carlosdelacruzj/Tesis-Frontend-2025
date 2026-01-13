@@ -84,8 +84,8 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   ver(row: Cotizacion): void { void row; }
 
   editCotizacion(cotizacion: Cotizacion): void {
-    if (cotizacion.estado === 'Aceptada' || cotizacion.estado === 'Rechazada') {
-      this.error = 'No puedes editar una Cotización que ya fue aceptada o rechazada.';
+    if (cotizacion.estado === 'Aceptada' || cotizacion.estado === 'Rechazada' || cotizacion.estado === 'Expirada') {
+      this.error = 'No puedes editar una Cotización que ya fue aceptada, rechazada o expirada.';
       return;
     }
     this.router.navigate(['/home/gestionar-cotizaciones/editar', cotizacion.id]);

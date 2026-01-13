@@ -54,64 +54,66 @@
     </div>
   </section>
 
-  <section class="portfolio" id="portafolio">
-    <div class="section__header">
-      <h2>Portafolio reciente</h2>
-      <p>Selecciona una categoría y revisa sesiones reales en Lima y provincias.</p>
-    </div>
-    <div class="portfolio__filters">
-      @for (filter of portfolioFilters; track filter) {
-        <button
-          mat-button
-          [color]="activePortfolioFilter === filter ? 'primary' : undefined"
-          (click)="setPortfolioFilter(filter)">
-          {{ filter }}
-        </button>
-      }
-    </div>
-    <div class="portfolio__grid">
-      @for (item of filteredPortfolio; track item.title) {
-        <article class="portfolio__item" (click)="openLightbox(item)" tabindex="0" (keydown.enter)="openLightbox(item)">
-          <img [src]="item.thumbnail" [alt]="item.title" loading="lazy" />
-          <div class="portfolio__overlay">
-            <span class="portfolio__type">{{ item.type }}</span>
-            <h3>{{ item.title }}</h3>
-          </div>
-        </article>
-      }
-    </div>
-  </section>
+  @if (false) {
+    <section class="portfolio" id="portafolio">
+      <div class="section__header">
+        <h2>Portafolio reciente</h2>
+        <p>Selecciona una categoría y revisa sesiones reales en Lima y provincias.</p>
+      </div>
+      <div class="portfolio__filters">
+        @for (filter of portfolioFilters; track filter) {
+          <button
+            mat-button
+            [color]="activePortfolioFilter === filter ? 'primary' : undefined"
+            (click)="setPortfolioFilter(filter)">
+            {{ filter }}
+          </button>
+        }
+      </div>
+      <div class="portfolio__grid">
+        @for (item of filteredPortfolio; track item.title) {
+          <article class="portfolio__item" (click)="openLightbox(item)" tabindex="0" (keydown.enter)="openLightbox(item)">
+            <img [src]="item.thumbnail" [alt]="item.title" loading="lazy" />
+            <div class="portfolio__overlay">
+              <span class="portfolio__type">{{ item.type }}</span>
+              <h3>{{ item.title }}</h3>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
 
-  <section class="packages" id="paquetes">
-    <div class="section__header">
-      <h2>Paquetes pensados para tu producción</h2>
-      <p>Selecciona una base y agrega los complementos que necesites.</p>
-    </div>
-    <div class="packages__grid">
-      @for (tier of packages; track tier.name) {
-        <article class="package" [class.package--highlight]="tier.highlight">
-          <h3>{{ tier.name }}</h3>
-          <p class="package__price" aria-hidden="true"></p>
-          <ul class="package__specs">
-            <li>{{ tier.hours }}</li>
-            <li>{{ tier.photos }}</li>
-            <li>{{ tier.video }}</li>
-            <li>{{ tier.delivery }}</li>
-          </ul>
-          <div class="package__addons">
-            <h4>Add-ons disponibles</h4>
-            <ul>
-              @for (addon of tier.addons; track $index) {
-                <li>{{ addon }}</li>
-              }
+    <section class="packages" id="paquetes">
+      <div class="section__header">
+        <h2>Paquetes pensados para tu producción</h2>
+        <p>Selecciona una base y agrega los complementos que necesites.</p>
+      </div>
+      <div class="packages__grid">
+        @for (tier of packages; track tier.name) {
+          <article class="package" [class.package--highlight]="tier.highlight">
+            <h3>{{ tier.name }}</h3>
+            <p class="package__price" aria-hidden="true"></p>
+            <ul class="package__specs">
+              <li>{{ tier.hours }}</li>
+              <li>{{ tier.photos }}</li>
+              <li>{{ tier.video }}</li>
+              <li>{{ tier.delivery }}</li>
             </ul>
-          </div>
-          <p class="package__note">{{ tier.recommendedFor }}</p>
-          <button mat-raised-button color="primary" (click)="prefillPackage(tier)">Cotizar este paquete</button>
-        </article>
-      }
-    </div>
-  </section>
+            <div class="package__addons">
+              <h4>Add-ons disponibles</h4>
+              <ul>
+                @for (addon of tier.addons; track $index) {
+                  <li>{{ addon }}</li>
+                }
+              </ul>
+            </div>
+            <p class="package__note">{{ tier.recommendedFor }}</p>
+            <button mat-raised-button color="primary" (click)="prefillPackage(tier)">Cotizar este paquete</button>
+          </article>
+        }
+      </div>
+    </section>
+  }
 
   <section class="about" id="nosotros">
     <div class="about__media">
@@ -157,101 +159,162 @@
     <div class="quote__card">
       <form class="quote__form" [formGroup]="quoteForm" (ngSubmit)="submitQuote()" novalidate>
         <div class="quote__grid" (focusin)="handleQuoteStart()">
-          <mat-form-field appearance="outline">
-            <mat-label>Nombre completo</mat-label>
-            <input matInput formControlName="nombreCompleto" autocomplete="name" required />
-            @if (quoteForm.get('nombreCompleto')?.hasError('required')) {
-              <mat-error>El nombre es obligatorio.</mat-error>
-            }
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Número WhatsApp</mat-label>
-            <input matInput formControlName="whatsappNumero" autocomplete="tel" placeholder="999999999" required
-              inputmode="tel" />
-            @if (quoteForm.get('whatsappNumero')?.hasError('required')) {
-              <mat-error>Ingresa tu número.</mat-error>
-            }
-            @if (quoteForm.get('whatsappNumero')?.hasError('pattern')) {
-              <mat-error>Usa solo dígitos (6-15).</mat-error>
-            }
-            <mat-hint>Ingresa solo números, sin prefijos.</mat-hint>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Tipo de evento</mat-label>
-            <mat-select formControlName="tipoEvento" required (selectionChange)="onEventSelectionChange($event.value)">
-              <mat-option value="">Selecciona un evento</mat-option>
-              @for (event of eventOptions; track event.name) {
-                <mat-option [value]="event.name">{{ event.name }}</mat-option>
-              }
-            </mat-select>
-            @if (quoteForm.get('tipoEvento')?.hasError('required')) {
-              <mat-error>Selecciona un evento.</mat-error>
-            }
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Fecha del evento</mat-label>
-            <input matInput [matDatepicker]="quoteEventPicker" formControlName="fechaEvento" [min]="minQuoteDate"
-              [max]="maxQuoteDate" required (keydown)="$event.preventDefault()"
-              (focus)="quoteEventPicker.open()" readonly />
-            <mat-datepicker-toggle matSuffix [for]="quoteEventPicker"></mat-datepicker-toggle>
-            <mat-datepicker #quoteEventPicker></mat-datepicker>
-            @if (quoteForm.get('fechaEvento')?.hasError('required')) {
-              <mat-error>Selecciona la fecha.</mat-error>
-            }
-            @if (quoteForm.get('fechaEvento')?.hasError('matDatepickerMin')) {
-              <mat-error>No podemos usar una fecha pasada.</mat-error>
-            }
-            @if (quoteForm.get('fechaEvento')?.hasError('matDatepickerMax')) {
-              <mat-error>Elige una fecha dentro de los próximos 6 meses.</mat-error>
-            }
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>duración estimada</mat-label>
+          <div class="form-group">
+            <label class="form-label" for="quoteNombreCompleto">Nombre completo</label>
             <input
-              matInput
+              id="quoteNombreCompleto"
+              type="text"
+              class="form-control"
+              formControlName="nombreCompleto"
+              autocomplete="name"
+              required
+              [class.is-invalid]="quoteForm.get('nombreCompleto')?.invalid && (quoteForm.get('nombreCompleto')?.dirty || quoteForm.get('nombreCompleto')?.touched)" />
+            @if (quoteForm.get('nombreCompleto')?.invalid && (quoteForm.get('nombreCompleto')?.dirty || quoteForm.get('nombreCompleto')?.touched)) {
+              <div class="invalid-feedback d-block">
+                @if (quoteForm.get('nombreCompleto')?.errors?.required) {
+                  <span>Campo requerido</span>
+                }
+                @if (quoteForm.get('nombreCompleto')?.errors?.minlength) {
+                  <span>Mínimo 3 caracteres</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="quoteWhatsapp">Número WhatsApp</label>
+            <input
+              id="quoteWhatsapp"
+              type="text"
+              class="form-control"
+              formControlName="whatsappNumero"
+              autocomplete="tel"
+              placeholder="999999999"
+              required
+              inputmode="tel"
+              [class.is-invalid]="quoteForm.get('whatsappNumero')?.invalid && (quoteForm.get('whatsappNumero')?.dirty || quoteForm.get('whatsappNumero')?.touched)" />
+            @if (quoteForm.get('whatsappNumero')?.invalid && (quoteForm.get('whatsappNumero')?.dirty || quoteForm.get('whatsappNumero')?.touched)) {
+              <div class="invalid-feedback d-block">
+                @if (quoteForm.get('whatsappNumero')?.errors?.required) {
+                  <span>Campo requerido</span>
+                }
+                @if (quoteForm.get('whatsappNumero')?.errors?.pattern) {
+                  <span>Usa solo dígitos (6-15)</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="quoteTipoEvento">Tipo de evento</label>
+            <select
+              id="quoteTipoEvento"
+              class="form-control"
+              formControlName="tipoEvento"
+              required
+              (change)="onEventSelectionChange($any($event.target).value)"
+              [class.is-invalid]="quoteForm.get('tipoEvento')?.invalid && (quoteForm.get('tipoEvento')?.dirty || quoteForm.get('tipoEvento')?.touched)">
+              <option value="">Selecciona un evento</option>
+              @for (event of eventOptions; track event.name) {
+                <option [value]="event.name">{{ event.name }}</option>
+              }
+            </select>
+            @if (quoteForm.get('tipoEvento')?.invalid && (quoteForm.get('tipoEvento')?.dirty || quoteForm.get('tipoEvento')?.touched)) {
+              <div class="invalid-feedback d-block">
+                <span>Selecciona un evento</span>
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="quoteFechaEvento">Fecha del evento</label>
+            <input
+              id="quoteFechaEvento"
+              type="date"
+              class="form-control"
+              formControlName="fechaEvento"
+              [attr.min]="minQuoteDate | date: 'yyyy-MM-dd'"
+              [attr.max]="maxQuoteDate | date: 'yyyy-MM-dd'"
+              required
+              [class.is-invalid]="quoteForm.get('fechaEvento')?.invalid && (quoteForm.get('fechaEvento')?.dirty || quoteForm.get('fechaEvento')?.touched)" />
+            @if (quoteForm.get('fechaEvento')?.invalid && (quoteForm.get('fechaEvento')?.dirty || quoteForm.get('fechaEvento')?.touched)) {
+              <div class="invalid-feedback d-block">
+                @if (quoteForm.get('fechaEvento')?.errors?.required) {
+                  <span>Selecciona la fecha</span>
+                }
+                @if (quoteForm.get('fechaEvento')?.errors?.fechaMin) {
+                  <span>No podemos usar una fecha pasada</span>
+                }
+                @if (quoteForm.get('fechaEvento')?.errors?.fechaMax) {
+                  <span>Elige una fecha dentro de los próximos 6 meses</span>
+                }
+                @if (quoteForm.get('fechaEvento')?.errors?.fechaFormato) {
+                  <span>Ingresa una fecha válida</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="quoteHoras">Duración estimada</label>
+            <input
+              id="quoteHoras"
               type="number"
+              class="form-control"
               formControlName="horas"
               placeholder="Ej. 6"
               required
               inputmode="decimal"
               min="1"
               step="0.5"
-            />
-            @if (quoteForm.get('horas')?.hasError('required')) {
-              <mat-error>Indica cuántas horas necesitas.</mat-error>
+              [class.is-invalid]="quoteForm.get('horas')?.invalid && (quoteForm.get('horas')?.dirty || quoteForm.get('horas')?.touched)" />
+            @if (quoteForm.get('horas')?.invalid && (quoteForm.get('horas')?.dirty || quoteForm.get('horas')?.touched)) {
+              <div class="invalid-feedback d-block">
+                @if (quoteForm.get('horas')?.errors?.required) {
+                  <span>Indica cuántas horas necesitas</span>
+                }
+                @if (quoteForm.get('horas')?.errors?.horasFormato) {
+                  <span>Ingresa un número válido (ej. 1, 1.5, 2)</span>
+                }
+                @if (quoteForm.get('horas')?.errors?.horasMin) {
+                  <span>El mínimo es 1 hora</span>
+                }
+                @if (quoteForm.get('horas')?.errors?.horasStep) {
+                  <span>Usa incrementos de 0.5 horas (1.0, 1.5, 2.0…)</span>
+                }
+              </div>
             }
-            @if (quoteForm.get('horas')?.hasError('horasFormato')) {
-              <mat-error>Ingresa un número válido (ej. 1, 1.5, 2).</mat-error>
-            }
-            @if (quoteForm.get('horas')?.hasError('horasMin')) {
-              <mat-error>El mínimo es 1 hora.</mat-error>
-            }
-            @if (quoteForm.get('horas')?.hasError('horasStep')) {
-              <mat-error>Usa incrementos de 0.5 horas (1.0, 1.5, 2.0…).</mat-error>
-            }
-          </mat-form-field>
+          </div>
 
-
-
-          <mat-form-field appearance="outline">
-            <mat-label>Departamento</mat-label>
-            <mat-select formControlName="departamento" required>
-              <mat-option value="" disabled>Selecciona un departamento</mat-option>
+          <div class="form-group">
+            <label class="form-label" for="quoteDepartamento">Departamento</label>
+            <select
+              id="quoteDepartamento"
+              class="form-control"
+              formControlName="departamento"
+              required
+              [class.is-invalid]="quoteForm.get('departamento')?.invalid && (quoteForm.get('departamento')?.dirty || quoteForm.get('departamento')?.touched)">
+              <option value="">Selecciona un departamento</option>
               @for (dep of departamentos; track dep) {
-                <mat-option [value]="dep">{{ dep }}</mat-option>
+                <option [value]="dep">{{ dep }}</option>
               }
-            </mat-select>
-            @if (quoteForm.get('departamento')?.hasError('required')) {
-              <mat-error>Selecciona un departamento.</mat-error>
+            </select>
+            @if (quoteForm.get('departamento')?.invalid && (quoteForm.get('departamento')?.dirty || quoteForm.get('departamento')?.touched)) {
+              <div class="invalid-feedback d-block">
+                <span>Selecciona un departamento</span>
+              </div>
             }
-          </mat-form-field>
+          </div>
 
-          <mat-form-field appearance="outline" class="quote__span">
-            <mat-label>Mensaje (opcional)</mat-label>
-            <textarea matInput rows="3" formControlName="mensaje" placeholder="¿Qué idea tienes en mente?"></textarea>
-          </mat-form-field>
+          <div class="form-group quote__span">
+            <label class="form-label" for="quoteMensaje">Mensaje (opcional)</label>
+            <textarea
+              id="quoteMensaje"
+              class="form-control"
+              rows="3"
+              formControlName="mensaje"
+              placeholder="¿Qué idea tienes en mente?"></textarea>
+          </div>
         </div>
 
         <mat-expansion-panel class="quote__panel">
@@ -261,43 +324,62 @@
           </mat-expansion-panel-header>
 
           <div class="quote__grid">
-            <mat-form-field appearance="outline">
-              <mat-label>N° aproximado de invitados</mat-label>
-              <input matInput formControlName="invitados" placeholder="Ej. 120" />
-            </mat-form-field>
-
-
+            <div class="form-group">
+              <label class="form-label" for="quoteInvitados">N° aproximado de invitados</label>
+              <input
+                id="quoteInvitados"
+                type="text"
+                class="form-control"
+                formControlName="invitados"
+                placeholder="Ej. 120" />
+            </div>
           </div>
 
           <div class="quote__extras">
             <p>Extras populares</p>
             <div class="quote__extras-grid" formGroupName="extras">
               @for (extra of extrasCatalog; track extra.control) {
-                <mat-checkbox [formControlName]="extra.control">
-                  <span class="extra-text">
+                <div class="form-check quote__extra-card">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [id]="'extra-' + extra.control"
+                    [formControlName]="extra.control" />
+                  <label class="form-check-label extra-text" [for]="'extra-' + extra.control">
                     <strong>{{ extra.label }}</strong>
                     <span>{{ extra.description }}</span>
-                  </span>
-                </mat-checkbox>
+                  </label>
+                </div>
               }
             </div>
           </div>
 
-          <mat-form-field appearance="outline" class="quote__select">
-            <mat-label>¿Cómo nos encontraste?</mat-label>
-            <mat-select formControlName="comoNosConociste">
-              <mat-option value="">Selecciona una opción</mat-option>
+          <div class="form-group quote__select">
+            <label class="form-label" for="quoteOrigen">¿Cómo nos encontraste?</label>
+            <select id="quoteOrigen" class="form-control" formControlName="comoNosConociste">
+              <option value="">Selecciona una opción</option>
               @for (option of sourceOptions; track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
+                <option [value]="option">{{ option }}</option>
               }
-            </mat-select>
-          </mat-form-field>
+            </select>
+          </div>
         </mat-expansion-panel>
 
-        <mat-checkbox formControlName="consentimiento" class="quote__consent">
-          Acepto el uso de mis datos para recibir propuestas de D' La Cruz y confirmo haber leído la política de
-          privacidad.
-        </mat-checkbox>
+        <div class="form-check quote__consent">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="quoteConsentimiento"
+            formControlName="consentimiento"
+            [class.is-invalid]="quoteForm.get('consentimiento')?.invalid && (quoteForm.get('consentimiento')?.dirty || quoteForm.get('consentimiento')?.touched)" />
+          <label class="form-check-label" for="quoteConsentimiento">
+            Acepto el uso de mis datos para recibir propuestas de D' La Cruz y confirmo haber leído la política de
+            privacidad.
+          </label>
+          @if (quoteForm.get('consentimiento')?.invalid && (quoteForm.get('consentimiento')?.dirty || quoteForm.get('consentimiento')?.touched)) {
+            <div class="invalid-feedback d-block">Debes aceptar para continuar.</div>
+          }
+        </div>
 
         <div class="quote__actions">
           <button mat-raised-button color="primary" type="submit" [disabled]="isSubmitting">

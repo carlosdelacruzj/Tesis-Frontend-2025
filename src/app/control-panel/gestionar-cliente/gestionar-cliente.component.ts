@@ -1,12 +1,24 @@
 import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { NgForm } from '@angular/forms';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { Cliente, EstadoCliente } from './model/cliente.model';
 import { ClienteService } from './service/cliente.service';
 import { from, Subject, takeUntil } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 export type ClienteRow = Cliente;
+
+interface TipoDocumento {
+  id: number;
+  codigo: string;
+  nombre: string;
+  tipoDato: 'N' | 'A';
+  tamMin: number;
+  tamMax: number;
+  activo: number;
+}
 
 @Component({
   selector: 'app-gestionar-cliente',
@@ -15,6 +27,7 @@ export type ClienteRow = Cliente;
 })
 export class GestionarClienteComponent implements OnInit, OnDestroy {
   private readonly clienteService = inject(ClienteService);
+  private readonly http = inject(HttpClient);
 
   columns: TableColumn<ClienteRow>[] = [
     { key: 'codigo', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
@@ -48,8 +61,15 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   nombrePattern = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,20}$';
   apellidoPattern = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,30}$';
   docPattern = '^[0-9]{1}[0-9]{7}$';
+  docMinLength = 8;
+  docMaxLength = 8;
+  docInputMode: 'text' | 'numeric' = 'numeric';
+  docPatternMessage = 'Solo numeros (8 digitos)';
   celularPattern = '^[1-9]{1}[0-9]{6,8}$';
   correoPattern = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
+  tiposDocumento: TipoDocumento[] = [];
+  selectedTipoDocumento: TipoDocumento | null = null;
+  isRucSelected = false;
 
   @ViewChild('createForm') createForm?: NgForm;
   @ViewChild('editForm') editForm?: NgForm;
@@ -59,6 +79,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadEstados();
     this.loadClientes();
+    this.loadTiposDocumento();
   }
 
   ngOnDestroy(): void {
@@ -143,6 +164,8 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
     this.modalRegistroError = null;
 
     const payload = {
+      tipoDocumentoId: this.selectedTipoDocumento?.id,
+      razonSocial: this.isRucSelected ? form.value.razonSocial : null,
       nombre: form.value.nombre,
       apellido: form.value.apellido,
       correo: form.value.correo,
@@ -281,6 +304,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       this.createForm.form.markAsPristine();
       this.createForm.form.markAsUntouched();
     }
+    this.onTipoDocumentoChange(null);
   }
 
   private createEmptyEditModel(cliente?: ClienteRow) {
@@ -321,6 +345,71 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
           this.estadosCliente = [];
         }
       });
+  }
+
+  private loadTiposDocumento(): void {
+    this.http.get<TipoDocumento[]>(`${environment.baseUrl}/tipos-documento`)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (tipos) => {
+          const activos = (tipos ?? []).filter(tipo => tipo.activo === 1);
+          this.tiposDocumento = activos;
+          this.onTipoDocumentoChange(null);
+        },
+        error: (err) => {
+          console.error('[clientes] tipos-documento', err);
+          this.tiposDocumento = [];
+          this.onTipoDocumentoChange(null);
+        }
+      });
+  }
+
+  onTipoDocumentoChange(tipo: TipoDocumento | null): void {
+    this.selectedTipoDocumento = tipo;
+    this.isRucSelected = (tipo?.codigo ?? '').toUpperCase() === 'RUC';
+    if (!tipo) {
+      this.docPattern = '';
+      this.docMinLength = 0;
+      this.docMaxLength = 0;
+      this.docInputMode = 'text';
+      this.docPatternMessage = 'Formato invalido';
+      this.createForm?.form.patchValue({
+        razonSocial: '',
+        nombre: '',
+        apellido: '',
+        correo: '',
+        doc: '',
+        celular: '',
+        direccion: ''
+      });
+      return;
+    }
+
+    const min = Number(tipo.tamMin) || 1;
+    const max = Number(tipo.tamMax) || min;
+    const isNumeric = tipo.tipoDato === 'N';
+    const quantifier = min === max ? `{${min}}` : `{${min},${max}}`;
+    this.docPattern = isNumeric
+      ? `^[0-9]${quantifier}$`
+      : `^[a-zA-Z0-9]${quantifier}$`;
+    this.docMinLength = min;
+    this.docMaxLength = max;
+    this.docInputMode = isNumeric ? 'numeric' : 'text';
+
+    const label = isNumeric ? 'Solo numeros' : 'Solo letras y numeros';
+    const range = min === max ? `${min}` : `${min}-${max}`;
+    const unit = isNumeric ? 'digitos' : 'caracteres';
+    this.docPatternMessage = `${label} (${range} ${unit})`;
+
+    this.createForm?.form.patchValue({
+      razonSocial: '',
+      nombre: '',
+      apellido: '',
+      correo: '',
+      doc: '',
+      celular: '',
+      direccion: ''
+    });
   }
 
   private getEstadoIdByName(nombre: string | null): number | null {

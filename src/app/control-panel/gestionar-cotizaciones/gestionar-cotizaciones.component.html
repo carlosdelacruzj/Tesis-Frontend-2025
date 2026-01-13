@@ -54,7 +54,7 @@
       <ng-template appCell="acciones" let-row>
         <div class="d-flex justify-content-center gap-1">
           <button mat-icon-button color="primary" type="button" (click)="editCotizacion(row)" matTooltip="Editar"
-            [disabled]="row.estado === 'Aceptada' || row.estado === 'Rechazada'">
+            [disabled]="row.estado === 'Aceptada' || row.estado === 'Rechazada' || row.estado === 'Expirada'">
             <mat-icon>edit</mat-icon>
           </button>
           @if ((row.estado || 'Borrador') === 'Borrador') {

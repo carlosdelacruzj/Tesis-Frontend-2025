@@ -47,6 +47,12 @@
   border-color: #fbd1a2;
 }
 
+.estado-expirada {
+  background-color: #fdba74;
+  color: #7c2d12;
+  border-color: #fed7aa;
+}
+
 .estado-danger {
   background-color: #ffe8e6;
   color: #c81e1e;

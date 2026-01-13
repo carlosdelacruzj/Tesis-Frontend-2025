@@ -5,8 +5,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, take, takeUntil } from 'rxjs/operators';
-import { MAT_DATE_FORMATS, MAT_DATE_LOCALE, DateAdapter, MatDateFormats, NativeDateAdapter } from '@angular/material/core';
-import { DateInput, formatDisplayDate, formatIsoDate } from '../shared/utils/date-utils';
+import { DateInput, formatDisplayDate, formatIsoDate, parseDateInput } from '../shared/utils/date-utils';
 import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload } from './services';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
@@ -46,28 +45,6 @@ interface FaqItem {
   answer: string;
 }
 
-// Formats calendar input as dd-MM-yyyy for the form
-class LandingDateAdapter extends NativeDateAdapter {
-  override format(date: Date, displayFormat: unknown): string {
-    if (displayFormat === 'input') {
-      return formatDisplayDate(date, '');
-    }
-    return super.format(date, displayFormat);
-  }
-}
-
-const LANDING_DATE_FORMATS: MatDateFormats = {
-  parse: {
-    dateInput: 'dd-MM-yyyy'
-  },
-  display: {
-    dateInput: 'input',
-    monthYearLabel: 'MMM yyyy',
-    dateA11yLabel: 'dd-MM-yyyy',
-    monthYearA11yLabel: 'MMMM yyyy'
-  }
-};
-
 interface LandingEventOption {
   id: number;
   name: string;
@@ -82,12 +59,7 @@ const FALLBACK_EVENT_OPTIONS: LandingEventOption[] = [
 @Component({
   selector: 'app-landing',
   templateUrl: './landing.component.html',
-  styleUrls: ['./landing.component.css'],
-  providers: [
-    { provide: MAT_DATE_LOCALE, useValue: 'es-PE' },
-    { provide: DateAdapter, useClass: LandingDateAdapter, deps: [MAT_DATE_LOCALE] },
-    { provide: MAT_DATE_FORMATS, useValue: LANDING_DATE_FORMATS }
-  ]
+  styleUrls: ['./landing.component.css']
 })
 export class LandingComponent implements OnInit, OnDestroy {
 
@@ -301,10 +273,6 @@ export class LandingComponent implements OnInit, OnDestroy {
       answer: 'Claro, contamos con operadores certificados para drone y un pool de fotógrafos adicionales.'
     },
     {
-      question: '¿Entregan factura o boleta?',
-      answer: 'Emitimos comprobantes electrónicos (boleta o factura) y contratos firmados digitalmente.'
-    },
-    {
       question: '¿Puedo solicitar archivos RAW o uso comercial?',
       answer: 'Sí. Los RAW se entregan bajo acuerdo y aplican tarifas adicionales según licencia de uso.'
     },
@@ -352,6 +320,8 @@ export class LandingComponent implements OnInit, OnDestroy {
   ];
 
   eventOptions: LandingEventOption[] = FALLBACK_EVENT_OPTIONS;
+  readonly minQuoteDate = this.addDays(this.startOfToday(), 1);
+  readonly maxQuoteDate = this.addMonths(this.startOfToday(), 6);
 
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
@@ -364,7 +334,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     whatsappNumero: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
     tipoEvento: ['', Validators.required],
     eventoId: [null],
-    fechaEvento: [null, Validators.required],
+    fechaEvento: [null, [Validators.required, this.fechaEventoEnRangoValidator()]],
     departamento: ['', Validators.required],
     mensaje: [''],
     horas: ['', [Validators.required, this.horasValidator.bind(this)]],
@@ -387,8 +357,6 @@ export class LandingComponent implements OnInit, OnDestroy {
   selectedLightboxItem: PortfolioItem | null = null;
   activePortfolioFilter: PortfolioItem['type'] | 'Todos' = 'Todos';
   selectedPackageId: string | null = null;
-  readonly minQuoteDate = this.addDays(this.startOfToday(), 1);
-  readonly maxQuoteDate = this.addMonths(this.startOfToday(), 6);
 
   readonly localBusinessSchema = this.createSchemaScript({
     '@context': 'https://schema.org',
@@ -672,6 +640,29 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
 
     return null;
+  }
+
+  private fechaEventoEnRangoValidator(): (control: AbstractControl) => ValidationErrors | null {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value) {
+        return null;
+      }
+      const parsed = parseDateInput(control.value as DateInput);
+      if (!parsed) {
+        return { fechaFormato: true };
+      }
+      const minTime = this.minQuoteDate.getTime();
+      const maxTime = this.maxQuoteDate.getTime();
+      const valueTime = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
+
+      if (valueTime < minTime) {
+        return { fechaMin: true };
+      }
+      if (valueTime > maxTime) {
+        return { fechaMax: true };
+      }
+      return null;
+    };
   }
 
   formatBudget(value?: number | null): string {

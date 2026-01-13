@@ -124,18 +124,40 @@
         </div>
 
         <div class="col-12 col-md-6">
+          <label class="form-label" for="createTipoDocumento">Tipo de documento</label>
+          <select id="createTipoDocumento" class="form-select" name="tipoDocumento" required
+            [(ngModel)]="selectedTipoDocumento" (ngModelChange)="onTipoDocumentoChange($event)"
+            #tipoDocumentoCtrl="ngModel" [class.is-invalid]="tipoDocumentoCtrl.invalid && tipoDocumentoCtrl.touched"
+            [attr.title]="tipoDocumentoCtrl.invalid && tipoDocumentoCtrl.touched ? 'Campo requerido' : null">
+            <option [ngValue]="null" disabled>Selecciona un tipo</option>
+            @for (tipo of tiposDocumento; track tipo.id) {
+              <option [ngValue]="tipo">
+                {{ tipo.codigo }} - {{ tipo.nombre }}
+              </option>
+            }
+          </select>
+          @if (tipoDocumentoCtrl.invalid && (tipoDocumentoCtrl.dirty || tipoDocumentoCtrl.touched)) {
+            <div class="invalid-feedback d-block">
+              <span>Campo requerido</span>
+            </div>
+          }
+        </div>
+
+        <div class="col-12 col-md-6">
           <label class="form-label" for="createDocumento">Documento</label>
           <input id="createDocumento" type="text" class="form-control" name="documento" required [pattern]="docPattern"
             [(ngModel)]="nuevoEmpleado.documento" #documentoCtrl="ngModel"
+            [attr.minlength]="docMinLength || null" [attr.maxlength]="docMaxLength || null"
+            [attr.inputmode]="docInputMode"
             [class.is-invalid]="documentoCtrl.invalid && documentoCtrl.touched"
-            [attr.title]="documentoCtrl.invalid && documentoCtrl.touched ? (documentoCtrl.errors?.required ? 'Campo requerido' : 'Solo numeros (8 digitos)') : null">
+            [attr.title]="documentoCtrl.invalid && documentoCtrl.touched ? (documentoCtrl.errors?.required ? 'Campo requerido' : docPatternMessage) : null">
           @if (documentoCtrl.invalid && (documentoCtrl.dirty || documentoCtrl.touched)) {
             <div class="invalid-feedback d-block">
               @if (documentoCtrl.errors?.required) {
                 <span>Campo requerido</span>
               }
               @if (documentoCtrl.errors?.pattern) {
-                <span>Sólo números (8 dígitos)</span>
+                <span>{{ docPatternMessage }}</span>
               }
             </div>
           }

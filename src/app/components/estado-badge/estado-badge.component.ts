@@ -21,6 +21,7 @@ export class EstadoBadgeComponent {
     enviada: 'info',
     aceptada: 'success',
     rechazada: 'danger',
+    expirada: 'expirada',
     // Pedidos
     cotizado: 'neutral',
     contratado: 'info',
@@ -86,6 +87,7 @@ export class EstadoBadgeComponent {
       case 'success-light': return 'estado-success-light';
       case 'warning': return 'estado-warning';
       case 'danger': return 'estado-danger';
+      case 'expirada': return 'estado-expirada';
       case 'neutral':
       default:
         return 'estado-neutral';

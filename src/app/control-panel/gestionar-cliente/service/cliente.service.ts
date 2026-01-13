@@ -33,15 +33,19 @@ export class ClienteService {
   // Si tu backend espera numDoc (no "doc"), mapeamos doc -> numDoc si viene así del form.
   public addCliente(data: ClienteCreateInput): Observable<Cliente> {
     const url = this.apiBase;
-    const payload = this.compact({
+    const payload = {
+      ...this.compact({
       nombre: data.nombre,
       apellido: data.apellido,
       correo: data.correo,
       numDoc: data.numDoc ?? data.doc, // ← mapeo seguro
+      tipoDocumentoId: data.tipoDocumentoId,
       celular: data.celular,
       direccion: data.direccion,
       // agrega aquí otros campos que realmente soporte tu endpoint
-    });
+      }),
+      razonSocial: data.razonSocial ?? null
+    };
     return this.http.post<Cliente>(url, payload);
   }
 
@@ -104,6 +108,8 @@ interface ClienteCreateInput {
   correo: string;
   numDoc?: string;
   doc?: string;
+  tipoDocumentoId?: number;
+  razonSocial?: string;
   celular: string;
   direccion?: string | null;
 }
