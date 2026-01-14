@@ -23,11 +23,12 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private static readonly CELULAR_PATTERN = '^[1-9]{1}[0-9]{6,8}$';
   private static readonly CORREO_PATTERN = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
 
-      columns: TableColumn<Cotizacion>[] = [
+  columns: TableColumn<Cotizacion>[] = [
     { key: "codigo", header: "Codigo", sortable: true, width: "120px", class: "text-center text-nowrap" },
     { key: "cliente", header: "Cliente", sortable: true, width: "180px", class: "cliente-col text-center" },
     { key: "evento", header: "Evento", sortable: true, width: "180px" },
-    { key: "fecha", header: "Fecha / horas", sortable: true, width: "160px" },
+    { key: "fecha", header: "Fecha del evento", sortable: true, width: "180px" },
+    { key: "createdAt", header: "Fecha de creación", sortable: true, width: "160px" },
     { key: "total", header: "Total", sortable: true, width: "140px", class: "text-center text-nowrap" },
     { key: "estado", header: "Estado", sortable: true, width: "140px", class: "text-center" },
     { key: "acciones", header: "Acciones", sortable: false, filterable: false, width: "160px", class: "text-center" }

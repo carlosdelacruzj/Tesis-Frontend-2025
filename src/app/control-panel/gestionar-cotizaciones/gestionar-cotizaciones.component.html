@@ -32,12 +32,17 @@
         }
       </ng-template>
 
-      <!-- fecha / horas -->
+      <!-- fecha del evento / horas -->
       <ng-template appCell="fecha" let-row>
         {{ row.fecha | date:'dd-MM-yyyy' }}
         @if (row.horasEstimadas) {
           <small class="text-muted"> — {{ row.horasEstimadas }}</small>
         }
+      </ng-template>
+
+      <!-- fecha de creación -->
+      <ng-template appCell="createdAt" let-row>
+        {{ row.createdAt | date:'dd-MM-yyyy' }}
       </ng-template>
 
       <!-- estado como badge simple -->
