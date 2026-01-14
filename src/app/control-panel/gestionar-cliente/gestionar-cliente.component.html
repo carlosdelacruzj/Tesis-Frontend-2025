@@ -3,7 +3,7 @@
   <app-list-toolbar
     [title]="'Clientes'"
     [showSearch]="true"
-    [searchPlaceholder]="'Buscar: nombre, documento, correo…'"
+    [searchPlaceholder]="'Buscar: cliente, correo, estado…'"
     [searchValue]="searchTerm"
     [showCreateButton]="true"
     [createButtonLabel]="'Registrar cliente'"
@@ -23,7 +23,11 @@
       [externalSearchTerm]="searchTerm">
 
       <ng-template appCell="codigoCliente" let-row>
-        {{ row.codigo}}
+        {{ row.codigo }}
+      </ng-template>
+
+      <ng-template appCell="cliente" let-row>
+        {{ row.cliente || '—' }}
       </ng-template>
 
       <ng-template appCell="correo" let-row>
@@ -34,8 +38,11 @@
         {{ row.celular || '—' }}
       </ng-template>
 
-      <ng-template appCell="doc" let-row>
-        {{ row.doc || '—' }}
+      <ng-template appCell="estadoCliente" let-row>
+        <app-estado-badge
+          [estado]="row.estadoCliente || 'Sin estado'"
+          [mapaColores]="{ 'activo': 'success', 'inactivo': 'danger' }"
+        ></app-estado-badge>
       </ng-template>
 
       <ng-template appCell="direccion" let-row>
@@ -265,21 +272,69 @@
 
         <div class="row g-3">
           <div class="col-12 col-md-6">
-            <label class="form-label" for="editCodigoCliente">Código</label>
-            <input id="editCodigoCliente" type="text" class="form-control" name="codigoCliente" readonly
-              [value]="selectedCliente?.codigoCliente || ('CLI-' + selectedCliente?.idCliente)">
+            <label class="form-label" for="editTipoDocumentoCliente">Tipo de documento</label>
+            <input id="editTipoDocumentoCliente" type="text" class="form-control" name="tipoDocumento" readonly disabled
+              [value]="selectedCliente?.tipoDocumentoCodigo && selectedCliente?.tipoDocumentoNombre
+                ? (selectedCliente?.tipoDocumentoCodigo + ' - ' + selectedCliente?.tipoDocumentoNombre)
+                : (selectedCliente?.tipoDocumentoCodigo || selectedCliente?.tipoDocumentoNombre || '')">
           </div>
 
           <div class="col-12 col-md-6">
-            <label class="form-label" for="editNombreCliente">Nombre</label>
-            <input id="editNombreCliente" type="text" class="form-control" name="nombre" readonly
-              [value]="selectedCliente?.nombre || ''">
+            <label class="form-label" for="editDocCliente">Número de documento</label>
+            <input id="editDocCliente" type="text" class="form-control" name="doc" readonly disabled
+              [value]="selectedCliente?.doc || ''">
+          </div>
+
+          @if (selectedCliente?.razonSocial) {
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="editRazonSocialCliente">Razón social</label>
+              <input id="editRazonSocialCliente" type="text" class="form-control" name="razonSocial" readonly disabled
+                [value]="selectedCliente?.razonSocial || ''">
+            </div>
+          }
+
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="editNombreCliente">
+              {{ selectedCliente?.razonSocial ? 'Nombre del contacto' : 'Nombre' }}
+            </label>
+            <input id="editNombreCliente" type="text" class="form-control" name="nombre" required
+              [pattern]="nombrePattern" [(ngModel)]="editFormModel.nombre" #nombreEdit="ngModel"
+              [readonly]="(selectedCliente?.tipoDocumentoCodigo || '').toUpperCase() !== 'RUC'"
+              [disabled]="(selectedCliente?.tipoDocumentoCodigo || '').toUpperCase() !== 'RUC'"
+              [class.is-invalid]="nombreEdit.invalid && nombreEdit.touched"
+              [attr.title]="nombreEdit.invalid && nombreEdit.touched ? (nombreEdit.errors?.required ? 'Campo requerido' : 'Solo letras (2-20)') : null">
+            @if (nombreEdit.invalid && (nombreEdit.dirty || nombreEdit.touched)) {
+              <div class="invalid-feedback d-block">
+                @if (nombreEdit.errors?.required) {
+                  <span>Campo requerido</span>
+                }
+                @if (nombreEdit.errors?.pattern) {
+                  <span>Sólo letras (2-20)</span>
+                }
+              </div>
+            }
           </div>
 
           <div class="col-12 col-md-6">
-            <label class="form-label" for="editApellidoCliente">Apellido</label>
-            <input id="editApellidoCliente" type="text" class="form-control" name="apellido" readonly
-              [value]="selectedCliente?.apellido || ''">
+            <label class="form-label" for="editApellidoCliente">
+              {{ selectedCliente?.razonSocial ? 'Apellido del contacto' : 'Apellido' }}
+            </label>
+            <input id="editApellidoCliente" type="text" class="form-control" name="apellido" required
+              [pattern]="apellidoPattern" [(ngModel)]="editFormModel.apellido" #apellidoEdit="ngModel"
+              [readonly]="(selectedCliente?.tipoDocumentoCodigo || '').toUpperCase() !== 'RUC'"
+              [disabled]="(selectedCliente?.tipoDocumentoCodigo || '').toUpperCase() !== 'RUC'"
+              [class.is-invalid]="apellidoEdit.invalid && apellidoEdit.touched"
+              [attr.title]="apellidoEdit.invalid && apellidoEdit.touched ? (apellidoEdit.errors?.required ? 'Campo requerido' : 'Solo letras (2-30)') : null">
+            @if (apellidoEdit.invalid && (apellidoEdit.dirty || apellidoEdit.touched)) {
+              <div class="invalid-feedback d-block">
+                @if (apellidoEdit.errors?.required) {
+                  <span>Campo requerido</span>
+                }
+                @if (apellidoEdit.errors?.pattern) {
+                  <span>Sólo letras (2-30)</span>
+                }
+              </div>
+            }
           </div>
 
           <div class="col-12 col-md-6">
@@ -298,12 +353,6 @@
                 }
               </div>
             }
-          </div>
-
-          <div class="col-12 col-md-6">
-            <label class="form-label" for="editDocCliente">Número de documento</label>
-            <input id="editDocCliente" type="text" class="form-control" name="doc" readonly
-              [value]="selectedCliente?.doc || ''">
           </div>
 
           <div class="col-12 col-md-6">

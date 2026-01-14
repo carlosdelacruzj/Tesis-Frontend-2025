@@ -79,6 +79,8 @@ export class ClienteService {
     }
 
     const body: ClienteUpdate = this.compact({
+      nombre: data?.nombre,
+      apellido: data?.apellido,
       correo: data?.correo,
       celular: data?.celular,
       direccion: data?.direccion,
@@ -118,6 +120,8 @@ interface ClientePutInput {
   idCliente?: number | string;
   id?: number | string;
   ID?: number | string;
+  nombre?: string | null;
+  apellido?: string | null;
   correo?: string | null;
   celular?: string | null;
   direccion?: string | null;

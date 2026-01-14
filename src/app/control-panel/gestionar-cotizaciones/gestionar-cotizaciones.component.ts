@@ -516,11 +516,14 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private buildClienteDisplay(cotizacion: Cotizacion): { label: string; subtitle?: string } {
     const contacto = cotizacion.contacto ?? {};
     const nombre = this.toOptionalString(contacto.nombre);
+    const apellido = this.toOptionalString((contacto as { apellido?: unknown }).apellido);
+    const nombreCompleto = [nombre, apellido].filter(Boolean).join(' ').trim();
     const clienteBase = this.toOptionalString(cotizacion.cliente);
     const contactoResumen = this.toOptionalString(cotizacion.contactoResumen);
     const celular = this.toOptionalString(contacto.celular);
 
-    const etiqueta = nombre
+    const etiqueta = nombreCompleto
+      || nombre
       || clienteBase
       || contactoResumen
       || `Cliente #${contacto.id ?? cotizacion.id}`;

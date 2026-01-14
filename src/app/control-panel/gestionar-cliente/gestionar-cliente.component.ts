@@ -8,7 +8,7 @@ import { ClienteService } from './service/cliente.service';
 import { from, Subject, takeUntil } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
-export type ClienteRow = Cliente;
+export type ClienteRow = Cliente & { cliente?: string };
 
 interface TipoDocumento {
   id: number;
@@ -31,11 +31,10 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
 
   columns: TableColumn<ClienteRow>[] = [
     { key: 'codigo', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
-    { key: 'nombre', header: 'Nombre', sortable: true },
-    { key: 'apellido', header: 'Apellido', sortable: true },
+    { key: 'cliente', header: 'Cliente', sortable: true },
     { key: 'correo', header: 'Correo', sortable: true },
     { key: 'celular', header: 'Celular', sortable: true, class: 'text-nowrap' },
-    { key: 'doc', header: 'Documento', sortable: true, width: '160px', class: 'text-nowrap' },
+    { key: 'estadoCliente', header: 'Estado', sortable: true, width: '140px', class: 'text-center' },
     { key: 'direccion', header: 'Dirección', sortable: true },
     { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '120px', class: 'text-center text-nowrap' }
   ];
@@ -117,7 +116,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
           const cliente = (Array.isArray(response) ? response[0] : response) || row;
           this.selectedCliente = cliente as ClienteRow;
           this.editFormModel = this.createEmptyEditModel(this.selectedCliente);
-          this.selectedEstadoClienteId = this.getEstadoIdByName(this.selectedCliente?.estadoCliente ?? null);
+          this.selectedEstadoClienteId = this.selectedCliente?.idEstadoCliente ?? this.getEstadoIdByName(this.selectedCliente?.estadoCliente ?? null);
           this.modalEditarLoading = false;
 
           // Espera a que se pinte el form y recién habilita la UI
@@ -227,6 +226,33 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const correoForm = (form.value.correo ?? '').toString();
+    const celularForm = (form.value.celular ?? '').toString();
+    const direccionForm = (form.value.direccion ?? '').toString();
+    const nombreForm = (form.value.nombre ?? '').toString();
+    const apellidoForm = (form.value.apellido ?? '').toString();
+
+    const correoActual = (this.selectedCliente.correo ?? '').toString();
+    const celularActual = (this.selectedCliente.celular ?? '').toString();
+    const direccionActual = (this.selectedCliente.direccion ?? '').toString();
+    const nombreActual = (this.selectedCliente.nombre ?? '').toString();
+    const apellidoActual = (this.selectedCliente.apellido ?? '').toString();
+
+    const esRuc = (this.selectedCliente.tipoDocumentoCodigo ?? '').toString().toUpperCase() === 'RUC';
+
+    const currentEstadoId = this.selectedCliente.idEstadoCliente ?? this.getEstadoIdByName(this.selectedCliente.estadoCliente ?? null);
+    const selectedEstadoId = this.selectedEstadoClienteId ?? currentEstadoId;
+    const debeActualizarEstado = selectedEstadoId !== null && selectedEstadoId !== currentEstadoId;
+    const hayCambios = correoForm !== correoActual
+      || celularForm !== celularActual
+      || direccionForm !== direccionActual
+      || (esRuc && (nombreForm !== nombreActual || apellidoForm !== apellidoActual));
+
+    if (!hayCambios && !debeActualizarEstado) {
+      this.modalEditarOpen = false;
+      return;
+    }
+
     Swal.fire({
       title: 'Confirmar actualización',
       text: '¿Deseas guardar los cambios del cliente?',
@@ -248,15 +274,12 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       this.modalEditarError = null;
 
       const payload = {
-        correo: form.value.correo,
-        celular: form.value.celular,
+        correo: correoForm,
+        celular: celularForm,
         idCliente: this.selectedCliente.idCliente,
-        direccion: form.value.direccion
+        direccion: direccionForm,
+        ...(esRuc ? { nombre: nombreForm, apellido: apellidoForm } : {})
       };
-
-      const currentEstadoId = this.getEstadoIdByName(this.selectedCliente.estadoCliente ?? null);
-      const selectedEstadoId = this.selectedEstadoClienteId ?? currentEstadoId;
-      const debeActualizarEstado = selectedEstadoId !== null && selectedEstadoId !== currentEstadoId;
 
       this.clienteService.putClienteById(payload)
         .pipe(takeUntil(this.destroy$))
@@ -309,6 +332,8 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
 
   private createEmptyEditModel(cliente?: ClienteRow) {
     return {
+      nombre: cliente?.nombre || '',
+      apellido: cliente?.apellido || '',
       correo: cliente?.correo || '',
       celular: cliente?.celular || '',
       direccion: cliente?.direccion || ''
@@ -336,9 +361,11 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (estados) => {
           this.estadosCliente = estados ?? [];
-          if (this.selectedCliente?.estadoCliente) {
-            this.selectedEstadoClienteId = this.getEstadoIdByName(this.selectedCliente.estadoCliente);
-          }
+    if (this.selectedCliente?.idEstadoCliente != null) {
+      this.selectedEstadoClienteId = this.selectedCliente.idEstadoCliente;
+    } else if (this.selectedCliente?.estadoCliente) {
+      this.selectedEstadoClienteId = this.getEstadoIdByName(this.selectedCliente.estadoCliente);
+    }
         },
         error: (err) => {
           console.error('[clientes] estados', err);
@@ -422,6 +449,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
     return encontrado ? encontrado.idEstadoCliente : null;
   }
 
+
   onSortChange(event: { key: string; direction: 'asc' | 'desc' | '' }): void {
     // Reservado para telemetría futura
     void event;
@@ -444,7 +472,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (clientes) => {
-          this.rows = (clientes ?? []) as ClienteRow[];
+          this.rows = (clientes ?? []).map(cliente => this.withClienteDisplay(cliente as Cliente));
           this.loadingList = false;
         },
         error: (err) => {
@@ -454,5 +482,32 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
           this.loadingList = false;
         }
       });
+  }
+
+  private withClienteDisplay(cliente: Cliente): ClienteRow {
+    const nombre = this.toOptionalString(cliente.nombre);
+    const apellido = this.toOptionalString(cliente.apellido);
+    const razonSocial = this.toOptionalString(cliente.razonSocial);
+    const nombreCompleto = [nombre, apellido].filter(Boolean).join(' ').trim();
+    const etiqueta = razonSocial
+      || nombreCompleto
+      || nombre
+      || apellido
+      || cliente.codigoCliente
+      || cliente.codigo
+      || `Cliente #${cliente.idCliente}`;
+    return { ...cliente, cliente: etiqueta };
+  }
+
+  private toOptionalString(value: unknown): string | undefined {
+    if (value == null) return undefined;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed || undefined;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+    return undefined;
   }
 }
