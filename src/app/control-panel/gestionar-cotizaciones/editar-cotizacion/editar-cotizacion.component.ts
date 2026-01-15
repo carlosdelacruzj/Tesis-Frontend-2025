@@ -120,6 +120,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   loadingPaquetes = false;
   loading = true;
   saving = false;
+  private initialSnapshot = '';
   detallePaqueteAbierto = false;
   detallePaqueteSeleccionado: PaqueteDetalle | null = null;
 
@@ -264,7 +265,27 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   onEventoDropdownChange(rawValue: string): void {
     this.eventoSelectTouched = true;
-    this.onEventoChange(this.parseNumber(rawValue));
+    const nextEventoId = this.parseNumber(rawValue);
+    if (this.selectedPaquetes.length && nextEventoId !== this.selectedEventoId) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Cambiar tipo de evento',
+        text: 'Cambiar el tipo de evento eliminará toda la selección de paquetes.',
+        confirmButtonText: 'Cambiar',
+        cancelButtonText: 'Cancelar',
+        showCancelButton: true,
+        reverseButtons: true
+      }).then(result => {
+        if (!result.isConfirmed) {
+          return;
+        }
+        this.selectedPaquetes = [];
+        this.refreshSelectedPaquetesColumns();
+        this.onEventoChange(nextEventoId);
+      });
+      return;
+    }
+    this.onEventoChange(nextEventoId);
   }
 
   onEventoChange(eventoId: number | null | undefined): void {
@@ -502,6 +523,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   update(): void {
     if (!this.cotizacion) {
+      return;
+    }
+    if (this.initialSnapshot && this.initialSnapshot === this.buildSnapshot()) {
+      this.router.navigate(['/home/gestionar-cotizaciones']);
       return;
     }
 
@@ -808,6 +833,34 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.programacion.markAsUntouched();
     this.form.markAsPristine();
     this.form.markAsUntouched();
+    this.initialSnapshot = this.buildSnapshot();
+  }
+
+  private buildSnapshot(): string {
+    const formRaw = this.form.getRawValue();
+    const programacionRaw = this.programacion.getRawValue() as ProgramacionEventoItemConfig[];
+    const paquetes = this.selectedPaquetes.map(item => ({
+      key: item.key,
+      titulo: item.titulo,
+      descripcion: item.descripcion,
+      precio: Number(item.precio ?? 0),
+      cantidad: Number(item.cantidad ?? 1),
+      notas: (item.notas ?? '').toString(),
+      horas: item.horas ?? null,
+      staff: item.staff ?? null,
+      fotosImpresas: item.fotosImpresas ?? null,
+      trailerMin: item.trailerMin ?? null,
+      filmMin: item.filmMin ?? null,
+      servicioId: item.servicioId ?? null,
+      eventoServicioId: item.eventoServicioId ?? null
+    }));
+    return JSON.stringify({
+      formRaw,
+      programacionRaw,
+      paquetes,
+      selectedEventoId: this.selectedEventoId ?? null,
+      selectedServicioId: this.selectedServicioId ?? null
+    });
   }
 
   private populateProgramacion(eventos: ProgramacionEventoItemConfig[]): void {
@@ -1229,6 +1282,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     } else {
       this.paquetesRows = [];
       this.loadingPaquetes = false;
+    }
+
+    if (this.form.pristine && this.programacion.pristine && !this.saving) {
+      this.initialSnapshot = this.buildSnapshot();
     }
   }
 

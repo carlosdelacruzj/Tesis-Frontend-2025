@@ -11,6 +11,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
+type AlertIcon = 'success' | 'error' | 'warning' | 'info' | 'question';
+
 interface Tag {
   nombre: string;
   direccion: string;
@@ -20,9 +22,14 @@ interface Tag {
 interface PedidoPaqueteSeleccionado {
   key: string | number;
   eventKey: string | number | null;
-  ID?: number;
   id?: number;
+  idEventoServicio?: number | null;
+  eventoId?: number | null;
+  servicioId?: number | null;
+  nombre?: string;
+  titulo: string;
   descripcion: string;
+  precioUnit?: number;
   precio: number;
   notas: string;
   eventoCodigo?: string | number | null;
@@ -30,6 +37,14 @@ interface PedidoPaqueteSeleccionado {
   cantidad?: number;
   descuento?: number;
   recargo?: number;
+  horas?: number | null;
+  personal?: number | null;
+  fotosImpresas?: number | null;
+  trailerMin?: number | null;
+  filmMin?: number | null;
+  precioOriginal?: number;
+  editandoPrecio?: boolean;
+  servicioNombre?: string;
 }
 
 type AnyRecord = Record<string, unknown>;
@@ -41,6 +56,9 @@ interface UbicacionRow {
   Hora: string;
   DireccionExacta: string;
   Notas: string;
+  hora12?: number | null;
+  minuto?: string | null;
+  ampm?: 'AM' | 'PM' | null;
 }
 type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: boolean };
 
@@ -51,14 +69,18 @@ type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: b
 })
 export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   saving = false;
+  private initialSnapshot = '';
+  readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
+  readonly minutoOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
+  readonly ampmOptions = ['AM', 'PM'] as const;
   // ====== Columnas ======
   columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas', 'Editar', 'Quitar'];
   paquetesColumns: TableColumn<PaqueteRow>[] = [
-    { key: 'descripcion', header: 'Descripción', sortable: true },
-    { key: 'precio', header: 'Precio', sortable: true, class: 'text-end text-nowrap', width: '120px' },
-    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'titulo', header: 'Título', sortable: true, width: '45%' },
+    { key: 'precio', header: 'Precio', sortable: true, class: 'text-center', width: '120px' },
     { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
-    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '140px' }
+    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
+    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '200px' }
   ];
 
   // ====== Data y catálogos ======
@@ -69,6 +91,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   dataSource: MatTableDataSource<UbicacionRow> = new MatTableDataSource<UbicacionRow>([]);
   paquetesRows: PaqueteRow[] = [];
+  loadingPaquetes = false;
+  detallePaqueteAbierto = false;
+  detallePaqueteSeleccionado: PaqueteDetalle | null = null;
 
   @ViewChild('sortUbic') sortUbic!: MatSort;
 
@@ -98,14 +123,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   selectedPaquetes: PedidoPaqueteSeleccionado[] = [];
   currentEventoKey: string | number | null = null;
   private fechaEventoBase: string | null = null;
-  selectedPaquetesColumns: TableColumn<PedidoPaqueteSeleccionado>[] = [
-    { key: 'descripcion', header: 'Descripción', sortable: false },
-    { key: 'precio', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' },
-    { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' },
-    { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-end text-nowrap', width: '140px' },
-    { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
-    { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
-  ];
+  selectedPaquetesColumns: TableColumn<PedidoPaqueteSeleccionado>[] = [];
 
   // ====== TAGS ======
   tagsPedido: Tag[] = [];
@@ -115,6 +133,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   private pedidoId!: number;
   private estadoPedidoId: number | null = null;
   private estadoPagoId: number | null = null;
+  private cotizacionId: number | null = null;
+  readonly programacionMinimaRecomendada = 1;
 
   private toOptionalString(value: unknown): string | undefined {
     if (value == null) {
@@ -172,6 +192,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     this.getEventos();
     this.getServicio();
     this.getEventoxServicio();
+    this.refreshSelectedPaquetesColumns();
 
     // Inicializa cabecera
     // this.visualizarService.selectAgregarPedido = this.visualizarService.selectAgregarPedido ?? {};
@@ -204,17 +225,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return value && typeof value === 'object' ? (value as AnyRecord) : {};
   }
 
-  private getPkgKey(el: unknown): string | number {
+  private getPkgKey(el: unknown): string {
     const record = this.asRecord(el);
-    const descr = String(record['descripcion'] ?? record['nombre'] ?? '').trim();
-    const precio = record['precio'] ?? record['precioUnit'] ?? 0;
-    return (
-      record['ID'] ??
-      record['idEventoServicio'] ??
-      record['exsId'] ??
-      record['PK_ExS_Cod'] ??
-      `${descr}|${precio}`
-    ) as string | number;
+    const eventoServicio = this.asRecord(record['eventoServicio']);
+    const rawId = record['idEventoServicio'] ?? eventoServicio['id'] ?? record['id'];
+    if (typeof rawId === 'number' || typeof rawId === 'string') {
+      return String(rawId);
+    }
+    return '';
   }
   public pkgKey = (el: AnyRecord) => this.getPkgKey(el);
 
@@ -376,8 +394,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     });
   }
 
-  asignarServicio(event: number) {
-    this.servicioSeleccionado = event;
+  asignarServicio(event: string | number) {
+    const parsed = this.parseNumber(event);
+    this.servicioSeleccionado = parsed ?? this.servicioSeleccionado;
     this.getEventoxServicio();
   }
 
@@ -398,8 +417,32 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     });
   }
 
-  asignarEvento(event: number) {
-    this.eventoSeleccionado = event;
+  asignarEvento(event: string | number) {
+    const parsed = this.parseNumber(event);
+    if (parsed == null) {
+      return;
+    }
+    if (this.selectedPaquetes.length && parsed !== this.eventoSeleccionado) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Cambiar tipo de evento',
+        text: 'Cambiar el tipo de evento eliminará toda la selección de paquetes.',
+        confirmButtonText: 'Cambiar',
+        cancelButtonText: 'Cancelar',
+        showCancelButton: true,
+        reverseButtons: true
+      }).then(result => {
+        if (!result.isConfirmed) {
+          return;
+        }
+        this.selectedPaquetes = [];
+        this.refreshSelectedPaquetesColumns();
+        this.eventoSeleccionado = parsed;
+        this.getEventoxServicio();
+      });
+      return;
+    }
+    this.eventoSeleccionado = parsed;
     this.getEventoxServicio();
   }
 
@@ -408,17 +451,28 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getEventosServicio] devolvió undefined o no-Observable');
       this.paquetesRows = [];
+      this.loadingPaquetes = false;
       return;
     }
+    this.loadingPaquetes = true;
     obs.pipe(
       catchError((err: unknown) => {
         console.error('[getEventosServicio] error dentro del stream', err);
+        this.loadingPaquetes = false;
         return of([]); // fallback
       })
     ).subscribe((res: unknown) => {
-      this.paquetesRows = Array.isArray(res)
-        ? res.map(item => this.normalizePaqueteRow(item as AnyRecord))
+      const activos = Array.isArray(res)
+        ? res.filter(item => {
+          const record = item as Record<string, unknown>;
+          const estado = record['estado'] as Record<string, unknown> | undefined;
+          const estadoNombre = String(estado?.['nombre'] ?? '').toLowerCase();
+          const estadoId = typeof estado?.['id'] === 'number' ? estado['id'] : null;
+          return estadoNombre !== 'inactivo' && estadoId !== 2;
+        })
         : [];
+      this.paquetesRows = activos.map(item => this.normalizePaqueteRow(item as AnyRecord));
+      this.loadingPaquetes = false;
     });
   }
 
@@ -429,30 +483,198 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return this.selectedPaquetes.some(p => p.key === key && (p.eventKey ?? null) === ek);
   }
 
+  hasOtroPaqueteDelServicio(element: AnyRecord): boolean {
+    const record = this.asRecord(element);
+    const servicio = record['servicio'] as Record<string, unknown> | undefined;
+    const servicioId = typeof servicio?.['id'] === 'number' ? servicio['id'] : null;
+    if (servicioId == null) {
+      return false;
+    }
+    const key = this.getPkgKey(element);
+    return this.selectedPaquetes.some(p => (p.servicioId ?? null) === servicioId && p.key !== key);
+  }
+
+  shouldShowPrecioOriginal(): boolean {
+    return this.selectedPaquetes.some(item => this.isPrecioModificado(item));
+  }
+
+  isPrecioModificado(paquete: PedidoPaqueteSeleccionado): boolean {
+    const actual = Number(paquete.precio ?? 0);
+    const original = Number(paquete.precioOriginal ?? actual);
+    if (!Number.isFinite(actual) || !Number.isFinite(original)) {
+      return false;
+    }
+    return Math.abs(actual - original) > 0.009;
+  }
+
+  getDescuentoPorcentaje(paquete: PedidoPaqueteSeleccionado): number | null {
+    const original = Number(paquete.precioOriginal ?? 0);
+    const actual = Number(paquete.precio ?? 0);
+    if (!Number.isFinite(original) || original <= 0 || !Number.isFinite(actual)) {
+      return null;
+    }
+    if (actual >= original) {
+      return null;
+    }
+    const diff = ((original - actual) / original) * 100;
+    return Number(diff.toFixed(1));
+  }
+
+  enablePrecioEdit(paquete: PedidoPaqueteSeleccionado): void {
+    const key = paquete.key;
+    this.selectedPaquetes = this.selectedPaquetes.map(item =>
+      item.key === key ? { ...item, editandoPrecio: true } : item
+    );
+    this.focusPrecioInput(key);
+  }
+
+  confirmPrecioEdit(paquete: PedidoPaqueteSeleccionado, rawValue: string | number | null | undefined): void {
+    const key = paquete.key;
+    const current = this.selectedPaquetes.find(item => item.key === key);
+    if (!current) {
+      return;
+    }
+
+    let value = Number(rawValue);
+    if (!Number.isFinite(value) || value <= 0) {
+      value = current.precio;
+    }
+
+    const minimo = this.getPrecioMinimo(current);
+    if (value < minimo) {
+      value = minimo;
+      this.showAlert('info', 'Ajuste no permitido', 'Solo puedes reducir el precio hasta un 5% respecto al valor base.');
+    }
+
+    this.selectedPaquetes = this.selectedPaquetes.map(item =>
+      item.key === key
+        ? { ...item, precio: value, editandoPrecio: false }
+        : item
+    );
+    this.refreshSelectedPaquetesColumns();
+  }
+
+  cancelPrecioEdit(paquete: PedidoPaqueteSeleccionado): void {
+    const key = paquete.key;
+    this.selectedPaquetes = this.selectedPaquetes.map(item =>
+      item.key === key ? { ...item, editandoPrecio: false } : item
+    );
+  }
+
+  getPrecioInputId(paquete: PedidoPaqueteSeleccionado): string {
+    return this.getPrecioInputIdFromKey(paquete.key);
+  }
+
+  getPrecioMinimo(paquete: PedidoPaqueteSeleccionado): number {
+    const base = Number(paquete.precioOriginal ?? paquete.precio ?? 0);
+    if (!Number.isFinite(base) || base <= 0) {
+      return 0;
+    }
+    return Number((base * 0.95).toFixed(2));
+  }
+
   addPaquete(el: AnyRecord, eventoKey: string | number | null = this.currentEventoKey) {
     if (this.isInSeleccion(el, eventoKey)) {
       // ...
       return;
     }
     const record = el as Record<string, unknown>;
-    const id = Number(record['idEventoServicio'] ?? record['exsId'] ?? record['PK_ExS_Cod'] ?? 0) || null;
-    const descripcion = String(record['descripcion'] ?? record['nombre'] ?? '');
-    const precio = Number(record['precio'] ?? record['precioUnit'] ?? 0);
-    this.selectedPaquetes.push({
-      key: this.getPkgKey(el),
-      eventKey: eventoKey ?? null,
-      ID: id, // <-- FK consistente
-      descripcion,
-      precio,
-      notas: ''
-    });
+    const idEventoServicio = typeof record['id'] === 'number' ? record['id'] : null;
+    const eventoRecord = record['evento'] as Record<string, unknown> | undefined;
+    const servicioRecord = record['servicio'] as Record<string, unknown> | undefined;
+    const eventoId = typeof eventoRecord?.['id'] === 'number' ? eventoRecord['id'] : null;
+    const servicioId = typeof servicioRecord?.['id'] === 'number' ? servicioRecord['id'] : null;
+    const nombre = String(record['titulo'] ?? '');
+    const descripcion = String(record['descripcion'] ?? '');
+    const moneda = String(record['moneda'] ?? 'USD');
+    const precioUnit = Number(record['precio'] ?? 0);
+    const cantidad = 1;
+    const descuento = 0;
+    const recargo = 0;
+    const notas = '';
+    const horas = record['horas'] != null ? Number(record['horas']) : null;
+    const staffRecord = record['staff'] as Record<string, unknown> | undefined;
+    const personal = staffRecord?.['total'] != null ? Number(staffRecord['total']) : null;
+    const fotosImpresas = record['fotosImpresas'] != null ? Number(record['fotosImpresas']) : null;
+    const trailerMin = record['trailerMin'] != null ? Number(record['trailerMin']) : null;
+    const filmMin = record['filmMin'] != null ? Number(record['filmMin']) : null;
+    const restantes = this.selectedPaquetes.filter(item => (item.servicioId ?? null) !== servicioId);
+    this.selectedPaquetes = [
+      ...restantes,
+      {
+        key: this.getPkgKey(el),
+        eventKey: eventoKey ?? null,
+        idEventoServicio,
+        eventoId,
+        servicioId,
+        servicioNombre: typeof servicioRecord?.['nombre'] === 'string' ? servicioRecord['nombre'] : undefined,
+        nombre,
+        titulo: nombre,
+        descripcion,
+        precioUnit,
+        precio: precioUnit,
+        moneda,
+        cantidad,
+        descuento,
+        recargo,
+        notas,
+        horas,
+        personal,
+        fotosImpresas,
+        trailerMin,
+        filmMin,
+        precioOriginal: precioUnit,
+        editandoPrecio: false
+      }
+    ];
+    this.refreshSelectedPaquetesColumns();
   }
   removePaquete(key: string | number | null, eventoKey: string | number | null = this.currentEventoKey) {
     this.selectedPaquetes = this.selectedPaquetes.filter(p => !(p.key === key && p.eventKey === eventoKey));
+    this.refreshSelectedPaquetesColumns();
+  }
+
+  mostrarDetallePaquete(row: PaqueteRow): void {
+    this.detallePaqueteSeleccionado = (row?.raw as PaqueteDetalle) ?? null;
+    this.detallePaqueteAbierto = !!this.detallePaqueteSeleccionado;
+  }
+
+  cerrarDetallePaquete(): void {
+    this.detallePaqueteAbierto = false;
+    this.detallePaqueteSeleccionado = null;
+  }
+
+  getDetalleStaffLista(paquete: unknown): AnyRecord[] {
+    const record = this.asRecord(paquete);
+    const staff = this.asRecord(record['staff']);
+    const lista = staff['detalle'] ?? record['staff'] ?? [];
+    return Array.isArray(lista) ? lista : [];
+  }
+
+  getEquiposLista(paquete: unknown): AnyRecord[] {
+    const record = this.asRecord(paquete);
+    const lista = record['equipos'] ?? [];
+    return Array.isArray(lista) ? lista : [];
+  }
+
+  getDetalleStaffTotal(paquete: PaqueteDetalle | null | undefined): string | number {
+    if (!paquete) {
+      return '—';
+    }
+    const staff = paquete.staff;
+    if (typeof staff === 'number') {
+      return staff;
+    }
+    const total = staff?.total ?? paquete.personal;
+    return total ?? '—';
   }
 
   get totalSeleccion(): number {
-    return this.selectedPaquetes.reduce((sum, p) => sum + (+p.precio || 0), 0);
+    return this.selectedPaquetes.reduce((sum, p) => {
+      const precio = Number(p.precio) || 0;
+      const cantidad = Number(p.cantidad ?? 1) || 1;
+      return sum + (precio * cantidad);
+    }, 0);
   }
 
   // ====== Edición inline en tabla de ubicaciones ======
@@ -480,25 +702,31 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Agregar / eliminar ubicaciones ======
   get canAgregarEvento(): boolean {
-    const f = this.visualizarService.selectAgregarPedido?.fechaEvent;
-    const h = this.visualizarService.selectAgregarPedido?.horaEvent;
-    const u = (this.Direccion || '').trim();
-    const dx = (this.DireccionExacta || '').trim();
-    return !!(f && h && u && dx);
+    return true;
   }
 
   onQuickAdd() {
-    if (!this.canAgregarEvento) return;
-    this.addListUbicacion(
-      this.Direccion,
-      this.visualizarService.selectAgregarPedido.fechaEvent,
-      this.visualizarService.selectAgregarPedido.horaEvent,
-      this.DireccionExacta,
-      this.NotasEvento
-    );
-    this.Direccion = '';
-    this.DireccionExacta = '';
-    this.NotasEvento = '';
+    const fecha = this.visualizarService.selectAgregarPedido.fechaEvent || '';
+    const hora = this.visualizarService.selectAgregarPedido.horaEvent || '';
+    const nextId = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
+    const parts = this.splitHoraParts(hora);
+    this.ubicacion = [
+      ...this.ubicacion,
+      {
+        ID: nextId,
+        dbId: 0,
+        Direccion: '',
+        Fecha: fecha,
+        Hora: hora,
+        DireccionExacta: '',
+        Notas: '',
+        hora12: parts.hora12,
+        minuto: parts.minuto,
+        ampm: parts.ampm
+      }
+    ];
+    this.dataSource.data = this.ubicacion;
+    this.bindSorts();
   }
 
   addListUbicacion(direccion: string, fecha: string, hora: string, direccionExacta?: string, notas?: string) {
@@ -509,11 +737,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     );
     if (yaExiste) {
       Swal.fire({
-        text: 'Ya existe un evento con la misma fecha, hora y ubicación.',
         icon: 'warning',
-        showCancelButton: false,
-        customClass: { confirmButton: 'btn btn-warning' },
-        buttonsStyling: false
+        title: 'Evento duplicado',
+        text: 'Ya existe un evento con la misma fecha, hora y ubicación.',
+        confirmButtonText: 'Entendido'
       });
       return;
     }
@@ -524,6 +751,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     });
 
     const i = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
+    const parts = this.splitHoraParts(hora);
     this.ubicacion.push({
       ID: i,
       dbId: 0,
@@ -531,7 +759,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       Fecha: fecha,
       Hora: hora,
       DireccionExacta: direccionExacta ?? '',
-      Notas: notas ?? ''
+      Notas: notas ?? '',
+      hora12: parts.hora12,
+      minuto: parts.minuto,
+      ampm: parts.ampm
     });
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
@@ -539,19 +770,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   async deleteElement(p: string, c: string) {
     const fila = this.ubicacion.find(x => x.Hora == c && x.Direccion == p);
+    const nombre = (fila?.Direccion ?? '').toString().trim() || 'Locación';
     const { isConfirmed } = await Swal.fire({
-      title: '¿Eliminar ubicación?',
-      html: `<div style="text-align:left">
-            <b>Fecha:</b> ${fila?.Fecha || '-'}<br>
-            <b>Hora:</b> ${fila?.Hora || '-'}<br>
-            <b>Ubicación:</b> ${fila?.Direccion || '-'}
-           </div>`,
       icon: 'warning',
+      title: 'Eliminar locación',
+      text: `¿Quieres eliminar "${nombre}" de la programación?`,
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-secondary' },
-      buttonsStyling: false
+      confirmButtonColor: '#dc3545'
     });
 
     if (!isConfirmed) return;
@@ -561,6 +788,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.ubicacion.splice(idx, 1);
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
+      this.showToast('success', 'Locación eliminada', 'Se eliminó la locación seleccionada.');
     }
   }
 
@@ -583,11 +811,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       catchError((err: unknown) => {
         console.error('[getPedidoById] error', err);
         Swal.fire({
-          text: 'No se pudo cargar el pedido.',
           icon: 'error',
-          showCancelButton: false,
-          customClass: { confirmButton: 'btn btn-danger' },
-          buttonsStyling: false
+          title: 'Error al cargar',
+          text: 'No se pudo cargar el pedido.',
+          confirmButtonText: 'Entendido'
         });
         return of(null);
       })
@@ -606,6 +833,17 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.CodigoEmpleado = this.parseNumber(cabRecord['empleadoId']) ?? this.CodigoEmpleado;
       this.estadoPedidoId = this.parseNumber(cabRecord['estadoPedidoId'] ?? estadoPedido['id'] ?? estadoPedido['idEstado']) ?? null;
       this.estadoPagoId = this.parseNumber(cabRecord['estadoPagoId'] ?? estadoPago['id'] ?? estadoPago['idEstado']) ?? null;
+      const tipoEventoId = this.parseNumber(cabRecord['idTipoEvento'] ?? cabRecord['tipoEventoId'] ?? cabRecord['eventoId']);
+      if (tipoEventoId != null) {
+        this.eventoSeleccionado = tipoEventoId;
+      }
+      const servicioIdCab = this.parseNumber(cabRecord['servicioId'] ?? cabRecord['idServicio']);
+      if (servicioIdCab != null) {
+        this.servicioSeleccionado = servicioIdCab;
+      }
+      const cotizacionRaw = cabRecord['cotizacionId'];
+      const cotizacionParsed = Number(cotizacionRaw);
+      this.cotizacionId = Number.isFinite(cotizacionParsed) ? cotizacionParsed : null;
       const fechaCreacionParsed = parseDateInput(cabRecord['fechaCreacion'] as string | undefined) ?? new Date();
       this.fechaCreate = fechaCreacionParsed;
       this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(fechaCreacionParsed, '');
@@ -644,14 +882,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       const dataEventos = Array.isArray((data as AnyRecord)['eventos']) ? (data as AnyRecord)['eventos'] as AnyRecord[] : [];
       this.ubicacion = dataEventos.map((e: AnyRecord, idx: number) => {
         const record = e as Record<string, unknown>;
+        const horaValue = String(record['hora'] ?? '').slice(0, 5);
+        const parts = this.splitHoraParts(horaValue);
         return {
           ID: idx + 1,                 // solo para la tabla
         dbId: Number(record['id'] ?? record['dbId'] ?? 0),
         Direccion: String(record['ubicacion'] ?? ''),
         Fecha: String(record['fecha'] ?? '').slice(0, 10),
-        Hora: String(record['hora'] ?? '').slice(0, 5),
+        Hora: horaValue,
         DireccionExacta: String(record['direccion'] ?? ''),
-        Notas: String(record['notas'] ?? '')
+        Notas: String(record['notas'] ?? ''),
+        hora12: parts.hora12,
+        minuto: parts.minuto,
+        ampm: parts.ampm
         };
       });
       this.dataSource.data = this.ubicacion;
@@ -685,29 +928,51 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       const dataItems = Array.isArray((data as AnyRecord)['items']) ? (data as AnyRecord)['items'] as AnyRecord[] : [];
       this.selectedPaquetes = dataItems.map((it: AnyRecord) => {
         const record = it as Record<string, unknown>;
-        const eventKeyValue = record['eventoCodigo'];
-        const eventKey = typeof eventKeyValue === 'number'
-          ? eventKeyValue
-          : (typeof eventKeyValue === 'string' && eventKeyValue.trim() ? eventKeyValue : null);
         const eventoCodigoValue = record['eventoCodigo'];
-        const eventoCodigo = typeof eventoCodigoValue === 'number'
-          ? eventoCodigoValue
-          : (typeof eventoCodigoValue === 'string' && eventoCodigoValue.trim() ? eventoCodigoValue : null);
+        let eventoCodigo: string | number | null = null;
+        if (typeof eventoCodigoValue === 'string') {
+          const trimmed = eventoCodigoValue.trim();
+          eventoCodigo = trimmed ? trimmed : null;
+        } else if (typeof eventoCodigoValue === 'number') {
+          eventoCodigo = eventoCodigoValue;
+        }
         return {
-          id: this.parseNumber(record['id']) ?? undefined,        // <-- PK_PS_Cod real
-          key: this.getPkgKey(it),                                // <-- clave consistente
-          eventKey,                                               // si asocias por evento
+          id: Number(record['id'] ?? 0) || undefined,
+          key: this.getPkgKey(it),
+          eventKey: eventoCodigo,
           eventoCodigo,
-          ID: this.parseNumber(record['exsId'] ?? record['id']) ?? undefined, // FK a T_EventoServicio
-          descripcion: String(record['nombre'] ?? record['descripcion'] ?? ''),
-          precio: Number(record['precioUnit'] ?? record['precio'] ?? 0),
+          idEventoServicio: Number(record['idEventoServicio'] ?? 0) || null,
+          eventoId: Number(record['eventoId'] ?? 0) || null,
+          servicioId: Number(record['servicioId'] ?? 0) || null,
+          nombre: String(record['nombre'] ?? ''),
+          titulo: String(record['nombre'] ?? ''),
+          descripcion: String(record['descripcion'] ?? ''),
+          precioUnit: Number(record['precioUnit'] ?? 0),
+          precio: Number(record['precioUnit'] ?? 0),
           notas: String(record['notas'] ?? ''),
           moneda: String(record['moneda'] ?? 'USD'),
           cantidad: Number(record['cantidad'] ?? 1),
           descuento: Number(record['descuento'] ?? 0),
-          recargo: Number(record['recargo'] ?? 0)
+          recargo: Number(record['recargo'] ?? 0),
+          horas: record['horas'] != null ? Number(record['horas']) : null,
+          personal: record['personal'] != null ? Number(record['personal']) : null,
+          fotosImpresas: record['fotosImpresas'] != null ? Number(record['fotosImpresas']) : null,
+          trailerMin: record['trailerMin'] != null ? Number(record['trailerMin']) : null,
+          filmMin: record['filmMin'] != null ? Number(record['filmMin']) : null,
+          precioOriginal: Number(record['precioUnit'] ?? 0),
+          editandoPrecio: false
         };
       });
+      const servicioDesdeItems = this.selectedPaquetes.find(item => item.servicioId != null)?.servicioId ?? null;
+      if (servicioDesdeItems != null) {
+        this.servicioSeleccionado = servicioDesdeItems;
+      }
+      const eventoDesdeItems = this.selectedPaquetes.find(item => item.eventoId != null)?.eventoId ?? null;
+      if (eventoDesdeItems != null) {
+        this.eventoSeleccionado = eventoDesdeItems;
+      }
+      this.refreshSelectedPaquetesColumns();
+      this.initialSnapshot = this.buildSnapshot();
       // Cargar tags del cliente (si procede)
       if (this.dniCliente) this.loadTagsCliente();
     });
@@ -719,36 +984,37 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   updatePedido() {
     if (this.saving) return;              // ← evita doble click
     if (!this.pedidoId) return;
+    if (this.initialSnapshot && this.initialSnapshot === this.buildSnapshot()) {
+      this.router.navigate(['/home/gestionar-pedido']);
+      return;
+    }
 
     if (!this.infoCliente?.idCliente) {
       Swal.fire({
-        text: 'El pedido debe tener un cliente válido.',
         icon: 'warning',
-        showCancelButton: false,
-        customClass: { confirmButton: 'btn btn-warning' },
-        buttonsStyling: false
+        title: 'Cliente requerido',
+        text: 'El pedido debe tener un cliente válido.',
+        confirmButtonText: 'Entendido'
       });
       return;
     }
 
     if (!this.ubicacion?.length || !this.ubicacion.some(u => (u?.Direccion || '').trim())) {
       Swal.fire({
-        text: 'Agrega al menos una ubicación válida antes de actualizar.',
         icon: 'warning',
-        showCancelButton: false,
-        customClass: { confirmButton: 'btn btn-warning' },
-        buttonsStyling: false
+        title: 'Ubicación requerida',
+        text: 'Agrega al menos una ubicación válida antes de actualizar.',
+        confirmButtonText: 'Entendido'
       });
       return;
     }
 
     if (!this.selectedPaquetes?.length) {
       Swal.fire({
-        text: 'Selecciona al menos un paquete/ítem antes de actualizar.',
         icon: 'warning',
-        showCancelButton: false,
-        customClass: { confirmButton: 'btn btn-warning' },
-        buttonsStyling: false
+        title: 'Paquetes requeridos',
+        text: 'Selecciona al menos un paquete/ítem antes de actualizar.',
+        confirmButtonText: 'Entendido'
       });
       return;
     }
@@ -765,7 +1031,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         observaciones: this.visualizarService.selectAgregarPedido?.Observacion || '',
         estadoPedidoId: this.estadoPedidoId ?? 1,
         estadoPagoId: this.estadoPagoId ?? 1,
-        nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || ''
+        nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || '',
+        cotizacionId: this.cotizacionId
       },
       eventos: (this.ubicacion || [])
         .filter(u => (u?.Direccion || '').trim())
@@ -778,17 +1045,24 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
           notas: String(u.Notas || '').trim()
         })),
       items: (this.selectedPaquetes || []).map(it => ({
-        // id: it.id ?? null,
-        exsId: it.ID ?? null,
-        eventoCodigo: it.eventoCodigo ?? it.eventKey ?? null,
+        id: it.id ?? null,
+        idEventoServicio: it.idEventoServicio ?? null,
+        eventoId: it.eventoId ?? null,
+        servicioId: it.servicioId ?? null,
+        eventoCodigo: it.eventoCodigo ?? null,
+        nombre: String(it.nombre ?? '').trim(),
+        descripcion: String(it.descripcion ?? '').trim(),
         moneda: it.moneda ?? 'USD',
-        nombre: String(it.descripcion || '').trim(),
-        descripcion: String(it.descripcion || '').trim(),
-        precioUnit: Number(it.precio || 0),
+        precioUnit: Number(it.precioUnit ?? 0),
         cantidad: Number(it.cantidad ?? 1),
         descuento: Number(it.descuento ?? 0),
         recargo: Number(it.recargo ?? 0),
-        notas: String(it.notas || '').trim()
+        notas: String(it.notas ?? '').trim(),
+        horas: it.horas ?? null,
+        personal: it.personal ?? null,
+        fotosImpresas: it.fotosImpresas ?? null,
+        trailerMin: it.trailerMin ?? null,
+        filmMin: it.filmMin ?? null
       }))
     };
 
@@ -797,11 +1071,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const fechaInvalida = payload.eventos.some(e => !/^\d{4}-\d{2}-\d{2}$/.test(e.fecha));
     if (horaInvalida || fechaInvalida) {
       Swal.fire({
-        text: 'Revisa el formato de fecha (YYYY-MM-DD) y hora (HH:mm:ss) en los eventos.',
         icon: 'warning',
-        showCancelButton: false,
-        customClass: { confirmButton: 'btn btn-warning' },
-        buttonsStyling: false
+        title: 'Formato inválido',
+        text: 'Revisa el formato de fecha (YYYY-MM-DD) y hora (HH:mm:ss) en los eventos.',
+        confirmButtonText: 'Entendido'
       });
       return;
     }
@@ -815,23 +1088,13 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (!obs || typeof obs.subscribe !== 'function') {
       console.error('[updatePedido] no disponible');
       Swal.fire({
-        text: 'No se pudo enviar la actualización.',
         icon: 'error',
-        showCancelButton: false,
-        customClass: { confirmButton: 'btn btn-danger' },
-        buttonsStyling: false
+        title: 'Error al actualizar',
+        text: 'No se pudo enviar la actualización.',
+        confirmButtonText: 'Entendido'
       });
       return;
     }
-    // Mostrar loading inmediatamente después de confirmar que obs existe
-    Swal.fire({
-      title: 'Actualizando...',
-      text: 'Por favor espera unos segundos',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
     this.saving = true; // ← activa el candado SOLO cuando ya vas a llamar al API
 
     obs.pipe(
@@ -839,36 +1102,125 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       finalize(() => { this.saving = false; }) // ← libéralo siempre
     ).subscribe(
       () => {
-        Swal.fire({
-          text: 'Pedido actualizado correctamente.',
+        void Swal.fire({
           icon: 'success',
-          showCancelButton: false,
-          customClass: { confirmButton: 'btn btn-success' },
-          buttonsStyling: false
-        });
+          title: 'Pedido actualizado',
+          text: 'Los cambios se guardaron correctamente.'
+        }).then(() => this.router.navigate(['/home/gestionar-pedido']));
         // this.router.navigate(['/home/gestionar-pedido']);
       },
       (err: unknown) => {
         console.error('[updatePedido] error', err);
         Swal.fire({
-          text: 'Ocurrió un error al actualizar, vuelve a intentar.',
-          icon: 'warning',
-          showCancelButton: false,
-          customClass: { confirmButton: 'btn btn-warning' },
-          buttonsStyling: false
+          icon: 'error',
+          title: 'Error al actualizar',
+          text: 'No pudimos actualizar el pedido.',
+          confirmButtonText: 'Entendido'
         });
       }
     );
   }
 
+  syncHora(item: UbicacionRow): void {
+    const hora12 = item.hora12 ?? null;
+    const minuto = item.minuto ?? null;
+    const ampm = item.ampm ?? null;
+    if (!hora12 || !minuto || !ampm) {
+      item.Hora = '';
+      return;
+    }
+    const base = Number(hora12) % 12;
+    const hour24 = ampm === 'PM' ? base + 12 : base;
+    item.Hora = `${String(hour24).padStart(2, '0')}:${minuto}`;
+  }
+
+  isHoraFueraRango(item: UbicacionRow): boolean {
+    if (!item.Hora) return false;
+    const parts = item.Hora.split(':');
+    const hh = Number(parts[0] ?? 0);
+    const mm = Number(parts[1] ?? 0);
+    const total = (hh * 60) + mm;
+    return total < (6 * 60) || total > (22 * 60);
+  }
+
+  private splitHoraParts(hora: string): { hora12: number | null; minuto: string | null; ampm: 'AM' | 'PM' | null } {
+    if (!hora) {
+      return { hora12: null, minuto: null, ampm: null };
+    }
+    const [hh, mm] = hora.split(':');
+    const hour = Number(hh);
+    if (!Number.isFinite(hour) || mm == null) {
+      return { hora12: null, minuto: null, ampm: null };
+    }
+    const ampm: 'AM' | 'PM' = hour >= 12 ? 'PM' : 'AM';
+    const hora12 = (hour % 12) || 12;
+    return { hora12, minuto: mm, ampm };
+  }
+
+  private showToast(icon: AlertIcon, title: string, text?: string, timer = 2200): void {
+    void Swal.fire({
+      icon,
+      title,
+      text,
+      toast: true,
+      position: 'top-end',
+      timer,
+      timerProgressBar: true,
+      showConfirmButton: false
+    });
+  }
+
+  private showAlert(icon: AlertIcon, title: string, text?: string): void {
+    void Swal.fire({
+      icon,
+      title,
+      text,
+      confirmButtonText: 'Entendido'
+    });
+  }
+
+  private refreshSelectedPaquetesColumns(): void {
+    const base: TableColumn<PedidoPaqueteSeleccionado>[] = [
+      { key: 'titulo', header: 'Título', sortable: false },
+      { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' },
+      { key: 'precioUnit', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' },
+    ];
+    if (this.shouldShowPrecioOriginal()) {
+      base.push({ key: 'precioOriginal', header: 'Base', sortable: false, class: 'text-end text-nowrap', width: '140px' });
+    }
+    base.push(
+      { key: 'horas', header: 'Horas', sortable: false, class: 'text-center', width: '100px' },
+      { key: 'staff', header: 'Staff', sortable: false, class: 'text-center', width: '100px' },
+      { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-end text-nowrap', width: '140px' },
+      { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
+      { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
+    );
+    this.selectedPaquetesColumns = base;
+  }
+
+  private getPrecioInputIdFromKey(key: string | number): string {
+    return `precio-input-${String(key).replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  }
+
+  private focusPrecioInput(key: string | number): void {
+    const id = this.getPrecioInputIdFromKey(key);
+    setTimeout(() => {
+      const input = document.getElementById(id) as HTMLInputElement | null;
+      input?.focus();
+      input?.select();
+    });
+  }
+
   private normalizePaqueteRow(item: AnyRecord): PaqueteRow {
     const record = item as Record<string, unknown>;
-    const precio = Number(record['precio'] ?? record['Precio'] ?? record['precioUnit'] ?? record['precio_unitario']);
-    const staff = Number(record['staff'] ?? record['Staff'] ?? record['personal'] ?? record['Personal']);
-    const horas = Number(record['horas'] ?? record['Horas'] ?? record['duration'] ?? record['Duracion']);
+    const precio = Number(record['precio']);
+    const staffRecord = record['staff'] as Record<string, unknown> | undefined;
+    const staff = staffRecord?.['total'] != null ? Number(staffRecord['total']) : null;
+    const horas = record['horas'] != null ? Number(record['horas']) : null;
 
     return {
-      descripcion: String(record['descripcion'] ?? record['Descripcion'] ?? record['titulo'] ?? 'Paquete'),
+      titulo: String(record['titulo'] ?? ''),
+      descripcion: String(record['descripcion'] ?? ''),
       precio: Number.isFinite(precio) ? precio : null,
       staff: Number.isFinite(staff) ? staff : null,
       horas: Number.isFinite(horas) ? horas : null,
@@ -889,6 +1241,51 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return this.convert(value);
   }
 
+  private buildSnapshot(): string {
+    const pedido = {
+      id: this.pedidoId,
+      clienteId: this.infoCliente.idCliente,
+      empleadoId: this.CodigoEmpleado ?? 1,
+      fechaCreacion: this.convert(this.fechaCreate),
+      observaciones: this.visualizarService.selectAgregarPedido?.Observacion || '',
+      estadoPedidoId: this.estadoPedidoId ?? 1,
+      estadoPagoId: this.estadoPagoId ?? 1,
+      nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || '',
+      cotizacionId: this.cotizacionId
+    };
+    const eventos = (this.ubicacion || [])
+      .filter(u => (u?.Direccion || '').trim())
+      .map(u => ({
+        id: (u.dbId ?? u.ID ?? null),
+        fecha: String(u.Fecha || '').trim(),
+        hora: String(u.Hora || '').trim(),
+        ubicacion: String(u.Direccion || '').trim(),
+        direccion: String(u.DireccionExacta || '').trim(),
+        notas: String(u.Notas || '').trim()
+      }));
+    const items = (this.selectedPaquetes || []).map(it => ({
+      id: it.id ?? null,
+      idEventoServicio: it.idEventoServicio ?? null,
+      eventoId: it.eventoId ?? null,
+      servicioId: it.servicioId ?? null,
+      eventoCodigo: it.eventoCodigo ?? null,
+      nombre: String(it.nombre ?? '').trim(),
+      descripcion: String(it.descripcion ?? '').trim(),
+      moneda: it.moneda ?? 'USD',
+      precioUnit: Number(it.precioUnit ?? 0),
+      cantidad: Number(it.cantidad ?? 1),
+      descuento: Number(it.descuento ?? 0),
+      recargo: Number(it.recargo ?? 0),
+      notas: String(it.notas ?? '').trim(),
+      horas: it.horas ?? null,
+      personal: it.personal ?? null,
+      fotosImpresas: it.fotosImpresas ?? null,
+      trailerMin: it.trailerMin ?? null,
+      filmMin: it.filmMin ?? null
+    }));
+    return JSON.stringify({ pedido, eventos, items });
+  }
+
   private parseNumber(value: unknown): number | null {
     if (value == null) {
       return null;
@@ -902,9 +1299,30 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 }
 
 interface PaqueteRow {
+  titulo: string;
   descripcion: string;
   precio: number | null;
   staff: number | null;
   horas: number | null;
   raw: AnyRecord;
+}
+
+interface PaqueteDetalle {
+  precio?: number;
+  titulo?: string;
+  horas?: number;
+  categoriaNombre?: string;
+  categoriaTipo?: string;
+  esAddon?: boolean;
+  descripcion?: string;
+  staff?: number | { total?: number };
+  personal?: number;
+  fotosImpresas?: number;
+  trailerMin?: number;
+  filmMin?: number;
+  servicio?: { nombre?: string };
+  servicioNombre?: string;
+  evento?: { nombre?: string };
+  estado?: { nombre?: string };
+  equipos?: AnyRecord[];
 }

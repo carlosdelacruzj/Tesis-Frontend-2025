@@ -261,7 +261,27 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   onEventoDropdownChange(rawValue: string): void {
     this.eventoSelectTouched = true;
-    this.onEventoChange(this.parseNumber(rawValue));
+    const nextEventoId = this.parseNumber(rawValue);
+    if (this.selectedPaquetes.length && nextEventoId !== this.selectedEventoId) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Cambiar tipo de evento',
+        text: 'Cambiar el tipo de evento eliminará toda la selección de paquetes.',
+        confirmButtonText: 'Cambiar',
+        cancelButtonText: 'Cancelar',
+        showCancelButton: true,
+        reverseButtons: true
+      }).then(result => {
+        if (!result.isConfirmed) {
+          return;
+        }
+        this.selectedPaquetes = [];
+        this.refreshSelectedPaquetesColumns();
+        this.onEventoChange(nextEventoId);
+      });
+      return;
+    }
+    this.onEventoChange(nextEventoId);
   }
 
   onEventoChange(eventoId: number | null | undefined): void {

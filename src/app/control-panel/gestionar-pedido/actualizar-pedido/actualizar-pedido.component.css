@@ -1,0 +1,74 @@
+.cotizacion-form mat-card {
+  border-radius: 0.75rem;
+  box-shadow: 0 0.75rem 1.5rem -1rem rgba(31, 45, 61, 0.35);
+}
+
+.cotizacion-form .card-grid {
+  align-items: stretch;
+}
+
+.cotizacion-form .card-grid > [class*='col-'] {
+  display: flex;
+}
+
+.cotizacion-form .card-grid mat-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+.cotizacion-form .card-grid mat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1 1 auto;
+}
+
+.cotizacion-form .card-grid .form-group {
+  margin-bottom: 0;
+}
+
+.cotizacion-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.cotizacion-form textarea {
+  resize: none;
+}
+
+.cotizacion-form .table-responsive {
+  overflow-x: auto;
+}
+
+.cotizacion-form .spinner-border {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.programacion-header mat-card-subtitle {
+  margin-top: 0.25rem;
+}
+
+.programacion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.programacion-item {
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #fff;
+}
+
+.programacion-item__header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 0.75rem;
+}
+
+@media (max-width: 767.98px) {
+  .programacion-item {
+    padding: 1rem;
+  }
+}
