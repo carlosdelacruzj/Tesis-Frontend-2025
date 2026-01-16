@@ -222,6 +222,8 @@ export interface LeadConvertPayload {
   nombre: string;
   apellido: string;
   numDoc: string;
+  tipoDocumentoId?: number | null;
+  razonSocial?: string | null;
   direccion: string;
 }
 

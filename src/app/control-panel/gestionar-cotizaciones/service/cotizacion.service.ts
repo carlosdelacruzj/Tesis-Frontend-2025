@@ -258,6 +258,8 @@ downloadPdf(
       nombre: payload?.nombre,
       apellido: payload?.apellido,
       numDoc: payload?.numDoc,
+      tipoDocumentoId: payload?.tipoDocumentoId ?? undefined,
+      razonSocial: payload?.razonSocial ?? undefined,
       direccion: payload?.direccion
     });
 

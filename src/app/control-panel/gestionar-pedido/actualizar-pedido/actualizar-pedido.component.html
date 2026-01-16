@@ -46,15 +46,26 @@
               <div class="col-sm-6">
                 <div class="form-group">
                   <label class="col-form-label" for="fechaEvent">Fecha del evento</label>
-                  <input id="fechaEvent" type="date" class="form-control" [min]="minimo" [max]="maximo"
-                    name="fechaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent" required>
-                </div>
-              </div>
-              <div class="col-sm-6">
-                <div class="form-group">
-                  <label class="col-form-label" for="horaEvent">Hora</label>
-                  <input id="horaEvent" type="time" class="form-control" name="horaEvent"
-                    [(ngModel)]="visualizarService.selectAgregarPedido.horaEvent" required>
+                  <input id="fechaEvent" type="date" class="form-control"
+                    [min]="fechaMinimaEvento" [max]="fechaMaximaEvento"
+                    name="fechaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent"
+                    #fechaEvent="ngModel"
+                    [class.is-invalid]="!!getFechaEventoError() && fechaEvent.touched"
+                    required>
+                  @if (getFechaEventoError() && fechaEvent.touched) {
+                    @if (getFechaEventoError() === 'required') {
+                      <small class="text-danger">Selecciona una fecha.</small>
+                    }
+                    @if (getFechaEventoError() === 'fechaEventoAnterior') {
+                      <small class="text-danger">La fecha debe ser al menos un día después de hoy.</small>
+                    }
+                    @if (getFechaEventoError() === 'fechaEventoPosterior') {
+                      <small class="text-danger">La fecha no puede superar los 6 meses desde hoy.</small>
+                    }
+                    @if (getFechaEventoError() === 'fechaEventoInvalida') {
+                      <small class="text-danger">Selecciona una fecha válida.</small>
+                    }
+                  }
                 </div>
               </div>
             </div>

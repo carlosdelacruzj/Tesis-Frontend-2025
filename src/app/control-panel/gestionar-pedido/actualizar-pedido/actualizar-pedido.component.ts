@@ -70,6 +70,9 @@ type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: b
 export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   saving = false;
   private initialSnapshot = '';
+  private puedeCargarPaquetes = false;
+  readonly fechaMinimaEvento = ActualizarPedidoComponent.computeFechaMinimaEvento();
+  readonly fechaMaximaEvento = ActualizarPedidoComponent.computeFechaMaximaEvento();
   readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
   readonly minutoOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
   readonly ampmOptions = ['AM', 'PM'] as const;
@@ -113,8 +116,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Fechas ======
   fechaCreate = new Date();
-  minimo: string;
-  maximo: string;
 
   // ====== Ubicaciones ======
   ubicacion: UbicacionRow[] = [{ ID: 0, dbId: 0, Direccion: '', Fecha: '', Hora: '', DireccionExacta: '', Notas: '' }];
@@ -122,7 +123,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   // ====== Paquetes seleccionados ======
   selectedPaquetes: PedidoPaqueteSeleccionado[] = [];
   currentEventoKey: string | number | null = null;
-  private fechaEventoBase: string | null = null;
   selectedPaquetesColumns: TableColumn<PedidoPaqueteSeleccionado>[] = [];
 
   // ====== TAGS ======
@@ -191,7 +191,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
     this.getEventos();
     this.getServicio();
-    this.getEventoxServicio();
     this.refreshSelectedPaquetesColumns();
 
     // Inicializa cabecera
@@ -311,10 +310,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Fechas ======
   fechaValidate(date: Date | string) {
-    const iso = this.toIsoDate(date);
-    this.minimo = iso;
-    this.maximo = iso;
-    this.fechaEventoBase = iso;
+    this.toIsoDate(date);
   }
 
   convert(strOrDate: string | Date) {
@@ -397,7 +393,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   asignarServicio(event: string | number) {
     const parsed = this.parseNumber(event);
     this.servicioSeleccionado = parsed ?? this.servicioSeleccionado;
-    this.getEventoxServicio();
+    if (this.puedeCargarPaquetes) {
+      this.getEventoxServicio();
+    }
   }
 
   getEventos() {
@@ -438,12 +436,16 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         this.selectedPaquetes = [];
         this.refreshSelectedPaquetesColumns();
         this.eventoSeleccionado = parsed;
-        this.getEventoxServicio();
+        if (this.puedeCargarPaquetes) {
+          this.getEventoxServicio();
+        }
       });
       return;
     }
     this.eventoSeleccionado = parsed;
-    this.getEventoxServicio();
+    if (this.puedeCargarPaquetes) {
+      this.getEventoxServicio();
+    }
   }
 
   getEventoxServicio() {
@@ -972,6 +974,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         this.eventoSeleccionado = eventoDesdeItems;
       }
       this.refreshSelectedPaquetesColumns();
+      this.puedeCargarPaquetes = true;
+      if (this.eventoSeleccionado != null && this.servicioSeleccionado != null) {
+        this.getEventoxServicio();
+      }
       this.initialSnapshot = this.buildSnapshot();
       // Cargar tags del cliente (si procede)
       if (this.dniCliente) this.loadTagsCliente();
@@ -986,6 +992,17 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (!this.pedidoId) return;
     if (this.initialSnapshot && this.initialSnapshot === this.buildSnapshot()) {
       this.router.navigate(['/home/gestionar-pedido']);
+      return;
+    }
+
+    const fechaError = this.getFechaEventoError();
+    if (fechaError) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Fecha inválida',
+        text: 'Selecciona una fecha dentro del rango permitido.',
+        confirmButtonText: 'Entendido'
+      });
       return;
     }
 
@@ -1239,6 +1256,48 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       return this.convert(value);
     }
     return this.convert(value);
+  }
+
+  private static computeFechaMinimaEvento(): string {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return ActualizarPedidoComponent.formatIsoDate(date);
+  }
+
+  private static computeFechaMaximaEvento(): string {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 6);
+    return ActualizarPedidoComponent.formatIsoDate(date);
+  }
+
+  private static formatIsoDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  getFechaEventoError(): 'required' | 'fechaEventoAnterior' | 'fechaEventoPosterior' | 'fechaEventoInvalida' | null {
+    const raw = this.visualizarService.selectAgregarPedido?.fechaEvent;
+    if (!raw) {
+      return 'required';
+    }
+    const date = parseDateInput(raw);
+    if (!date) {
+      return 'fechaEventoInvalida';
+    }
+    const min = parseDateInput(this.fechaMinimaEvento);
+    const max = parseDateInput(this.fechaMaximaEvento);
+    if (!min || !max) {
+      return null;
+    }
+    if (date < min) {
+      return 'fechaEventoAnterior';
+    }
+    if (date > max) {
+      return 'fechaEventoPosterior';
+    }
+    return null;
   }
 
   private buildSnapshot(): string {

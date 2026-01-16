@@ -141,16 +141,72 @@
     <form #createForm="ngForm" id="createClienteForm" (ngSubmit)="submitLeadRegistro(createForm)">
       <div class="row g-3">
         <div class="col-12 col-md-6">
-          <label class="form-label" for="clienteNombre">Nombre</label>
-          <input
-            id="clienteNombre"
-            type="text"
-            class="form-control"
-            name="nombre"
-            required
+          <label class="form-label" for="clienteTipoDocumento">Tipo de documento</label>
+          <select id="clienteTipoDocumento" class="form-select" name="tipoDocumento" required
+            [(ngModel)]="selectedTipoDocumento" (ngModelChange)="onTipoDocumentoChange($event)"
+            #tipoDocumento="ngModel" [class.is-invalid]="tipoDocumento.invalid && tipoDocumento.touched"
+            [attr.title]="tipoDocumento.invalid && tipoDocumento.touched ? 'Campo requerido' : null">
+            <option [ngValue]="null" disabled>Selecciona un tipo</option>
+            @for (tipo of tiposDocumento; track tipo.id) {
+              <option [ngValue]="tipo">
+                {{ tipo.codigo }} - {{ tipo.nombre }}
+              </option>
+            }
+          </select>
+          @if (tipoDocumento.invalid && (tipoDocumento.dirty || tipoDocumento.touched)) {
+            <div class="invalid-feedback d-block">
+              <span>Campo requerido</span>
+            </div>
+          }
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="clienteDoc">Número de documento</label>
+          <input id="clienteDoc" type="text" class="form-control" name="doc" required [pattern]="registroDocPattern"
+            [(ngModel)]="registroClienteFormModel.doc"
+            #doc="ngModel" [attr.minlength]="registroDocMinLength || null" [attr.maxlength]="registroDocMaxLength || null"
+            [attr.inputmode]="registroDocInputMode"
+            [disabled]="!selectedTipoDocumento"
+            [class.is-invalid]="doc.invalid && doc.touched"
+            [attr.title]="doc.invalid && doc.touched ? (doc.errors?.required ? 'Campo requerido' : registroDocPatternMessage) : null">
+          @if (doc.invalid && (doc.dirty || doc.touched)) {
+            <div class="invalid-feedback d-block">
+              @if (doc.errors?.required) {
+                <span>Campo requerido</span>
+              }
+              @if (doc.errors?.pattern) {
+                <span>{{ registroDocPatternMessage }}</span>
+              }
+            </div>
+          }
+        </div>
+
+        @if (isRucSelected) {
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="clienteRazonSocial">Razón social</label>
+            <input id="clienteRazonSocial" type="text" class="form-control" name="razonSocial"
+              [(ngModel)]="registroClienteFormModel.razonSocial"
+              [required]="isRucSelected" #razonSocial="ngModel"
+              [disabled]="!selectedTipoDocumento"
+              [class.is-invalid]="razonSocial.invalid && razonSocial.touched"
+              [attr.title]="razonSocial.invalid && razonSocial.touched ? 'Campo requerido' : null">
+            @if (razonSocial.invalid && (razonSocial.dirty || razonSocial.touched)) {
+              <div class="invalid-feedback d-block">
+                <span>Campo requerido</span>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="clienteNombre">
+            {{ isRucSelected ? 'Nombre del contacto' : 'Nombre' }}
+          </label>
+          <input id="clienteNombre" type="text" class="form-control" name="nombre" required
             [pattern]="registroNombrePattern"
             [(ngModel)]="registroClienteFormModel.nombre"
             #nombre="ngModel"
+            [disabled]="!selectedTipoDocumento"
             [class.is-invalid]="nombre.invalid && nombre.touched"
             [attr.title]="nombre.invalid && nombre.touched ? (nombre.errors?.required ? 'Campo requerido' : 'Solo letras (2-20)') : null">
           @if (nombre.invalid && (nombre.dirty || nombre.touched)) {
@@ -166,16 +222,14 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label" for="clienteApellido">Apellido</label>
-          <input
-            id="clienteApellido"
-            type="text"
-            class="form-control"
-            name="apellido"
-            required
+          <label class="form-label" for="clienteApellido">
+            {{ isRucSelected ? 'Apellido del contacto' : 'Apellido' }}
+          </label>
+          <input id="clienteApellido" type="text" class="form-control" name="apellido" required
             [pattern]="registroApellidoPattern"
             [(ngModel)]="registroClienteFormModel.apellido"
             #apellido="ngModel"
+            [disabled]="!selectedTipoDocumento"
             [class.is-invalid]="apellido.invalid && apellido.touched"
             [attr.title]="apellido.invalid && apellido.touched ? (apellido.errors?.required ? 'Campo requerido' : 'Solo letras (2-30)') : null">
           @if (apellido.invalid && (apellido.dirty || apellido.touched)) {
@@ -192,15 +246,11 @@
 
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteCorreo">Correo</label>
-          <input
-            id="clienteCorreo"
-            type="email"
-            class="form-control"
-            name="correo"
-            required
+          <input id="clienteCorreo" type="email" class="form-control" name="correo" required
             [pattern]="registroCorreoPattern"
             [(ngModel)]="registroClienteFormModel.correo"
             #correo="ngModel"
+            [disabled]="!selectedTipoDocumento"
             [class.is-invalid]="correo.invalid && correo.touched"
             [attr.title]="correo.invalid && correo.touched ? (correo.errors?.required ? 'Campo requerido' : 'Ingrese un correo valido') : null">
           @if (correo.invalid && (correo.dirty || correo.touched)) {
@@ -216,41 +266,12 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label" for="clienteDoc">Número de documento</label>
-          <input
-            id="clienteDoc"
-            type="text"
-            class="form-control"
-            name="doc"
-            required
-            [pattern]="registroDocPattern"
-            [(ngModel)]="registroClienteFormModel.doc"
-            #doc="ngModel"
-            [class.is-invalid]="doc.invalid && doc.touched"
-            [attr.title]="doc.invalid && doc.touched ? (doc.errors?.required ? 'Campo requerido' : 'Solo numeros (8 digitos)') : null">
-          @if (doc.invalid && (doc.dirty || doc.touched)) {
-            <div class="invalid-feedback d-block">
-              @if (doc.errors?.required) {
-                <span>Campo requerido</span>
-              }
-              @if (doc.errors?.pattern) {
-                <span>Sólo números (8 dígitos)</span>
-              }
-            </div>
-          }
-        </div>
-
-        <div class="col-12 col-md-6">
           <label class="form-label" for="clienteCelular">Celular</label>
-          <input
-            id="clienteCelular"
-            type="text"
-            class="form-control"
-            name="celular"
-            required
+          <input id="clienteCelular" type="text" class="form-control" name="celular" required
             [pattern]="registroCelularPattern"
             [(ngModel)]="registroClienteFormModel.celular"
             #celular="ngModel"
+            [disabled]="!selectedTipoDocumento"
             [class.is-invalid]="celular.invalid && celular.touched"
             [attr.title]="celular.invalid && celular.touched ? (celular.errors?.required ? 'Campo requerido' : 'Solo numeros (7-9 digitos)') : null">
           @if (celular.invalid && (celular.dirty || celular.touched)) {
@@ -267,13 +288,10 @@
 
         <div class="col-12">
           <label class="form-label" for="clienteDireccion">Dirección</label>
-          <textarea
-            id="clienteDireccion"
-            class="form-control"
-            name="direccion"
-            required
+          <textarea id="clienteDireccion" class="form-control" name="direccion" required
             [(ngModel)]="registroClienteFormModel.direccion"
             #direccion="ngModel"
+            [disabled]="!selectedTipoDocumento"
             [class.is-invalid]="direccion.invalid && direccion.touched"
             [attr.title]="direccion.invalid && direccion.touched ? 'Campo requerido' : null"></textarea>
           @if (direccion.invalid && (direccion.dirty || direccion.touched)) {

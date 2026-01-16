@@ -8,6 +8,17 @@ import { TableColumn } from 'src/app/components/table-base/table-base.component'
 import { urlToBase64 } from 'src/app/utils/url-to-base64';
 import { HttpClient } from '@angular/common/http';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
+import { environment } from 'src/environments/environment';
+
+interface TipoDocumento {
+  id: number;
+  codigo: string;
+  nombre: string;
+  tipoDato: 'N' | 'A';
+  tamMin: number;
+  tamMax: number;
+  activo: number;
+}
 
 // TableBase
 // Util: convertir assets a base64
@@ -52,9 +63,16 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
   readonly registroNombrePattern = GestionarCotizacionesComponent.NOMBRE_PATTERN;
   readonly registroApellidoPattern = GestionarCotizacionesComponent.APELLIDO_PATTERN;
-  readonly registroDocPattern = GestionarCotizacionesComponent.DOC_PATTERN;
+  registroDocPattern = GestionarCotizacionesComponent.DOC_PATTERN;
+  registroDocMinLength = 8;
+  registroDocMaxLength = 8;
+  registroDocInputMode: 'text' | 'numeric' = 'numeric';
+  registroDocPatternMessage = 'Solo numeros (8 digitos)';
   readonly registroCelularPattern = GestionarCotizacionesComponent.CELULAR_PATTERN;
   readonly registroCorreoPattern = GestionarCotizacionesComponent.CORREO_PATTERN;
+  tiposDocumento: TipoDocumento[] = [];
+  selectedTipoDocumento: TipoDocumento | null = null;
+  isRucSelected = false;
 
   private readonly destroy$ = new Subject<void>();
   private registroClienteClosingInterno = false;
@@ -70,7 +88,10 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
 
-  ngOnInit(): void { this.loadCotizaciones(); }
+  ngOnInit(): void {
+    this.loadCotizaciones();
+    this.loadTiposDocumento();
+  }
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
@@ -325,6 +346,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
   private createRegistroClienteFormModel(initial?: Partial<RegistroClienteFormModel>): RegistroClienteFormModel {
     return {
+      razonSocial: '',
       nombre: '',
       apellido: '',
       correo: '',
@@ -346,6 +368,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
     const celularSanitizado = this.sanitizarCelular(contacto?.celular ?? cotizacion.contactoResumen ?? '');
 
+    this.onTipoDocumentoChange(null);
     this.registroClienteFormModel = this.createRegistroClienteFormModel({
       nombre,
       apellido,
@@ -380,6 +403,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.registroClienteError = null;
     this.registroClienteForm?.resetForm();
     this.registroClienteFormModel = this.createRegistroClienteFormModel();
+    this.onTipoDocumentoChange(null);
 
     if (resetEstado) {
       this.estadoDestino = '';
@@ -418,6 +442,11 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       form.control.markAllAsTouched();
       return;
     }
+    if (!this.selectedTipoDocumento) {
+      this.registroClienteError = 'Selecciona un tipo de documento.';
+      form.control.markAllAsTouched();
+      return;
+    }
 
     const target = this.estadoTarget ?? this.leadConversionTarget;
     const contactoId = target.contacto?.id ?? null;
@@ -428,6 +457,8 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     }
 
     const payload = {
+      tipoDocumentoId: this.selectedTipoDocumento?.id,
+      razonSocial: this.isRucSelected ? form.value.razonSocial : null,
       nombre: form.value.nombre,
       apellido: form.value.apellido,
       correo: form.value.correo,
@@ -484,6 +515,53 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       return digitos;
     }
     return digitos.slice(-9);
+  }
+
+  private loadTiposDocumento(): void {
+    this.http.get<TipoDocumento[]>(`${environment.baseUrl}/tipos-documento`)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (tipos) => {
+          const activos = (tipos ?? []).filter(tipo => tipo.activo === 1);
+          this.tiposDocumento = activos;
+          this.onTipoDocumentoChange(null);
+        },
+        error: (err) => {
+          console.error('[cotizaciones] tipos-documento', err);
+          this.tiposDocumento = [];
+          this.onTipoDocumentoChange(null);
+        }
+      });
+  }
+
+  onTipoDocumentoChange(tipo: TipoDocumento | null): void {
+    this.selectedTipoDocumento = tipo;
+    this.isRucSelected = (tipo?.codigo ?? '').toUpperCase() === 'RUC';
+    if (!tipo) {
+      this.registroDocPattern = '';
+      this.registroDocMinLength = 0;
+      this.registroDocMaxLength = 0;
+      this.registroDocInputMode = 'text';
+      this.registroDocPatternMessage = 'Formato invalido';
+      return;
+    }
+
+    const min = Number(tipo.tamMin) || 1;
+    const max = Number(tipo.tamMax) || min;
+    const isNumeric = tipo.tipoDato === 'N';
+    const quantifier = min === max ? `{${min}}` : `{${min},${max}}`;
+    this.registroDocPattern = isNumeric
+      ? `^[0-9]${quantifier}$`
+      : `^[a-zA-Z0-9]${quantifier}$`;
+    this.registroDocMinLength = min;
+    this.registroDocMaxLength = max;
+    this.registroDocInputMode = isNumeric ? 'numeric' : 'text';
+
+    const label = isNumeric ? 'Solo numeros' : 'Solo letras y numeros';
+    const range = min === max ? `${min}` : `${min}-${max}`;
+    const unit = isNumeric ? 'digitos' : 'caracteres';
+    this.registroDocPatternMessage = `${label} (${range} ${unit})`;
+
   }
 
   private esLead(cotizacion: Cotizacion | null): boolean {
@@ -549,6 +627,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 }
 
 interface RegistroClienteFormModel {
+  razonSocial: string;
   nombre: string;
   apellido: string;
   correo: string;
