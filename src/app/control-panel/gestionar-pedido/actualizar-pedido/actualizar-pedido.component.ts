@@ -70,6 +70,7 @@ type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: b
 export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   saving = false;
   private initialSnapshot = '';
+  private initialSnapshotData: PedidoSnapshot | null = null;
   private puedeCargarPaquetes = false;
   readonly fechaMinimaEvento = ActualizarPedidoComponent.computeFechaMinimaEvento();
   readonly fechaMaximaEvento = ActualizarPedidoComponent.computeFechaMaximaEvento();
@@ -106,7 +107,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Estado general ======
   CodigoEmpleado = 1;
-  infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
+  infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', razonSocial: '-', idCliente: 0, idUsuario: 0 };
   dniCliente = '';
 
   // ====== Evento actual (inputs) ======
@@ -135,6 +136,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   private estadoPagoId: number | null = null;
   private cotizacionId: number | null = null;
   readonly programacionMinimaRecomendada = 1;
+  readonly programacionMaxima = 6;
 
   private toOptionalString(value: unknown): string | undefined {
     if (value == null) {
@@ -151,6 +153,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   get clienteNombreCompleto(): string {
+    const razonSocial = this.toOptionalString(this.infoCliente?.razonSocial);
+    if (razonSocial) {
+      return razonSocial;
+    }
     const nombre = this.toOptionalString(this.infoCliente?.nombre);
     const apellido = this.toOptionalString(this.infoCliente?.apellido);
     const texto = [nombre, apellido].filter(Boolean).join(' ').trim();
@@ -563,6 +569,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     );
   }
 
+  onCantidadChange(paquete: PedidoPaqueteSeleccionado, value: unknown): void {
+    const parsed = this.parseNumber(value);
+    paquete.cantidad = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+  }
+
   getPrecioInputId(paquete: PedidoPaqueteSeleccionado): string {
     return this.getPrecioInputIdFromKey(paquete.key);
   }
@@ -703,12 +714,49 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   // ====== Agregar / eliminar ubicaciones ======
+  private getDiasTrabajo(): number | null {
+    const raw = this.visualizarService.selectAgregarPedido?.dias;
+    const parsed = this.parseNumber(raw);
+    return parsed != null && parsed >= 1 ? parsed : null;
+  }
+
+  isMultipleDias(): boolean {
+    const parsed = this.getDiasTrabajo();
+    return parsed != null && parsed > 1;
+  }
+
+  shouldShowFechaEvento(): boolean {
+    const parsed = this.getDiasTrabajo();
+    return parsed != null && parsed <= 1;
+  }
+
+  onDiasChange(value: unknown): void {
+    const parsed = this.parseNumber(value);
+    this.visualizarService.selectAgregarPedido.dias = parsed != null ? Math.max(1, Math.floor(parsed)) : null;
+    if (!this.isMultipleDias()) {
+      this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
+    }
+    if (this.isMultipleDias()) {
+      this.visualizarService.selectAgregarPedido.fechaEvent = '';
+    }
+    this.refreshSelectedPaquetesColumns();
+  }
+
   get canAgregarEvento(): boolean {
     return true;
   }
 
   onQuickAdd() {
-    const fecha = this.visualizarService.selectAgregarPedido.fechaEvent || '';
+    if (this.ubicacion.length >= this.programacionMaxima) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Límite alcanzado',
+        text: `Máximo ${this.programacionMaxima} locaciones.`,
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    const fecha = this.shouldShowFechaEvento() ? (this.visualizarService.selectAgregarPedido.fechaEvent || '') : '';
     const hora = this.visualizarService.selectAgregarPedido.horaEvent || '';
     const nextId = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
     const parts = this.splitHoraParts(hora);
@@ -732,6 +780,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   addListUbicacion(direccion: string, fecha: string, hora: string, direccionExacta?: string, notas?: string) {
+    if (this.ubicacion.length >= this.programacionMaxima) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Límite alcanzado',
+        text: `Máximo ${this.programacionMaxima} locaciones.`,
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
     const yaExiste = this.ubicacion.some(u =>
       u.Fecha === fecha &&
       u.Hora === hora &&
@@ -866,6 +923,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         correo: String(cliente['correo'] ?? '-'),
         documento: String(cliente['documento'] ?? '-'),
         direccion: String(cliente['direccion'] ?? '-'),
+        razonSocial: String(cliente['razonSocial'] ?? '-'),
         idCliente: this.parseNumber(cabRecord['clienteId'] ?? cliente['id']) ?? 0,
         idUsuario: 0
       };
@@ -902,10 +960,20 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
 
+      const diasCab = this.parseNumber(cabRecord['dias'] ?? cabRecord['diasTrabajo']);
+      const fechasUnicas = new Set(
+        dataEventos
+          .map(ev => String((ev as AnyRecord)['fecha'] ?? '').slice(0, 10))
+          .filter(Boolean)
+      );
+      const diasInferidos = fechasUnicas.size ? fechasUnicas.size : (fechaEventoCab ? 1 : null);
+      this.visualizarService.selectAgregarPedido.dias = diasCab ?? diasInferidos ?? 1;
+      this.onDiasChange(this.visualizarService.selectAgregarPedido.dias);
+
       // Precargar controles "Fecha/Hora" superiores con el primer evento (UX)
       const first = this.ubicacion[0];
       if (first) {
-        if (!this.visualizarService.selectAgregarPedido.fechaEvent) {
+        if (this.shouldShowFechaEvento() && !this.visualizarService.selectAgregarPedido.fechaEvent) {
           this.visualizarService.selectAgregarPedido.fechaEvent = first.Fecha;
           this.fechaValidate(first.Fecha);
         }
@@ -978,7 +1046,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       if (this.eventoSeleccionado != null && this.servicioSeleccionado != null) {
         this.getEventoxServicio();
       }
-      this.initialSnapshot = this.buildSnapshot();
+      this.initialSnapshotData = this.buildSnapshotData();
+      this.initialSnapshot = JSON.stringify(this.initialSnapshotData);
       // Cargar tags del cliente (si procede)
       if (this.dniCliente) this.loadTagsCliente();
     });
@@ -990,20 +1059,49 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   updatePedido() {
     if (this.saving) return;              // ← evita doble click
     if (!this.pedidoId) return;
-    if (this.initialSnapshot && this.initialSnapshot === this.buildSnapshot()) {
+    const currentSnapshotData = this.buildSnapshotData();
+    const currentSnapshot = JSON.stringify(currentSnapshotData);
+    if (this.initialSnapshot && this.initialSnapshot === currentSnapshot) {
       this.router.navigate(['/home/gestionar-pedido']);
       return;
     }
 
-    const fechaError = this.getFechaEventoError();
-    if (fechaError) {
+    const diasTrabajo = this.getDiasTrabajo();
+    if (diasTrabajo == null) {
       Swal.fire({
         icon: 'warning',
-        title: 'Fecha inválida',
-        text: 'Selecciona una fecha dentro del rango permitido.',
+        title: 'Días requeridos',
+        text: 'Selecciona la cantidad de días del evento.',
         confirmButtonText: 'Entendido'
       });
       return;
+    }
+    if (!this.isMultipleDias()) {
+      const fechaError = this.getFechaEventoError();
+      if (fechaError) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Fecha inválida',
+          text: 'Selecciona una fecha dentro del rango permitido.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+    } else {
+      const fechasUnicas = new Set(
+        (this.ubicacion || [])
+          .map(u => String(u.Fecha || '').trim())
+          .filter(Boolean)
+      );
+      if (fechasUnicas.size < diasTrabajo) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Fechas insuficientes',
+          text: `Para ${diasTrabajo} días de trabajo debes registrar al menos ${diasTrabajo} fechas diferentes en las locaciones.`,
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
     }
 
     if (!this.infoCliente?.idCliente) {
@@ -1096,46 +1194,18 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    // Logs
-    // console.log('%c[PUT PEDIDO] payload compuesto', 'color:#5c940d;font-weight:bold;');
-    // console.log(JSON.stringify(payload, null, 2));
-    // Modo prueba: solo mostrar en consola, sin enviar al API.
-
-    const obs = this.visualizarService.updatePedido?.(this.pedidoId, payload);
-    if (!obs || typeof obs.subscribe !== 'function') {
-      console.error('[updatePedido] no disponible');
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al actualizar',
-        text: 'No se pudo enviar la actualización.',
-        confirmButtonText: 'Entendido'
+    const diff = this.getPedidoChanges(this.initialSnapshotData, currentSnapshotData);
+    if (diff.hasStrong) {
+      void this.confirmStrongChanges(diff.items).then(confirmado => {
+        if (!confirmado) {
+          return;
+        }
+        this.enviarActualizacion(payload);
       });
       return;
     }
-    this.saving = true; // ← activa el candado SOLO cuando ya vas a llamar al API
 
-    obs.pipe(
-      take(1),
-      finalize(() => { this.saving = false; }) // ← libéralo siempre
-    ).subscribe(
-      () => {
-        void Swal.fire({
-          icon: 'success',
-          title: 'Pedido actualizado',
-          text: 'Los cambios se guardaron correctamente.'
-        }).then(() => this.router.navigate(['/home/gestionar-pedido']));
-        // this.router.navigate(['/home/gestionar-pedido']);
-      },
-      (err: unknown) => {
-        console.error('[updatePedido] error', err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error al actualizar',
-          text: 'No pudimos actualizar el pedido.',
-          confirmButtonText: 'Entendido'
-        });
-      }
-    );
+    this.enviarActualizacion(payload);
   }
 
   syncHora(item: UbicacionRow): void {
@@ -1199,9 +1269,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   private refreshSelectedPaquetesColumns(): void {
     const base: TableColumn<PedidoPaqueteSeleccionado>[] = [
       { key: 'titulo', header: 'Título', sortable: false },
-      { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' },
       { key: 'precioUnit', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' },
     ];
+    if (this.isMultipleDias()) {
+      base.splice(1, 0, { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' });
+    }
     if (this.shouldShowPrecioOriginal()) {
       base.push({ key: 'precioOriginal', header: 'Base', sortable: false, class: 'text-end text-nowrap', width: '140px' });
     }
@@ -1278,6 +1350,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   getFechaEventoError(): 'required' | 'fechaEventoAnterior' | 'fechaEventoPosterior' | 'fechaEventoInvalida' | null {
+    if (!this.shouldShowFechaEvento()) {
+      return null;
+    }
     const raw = this.visualizarService.selectAgregarPedido?.fechaEvent;
     if (!raw) {
       return 'required';
@@ -1300,22 +1375,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return null;
   }
 
-  private buildSnapshot(): string {
+  private buildSnapshotData(): PedidoSnapshot {
     const pedido = {
-      id: this.pedidoId,
-      clienteId: this.infoCliente.idCliente,
-      empleadoId: this.CodigoEmpleado ?? 1,
-      fechaCreacion: this.convert(this.fechaCreate),
-      observaciones: this.visualizarService.selectAgregarPedido?.Observacion || '',
-      estadoPedidoId: this.estadoPedidoId ?? 1,
-      estadoPagoId: this.estadoPagoId ?? 1,
       nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || '',
-      cotizacionId: this.cotizacionId
+      observaciones: this.visualizarService.selectAgregarPedido?.Observacion || ''
     };
     const eventos = (this.ubicacion || [])
       .filter(u => (u?.Direccion || '').trim())
       .map(u => ({
-        id: (u.dbId ?? u.ID ?? null),
         fecha: String(u.Fecha || '').trim(),
         hora: String(u.Hora || '').trim(),
         ubicacion: String(u.Direccion || '').trim(),
@@ -1323,26 +1390,207 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         notas: String(u.Notas || '').trim()
       }));
     const items = (this.selectedPaquetes || []).map(it => ({
-      id: it.id ?? null,
+      key: String(it.key),
       idEventoServicio: it.idEventoServicio ?? null,
       eventoId: it.eventoId ?? null,
       servicioId: it.servicioId ?? null,
-      eventoCodigo: it.eventoCodigo ?? null,
-      nombre: String(it.nombre ?? '').trim(),
+      nombre: String(it.nombre ?? it.titulo ?? '').trim(),
       descripcion: String(it.descripcion ?? '').trim(),
-      moneda: it.moneda ?? 'USD',
-      precioUnit: Number(it.precioUnit ?? 0),
+      precio: Number(it.precio ?? 0),
       cantidad: Number(it.cantidad ?? 1),
       descuento: Number(it.descuento ?? 0),
-      recargo: Number(it.recargo ?? 0),
-      notas: String(it.notas ?? '').trim(),
-      horas: it.horas ?? null,
-      personal: it.personal ?? null,
-      fotosImpresas: it.fotosImpresas ?? null,
-      trailerMin: it.trailerMin ?? null,
-      filmMin: it.filmMin ?? null
+      recargo: Number(it.recargo ?? 0)
     }));
-    return JSON.stringify({ pedido, eventos, items });
+    return { pedido, eventos, items };
+  }
+
+  private getPedidoChanges(
+    anterior: PedidoSnapshot | null,
+    actual: PedidoSnapshot
+  ): { hasStrong: boolean; items: PedidoChangeItem[] } {
+    if (!anterior) {
+      return { hasStrong: false, items: [] };
+    }
+
+    const cambios: PedidoChangeItem[] = [];
+    const nombreAntes = anterior.pedido.nombrePedido ?? '';
+    const nombreAhora = actual.pedido.nombrePedido ?? '';
+    if (nombreAntes !== nombreAhora) {
+      cambios.push({
+        label: 'Nombre del pedido',
+        before: nombreAntes || '—',
+        after: nombreAhora || '—',
+        level: 'weak'
+      });
+    }
+
+    const obsAntes = anterior.pedido.observaciones ?? '';
+    const obsAhora = actual.pedido.observaciones ?? '';
+    if (obsAntes !== obsAhora) {
+      cambios.push({
+        label: 'Mensaje del solicitante',
+        before: obsAntes || '—',
+        after: obsAhora || '—',
+        level: 'weak'
+      });
+    }
+
+    const eventosAntes = anterior.eventos ?? [];
+    const eventosAhora = actual.eventos ?? [];
+    const maxEventos = Math.max(eventosAntes.length, eventosAhora.length);
+    for (let i = 0; i < maxEventos; i += 1) {
+      const prev = eventosAntes[i];
+      const next = eventosAhora[i];
+      if (!prev && !next) continue;
+      const nombrePrev = prev?.ubicacion ?? '';
+      const nombreNext = next?.ubicacion ?? '';
+      const prevSinNombre = this.eventoSinNombre(prev);
+      const nextSinNombre = this.eventoSinNombre(next);
+      const prevSinNombreNotas = this.eventoSinNombreNotas(prev);
+      const nextSinNombreNotas = this.eventoSinNombreNotas(next);
+      const cambioSoloNombre = JSON.stringify(prevSinNombre) === JSON.stringify(nextSinNombre)
+        && nombrePrev !== nombreNext;
+      const cambioSoloNotas = JSON.stringify(prevSinNombreNotas) === JSON.stringify(nextSinNombreNotas)
+        && (prev?.notas ?? '') !== (next?.notas ?? '');
+      if (!prev || !next || JSON.stringify(prev) !== JSON.stringify(next)) {
+        cambios.push({
+          label: `Locación ${i + 1}`,
+          before: this.formatEventoResumen(prev),
+          after: this.formatEventoResumen(next),
+          level: (cambioSoloNombre || cambioSoloNotas) ? 'weak' : 'strong'
+        });
+      }
+    }
+
+    const prevItemsMap = new Map<string, PedidoItemSnapshot>();
+    anterior.items.forEach(item => {
+      prevItemsMap.set(String(item.key), item);
+    });
+    const nextItemsMap = new Map<string, PedidoItemSnapshot>();
+    actual.items.forEach(item => {
+      nextItemsMap.set(String(item.key), item);
+    });
+    const allKeys = new Set<string>([...prevItemsMap.keys(), ...nextItemsMap.keys()]);
+    allKeys.forEach(key => {
+      const prev = prevItemsMap.get(key);
+      const next = nextItemsMap.get(key);
+      if (!prev && !next) return;
+      if (!prev || !next || JSON.stringify(prev) !== JSON.stringify(next)) {
+        const label = prev?.nombre || next?.nombre || `Paquete ${key}`;
+        cambios.push({
+          label,
+          before: this.formatItemResumen(prev),
+          after: this.formatItemResumen(next),
+          level: 'strong'
+        });
+      }
+    });
+
+    return { hasStrong: cambios.some(item => item.level === 'strong'), items: cambios };
+  }
+
+  private formatEventoResumen(evento?: PedidoEventoSnapshot): string {
+    if (!evento) return '—';
+    const fecha = evento.fecha || '—';
+    const hora = evento.hora || '—';
+    const ubicacion = evento.ubicacion || '—';
+    const direccion = evento.direccion ? ` (${evento.direccion})` : '';
+    const notas = evento.notas ? ` | ${evento.notas}` : '';
+    return `${fecha} ${hora} - ${ubicacion}${direccion}${notas}`;
+  }
+
+  private eventoSinNombre(evento?: PedidoEventoSnapshot): PedidoEventoSnapshot {
+    return {
+      fecha: evento?.fecha ?? '',
+      hora: evento?.hora ?? '',
+      ubicacion: '',
+      direccion: evento?.direccion ?? '',
+      notas: evento?.notas ?? ''
+    };
+  }
+
+  private eventoSinNombreNotas(evento?: PedidoEventoSnapshot): PedidoEventoSnapshot {
+    return {
+      fecha: evento?.fecha ?? '',
+      hora: evento?.hora ?? '',
+      ubicacion: '',
+      direccion: evento?.direccion ?? '',
+      notas: ''
+    };
+  }
+
+  private formatItemResumen(item?: PedidoItemSnapshot): string {
+    if (!item) return '—';
+    const precio = Number.isFinite(item.precio) ? item.precio.toFixed(2) : '0.00';
+    const cantidad = item.cantidad ?? 1;
+    return `Precio: ${precio} | Cant: ${cantidad} | Desc: ${item.descuento ?? 0} | Rec: ${item.recargo ?? 0}`;
+  }
+
+  private confirmStrongChanges(items: PedidoChangeItem[]): Promise<boolean> {
+    const filas = items
+      .map(item => `
+        <li style="margin-bottom:6px;">
+          <strong>${item.label}${item.level === 'weak' ? ' (cambio menor)' : ''}</strong><br>
+          <span style="color:#6c757d;">Antes:</span> ${item.before}<br>
+          <span style="color:#6c757d;">Ahora:</span> ${item.after}
+        </li>
+      `)
+      .join('');
+    return Swal.fire({
+      icon: 'warning',
+      title: 'Cambios importantes',
+      html: `
+        <p>Los cambios realizados harán que haya un desfase entre la cotización y el pedido, y esto afectará al contrato final.</p>
+        <ul style="text-align:left; padding-left:18px; margin-top:8px; max-height:240px; overflow:auto;">
+          ${filas}
+        </ul>
+      `,
+      confirmButtonText: 'Guardar de todas formas',
+      cancelButtonText: 'Cancelar',
+      showCancelButton: true,
+      reverseButtons: true
+    }).then(result => result.isConfirmed);
+  }
+
+  private enviarActualizacion(payload: {
+    pedido: Record<string, unknown>;
+    eventos: Record<string, unknown>[];
+    items: Record<string, unknown>[];
+  }): void {
+    const obs = this.visualizarService.updatePedido?.(this.pedidoId, payload);
+    if (!obs || typeof obs.subscribe !== 'function') {
+      console.error('[updatePedido] no disponible');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al actualizar',
+        text: 'No se pudo enviar la actualización.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    this.saving = true; // ← activa el candado SOLO cuando ya vas a llamar al API
+
+    obs.pipe(
+      take(1),
+      finalize(() => { this.saving = false; }) // ← libéralo siempre
+    ).subscribe(
+      () => {
+        void Swal.fire({
+          icon: 'success',
+          title: 'Pedido actualizado',
+          text: 'Los cambios se guardaron correctamente.'
+        }).then(() => this.router.navigate(['/home/gestionar-pedido']));
+      },
+      (err: unknown) => {
+        console.error('[updatePedido] error', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al actualizar',
+          text: 'No pudimos actualizar el pedido.',
+          confirmButtonText: 'Entendido'
+        });
+      }
+    );
   }
 
   private parseNumber(value: unknown): number | null {
@@ -1384,4 +1632,41 @@ interface PaqueteDetalle {
   evento?: { nombre?: string };
   estado?: { nombre?: string };
   equipos?: AnyRecord[];
+}
+
+interface PedidoSnapshot {
+  pedido: {
+    nombrePedido: string;
+    observaciones: string;
+  };
+  eventos: PedidoEventoSnapshot[];
+  items: PedidoItemSnapshot[];
+}
+
+interface PedidoEventoSnapshot {
+  fecha: string;
+  hora: string;
+  ubicacion: string;
+  direccion: string;
+  notas: string;
+}
+
+interface PedidoItemSnapshot {
+  key: string;
+  idEventoServicio: number | null;
+  eventoId: number | null;
+  servicioId: number | null;
+  nombre: string;
+  descripcion: string;
+  precio: number;
+  cantidad: number;
+  descuento: number;
+  recargo: number;
+}
+
+interface PedidoChangeItem {
+  label: string;
+  before: string;
+  after: string;
+  level: 'weak' | 'strong';
 }

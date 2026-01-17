@@ -25,6 +25,7 @@ interface PedidoPaqueteSeleccionado {
   ID?: number;
   descripcion: string;
   precio: number;
+  cantidad?: number;
   notas: string;
 }
 
@@ -101,14 +102,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   selectedPaquetes: PedidoPaqueteSeleccionado[] = [];
   desID = 0;
   currentEventoKey: string | number | null = null;
-  selectedPaquetesColumns: TableColumn<PedidoPaqueteSeleccionado>[] = [
-    { key: 'descripcion', header: 'Descripción', sortable: false },
-    { key: 'precio', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' },
-    { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' },
-    { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-end text-nowrap', width: '140px' },
-    { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
-    { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
-  ];
+  selectedPaquetesColumns: TableColumn<PedidoPaqueteSeleccionado>[] = [];
 
   // ====== TAGS ======
   tagsPedido: Tag[] = [];
@@ -121,12 +115,10 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // ====== Ciclo de vida ======
   ngOnInit(): void {
+    this.resetFormState();
     this.getEventos();
     this.getServicio();
     this.getEventoxServicio();
-
-    this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(this.fechaCreate, '');
-    this.fechaValidate(this.fechaCreate);
 
     if (this.dniCliente) this.loadTagsCliente();
 
@@ -176,6 +168,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.resetFormState();
   }
 
   // ====== Helpers TAGS ======
@@ -676,8 +669,10 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       ID: this.parseNumberNullable(record['idEventoServicio']),
       descripcion: String(record['descripcion'] ?? ''),
       precio: Number(record['precio'] ?? 0),
+      cantidad: 1,
       notas: ''
     });
+    this.refreshSelectedPaquetesColumns();
   }
 
   removePaquete(key: string | number | null, eventoKey: string | number | null = this.currentEventoKey) {
@@ -685,7 +680,11 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   get totalSeleccion(): number {
-    return this.selectedPaquetes.reduce((sum, p) => sum + (+p.precio || 0), 0);
+    return this.selectedPaquetes.reduce((sum, p) => {
+      const precio = Number(p.precio) || 0;
+      const cantidad = Number(p.cantidad ?? 1) || 1;
+      return sum + (precio * cantidad);
+    }, 0);
   }
 
   // ====== Edición inline en tabla de ubicaciones ======
@@ -712,19 +711,49 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ====== Agregar / eliminar ubicaciones ======
+  private getDiasTrabajo(): number | null {
+    const raw = this.visualizarService.selectAgregarPedido?.dias;
+    const parsed = this.parseNumberNullable(raw);
+    return parsed != null && parsed >= 1 ? parsed : null;
+  }
+
+  isMultipleDias(): boolean {
+    const parsed = this.getDiasTrabajo();
+    return parsed != null && parsed > 1;
+  }
+
+  shouldShowFechaEvento(): boolean {
+    const parsed = this.getDiasTrabajo();
+    return parsed != null && parsed <= 1;
+  }
+
+  onDiasChange(value: unknown): void {
+    const parsed = this.parseNumberNullable(value);
+    this.visualizarService.selectAgregarPedido.dias = parsed != null ? Math.max(1, Math.floor(parsed)) : null;
+    if (!this.isMultipleDias()) {
+      this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
+    }
+    if (this.isMultipleDias()) {
+      this.visualizarService.selectAgregarPedido.fechaEvent = '';
+    }
+    this.refreshSelectedPaquetesColumns();
+  }
+
   get canAgregarEvento(): boolean {
+    const diasTrabajo = this.getDiasTrabajo();
     const f = this.visualizarService.selectAgregarPedido.fechaEvent;
     const h = this.visualizarService.selectAgregarPedido.horaEvent;
     const u = (this.Direccion || '').trim();
     const dx = (this.DireccionExacta || '').trim();
-    return !!(f && h && u && dx);
+    const requiereFecha = this.shouldShowFechaEvento();
+    return !!(diasTrabajo && (!requiereFecha || f) && h && u && dx);
   }
 
   onQuickAdd() {
     if (!this.canAgregarEvento) return;
     this.addListUbicacion(
       this.Direccion,
-      this.visualizarService.selectAgregarPedido.fechaEvent,
+      this.shouldShowFechaEvento() ? this.visualizarService.selectAgregarPedido.fechaEvent : '',
       this.visualizarService.selectAgregarPedido.horaEvent,
       this.DireccionExacta,
       this.NotasEvento
@@ -769,6 +798,66 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       this.dataSource.data = this.ubicacion; // ✅ no recrear
       this.bindSorts();
     }
+  }
+
+  onCantidadChange(paquete: PedidoPaqueteSeleccionado, value: unknown): void {
+    const parsed = this.parseNumberNullable(value);
+    paquete.cantidad = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+  }
+
+  private refreshSelectedPaquetesColumns(): void {
+    const base: TableColumn<PedidoPaqueteSeleccionado>[] = [
+      { key: 'descripcion', header: 'Descripción', sortable: false },
+      { key: 'precio', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' }
+    ];
+    if (this.isMultipleDias()) {
+      base.push({ key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' });
+    }
+    base.push(
+      { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-end text-nowrap', width: '140px' },
+      { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
+      { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
+    );
+    this.selectedPaquetesColumns = base;
+  }
+
+  private resetFormState(): void {
+    this.fechaCreate = new Date();
+    this.visualizarService.selectAgregarPedido = {
+      NombrePedido: '',
+      ExS: 0,
+      doc: '',
+      fechaCreate: formatDisplayDate(this.fechaCreate, ''),
+      fechaEvent: '',
+      horaEvent: '',
+      dias: null,
+      CodEmp: 0,
+      Direccion: '',
+      Observacion: ''
+    };
+    this.fechaValidate(this.fechaCreate);
+
+    this.Direccion = '';
+    this.DireccionExacta = '';
+    this.NotasEvento = '';
+
+    this.infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
+    this.dniCliente = '';
+    this.clienteSeleccionado = null;
+    this.clienteResultados = [];
+    this.clienteBusquedaTermino = '';
+    this.clienteSearchError = '';
+    this.clienteSearchLoading = false;
+    this.clienteSearchControl.setValue('', { emitEvent: false });
+
+    this.ubicacion = [{ ID: 0, Direccion: '', Fecha: '', Hora: '', DireccionExacta: '', Notas: '' }];
+    this.dataSource.data = this.ubicacion;
+
+    this.selectedPaquetes = [];
+    this.currentEventoKey = null;
+    this.tagsPedido = [];
+    this.tagsCliente = [];
+    this.refreshSelectedPaquetesColumns();
   }
 
   async deleteElement(p: string, c: string) {
@@ -818,6 +907,17 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       });
       return;
     }
+    const diasTrabajo = this.getDiasTrabajo();
+    if (diasTrabajo == null) {
+      Swal.fire({
+        text: 'Selecciona la cantidad de días del evento.',
+        icon: 'warning',
+        showCancelButton: false,
+        customClass: { confirmButton: 'btn btn-warning' },
+        buttonsStyling: false
+      });
+      return;
+    }
     // ====== Validaciones previas ======
     const primera = this.ubicacion.find(u => (u?.Direccion || '').trim());
     if (!primera) {
@@ -829,6 +929,23 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
         buttonsStyling: false
       });
       return;
+    }
+    if (diasTrabajo > 1) {
+      const fechasUnicas = new Set(
+        (this.ubicacion || [])
+          .map(u => String(u.Fecha || '').trim())
+          .filter(Boolean)
+      );
+      if (fechasUnicas.size < diasTrabajo) {
+        Swal.fire({
+          text: `Para ${diasTrabajo} días de trabajo debes registrar al menos ${diasTrabajo} fechas diferentes en las locaciones.`,
+          icon: 'warning',
+          showCancelButton: false,
+          customClass: { confirmButton: 'btn btn-warning' },
+          buttonsStyling: false
+        });
+        return;
+      }
     }
 
     if (!this.selectedPaquetes?.length) {
@@ -880,7 +997,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
         nombre: String(it.descripcion || '').trim(),
         descripcion: String(it.descripcion || '').trim(),
         precioUnit: Number(it.precio || 0),
-        cantidad: 1,
+        cantidad: Number(it.cantidad ?? 1),
         descuento: 0,
         recargo: 0,
         notas: String(it.notas || '').trim()

@@ -256,7 +256,35 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="quoteHoras">Duración estimada</label>
+            <label class="form-label" for="quoteDias">Cantidad de días</label>
+            <input
+              id="quoteDias"
+              type="number"
+              class="form-control"
+              formControlName="dias"
+              placeholder="Ej. 2"
+              required
+              min="1"
+              step="1"
+              inputmode="numeric"
+              [class.is-invalid]="quoteForm.get('dias')?.invalid && (quoteForm.get('dias')?.dirty || quoteForm.get('dias')?.touched)" />
+            @if (quoteForm.get('dias')?.invalid && (quoteForm.get('dias')?.dirty || quoteForm.get('dias')?.touched)) {
+              <div class="invalid-feedback d-block">
+                @if (quoteForm.get('dias')?.errors?.required) {
+                  <span>Indica cuántos días dura el evento</span>
+                }
+                @if (quoteForm.get('dias')?.errors?.pattern) {
+                  <span>Ingresa un número válido</span>
+                }
+                @if (quoteForm.get('dias')?.errors?.min) {
+                  <span>El mínimo es 1 día</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="quoteHoras">Horas estimadas por día</label>
             <input
               id="quoteHoras"
               type="number"
@@ -271,7 +299,7 @@
             @if (quoteForm.get('horas')?.invalid && (quoteForm.get('horas')?.dirty || quoteForm.get('horas')?.touched)) {
               <div class="invalid-feedback d-block">
                 @if (quoteForm.get('horas')?.errors?.required) {
-                  <span>Indica cuántas horas necesitas</span>
+                  <span>Indica cuántas horas por día necesitas</span>
                 }
                 @if (quoteForm.get('horas')?.errors?.horasFormato) {
                   <span>Ingresa un número válido (ej. 1, 1.5, 2)</span>

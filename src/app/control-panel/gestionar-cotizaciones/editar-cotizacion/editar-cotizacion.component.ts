@@ -131,6 +131,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
   readonly programacionMinimaRecomendada = 1;
+  readonly programacionMaxima = 6;
   readonly departamentos: string[] = [
     'Amazonas',
     'Ancash',
@@ -170,6 +171,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       clienteNombre: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(2)]],
       clienteContacto: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(6)]],
       fechaEvento: ['', [Validators.required, this.fechaEventoEnRangoValidator()]],
+      dias: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
       horasEstimadas: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
       departamento: ['', Validators.required],
       descripcion: [''],
@@ -189,6 +191,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         this.fechaEventoOriginal = iso ?? (typeof value === 'string' ? value : null);
         this.syncProgramacionFechas(value);
       });
+    this.form.get('dias')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(value => this.applyDiasRules(value));
   }
 
   ngOnDestroy(): void {
@@ -201,9 +206,15 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   addProgramacionItem(): void {
+    if (this.programacion.length >= this.programacionMaxima) {
+      this.showAlert('warning', 'Límite alcanzado', `Máximo ${this.programacionMaxima} locaciones.`);
+      return;
+    }
     const siguienteIndice = this.programacion.length + 1;
     const nombreAuto = `Locación ${siguienteIndice}`;
-    const fechaRef = this.form.get('fechaEvento')?.value ?? this.fechaEventoOriginal ?? '';
+    const fechaRef = this.isMultipleDias()
+      ? ''
+      : (this.form.get('fechaEvento')?.value ?? this.fechaEventoOriginal ?? '');
     this.programacion.push(this.createProgramacionItem({ nombre: nombreAuto, fecha: fechaRef, esPrincipal: siguienteIndice <= this.programacionMinimaRecomendada }));
     this.ensureProgramacionPrincipales();
     this.syncProgramacionFechas(fechaRef);
@@ -509,6 +520,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     );
   }
 
+  onCantidadChange(paquete: PaqueteSeleccionado, value: unknown): void {
+    const parsed = this.parseNumber(value);
+    paquete.cantidad = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+    this.syncTotalEstimado();
+  }
+
   getPrecioInputId(paquete: PaqueteSeleccionado): string {
     return this.getPrecioInputIdFromKey(paquete.key);
   }
@@ -564,15 +581,17 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotización de ${clienteNombre}` : 'Solicitud de cotización');
-    const fechaEvento = this.normalizeDateForPayload(raw.fechaEvento) ??
+    const fechaEventoBase = this.normalizeDateForPayload(raw.fechaEvento) ??
       this.normalizeDateForPayload(this.fechaEventoOriginal);
-    if (!fechaEvento) {
+    if (!fechaEventoBase && !this.isMultipleDias()) {
       this.showAlert('error', 'Fecha inválida', 'No pudimos interpretar la fecha del evento.');
       return;
     }
     const departamento = (raw.departamento ?? '').toString().trim();
     const clienteId = rawContexto?.clienteId;
     const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas ?? rawContexto?.horasEstimadasTexto);
+    const diasTexto = (raw.dias ?? '').toString().trim();
+    const diasNumero = this.parseNumber(diasTexto);
 
     const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map((item) => {
       const notas = (item.notas ?? '').toString().trim();
@@ -606,7 +625,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const eventos: CotizacionAdminEventoPayload[] = programacionRaw
       .filter(config => this.hasProgramacionContent(config))
       .map(config => {
-        const fechaNormalizada = this.normalizeProgramacionFecha(config.fecha) ?? fechaEvento;
+        const fechaNormalizada = this.normalizeProgramacionFecha(config.fecha) ?? fechaEventoBase;
         const horaBase = this.normalizeProgramacionHora(config.hora);
         const horaSalida = horaBase
           ? (/^\d{2}:\d{2}$/.test(horaBase) ? `${horaBase}:00` : horaBase)
@@ -622,13 +641,32 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           notas: notasTexto ? notasTexto : null
         } as CotizacionAdminEventoPayload;
       });
+    if (diasNumero != null && diasNumero > 1) {
+      const fechasUnicas = new Set(
+        programacionRaw
+          .map(config => (config.fecha ?? '').toString().trim())
+          .filter(Boolean)
+      );
+      if (fechasUnicas.size < diasNumero) {
+        this.showAlert(
+          'warning',
+          'Fechas insuficientes',
+          `Para ${diasNumero} días de trabajo debes registrar al menos ${diasNumero} fechas diferentes en las locaciones.`
+        );
+        return;
+      }
+    }
+    const fechaEvento = this.isMultipleDias()
+      ? (eventos.find(ev => ev.fecha)?.fecha ?? undefined)
+      : fechaEventoBase;
 
     const payload: CotizacionAdminUpdatePayload = {
       cotizacion: {
         idTipoEvento: eventoSeleccionadoId ?? undefined,
         tipoEvento: this.selectedEventoNombre || rawContexto?.eventoNombre || rawDetalle?.tipoEvento || this.selectedServicioNombre,
-        fechaEvento,
+        fechaEvento: fechaEvento ?? undefined,
         lugar: departamento || rawDetalle?.lugar,
+        dias: diasNumero ?? undefined,
         horasEstimadas: horasEstimadasNumero ?? undefined,
         mensaje: descripcion,
         estado: rawDetalle?.estado ?? this.cotizacion?.estado ?? 'Borrador'
@@ -765,6 +803,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       clienteNombre: nombre,
       clienteContacto: contacto,
       fechaEvento: fechaEventoIso,
+      dias: this.parseNumber(detalle?.dias ?? (cotizacion as unknown as AnyRecord)['dias'] ?? '') ?? '',
       horasEstimadas: horasTexto,
       departamento,
       descripcion: detalle?.mensaje ?? cotizacion.notas ?? '',
@@ -833,6 +872,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.programacion.markAsUntouched();
     this.form.markAsPristine();
     this.form.markAsUntouched();
+    this.applyDiasRules(this.form.get('dias')?.value);
     this.initialSnapshot = this.buildSnapshot();
   }
 
@@ -999,10 +1039,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private createProgramacionItem(config: ProgramacionEventoItem): UntypedFormGroup {
     const hora24 = this.normalizeHora24(config.hora ?? '');
     const horaParts = this.splitHoraTo12(hora24);
+    const multiple = this.isMultipleDias();
     const grupo = this.fb.group({
       nombre: [config.nombre ?? '', Validators.required],
       direccion: [config.direccion ?? '', Validators.required],
-      fecha: [{ value: config.fecha ?? '', disabled: true }],
+      fecha: [{ value: config.fecha ?? '', disabled: !multiple },
+        multiple ? [Validators.required, this.fechaEventoEnRangoValidator()] : []],
       hora: [hora24, [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/), this.horaRangoValidator()]],
       hora12: [horaParts.hora12, Validators.required],
       minuto: [horaParts.minuto, Validators.required],
@@ -1109,6 +1151,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private syncProgramacionFechas(fecha?: string | null): void {
+    if (this.isMultipleDias()) {
+      return;
+    }
     const referencia = this.normalizeProgramacionFecha(
       fecha ??
       this.form.get('fechaEvento')?.value ??
@@ -1127,6 +1172,66 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         fechaControl.disable({ emitEvent: false });
       }
     });
+  }
+
+  isMultipleDias(): boolean {
+    const value = this.form.get('dias')?.value;
+    const parsed = this.parseNumber(value);
+    return parsed != null && parsed > 1;
+  }
+
+  shouldShowFechaEvento(): boolean {
+    const value = this.form.get('dias')?.value;
+    const parsed = this.parseNumber(value);
+    return parsed != null && parsed <= 1;
+  }
+
+  private applyDiasRules(value: unknown): void {
+    const parsed = this.parseNumber(value);
+    const multiple = parsed != null && parsed > 1;
+    const fechaControl = this.form.get('fechaEvento');
+    const horasControl = this.form.get('horasEstimadas');
+    if (fechaControl) {
+      if (multiple) {
+        fechaControl.clearValidators();
+      } else {
+        fechaControl.setValidators([Validators.required, this.fechaEventoEnRangoValidator()]);
+      }
+      fechaControl.updateValueAndValidity({ emitEvent: false });
+    }
+    if (horasControl) {
+      const diasValidos = parsed != null && parsed >= 1;
+      if (diasValidos && horasControl.disabled) {
+        horasControl.enable({ emitEvent: false });
+      }
+      if (!diasValidos && horasControl.enabled) {
+        horasControl.reset('', { emitEvent: false });
+        horasControl.disable({ emitEvent: false });
+      }
+      horasControl.updateValueAndValidity({ emitEvent: false });
+    }
+    this.programacion.controls.forEach(control => {
+      const grupo = control as UntypedFormGroup;
+      const fechaProg = grupo.get('fecha');
+      if (!fechaProg) return;
+      if (multiple) {
+        if (fechaProg.disabled) {
+          fechaProg.enable({ emitEvent: false });
+        }
+        fechaProg.setValidators([Validators.required, this.fechaEventoEnRangoValidator()]);
+      } else {
+        fechaProg.clearValidators();
+        this.syncProgramacionFechas();
+      }
+      fechaProg.updateValueAndValidity({ emitEvent: false });
+    });
+
+    if (!multiple && this.selectedPaquetes.some(item => (item.cantidad ?? 1) !== 1)) {
+      this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
+      this.syncTotalEstimado();
+    }
+
+    this.refreshSelectedPaquetesColumns();
   }
 
   private normalizeProgramacionFecha(valor: unknown): string | undefined {
@@ -1512,9 +1617,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private refreshSelectedPaquetesColumns(): void {
     const base: TableColumn<PaqueteSeleccionado>[] = [
       { key: 'titulo', header: 'Título', sortable: false },
-      // { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '110px' },
       { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-center', width: '140px' }
     ];
+
+    if (this.isMultipleDias()) {
+      base.splice(1, 0, { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' });
+    }
 
     if (this.shouldShowPrecioOriginal()) {
       base.push({ key: 'precioOriginal', header: 'Original', sortable: false, class: 'text-center', width: '140px' });

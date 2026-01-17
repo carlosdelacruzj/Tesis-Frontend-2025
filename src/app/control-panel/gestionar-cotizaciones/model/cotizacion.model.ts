@@ -65,6 +65,7 @@ export interface CotizacionDetallePayload {
   tipoEvento?: string;
   fechaEvento: string;
   lugar?: string;
+  dias?: number;
   horasEstimadas?: number;
   mensaje?: string;
   estado?: string;
@@ -87,6 +88,7 @@ export interface CotizacionApiResponse {
   fechaEvento?: string | null;
   fecha_evento?: string | null;
   lugar?: string | null;
+  dias?: string | number | null;
   horasEstimadas?: string | number | null;
   horas_estimadas?: string | number | null;
   mensaje?: string | null;
@@ -199,6 +201,7 @@ export interface CotizacionAdminBasePayload {
     tipoEvento?: string;
     fechaEvento?: string;
     lugar?: string;
+    dias?: number | null;
     horasEstimadas?: number | null;
     mensaje?: string;
     estado?: string;

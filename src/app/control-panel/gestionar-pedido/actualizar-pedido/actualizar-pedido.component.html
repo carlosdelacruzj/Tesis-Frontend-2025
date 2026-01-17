@@ -43,31 +43,41 @@
             </div>
 
             <div class="row g-3">
-              <div class="col-sm-6">
+              <div [ngClass]="shouldShowFechaEvento() ? 'col-md-6' : 'col-md-12'">
                 <div class="form-group">
-                  <label class="col-form-label" for="fechaEvent">Fecha del evento</label>
-                  <input id="fechaEvent" type="date" class="form-control"
-                    [min]="fechaMinimaEvento" [max]="fechaMaximaEvento"
-                    name="fechaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent"
-                    #fechaEvent="ngModel"
-                    [class.is-invalid]="!!getFechaEventoError() && fechaEvent.touched"
-                    required>
-                  @if (getFechaEventoError() && fechaEvent.touched) {
-                    @if (getFechaEventoError() === 'required') {
-                      <small class="text-danger">Selecciona una fecha.</small>
-                    }
-                    @if (getFechaEventoError() === 'fechaEventoAnterior') {
-                      <small class="text-danger">La fecha debe ser al menos un día después de hoy.</small>
-                    }
-                    @if (getFechaEventoError() === 'fechaEventoPosterior') {
-                      <small class="text-danger">La fecha no puede superar los 6 meses desde hoy.</small>
-                    }
-                    @if (getFechaEventoError() === 'fechaEventoInvalida') {
-                      <small class="text-danger">Selecciona una fecha válida.</small>
-                    }
-                  }
+                  <label class="col-form-label" for="diasTrabajo">Cantidad de días</label>
+                  <input id="diasTrabajo" type="number" class="form-control" name="diasTrabajo"
+                    [(ngModel)]="visualizarService.selectAgregarPedido.dias"
+                    (ngModelChange)="onDiasChange($event)" min="1" step="1" inputmode="numeric" required>
                 </div>
               </div>
+              @if (shouldShowFechaEvento()) {
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label" for="fechaEvent">Fecha del evento</label>
+                    <input id="fechaEvent" type="date" class="form-control"
+                      [min]="fechaMinimaEvento" [max]="fechaMaximaEvento"
+                      name="fechaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent"
+                      #fechaEvent="ngModel"
+                      [class.is-invalid]="!!getFechaEventoError() && fechaEvent.touched"
+                      required>
+                    @if (getFechaEventoError() && fechaEvent.touched) {
+                      @if (getFechaEventoError() === 'required') {
+                        <small class="text-danger">Selecciona una fecha.</small>
+                      }
+                      @if (getFechaEventoError() === 'fechaEventoAnterior') {
+                        <small class="text-danger">La fecha debe ser al menos un día después de hoy.</small>
+                      }
+                      @if (getFechaEventoError() === 'fechaEventoPosterior') {
+                        <small class="text-danger">La fecha no puede superar los 6 meses desde hoy.</small>
+                      }
+                      @if (getFechaEventoError() === 'fechaEventoInvalida') {
+                        <small class="text-danger">Selecciona una fecha válida.</small>
+                      }
+                    }
+                  </div>
+                </div>
+              }
             </div>
           </mat-card-content>
         </mat-card>
@@ -119,7 +129,8 @@
                       <div class="form-group">
                         <label class="col-form-label" [attr.for]="'programacionFecha' + $index">Fecha</label>
                         <input [attr.id]="'programacionFecha' + $index" type="date" class="form-control"
-                          [(ngModel)]="item.Fecha" [ngModelOptions]="{standalone:true}">
+                          [(ngModel)]="item.Fecha" [ngModelOptions]="{standalone:true}"
+                          [min]="fechaMinimaEvento" [max]="fechaMaximaEvento">
                       </div>
                     </div>
                     <div class="col-sm-6 col-md-3">
@@ -177,7 +188,7 @@
 
             <div class="text-end mt-3">
               <button type="button" class="btn btn-outline-primary btn-sm" (click)="onQuickAdd()"
-                [disabled]="!canAgregarEvento">
+                [disabled]="!canAgregarEvento || ubicacion.length >= programacionMaxima">
                 Agregar locación
               </button>
             </div>
@@ -310,7 +321,11 @@
                     </ng-template>
 
                     <ng-template appCell="cantidad" let-row>
-                      <div class="text-center">{{ row.cantidad }}</div>
+                      <div class="text-center">
+                        <input type="number" class="form-control form-control-sm text-center"
+                          [value]="row.cantidad || 1" min="1" step="1" inputmode="numeric"
+                          (input)="onCantidadChange(row, $any($event.target).value)">
+                      </div>
                     </ng-template>
 
                     <ng-template appCell="precioUnit" let-row>

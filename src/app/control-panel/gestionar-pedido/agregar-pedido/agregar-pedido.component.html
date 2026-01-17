@@ -133,15 +133,25 @@
                 </mat-card-header>
 
                 <mat-card-content class="card-body">
-                    <div class="row">
-                        <div class="col ms-auto">
+                    <div class="row g-3">
+                        <div [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'">
+                            <div class="form-group">
+                                <label class="col-form-label" for="diasTrabajo">Cantidad de días</label>
+                                <input id="diasTrabajo" type="number" class="form-control" name="diasTrabajo"
+                                    [(ngModel)]="visualizarService.selectAgregarPedido.dias"
+                                    (ngModelChange)="onDiasChange($event)" min="1" step="1" inputmode="numeric"
+                                    required>
+                            </div>
+                        </div>
+                        <div [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'">
                             <div class="form-group">
                                 <label class="col-form-label" for="horaEvent">Hora</label>
                                 <input id="horaEvent" type="time" class="form-control" name="horaEvent"
                                     [(ngModel)]="visualizarService.selectAgregarPedido.horaEvent" required>
                             </div>
                         </div>
-                        <div class="col ms-auto">
+                        @if (shouldShowFechaEvento()) {
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label class="col-form-label" for="fechaEvent">Fecha</label>
                                 <!-- #3: usar bindings para min/max -->
@@ -150,6 +160,7 @@
                                     required>
                             </div>
                         </div>
+                        }
                     </div>
 
                     <div class="row">
@@ -230,7 +241,8 @@
                                         {{ formatProgramDate(element.Fecha) }} ({{ weekdayPeru(element.Fecha) }})
                                     } @else {
                                         <input type="date" class="form-control form-control-sm"
-                                            [(ngModel)]="element.Fecha" [ngModelOptions]="{standalone:true}" required>
+                                            [(ngModel)]="element.Fecha" [ngModelOptions]="{standalone:true}"
+                                            [min]="minimo" [max]="maximo" required>
                                         @if (!element.Fecha) {
                                             <small class="text-danger">Requerido</small>
                                         }
@@ -437,12 +449,16 @@
                                     <div class="text-end">{{ row.precio | usd:'1.2-2' }}</div>
                                 </ng-template>
 
-                                <ng-template appCell="cantidad">
-                                    <div class="text-center">1</div>
+                                <ng-template appCell="cantidad" let-row>
+                                    <div class="text-center">
+                                        <input type="number" class="form-control form-control-sm text-center"
+                                            [value]="row.cantidad || 1" min="1" step="1" inputmode="numeric"
+                                            (input)="onCantidadChange(row, $any($event.target).value)">
+                                    </div>
                                 </ng-template>
 
                                 <ng-template appCell="subtotal" let-row>
-                                    <div class="text-end">{{ row.precio | usd:'1.2-2' }}</div>
+                                    <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | usd:'1.2-2' }}</div>
                                 </ng-template>
 
                                 <ng-template appCell="notas" let-row>

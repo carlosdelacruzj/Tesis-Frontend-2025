@@ -337,7 +337,8 @@ export class LandingComponent implements OnInit, OnDestroy {
     fechaEvento: [null, [Validators.required, this.fechaEventoEnRangoValidator()]],
     departamento: ['', Validators.required],
     mensaje: [''],
-    horas: ['', [Validators.required, this.horasValidator.bind(this)]],
+    dias: [null, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
+    horas: [{ value: '', disabled: true }, [Validators.required, this.horasValidator.bind(this)]],
     invitados: [''],
     presupuesto: [50],
     extras: this.fb.group({
@@ -407,6 +408,9 @@ export class LandingComponent implements OnInit, OnDestroy {
           setTimeout(() => this.scrollToSection(fragment), 0);
         }
       });
+    this.quoteForm.get('dias')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(value => this.syncHorasControl(value));
   }
 
   get filteredPortfolio(): PortfolioItem[] {
@@ -575,6 +579,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       fechaEvento: null,
       departamento: '',
       mensaje: '',
+      dias: null,
       horas: null,
       invitados: '',
       presupuesto: 50,
@@ -594,6 +599,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       this.quoteForm.reset(defaultValue);
     }
 
+    this.syncHorasControl(this.quoteForm.get('dias')?.value ?? null);
     this.markControlPristine(this.quoteForm);
     this.quoteStarted = false;
   }
@@ -640,6 +646,22 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
 
     return null;
+  }
+
+  private syncHorasControl(value: unknown): void {
+    const control = this.quoteForm.get('horas');
+    if (!control) {
+      return;
+    }
+    const parsed = Number(value);
+    const valido = Number.isFinite(parsed) && parsed >= 1;
+    if (valido && control.disabled) {
+      control.enable({ emitEvent: false });
+    }
+    if (!valido && control.enabled) {
+      control.reset('', { emitEvent: false });
+      control.disable({ emitEvent: false });
+    }
   }
 
   private fechaEventoEnRangoValidator(): (control: AbstractControl) => ValidationErrors | null {
@@ -716,6 +738,10 @@ export class LandingComponent implements OnInit, OnDestroy {
     const celular = this.composePhoneNumber(value.whatsappNumero);
     const fechaEvento = this.formatDate(value.fechaEvento as DateInput) ?? new Date().toISOString().slice(0, 10);
 
+    const diasTexto = String(value.dias ?? '').trim();
+    const diasNumber = diasTexto ? Number(diasTexto) : null;
+    const diasEvento = Number.isFinite(diasNumber) ? diasNumber : null;
+
     const horasTexto = String(value.horas ?? '').trim();
     const horasNormalizadas = horasTexto.replace(/[^0-9.,]/g, '').replace(/,/g, '.');
     const horasNumber = horasNormalizadas ? Number(horasNormalizadas) : null;
@@ -750,6 +776,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         tipoEvento,
         fechaEvento,
         lugar,
+        diasEvento,
         horasEstimadas,
         mensaje: String(value.mensaje ?? '').trim() || undefined
       }

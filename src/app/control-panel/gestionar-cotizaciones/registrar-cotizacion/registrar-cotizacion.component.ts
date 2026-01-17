@@ -125,6 +125,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     'Ucayali'
   ];
   readonly programacionMinimaRecomendada = 1;
+  readonly programacionMaxima = 6;
   clienteSearchControl = new UntypedFormControl('');
   clienteResultados: ClienteBusquedaResultado[] = [];
   clienteSearchLoading = false;
@@ -170,8 +171,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       clienteNombre: ['', [Validators.required, Validators.minLength(2)]],
       clienteContacto: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
       fechaEvento: [RegistrarCotizacionComponent.computeFechaMinimaEvento(), [Validators.required, this.fechaEventoEnRangoValidator()]],
+      dias: [null, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
       departamento: ['Lima', Validators.required],
-      horasEstimadas: [6, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
+      horasEstimadas: [{ value: '', disabled: true }, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
       descripcion: [''],
       totalEstimado: [0, Validators.min(0)],
       programacion: this.fb.array([])
@@ -179,6 +181,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.resetFormState();
     this.loadCatalogos();
     this.initClienteBusqueda();
     this.refreshSelectedPaquetesColumns();
@@ -186,11 +189,16 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.form.get('fechaEvento')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(fecha => this.syncProgramacionFechas(fecha));
+    this.form.get('dias')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(value => this.applyDiasRules(value));
+    this.applyDiasRules(this.form.get('dias')?.value);
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.resetFormState();
   }
 
   get programacion(): UntypedFormArray {
@@ -198,11 +206,16 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   addProgramacionItem(): void {
+    if (this.programacion.length >= this.programacionMaxima) {
+      this.showAlert('warning', 'Límite alcanzado', `Máximo ${this.programacionMaxima} locaciones.`);
+      return;
+    }
     const siguienteIndice = this.programacion.length + 1;
     const nombreAuto = `Locación ${siguienteIndice}`;
+    const fechaConfig = this.isMultipleDias() ? '' : (this.form.get('fechaEvento')?.value ?? '');
     this.programacion.push(this.createProgramacionItem({
       nombre: nombreAuto,
-      fecha: this.form.get('fechaEvento')?.value ?? ''
+      fecha: fechaConfig
     }));
     this.ensureProgramacionPrincipales();
     this.syncProgramacionFechas();
@@ -632,6 +645,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     );
   }
 
+  onCantidadChange(paquete: PaqueteSeleccionado, value: unknown): void {
+    const parsed = this.parseNumber(value);
+    paquete.cantidad = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+    this.syncTotalEstimado();
+  }
+
   getPrecioInputId(paquete: PaqueteSeleccionado): string {
     return this.getPrecioInputIdFromKey(paquete.key);
   }
@@ -681,16 +700,18 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const raw = this.form.getRawValue();
     const clienteNombre = (raw.clienteNombre ?? '').toString().trim();
     const clienteContacto = this.sanitizeContacto((raw.clienteContacto ?? '').toString());
-    const fechaEvento = raw.fechaEvento;
+    const fechaEventoForm = raw.fechaEvento;
     const departamento = (raw.departamento ?? '').toString().trim();
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
+    const diasTexto = (raw.dias ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotizacion de ${clienteNombre}` : 'Solicitud de cotizacion');
     const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas);
+    const diasNumero = this.parseNumber(diasTexto);
     const programacionRaw = this.programacion.getRawValue() as Record<string, unknown>[];
     const eventos: CotizacionAdminEventoPayload[] = programacionRaw
       .map((config) => {
-        const fecha = ((config['fecha'] ?? fechaEvento) || '').toString().trim();
+        const fecha = ((config['fecha'] ?? fechaEventoForm) || '').toString().trim();
         const hora = (config['hora'] ?? '').toString().trim();
         const ubicacion = (config['nombre'] ?? '').toString().trim();
         const direccion = (config['direccion'] ?? '').toString().trim();
@@ -711,6 +732,24 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         return evento;
       })
       .filter((evento): evento is CotizacionAdminEventoPayload => evento != null);
+    if (diasNumero != null && diasNumero > 1) {
+      const fechasUnicas = new Set(
+        programacionRaw
+          .map((config) => (config['fecha'] ?? '').toString().trim())
+          .filter(Boolean)
+      );
+      if (fechasUnicas.size < diasNumero) {
+        this.showAlert(
+          'warning',
+          'Fechas insuficientes',
+          `Para ${diasNumero} días de trabajo debes registrar al menos ${diasNumero} fechas diferentes en las locaciones.`
+        );
+        return;
+      }
+    }
+    const fechaEvento = this.isMultipleDias()
+      ? (eventos.find(ev => ev.fecha)?.fecha ?? '')
+      : fechaEventoForm;
 
     const clienteIdSeleccionado = this.parseNumber(this.clienteSeleccionado?.id);
     const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map((item) => {
@@ -749,6 +788,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         tipoEvento: this.selectedEventoNombre || this.selectedServicioNombre || 'Evento',
         fechaEvento,
         lugar: departamento || undefined,
+        dias: diasNumero ?? undefined,
         horasEstimadas: horasEstimadasNumero ?? undefined,
         mensaje: descripcion,
         estado: 'Borrador'
@@ -794,6 +834,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private syncProgramacionFechas(fecha?: string | null): void {
+    if (this.isMultipleDias()) {
+      return;
+    }
     const fechaReferencia = fecha ?? this.form.get('fechaEvento')?.value ?? '';
     this.programacion.controls.forEach(control => {
       const grupo = control as UntypedFormGroup;
@@ -811,10 +854,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   private createProgramacionItem(config: ProgramacionEventoItemConfig = {}): UntypedFormGroup {
     const hora24 = this.normalizeHora24(config.hora ?? '');
     const horaParts = this.splitHoraTo12(hora24);
+    const multiple = this.isMultipleDias();
     const grupo = this.fb.group({
       nombre: [config.nombre ?? '', Validators.required],
       direccion: [config.direccion ?? '', Validators.required],
-      fecha: [{ value: config.fecha ?? '', disabled: true }],
+      fecha: [{ value: config.fecha ?? '', disabled: !multiple },
+        multiple ? [Validators.required, this.fechaEventoEnRangoValidator()] : []],
       hora: [hora24, [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/), this.horaRangoValidator()]],
       hora12: [horaParts.hora12, Validators.required],
       minuto: [horaParts.minuto, Validators.required],
@@ -842,6 +887,71 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     });
 
     updateHora();
+  }
+
+  isMultipleDias(): boolean {
+    const value = this.form.get('dias')?.value;
+    const parsed = this.parseNumber(value);
+    return parsed != null && parsed > 1;
+  }
+
+  shouldShowFechaEvento(): boolean {
+    const value = this.form.get('dias')?.value;
+    const parsed = this.parseNumber(value);
+    return parsed != null && parsed <= 1;
+  }
+
+  private applyDiasRules(value: unknown): void {
+    const parsed = this.parseNumber(value);
+    const multiple = parsed != null && parsed > 1;
+    const fechaControl = this.form.get('fechaEvento');
+    const horasControl = this.form.get('horasEstimadas');
+    if (fechaControl) {
+      if (multiple) {
+        fechaControl.clearValidators();
+        fechaControl.setValue(null, { emitEvent: false });
+      } else {
+        fechaControl.setValidators([Validators.required, this.fechaEventoEnRangoValidator()]);
+        if (!fechaControl.value) {
+          fechaControl.setValue(RegistrarCotizacionComponent.computeFechaMinimaEvento(), { emitEvent: false });
+        }
+      }
+      fechaControl.updateValueAndValidity({ emitEvent: false });
+    }
+    if (horasControl) {
+      const diasValidos = parsed != null && parsed >= 1;
+      if (diasValidos && horasControl.disabled) {
+        horasControl.enable({ emitEvent: false });
+      }
+      if (!diasValidos && horasControl.enabled) {
+        horasControl.reset('', { emitEvent: false });
+        horasControl.disable({ emitEvent: false });
+      }
+      horasControl.updateValueAndValidity({ emitEvent: false });
+    }
+
+    this.programacion.controls.forEach(control => {
+      const grupo = control as UntypedFormGroup;
+      const fechaProg = grupo.get('fecha');
+      if (!fechaProg) return;
+      if (multiple) {
+        if (fechaProg.disabled) {
+          fechaProg.enable({ emitEvent: false });
+        }
+        fechaProg.setValidators([Validators.required, this.fechaEventoEnRangoValidator()]);
+      } else {
+        fechaProg.clearValidators();
+        this.syncProgramacionFechas();
+      }
+      fechaProg.updateValueAndValidity({ emitEvent: false });
+    });
+
+    if (!multiple && this.selectedPaquetes.some(item => (item.cantidad ?? 1) !== 1)) {
+      this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
+      this.syncTotalEstimado();
+    }
+
+    this.refreshSelectedPaquetesColumns();
   }
 
   private normalizeHora24(value: string): string {
@@ -1282,9 +1392,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   private refreshSelectedPaquetesColumns(): void {
     const base: TableColumn<PaqueteSeleccionado>[] = [
       { key: 'titulo', header: 'Título', sortable: false },
-      // { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '110px' },
       { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-center', width: '140px' }
     ];
+
+    if (this.isMultipleDias()) {
+      base.splice(1, 0, { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' });
+    }
 
     if (this.shouldShowPrecioOriginal()) {
       base.push({ key: 'precioOriginal', header: 'Original', sortable: false, class: 'text-center', width: '140px' });
@@ -1299,5 +1412,39 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     );
 
     this.selectedPaquetesColumns = base;
+  }
+
+  private resetFormState(): void {
+    this.form.reset({
+      clienteNombre: '',
+      clienteContacto: '',
+      fechaEvento: RegistrarCotizacionComponent.computeFechaMinimaEvento(),
+      dias: null,
+      departamento: 'Lima',
+      horasEstimadas: '',
+      descripcion: '',
+      totalEstimado: 0
+    }, { emitEvent: false });
+
+    const horasControl = this.form.get('horasEstimadas');
+    if (horasControl) {
+      horasControl.disable({ emitEvent: false });
+    }
+
+    while (this.programacion.length) {
+      this.programacion.removeAt(0);
+    }
+
+    this.selectedPaquetes = [];
+    this.paquetesRows = [];
+    this.selectedEventoId = null;
+    this.selectedEventoNombre = '';
+    this.selectedServicioId = null;
+    this.selectedServicioNombre = '';
+    this.clienteSeleccionado = null;
+    this.clienteResultados = [];
+    this.clienteBusquedaTermino = '';
+    this.eventoSelectTouched = false;
+    this.syncTotalEstimado();
   }
 }

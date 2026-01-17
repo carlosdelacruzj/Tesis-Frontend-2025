@@ -43,45 +43,70 @@
           </mat-card-header>
           <mat-card-content>
             <div class="row g-3">
-              <div class="col-sm-6">
+              <div [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'">
                 <div class="form-group">
-                  <label class="col-form-label" for="fechaEvento">Fecha del evento</label>
-                  <input id="fechaEvento" type="date" class="form-control" formControlName="fechaEvento"
-                    [min]="fechaMinimaEvento"
-                    [max]="fechaMaximaEvento"
-                    [class.is-invalid]="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
-                  @if (form.get('fechaEvento')?.hasError('required') && form.get('fechaEvento')?.touched) {
+                  <label class="col-form-label" for="diasEvento">Cantidad de días</label>
+                  <input id="diasEvento" type="number" class="form-control" formControlName="dias"
+                    placeholder="Ej. 2" min="1" step="1" inputmode="numeric"
+                    [class.is-invalid]="form.get('dias')?.invalid && form.get('dias')?.touched">
+                  @if (form.get('dias')?.hasError('required') && form.get('dias')?.touched) {
                     <small class="text-danger">
-                      Selecciona una fecha.
+                      Ingresa la cantidad de días.
                     </small>
                   }
-                  @if (form.get('fechaEvento')?.hasError('fechaEventoAnterior') && form.get('fechaEvento')?.touched) {
+                  @if (form.get('dias')?.hasError('pattern') && form.get('dias')?.touched) {
                     <small class="text-danger">
-                      La fecha debe ser al menos un día después de hoy.
+                      Usa solo números enteros.
                     </small>
                   }
-                  @if (form.get('fechaEvento')?.hasError('fechaEventoPosterior') && form.get('fechaEvento')?.touched) {
+                  @if (form.get('dias')?.hasError('min') && form.get('dias')?.touched) {
                     <small class="text-danger">
-                      La fecha no puede superar los 6 meses desde hoy.
-                    </small>
-                  }
-                  @if (form.get('fechaEvento')?.hasError('fechaEventoInvalida') && form.get('fechaEvento')?.touched) {
-                    <small class="text-danger">
-                      Selecciona una fecha válida.
+                      Ingresa un número mayor a 0.
                     </small>
                   }
                 </div>
               </div>
-              <div class="col-sm-6">
+              @if (shouldShowFechaEvento()) {
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label class="col-form-label" for="fechaEvento">Fecha del evento</label>
+                    <input id="fechaEvento" type="date" class="form-control" formControlName="fechaEvento"
+                      [min]="fechaMinimaEvento"
+                      [max]="fechaMaximaEvento"
+                      [class.is-invalid]="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
+                    @if (form.get('fechaEvento')?.hasError('required') && form.get('fechaEvento')?.touched) {
+                      <small class="text-danger">
+                        Selecciona una fecha.
+                      </small>
+                    }
+                    @if (form.get('fechaEvento')?.hasError('fechaEventoAnterior') && form.get('fechaEvento')?.touched) {
+                      <small class="text-danger">
+                        La fecha debe ser al menos un día después de hoy.
+                      </small>
+                    }
+                    @if (form.get('fechaEvento')?.hasError('fechaEventoPosterior') && form.get('fechaEvento')?.touched) {
+                      <small class="text-danger">
+                        La fecha no puede superar los 6 meses desde hoy.
+                      </small>
+                    }
+                    @if (form.get('fechaEvento')?.hasError('fechaEventoInvalida') && form.get('fechaEvento')?.touched) {
+                      <small class="text-danger">
+                        Selecciona una fecha válida.
+                      </small>
+                    }
+                  </div>
+                </div>
+              }
+              <div [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'">
                 <div class="form-group">
-                  <label class="col-form-label" for="horasEstimadas">Horas estimadas</label>
+                  <label class="col-form-label" for="horasEstimadas">Horas estimadas por día</label>
                   <input id="horasEstimadas" type="number" class="form-control" formControlName="horasEstimadas"
                     placeholder="Ej. 6" min="1"
                     step="1" inputmode="numeric"
                     [class.is-invalid]="form.get('horasEstimadas')?.invalid && form.get('horasEstimadas')?.touched">
                   @if (form.get('horasEstimadas')?.hasError('required') && form.get('horasEstimadas')?.touched) {
                     <small class="text-danger">
-                      Ingresa las horas estimadas.
+                      Ingresa las horas estimadas por día.
                     </small>
                   }
                   @if (form.get('horasEstimadas')?.hasError('pattern') && form.get('horasEstimadas')?.touched) {
@@ -201,7 +226,14 @@
                   <div class="form-group">
                     <label class="col-form-label" [attr.for]="'programacionFecha' + $index">Fecha</label>
                     <input [attr.id]="'programacionFecha' + $index" type="date" class="form-control"
-                      formControlName="fecha">
+                      formControlName="fecha"
+                      [min]="fechaMinimaEvento" [max]="fechaMaximaEvento"
+                      [class.is-invalid]="grupo.get('fecha')?.invalid && grupo.get('fecha')?.touched">
+                    @if (grupo.get('fecha')?.invalid && grupo.get('fecha')?.touched) {
+                      <small class="text-danger">
+                        Selecciona una fecha válida.
+                      </small>
+                    }
                   </div>
                 </div>
                 <div class="col-sm-6 col-md-3">
@@ -260,7 +292,8 @@
         </div>
 
         <div class="text-end mt-3">
-          <button type="button" class="btn btn-outline-primary btn-sm" (click)="addProgramacionItem()">
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="addProgramacionItem()"
+            [disabled]="programacion.length >= programacionMaxima">
             Agregar locación
           </button>
         </div>
@@ -371,7 +404,11 @@
               </ng-template>
 
               <ng-template appCell="cantidad" let-row>
-                <div class="text-center">{{ row.cantidad }}</div>
+                <div class="text-center">
+                  <input type="number" class="form-control form-control-sm text-center"
+                    [value]="row.cantidad || 1" min="1" step="1" inputmode="numeric"
+                    (input)="onCantidadChange(row, $any($event.target).value)">
+                </div>
               </ng-template>
 
               <ng-template appCell="precioUnit" let-row>

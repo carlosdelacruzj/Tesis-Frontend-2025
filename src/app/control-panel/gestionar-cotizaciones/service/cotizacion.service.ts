@@ -480,6 +480,7 @@ downloadPdf(
       tipoEvento: detalleInput.tipoEvento ?? contexto.eventoNombre ?? contexto.servicioNombre ?? contacto.origen ?? undefined,
       fechaEvento,
       lugar: detalleInput.lugar ?? undefined,
+      dias: detalleInput.dias ?? undefined,
       horasEstimadas: horasEstimadas ?? undefined,
       mensaje: detalleInput.mensaje ?? undefined,
       estado: detalleInput.estado ?? undefined,
@@ -785,6 +786,13 @@ downloadPdf(
       ? horasRaw
       : (horasNumero != null ? `${horasNumero}` : undefined);
 
+    const diasRaw = detalleApi?.dias
+      ?? api.dias
+      ?? undefined;
+    const diasNumero = typeof diasRaw === 'number'
+      ? diasRaw
+      : this.parseNumberNullable(diasRaw);
+
     const totalRaw = detalleApi?.totalEstimado
       ?? detalleApi?.total
       ?? api.totalEstimado
@@ -798,6 +806,7 @@ downloadPdf(
       tipoEvento,
       fechaEvento,
       lugar: detalleApi?.lugar ?? api.lugar ?? undefined,
+      dias: diasNumero ?? undefined,
       horasEstimadas: horasNumero ?? undefined,
       mensaje: detalleApi?.mensaje ?? api.mensaje ?? api.notas ?? undefined,
       estado: detalleApi?.estado ?? api.estado ?? undefined,

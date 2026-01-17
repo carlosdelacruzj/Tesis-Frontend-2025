@@ -16,6 +16,7 @@ export interface LandingPublicCotizacionPayload {
     tipoEvento: string;
     fechaEvento: string;
     lugar?: string;
+    diasEvento?: number | null;
     horasEstimadas?: number | null;
     mensaje?: string;
   };
