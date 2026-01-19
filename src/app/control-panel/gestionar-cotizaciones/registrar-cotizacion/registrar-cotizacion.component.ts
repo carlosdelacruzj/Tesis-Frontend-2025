@@ -173,7 +173,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       fechaEvento: [RegistrarCotizacionComponent.computeFechaMinimaEvento(), [Validators.required, this.fechaEventoEnRangoValidator()]],
       dias: [null, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
       departamento: ['Lima', Validators.required],
-      horasEstimadas: [{ value: '', disabled: true }, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
+      horasEstimadas: [{ value: '', disabled: true }, [Validators.pattern(/^\d+$/), Validators.min(1)]],
       descripcion: [''],
       totalEstimado: [0, Validators.min(0)],
       programacion: this.fb.array([])

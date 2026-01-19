@@ -2,6 +2,7 @@ export interface Proyecto {
   proyectoId: number;
   proyectoNombre: string;
   pedidoId: number;
+  pedidoCodigo?: string | null;
   estadoId: number | null;
   estadoNombre: string | null;
   fechaInicioEdicion: string | null;

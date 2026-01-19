@@ -1,7 +1,7 @@
 ﻿import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, forkJoin, of, takeUntil } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 import { DateInput, formatIsoDate, parseDateInput } from '../../shared/utils/date-utils';
 import { PedidoService } from './service/pedido.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
@@ -66,6 +66,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   searchTerm = '';
   loadingList = false;
   error: string | null = null;
+  downloadingId: number | null = null;
   modalPago: ModalPagoState = this.crearEstadoModal();
 
   private readonly destroy$ = new Subject<void>();
@@ -89,6 +90,47 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
 
   onToolbarSearch(term: string): void {
     this.searchTerm = term ?? '';
+  }
+
+  verContratoPdf(row: PedidoRow): void {
+    const id = this.extractId(row);
+    if (!id) {
+      return;
+    }
+    this.downloadingId = id;
+    this.pedidoService.getContratoPdf(id)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          if (this.downloadingId === id) {
+            this.downloadingId = null;
+          }
+        })
+      )
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const opened = window.open(url, '_blank');
+          if (!opened) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `contrato_pedido_${id}.pdf`;
+            link.click();
+          }
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        },
+        error: (err) => {
+          console.error('[pedido] contrato pdf', err);
+          void Swal.fire({
+            icon: 'error',
+            title: 'No se pudo abrir',
+            text: 'No pudimos generar el contrato PDF.',
+            confirmButtonText: 'Aceptar',
+            buttonsStyling: false,
+            customClass: { confirmButton: 'btn btn-danger' }
+          });
+        }
+      });
   }
 
   verPedido(row: PedidoRow): void {
@@ -528,6 +570,39 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     }
 
     return { label, className };
+  }
+
+  tienePago(row: PedidoRow | null | undefined): boolean {
+    if (!row) return false;
+    const record = this.asRecord(row);
+    const label = this.toOptionalString(
+      record['Pago'] ??
+      record['pago'] ??
+      record['EstadoPago'] ??
+      record['estadoPago'] ??
+      record['estado_pago']
+    );
+    if (!label) return false;
+    const key = label.trim().toLowerCase();
+    if (['pendiente', 'sin pago', 'no pagado', 'sin pagos'].includes(key)) {
+      return false;
+    }
+    return true;
+  }
+
+  pagoCompletado(row: PedidoRow | null | undefined): boolean {
+    if (!row) return false;
+    const record = this.asRecord(row);
+    const label = this.toOptionalString(
+      record['Pago'] ??
+      record['pago'] ??
+      record['EstadoPago'] ??
+      record['estadoPago'] ??
+      record['estado_pago']
+    );
+    if (!label) return false;
+    const key = label.trim().toLowerCase();
+    return ['pagado', 'pagado total', 'completo', 'cancelado'].includes(key);
   }
 
   private extractId(row: PedidoRow | null | undefined): number | null {

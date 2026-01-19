@@ -73,17 +73,30 @@
 
       <ng-template appCell="acciones" let-row>
         <div class="d-flex justify-content-center gap-1">
-          <button mat-icon-button color="primary" type="button" (click)="$event.stopPropagation(); editarPedido(row)"
-            matTooltip="Editar">
-            <mat-icon>edit</mat-icon>
-          </button>
+          @if (!tienePago(row)) {
+            <button mat-icon-button color="primary" type="button" (click)="$event.stopPropagation(); editarPedido(row)"
+              matTooltip="Editar">
+              <mat-icon>edit</mat-icon>
+            </button>
+          }
           <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); verPedido(row)"
             matTooltip="Ver detalle">
             <mat-icon>visibility</mat-icon>
           </button>
-          <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); abrirModalPago(row)"
-            matTooltip="Realizar Pago">
-            <mat-icon>request_quote</mat-icon>
+          @if (!pagoCompletado(row)) {
+            <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); abrirModalPago(row)"
+              matTooltip="Realizar Pago">
+              <mat-icon>request_quote</mat-icon>
+            </button>
+          }
+          <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); verContratoPdf(row)"
+            [disabled]="downloadingId === row.id" matTooltip="Ver contrato PDF">
+            @if (downloadingId !== row.id) {
+              <mat-icon>picture_as_pdf</mat-icon>
+            }
+            @if (downloadingId === row.id) {
+              <mat-icon class="spin">hourglass_top</mat-icon>
+            }
           </button>
         </div>
       </ng-template>

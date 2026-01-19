@@ -87,6 +87,9 @@ export class PedidoService {
   public getEventos(): Observable<unknown> {
     return this.http.get(this.apiEventos);
   }
+  public getContratoPdf(id: number): Observable<Blob> {
+    return this.http.post(`${this.apiBase}/${id}/contrato/pdf`, null, { responseType: 'blob' });
+  }
   // public getEventServicios(): Observable<any> {
   //   return this.http.get(this.API_SERVICIOSxEVENTOS);
   // }

@@ -177,11 +177,6 @@
                   <input id="horasEstimadas" type="number" class="form-control" formControlName="horasEstimadas"
                     placeholder="Ej. 6" min="1" step="1" inputmode="numeric"
                     [class.is-invalid]="form.get('horasEstimadas')?.invalid && form.get('horasEstimadas')?.touched">
-                  @if (form.get('horasEstimadas')?.hasError('required') && form.get('horasEstimadas')?.touched) {
-                  <small class="text-danger">
-                    Ingresa las horas estimadas por día.
-                  </small>
-                  }
                   @if (form.get('horasEstimadas')?.hasError('pattern') && form.get('horasEstimadas')?.touched) {
                   <small class="text-danger">
                     Usa solo números enteros.

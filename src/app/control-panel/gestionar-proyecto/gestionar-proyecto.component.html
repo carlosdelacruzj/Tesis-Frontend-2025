@@ -31,7 +31,7 @@
       </ng-template>
 
       <ng-template appCell="pedidoId" let-row>
-        <div class="text-center">{{ row.pedidoId || '—' }}</div>
+        <div class="text-center">{{ row.pedidoCodigo || row.pedidoId || '—' }}</div>
       </ng-template>
 
       <ng-template appCell="estadoNombre" let-row>

@@ -1,3 +1,16 @@
+:host .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 :host ::ng-deep th.cliente-col,
 :host ::ng-deep td.cliente-col {
   white-space: normal;
