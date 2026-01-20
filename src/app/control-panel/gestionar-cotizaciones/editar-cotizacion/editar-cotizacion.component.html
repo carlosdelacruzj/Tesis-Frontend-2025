@@ -388,10 +388,17 @@
     </mat-card>
 
     @if (selectedPaquetes.length) {
-      <mat-card class="card mb-3">
-        <mat-card-header>
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <div class="d-flex align-items-center justify-content-between w-100">
           <mat-card-title>Paquetes seleccionados ({{ selectedPaquetes.length }})</mat-card-title>
-        </mat-card-header>
+          @if (isMultipleDias()) {
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirAsignacionFechas()">
+            Asignar fechas
+          </button>
+          }
+        </div>
+      </mat-card-header>
         <mat-card-content>
           <div class="table-responsive">
             <app-table-base [columns]="selectedPaquetesColumns" [data]="selectedPaquetes" [showSearch]="false"
@@ -605,5 +612,53 @@
 
   <div modal-footer class="d-flex justify-content-end">
     <button type="button" class="btn btn-outline-secondary" (click)="cerrarDetallePaquete()">Cerrar</button>
+  </div>
+</app-modal-base>
+
+<app-modal-base [open]="asignacionFechasAbierta" [disableClose]="false" [loading]="false" [useDefaultFooter]="false"
+  size="lg" title="Asignar fechas a servicios" (closed)="cerrarAsignacionFechas()">
+
+  @if (!fechasDisponibles.length) {
+    <p class="text-muted mb-0">No hay fechas disponibles para asignar.</p>
+  } @else {
+    <p class="text-muted mb-2">Selecciona las fechas de trabajo por servicio. Deben coincidir con la cantidad.</p>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Servicio</th>
+            @for (fecha of fechasDisponibles; track fecha) {
+              <th class="text-center">{{ fecha }}</th>
+            }
+            <th class="text-center">Asignadas</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of selectedPaquetes; track item.key; let itemIndex = $index) {
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ item.titulo }}</div>
+                <div class="small text-muted">Cantidad: {{ item.cantidad || 1 }}</div>
+              </td>
+              @for (fecha of fechasDisponibles; track fecha) {
+                <td class="text-center">
+                  <input type="checkbox" class="form-check-input"
+                    [checked]="isFechaAsignada('i' + (itemIndex + 1), fecha)"
+                    (change)="toggleFechaAsignada('i' + (itemIndex + 1), fecha, $any($event.target).checked, item.cantidad || 1)">
+                </td>
+              }
+              <td class="text-center">
+                {{ getCantidadAsignada('i' + (itemIndex + 1)) }}/{{ item.cantidad || 1 }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <div modal-footer class="d-flex justify-content-end">
+    <button type="button" class="btn btn-outline-secondary" (click)="cerrarAsignacionFechas()">Cerrar</button>
   </div>
 </app-modal-base>

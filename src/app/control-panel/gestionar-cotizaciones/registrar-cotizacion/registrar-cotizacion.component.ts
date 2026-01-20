@@ -3,7 +3,7 @@ import { AbstractControl, UntypedFormArray, UntypedFormBuilder, UntypedFormContr
 import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
-import { ClienteBusquedaResultado, CotizacionAdminCreatePayload, CotizacionAdminItemPayload, CotizacionAdminEventoPayload } from '../model/cotizacion.model';
+import { ClienteBusquedaResultado, CotizacionAdminCreatePayload, CotizacionAdminItemPayload, CotizacionAdminEventoPayload, CotizacionAdminServicioFechaPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { parseDateInput } from '../../../shared/utils/date-utils';
@@ -159,6 +159,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   loading = false;
   detallePaqueteAbierto = false;
   detallePaqueteSeleccionado: PaqueteDetalle | null = null;
+  asignacionFechasAbierta = false;
+  fechasDisponibles: string[] = [];
+  serviciosFechasSeleccionadas: CotizacionAdminServicioFechaPayload[] = [];
 
   private readonly destroy$ = new Subject<void>();
 
@@ -377,6 +380,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         editandoPrecio: false
       }
     ];
+    this.serviciosFechasSeleccionadas = [];
     this.syncTotalEstimado();
   }
 
@@ -391,6 +395,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   removePaquete(key: string | number): void {
     this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
+    this.serviciosFechasSeleccionadas = [];
     this.syncTotalEstimado();
   }
 
@@ -402,6 +407,67 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   cerrarDetallePaquete(): void {
     this.detallePaqueteAbierto = false;
     this.detallePaqueteSeleccionado = null;
+  }
+
+  abrirAsignacionFechas(): void {
+    if (!this.isMultipleDias()) {
+      return;
+    }
+    const fechasUnicas = Array.from(new Set(
+      (this.programacion.getRawValue() as Record<string, unknown>[])
+        .map((config) => (config['fecha'] ?? '').toString().trim())
+        .filter(Boolean)
+    )).sort();
+    this.fechasDisponibles = fechasUnicas.length
+      ? fechasUnicas
+      : (this.form.get('fechaEvento')?.value ? [String(this.form.get('fechaEvento')?.value)] : []);
+    if (!this.fechasDisponibles.length) {
+      this.showAlert('warning', 'Fechas pendientes', 'Registra fechas en la programación para asignarlas a los servicios.');
+      return;
+    }
+    if (!this.serviciosFechasSeleccionadas.length) {
+      this.serviciosFechasSeleccionadas = this.selectedPaquetes.flatMap((item, index) => {
+        const itemTmpId = `i${index + 1}`;
+        const cantidad = Math.max(1, Number(item.cantidad ?? 1) || 1);
+        const fechas = this.fechasDisponibles.slice(0, cantidad);
+        return fechas.map(fecha => ({ itemTmpId, fecha }));
+      });
+    } else {
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+        this.fechasDisponibles.includes(entry.fecha)
+      );
+    }
+    this.asignacionFechasAbierta = true;
+  }
+
+  cerrarAsignacionFechas(): void {
+    this.asignacionFechasAbierta = false;
+  }
+
+  isFechaAsignada(itemTmpId: string, fecha: string): boolean {
+    return this.serviciosFechasSeleccionadas.some(entry => entry.itemTmpId === itemTmpId && entry.fecha === fecha);
+  }
+
+  toggleFechaAsignada(itemTmpId: string, fecha: string, checked: boolean, maxCantidad: number): void {
+    if (checked) {
+      const count = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
+      if (count >= maxCantidad) {
+        this.showAlert('info', 'Cantidad completa', 'Ya asignaste todas las fechas requeridas para este servicio.');
+        return;
+      }
+      this.serviciosFechasSeleccionadas = [
+        ...this.serviciosFechasSeleccionadas,
+        { itemTmpId, fecha }
+      ];
+      return;
+    }
+    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+      !(entry.itemTmpId === itemTmpId && entry.fecha === fecha)
+    );
+  }
+
+  getCantidadAsignada(itemTmpId: string): number {
+    return this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
   }
 
   getDetalleStaffLista(paquete: unknown): AnyRecord[] {
@@ -655,6 +721,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   onCantidadChange(paquete: PaqueteSeleccionado, value: unknown): void {
     const parsed = this.parseNumber(value);
     paquete.cantidad = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+    this.serviciosFechasSeleccionadas = [];
     this.syncTotalEstimado();
   }
 
@@ -806,12 +873,47 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         .filter(Boolean)
     )).sort();
     const fechasBase = fechasUnicas.length ? fechasUnicas : (fechaEventoForm ? [String(fechaEventoForm)] : []);
-    const serviciosFechas = items.flatMap((item, index) => {
-      const itemTmpId = `i${index + 1}`;
+    const serviciosFechasAuto = items.flatMap((item, index) => {
+      const itemTmpId = item.tmpId ?? `i${index + 1}`;
       const cantidad = Math.max(1, Number(item.cantidad ?? 1) || 1);
       const fechas = fechasBase.slice(0, cantidad);
       return fechas.map(fecha => ({ itemTmpId, fecha }));
     });
+    const serviciosFechas = this.isMultipleDias()
+      ? (this.serviciosFechasSeleccionadas.length
+          ? this.serviciosFechasSeleccionadas.filter(entry =>
+              items.some(item => (item.tmpId ?? '') === entry.itemTmpId)
+            )
+          : serviciosFechasAuto)
+      : [];
+
+    if (this.isMultipleDias()) {
+      const pendiente = items.find((item, index) => {
+        const itemTmpId = item.tmpId ?? `i${index + 1}`;
+        const cantidad = Math.max(1, Number(item.cantidad ?? 1) || 1);
+        const asignadas = serviciosFechas.filter(entry => entry.itemTmpId === itemTmpId).length;
+        return asignadas !== cantidad;
+      });
+      if (pendiente) {
+        this.showAlert(
+          'warning',
+          'Asignación pendiente',
+          'Completa la asignación de fechas para todos los servicios.'
+        );
+        return;
+      }
+      const fechasSinAsignar = fechasBase.filter(
+        fecha => !serviciosFechas.some(entry => entry.fecha === fecha)
+      );
+      if (fechasSinAsignar.length) {
+        this.showAlert(
+          'warning',
+          'Fechas sin cobertura',
+          'Debes asignar al menos un servicio a cada día.'
+        );
+        return;
+      }
+    }
 
     const payload: CotizacionAdminCreatePayload = {
       cotizacion: {
@@ -981,6 +1083,13 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (!multiple && this.selectedPaquetes.some(item => (item.cantidad ?? 1) !== 1)) {
       this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
       this.syncTotalEstimado();
+    }
+
+    if (!multiple && this.serviciosFechasSeleccionadas.length) {
+      this.serviciosFechasSeleccionadas = [];
+    }
+    if (!multiple && this.asignacionFechasAbierta) {
+      this.asignacionFechasAbierta = false;
     }
 
     this.refreshSelectedPaquetesColumns();
@@ -1477,6 +1586,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.clienteResultados = [];
     this.clienteBusquedaTermino = '';
     this.eventoSelectTouched = false;
+    this.asignacionFechasAbierta = false;
+    this.fechasDisponibles = [];
+    this.serviciosFechasSeleccionadas = [];
     this.syncTotalEstimado();
   }
 }
