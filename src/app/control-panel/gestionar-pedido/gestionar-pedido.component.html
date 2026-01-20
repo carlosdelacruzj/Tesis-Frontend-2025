@@ -59,7 +59,16 @@
       </ng-template>
 
       <ng-template appCell="Estado" let-row>
-        <app-estado-badge [estado]="row.Estado || 'Sin estado'"></app-estado-badge>
+        <app-estado-badge [estado]="row.Estado || 'Sin estado'"
+        [mapaColores]="{
+            'Cotizado': 'info',
+            'Contratado': 'warning',
+            'En ejecución': 'warning',
+            'Entregado': 'success-light',
+            'Cerrado': 'success',
+            'Cancelado': 'danger',
+            'Expirado': 'danger'
+          }"></app-estado-badge>
       </ng-template>
 
       <ng-template appCell="Pago" let-row>
@@ -67,7 +76,9 @@
         [mapaColores]="{
             'Pendiente': 'info',
             'Parcial': 'warning',
-            'Pagado': 'success-light'
+            'Pagado': 'success',
+            'Vencido': 'danger',
+            'Anulado': 'secondary'
           }"></app-estado-badge>
       </ng-template>
 

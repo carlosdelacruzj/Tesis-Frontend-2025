@@ -171,6 +171,7 @@ export interface CotizacionAdminLeadPayload {
 }
 
 export interface CotizacionAdminItemPayload {
+  tmpId?: string;
   idEventoServicio?: number;
   eventoId?: number;
   servicioId?: number;
@@ -185,6 +186,11 @@ export interface CotizacionAdminItemPayload {
   fotosImpresas?: number;
   trailerMin?: number;
   filmMin?: number;
+}
+
+export interface CotizacionAdminServicioFechaPayload {
+  itemTmpId: string;
+  fecha: string;
 }
 
 export interface CotizacionAdminEventoPayload {
@@ -207,6 +213,7 @@ export interface CotizacionAdminBasePayload {
     estado?: string;
   };
   items: CotizacionAdminItemPayload[];
+  serviciosFechas?: CotizacionAdminServicioFechaPayload[];
   eventos?: CotizacionAdminEventoPayload[];
   cliente?: CotizacionAdminClientePayload;
 }

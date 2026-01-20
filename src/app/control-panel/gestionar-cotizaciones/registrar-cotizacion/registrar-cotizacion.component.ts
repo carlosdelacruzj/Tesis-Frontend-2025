@@ -256,6 +256,13 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
+  private getTotalCantidadSeleccionada(): number {
+    return this.selectedPaquetes.reduce((acc, item) => {
+      const cantidad = Number(item.cantidad ?? 1) || 1;
+      return acc + cantidad;
+    }, 0);
+  }
+
   onServicioChange(servicioId: number | null | undefined): void {
     const parsed = this.parseNumber(servicioId);
     this.selectedServicioId = parsed ?? null;
@@ -698,6 +705,18 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     const raw = this.form.getRawValue();
+    const diasNumero = this.parseNumber(raw.dias);
+    if (diasNumero != null && diasNumero > 2) {
+      const totalCantidad = this.getTotalCantidadSeleccionada();
+      if (totalCantidad < diasNumero) {
+        this.showAlert(
+          'warning',
+          'Cantidades insuficientes',
+          `Para ${diasNumero} días debes asignar al menos ${diasNumero} servicios en total.`
+        );
+        return;
+      }
+    }
     const clienteNombre = (raw.clienteNombre ?? '').toString().trim();
     const clienteContacto = this.sanitizeContacto((raw.clienteContacto ?? '').toString());
     const fechaEventoForm = raw.fechaEvento;
@@ -707,7 +726,6 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
     const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotizacion de ${clienteNombre}` : 'Solicitud de cotizacion');
     const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas);
-    const diasNumero = this.parseNumber(diasTexto);
     const programacionRaw = this.programacion.getRawValue() as Record<string, unknown>[];
     const eventos: CotizacionAdminEventoPayload[] = programacionRaw
       .map((config) => {
@@ -752,7 +770,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       : fechaEventoForm;
 
     const clienteIdSeleccionado = this.parseNumber(this.clienteSeleccionado?.id);
-    const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map((item) => {
+    const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map((item, index) => {
       const notas = (item.notas ?? '').toString().trim();
       const eventoServicioId = this.getEventoServicioId(item) ?? this.getEventoServicioId(item.origen);
       const servicioId = this.getPaqueteServicioId(item);
@@ -763,6 +781,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       const filmMin = this.parseNumber(item.filmMin ?? this.getFilmMin(item.origen));
 
       const payloadItem: CotizacionAdminItemPayload = {
+        tmpId: `i${index + 1}`,
         idEventoServicio: eventoServicioId ?? undefined,
         eventoId: this.selectedEventoId ?? undefined,
         servicioId: servicioId ?? undefined,
@@ -780,6 +799,18 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       };
 
       return payloadItem;
+    });
+    const fechasUnicas = Array.from(new Set(
+      programacionRaw
+        .map((config) => (config['fecha'] ?? '').toString().trim())
+        .filter(Boolean)
+    )).sort();
+    const fechasBase = fechasUnicas.length ? fechasUnicas : (fechaEventoForm ? [String(fechaEventoForm)] : []);
+    const serviciosFechas = items.flatMap((item, index) => {
+      const itemTmpId = `i${index + 1}`;
+      const cantidad = Math.max(1, Number(item.cantidad ?? 1) || 1);
+      const fechas = fechasBase.slice(0, cantidad);
+      return fechas.map(fecha => ({ itemTmpId, fecha }));
     });
 
     const payload: CotizacionAdminCreatePayload = {
@@ -799,6 +830,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         origen: 'Backoffice'
       },
       items,
+      serviciosFechas: serviciosFechas.length ? serviciosFechas : undefined,
       eventos: eventos.length ? eventos : undefined
     };
 
