@@ -38,7 +38,7 @@ interface UbicacionRow {
   DireccionExacta: string;
   Notas: string;
 }
-type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: boolean };
+type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: boolean; _fechaPrev?: string };
 
 @Component({
   selector: 'app-agregar-pedido',
@@ -690,6 +690,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   // ====== Edición inline en tabla de ubicaciones ======
   startEdit(row: UbicacionRowEditable) {
     row._backup = { ...row };
+    row._fechaPrev = row.Fecha;
     row.editing = true;
   }
 
@@ -705,6 +706,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       Object.assign(row, row._backup);
       delete row._backup;
     }
+    row._fechaPrev = row.Fecha;
     row.editing = false;
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
@@ -715,6 +717,26 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     const raw = this.visualizarService.selectAgregarPedido?.dias;
     const parsed = this.parseNumberNullable(raw);
     return parsed != null && parsed >= 1 ? parsed : null;
+  }
+
+  private getFechasUbicacionUnicas(): string[] {
+    const fechas = this.ubicacion
+      .map(item => (item.Fecha ?? '').toString().trim())
+      .filter(Boolean);
+    return Array.from(new Set(fechas)).sort();
+  }
+
+  private formatFechaConDia(fecha: string): string {
+    const parsed = parseDateInput(fecha);
+    if (!parsed) {
+      return fecha;
+    }
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+    const dia = dias[parsed.getDay()] ?? '';
+    const dd = String(parsed.getDate()).padStart(2, '0');
+    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+    const yyyy = parsed.getFullYear();
+    return `${dia} ${dd}-${mm}-${yyyy}`;
   }
 
   isMultipleDias(): boolean {
@@ -737,6 +759,42 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       this.visualizarService.selectAgregarPedido.fechaEvent = '';
     }
     this.refreshSelectedPaquetesColumns();
+  }
+
+  onUbicacionFechaChange(row: UbicacionRowEditable, value: unknown): void {
+    const fecha = (value ?? '').toString().trim();
+    if (!this.isMultipleDias() || !fecha) {
+      row._fechaPrev = row.Fecha;
+      return;
+    }
+    const maxDias = this.getDiasTrabajo();
+    if (!maxDias) {
+      row._fechaPrev = row.Fecha;
+      return;
+    }
+    const fechasUnicas = this.getFechasUbicacionUnicas();
+    if (fechasUnicas.length <= maxDias) {
+      row._fechaPrev = row.Fecha;
+      return;
+    }
+    const fechasPermitidas = fechasUnicas.filter(item => item !== fecha);
+    const last = (row._fechaPrev ?? '').toString().trim();
+    if (last && !fechasPermitidas.includes(last)) {
+      fechasPermitidas.unshift(last);
+    }
+    const fechasTexto = fechasPermitidas.slice(0, maxDias);
+    row.Fecha = row._fechaPrev ?? '';
+    Swal.fire({
+      icon: 'warning',
+      title: 'Días ya definidos',
+      html: `
+        <p>Ya seleccionaste ${maxDias} día(s):</p>
+        <ul class="text-start mb-0">
+          ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
+        </ul>
+      `,
+      confirmButtonText: 'Entendido'
+    });
   }
 
   get canAgregarEvento(): boolean {

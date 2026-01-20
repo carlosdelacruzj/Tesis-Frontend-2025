@@ -242,6 +242,7 @@
                                     } @else {
                                         <input type="date" class="form-control form-control-sm"
                                             [(ngModel)]="element.Fecha" [ngModelOptions]="{standalone:true}"
+                                            (ngModelChange)="onUbicacionFechaChange(element, $event)"
                                             [min]="minimo" [max]="maximo" required>
                                         @if (!element.Fecha) {
                                             <small class="text-danger">Requerido</small>

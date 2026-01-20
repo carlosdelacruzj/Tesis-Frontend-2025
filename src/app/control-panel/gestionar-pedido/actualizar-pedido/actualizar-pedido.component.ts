@@ -60,7 +60,7 @@ interface UbicacionRow {
   minuto?: string | null;
   ampm?: 'AM' | 'PM' | null;
 }
-type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: boolean };
+type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: boolean; _fechaPrev?: string };
 
 @Component({
   selector: 'app-actualizar-pedido',
@@ -75,7 +75,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   readonly fechaMinimaEvento = ActualizarPedidoComponent.computeFechaMinimaEvento();
   readonly fechaMaximaEvento = ActualizarPedidoComponent.computeFechaMaximaEvento();
   readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
-  readonly minutoOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
+  readonly minutoOptions = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
   readonly ampmOptions = ['AM', 'PM'] as const;
   // ====== Columnas ======
   columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas', 'Editar', 'Quitar'];
@@ -693,6 +693,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   // ====== Edición inline en tabla de ubicaciones ======
   startEdit(row: UbicacionRowEditable) {
     row._backup = { ...row };
+    row._fechaPrev = row.Fecha;
     row.editing = true;
   }
 
@@ -708,6 +709,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       Object.assign(row, row._backup);
       delete row._backup;
     }
+    row._fechaPrev = row.Fecha;
     row.editing = false;
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
@@ -718,6 +720,26 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const raw = this.visualizarService.selectAgregarPedido?.dias;
     const parsed = this.parseNumber(raw);
     return parsed != null && parsed >= 1 ? parsed : null;
+  }
+
+  private getFechasUbicacionUnicas(): string[] {
+    const fechas = this.ubicacion
+      .map(item => (item.Fecha ?? '').toString().trim())
+      .filter(Boolean);
+    return Array.from(new Set(fechas)).sort();
+  }
+
+  private formatFechaConDia(fecha: string): string {
+    const parsed = parseDateInput(fecha);
+    if (!parsed) {
+      return fecha;
+    }
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+    const dia = dias[parsed.getDay()] ?? '';
+    const dd = String(parsed.getDate()).padStart(2, '0');
+    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+    const yyyy = parsed.getFullYear();
+    return `${dia} ${dd}-${mm}-${yyyy}`;
   }
 
   isMultipleDias(): boolean {
@@ -740,6 +762,42 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.visualizarService.selectAgregarPedido.fechaEvent = '';
     }
     this.refreshSelectedPaquetesColumns();
+  }
+
+  onUbicacionFechaChange(row: UbicacionRowEditable, value: unknown): void {
+    const fecha = (value ?? '').toString().trim();
+    if (!this.isMultipleDias() || !fecha) {
+      row._fechaPrev = row.Fecha;
+      return;
+    }
+    const maxDias = this.getDiasTrabajo();
+    if (!maxDias) {
+      row._fechaPrev = row.Fecha;
+      return;
+    }
+    const fechasUnicas = this.getFechasUbicacionUnicas();
+    if (fechasUnicas.length <= maxDias) {
+      row._fechaPrev = row.Fecha;
+      return;
+    }
+    const fechasPermitidas = fechasUnicas.filter(item => item !== fecha);
+    const last = (row._fechaPrev ?? '').toString().trim();
+    if (last && !fechasPermitidas.includes(last)) {
+      fechasPermitidas.unshift(last);
+    }
+    const fechasTexto = fechasPermitidas.slice(0, maxDias);
+    row.Fecha = row._fechaPrev ?? '';
+    Swal.fire({
+      icon: 'warning',
+      title: 'Días ya definidos',
+      html: `
+        <p>Ya seleccionaste ${maxDias} día(s):</p>
+        <ul class="text-start mb-0">
+          ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
+        </ul>
+      `,
+      confirmButtonText: 'Entendido'
+    });
   }
 
   get canAgregarEvento(): boolean {

@@ -130,6 +130,7 @@
                         <label class="col-form-label" [attr.for]="'programacionFecha' + $index">Fecha</label>
                         <input [attr.id]="'programacionFecha' + $index" type="date" class="form-control"
                           [(ngModel)]="item.Fecha" [ngModelOptions]="{standalone:true}"
+                          (ngModelChange)="onUbicacionFechaChange(item, $event)"
                           [min]="fechaMinimaEvento" [max]="fechaMaximaEvento">
                       </div>
                     </div>

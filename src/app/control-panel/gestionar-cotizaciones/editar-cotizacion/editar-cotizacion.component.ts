@@ -92,7 +92,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   readonly fechaMinimaEvento = EditarCotizacionComponent.computeFechaMinimaEvento();
   readonly fechaMaximaEvento = EditarCotizacionComponent.computeFechaMaximaEvento();
   readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
-  readonly minutoOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
+  readonly minutoOptions = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
   readonly ampmOptions = ['AM', 'PM'] as const;
 
   form: UntypedFormGroup;
@@ -766,7 +766,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
               items.some(item => (item.tmpId ?? '') === entry.itemTmpId)
             )
           : serviciosFechasAuto)
-      : [];
+      : serviciosFechasAuto;
 
     if (this.isMultipleDias()) {
       const pendiente = items.find((item, index) => {
@@ -1218,6 +1218,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       esPrincipal: [config.esPrincipal ?? false]
     });
     this.bindHoraControls(grupo);
+    this.bindFechaControl(grupo);
     return grupo;
   }
 
@@ -1237,6 +1238,55 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     });
 
     updateHora();
+  }
+
+  private bindFechaControl(grupo: UntypedFormGroup): void {
+    const fechaControl = grupo.get('fecha');
+    if (!fechaControl) {
+      return;
+    }
+    let lastValid = fechaControl.value;
+    fechaControl.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(value => {
+        if (!this.isMultipleDias()) {
+          lastValid = value;
+          return;
+        }
+        const maxDias = this.parseNumber(this.form.get('dias')?.value);
+        if (maxDias == null || maxDias < 1) {
+          lastValid = value;
+          return;
+        }
+        const fecha = (value ?? '').toString().trim();
+        if (!fecha) {
+          lastValid = value;
+          return;
+        }
+        const fechasUnicas = this.getFechasProgramacionUnicas();
+        if (fechasUnicas.length <= maxDias) {
+          lastValid = value;
+          return;
+        }
+        const fechasPermitidas = fechasUnicas.filter(item => item !== fecha);
+        const last = (lastValid ?? '').toString().trim();
+        if (last && !fechasPermitidas.includes(last)) {
+          fechasPermitidas.unshift(last);
+        }
+        const fechasTexto = fechasPermitidas.slice(0, maxDias);
+        fechaControl.setValue(lastValid ?? '', { emitEvent: false });
+        void Swal.fire({
+          icon: 'warning',
+          title: 'Días ya definidos',
+          html: `
+            <p>Ya seleccionaste ${maxDias} día(s):</p>
+            <ul class="text-start mb-0">
+              ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
+            </ul>
+          `,
+          confirmButtonText: 'Entendido'
+        });
+      });
   }
 
   private normalizeHora24(value: string): string {
@@ -1343,6 +1393,27 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const value = this.form.get('dias')?.value;
     const parsed = this.parseNumber(value);
     return parsed != null && parsed > 1;
+  }
+
+  private getFechasProgramacionUnicas(): string[] {
+    const fechas = this.programacion.controls
+      .map(control => (control as UntypedFormGroup).get('fecha')?.value)
+      .map(value => (value ?? '').toString().trim())
+      .filter(Boolean);
+    return Array.from(new Set(fechas)).sort();
+  }
+
+  formatFechaConDia(fecha: string): string {
+    const parsed = parseDateInput(fecha);
+    if (!parsed) {
+      return fecha;
+    }
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+    const dia = dias[parsed.getDay()] ?? '';
+    const dd = String(parsed.getDate()).padStart(2, '0');
+    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+    const yyyy = parsed.getFullYear();
+    return `${dia} ${dd}-${mm}-${yyyy}`;
   }
 
   shouldShowFechaEvento(): boolean {
