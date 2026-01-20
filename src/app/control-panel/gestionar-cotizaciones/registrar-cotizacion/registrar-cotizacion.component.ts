@@ -425,18 +425,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.showAlert('warning', 'Fechas pendientes', 'Registra fechas en la programación para asignarlas a los servicios.');
       return;
     }
-    if (!this.serviciosFechasSeleccionadas.length) {
-      this.serviciosFechasSeleccionadas = this.selectedPaquetes.flatMap((item, index) => {
-        const itemTmpId = `i${index + 1}`;
-        const cantidad = Math.max(1, Number(item.cantidad ?? 1) || 1);
-        const fechas = this.fechasDisponibles.slice(0, cantidad);
-        return fechas.map(fecha => ({ itemTmpId, fecha }));
-      });
-    } else {
-      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
-        this.fechasDisponibles.includes(entry.fecha)
-      );
-    }
+    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+      this.fechasDisponibles.includes(entry.fecha)
+    );
     this.asignacionFechasAbierta = true;
   }
 
@@ -880,11 +871,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       return fechas.map(fecha => ({ itemTmpId, fecha }));
     });
     const serviciosFechas = this.isMultipleDias()
-      ? (this.serviciosFechasSeleccionadas.length
-          ? this.serviciosFechasSeleccionadas.filter(entry =>
-              items.some(item => (item.tmpId ?? '') === entry.itemTmpId)
-            )
-          : serviciosFechasAuto)
+      ? this.serviciosFechasSeleccionadas.filter(entry =>
+          items.some(item => (item.tmpId ?? '') === entry.itemTmpId)
+        )
       : serviciosFechasAuto;
 
     if (this.isMultipleDias()) {
@@ -1052,23 +1041,54 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           lastValid = value;
           return;
         }
+        const fechaAnterior = (lastValid ?? '').toString().trim();
         const fechasPermitidas = fechasUnicas.filter(item => item !== fecha);
-        const last = (lastValid ?? '').toString().trim();
-        if (last && !fechasPermitidas.includes(last)) {
-          fechasPermitidas.unshift(last);
-        }
         const fechasTexto = fechasPermitidas.slice(0, maxDias);
-        fechaControl.setValue(lastValid ?? '', { emitEvent: false });
+        if (!fechaAnterior) {
+          fechaControl.setValue(lastValid ?? '', { emitEvent: false });
+          void Swal.fire({
+            icon: 'warning',
+            title: 'Días ya definidos',
+            html: `
+              <p>Ya seleccionaste ${maxDias} día(s):</p>
+              <ul class="text-start mb-0">
+                ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
+              </ul>
+            `,
+            confirmButtonText: 'Entendido'
+          });
+          return;
+        }
         void Swal.fire({
           icon: 'warning',
-          title: 'Días ya definidos',
+          title: 'Cambiar fechas',
           html: `
             <p>Ya seleccionaste ${maxDias} día(s):</p>
-            <ul class="text-start mb-0">
+            <ul class="text-start mb-3">
               ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
             </ul>
+            <p class="mb-0">¿Quieres cambiar todas las locaciones del día <b>${this.formatFechaConDia(fechaAnterior)}</b> al día <b>${this.formatFechaConDia(fecha)}</b>?</p>
           `,
-          confirmButtonText: 'Entendido'
+          showCancelButton: true,
+          confirmButtonText: 'Sí, cambiar todas',
+          cancelButtonText: 'Cancelar'
+        }).then(result => {
+          if (!result.isConfirmed) {
+            fechaControl.setValue(lastValid ?? '', { emitEvent: false });
+            return;
+          }
+          this.programacion.controls.forEach(control => {
+            const controlFecha = (control as UntypedFormGroup).get('fecha');
+            if (controlFecha?.value === fechaAnterior) {
+              controlFecha.setValue(fecha, { emitEvent: false });
+            }
+          });
+          if (this.serviciosFechasSeleccionadas.length) {
+            this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
+              entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
+            );
+          }
+          lastValid = fecha;
         });
       });
   }

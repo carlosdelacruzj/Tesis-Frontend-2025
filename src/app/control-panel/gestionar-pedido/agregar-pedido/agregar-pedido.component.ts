@@ -777,23 +777,54 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       row._fechaPrev = row.Fecha;
       return;
     }
+    const fechaAnterior = (row._fechaPrev ?? '').toString().trim();
     const fechasPermitidas = fechasUnicas.filter(item => item !== fecha);
-    const last = (row._fechaPrev ?? '').toString().trim();
-    if (last && !fechasPermitidas.includes(last)) {
-      fechasPermitidas.unshift(last);
-    }
     const fechasTexto = fechasPermitidas.slice(0, maxDias);
-    row.Fecha = row._fechaPrev ?? '';
+    if (!fechaAnterior) {
+      row.Fecha = row._fechaPrev ?? '';
+      Swal.fire({
+        icon: 'warning',
+        title: 'Días ya definidos',
+        html: `
+          <p>Ya seleccionaste ${maxDias} día(s):</p>
+          <ul class="text-start mb-0">
+            ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
+          </ul>
+        `,
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
     Swal.fire({
       icon: 'warning',
-      title: 'Días ya definidos',
+      title: 'Cambiar fechas',
       html: `
         <p>Ya seleccionaste ${maxDias} día(s):</p>
-        <ul class="text-start mb-0">
+        <ul class="text-start mb-3">
           ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
         </ul>
+        <p class="mb-0">¿Quieres cambiar todas las locaciones del día <b>${this.formatFechaConDia(fechaAnterior)}</b> al día <b>${this.formatFechaConDia(fecha)}</b>?</p>
       `,
-      confirmButtonText: 'Entendido'
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar todas',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (!result.isConfirmed) {
+        row.Fecha = row._fechaPrev ?? '';
+        return;
+      }
+      this.ubicacion.forEach(item => {
+        if (item.Fecha === fechaAnterior) {
+          item.Fecha = fecha;
+          const editable = item as UbicacionRowEditable;
+          if (editable._backup?.Fecha === fechaAnterior) {
+            editable._backup.Fecha = fecha;
+          }
+          editable._fechaPrev = fecha;
+        }
+      });
+      this.dataSource.data = this.ubicacion;
+      this.bindSorts();
     });
   }
 
