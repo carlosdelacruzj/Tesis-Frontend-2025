@@ -108,6 +108,34 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   tagsPedido: Tag[] = [];
   tagsCliente: Tag[] = [];
 
+  readonly departamentos: string[] = [
+    'Amazonas',
+    'Ancash',
+    'Apurimac',
+    'Arequipa',
+    'Ayacucho',
+    'Cajamarca',
+    'Callao',
+    'Cusco',
+    'Huancavelica',
+    'Huanuco',
+    'Ica',
+    'Junin',
+    'La Libertad',
+    'Lambayeque',
+    'Lima',
+    'Loreto',
+    'Madre de Dios',
+    'Moquegua',
+    'Pasco',
+    'Piura',
+    'Puno',
+    'San Martin',
+    'Tacna',
+    'Tumbes',
+    'Ucayali'
+  ];
+
   public readonly pedidoService = inject(PedidoService);
   public readonly visualizarService = inject(VisualizarService);
   private readonly cotizacionService = inject(CotizacionService);
@@ -158,6 +186,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
         this.clienteSearchLoading = false;
         this.clienteResultados = Array.isArray(result) ? result : [];
       });
+    this.applyViaticosRules();
   }
 
   ngAfterViewInit(): void {
@@ -680,11 +709,25 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   get totalSeleccion(): number {
-    return this.selectedPaquetes.reduce((sum, p) => {
+    const subtotal = this.selectedPaquetes.reduce((sum, p) => {
       const precio = Number(p.precio) || 0;
       const cantidad = Number(p.cantidad ?? 1) || 1;
       return sum + (precio * cantidad);
     }, 0);
+    return subtotal + this.getViaticosMontoTotal();
+  }
+
+  private getViaticosMontoTotal(): number {
+    const departamento = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim().toLowerCase();
+    if (departamento === 'lima') {
+      return 0;
+    }
+    const viaticosCliente = Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente);
+    if (viaticosCliente) {
+      return 0;
+    }
+    const monto = this.parseNumberNullable(this.visualizarService.selectAgregarPedido?.viaticosMonto);
+    return monto != null && monto > 0 ? monto : 0;
   }
 
   // ====== Edición inline en tabla de ubicaciones ======
@@ -749,6 +792,32 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     return parsed != null && parsed <= 1;
   }
 
+  isDepartamentoLima(): boolean {
+    const depto = (this.visualizarService.selectAgregarPedido.departamento ?? '').toString().trim().toLowerCase();
+    return depto === 'lima';
+  }
+
+  onDepartamentoChange(value: unknown): void {
+    this.visualizarService.selectAgregarPedido.departamento = (value ?? '').toString();
+    this.applyViaticosRules();
+  }
+
+  onViaticosClienteChange(value: unknown): void {
+    this.visualizarService.selectAgregarPedido.viaticosCliente = Boolean(value);
+    this.applyViaticosRules();
+  }
+
+  private applyViaticosRules(): void {
+    if (this.isDepartamentoLima()) {
+      this.visualizarService.selectAgregarPedido.viaticosCliente = true;
+      this.visualizarService.selectAgregarPedido.viaticosMonto = null;
+      return;
+    }
+    if (this.visualizarService.selectAgregarPedido.viaticosCliente) {
+      this.visualizarService.selectAgregarPedido.viaticosMonto = null;
+    }
+  }
+
   onDiasChange(value: unknown): void {
     const parsed = this.parseNumberNullable(value);
     this.visualizarService.selectAgregarPedido.dias = parsed != null ? Math.max(1, Math.floor(parsed)) : null;
@@ -774,6 +843,13 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     }
     const fechasUnicas = this.getFechasUbicacionUnicas();
     if (fechasUnicas.length <= maxDias) {
+      const fechaAnterior = (row._fechaPrev ?? '').toString().trim();
+      if (fechaAnterior && fechaAnterior !== fecha) {
+        const sigueUsada = this.ubicacion.some(item => item.Fecha === fechaAnterior);
+        if (!sigueUsada && this.visualizarService.selectAgregarPedido.fechaEvent === fechaAnterior) {
+          this.visualizarService.selectAgregarPedido.fechaEvent = fecha;
+        }
+      }
       row._fechaPrev = row.Fecha;
       return;
     }
@@ -823,6 +899,9 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
           editable._fechaPrev = fecha;
         }
       });
+      if (this.visualizarService.selectAgregarPedido.fechaEvent === fechaAnterior) {
+        this.visualizarService.selectAgregarPedido.fechaEvent = fecha;
+      }
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
     });
@@ -922,7 +1001,10 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       dias: null,
       CodEmp: 0,
       Direccion: '',
-      Observacion: ''
+      Observacion: '',
+      departamento: 'Lima',
+      viaticosCliente: true,
+      viaticosMonto: null
     };
     this.fechaValidate(this.fechaCreate);
 
@@ -1048,6 +1130,22 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       return;
     }
 
+    const departamento = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim();
+    const viaticosCliente = Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente);
+    const viaticosMonto = this.parseNumberNullable(this.visualizarService.selectAgregarPedido?.viaticosMonto);
+    if (departamento && departamento.toLowerCase() !== 'lima' && !viaticosCliente) {
+      if (viaticosMonto == null || viaticosMonto <= 0) {
+        Swal.fire({
+          text: 'Ingresa el monto de viáticos.',
+          icon: 'warning',
+          showCancelButton: false,
+          customClass: { confirmButton: 'btn btn-warning' },
+          buttonsStyling: false
+        });
+        return;
+      }
+    }
+
 
 
     // ====== Formatos canónicos ======
@@ -1068,7 +1166,16 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
         // Define estos IDs iniciales en tu back; aquí puedes setearlos fijo o obtenerlos antes
         estadoPedidoId: 1, // Ej: 1 = Pendiente
         estadoPagoId: 1,   // Ej: 1 = Sin pago
-        nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || ''
+        nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || '',
+        departamento: this.visualizarService.selectAgregarPedido?.departamento || undefined,
+        viaticosCliente: this.visualizarService.selectAgregarPedido?.departamento?.toLowerCase() === 'lima'
+          ? true
+          : Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente),
+        viaticosMonto: this.visualizarService.selectAgregarPedido?.departamento?.toLowerCase() === 'lima'
+          ? undefined
+          : (this.visualizarService.selectAgregarPedido?.viaticosCliente
+              ? undefined
+              : (this.parseNumberNullable(this.visualizarService.selectAgregarPedido?.viaticosMonto) ?? undefined))
       },
       eventos: (this.ubicacion || [])
         .filter(u => (u?.Direccion || '').trim())

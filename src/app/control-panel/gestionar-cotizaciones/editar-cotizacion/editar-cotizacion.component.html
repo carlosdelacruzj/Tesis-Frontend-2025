@@ -302,16 +302,6 @@
 
     <mat-card class="card mb-3">
       <mat-card-header>
-        <mat-card-title>Mensaje del solicitante</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <textarea class="form-control" rows="3" formControlName="descripcion"
-          placeholder="Mensaje proporcionado en la solicitud"></textarea>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="card mb-3">
-      <mat-card-header>
         <mat-card-title>Servicios y paquetes</mat-card-title>
       </mat-card-header>
       <mat-card-content>
@@ -384,6 +374,48 @@
             <span class="mt-2">Cargando paquetes…</span>
           </div>
         }
+      </mat-card-content>
+    </mat-card>
+
+    @if (!isDepartamentoLima()) {
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <mat-card-title>Viáticos</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="form-check mb-3">
+          <input id="viaticosCliente" type="checkbox" class="form-check-input" formControlName="viaticosCliente">
+          <label class="form-check-label" for="viaticosCliente">El cliente cubre viáticos</label>
+        </div>
+        @if (!form.get('viaticosCliente')?.value) {
+        <div class="form-group">
+          <label class="col-form-label" for="viaticosMonto">Monto de viáticos (USD)</label>
+          <input id="viaticosMonto" type="number" class="form-control" formControlName="viaticosMonto"
+            min="1" step="1" inputmode="numeric"
+            [class.is-invalid]="form.get('viaticosMonto')?.invalid && form.get('viaticosMonto')?.touched">
+          @if (form.get('viaticosMonto')?.hasError('required') && form.get('viaticosMonto')?.touched) {
+          <small class="text-danger">
+            Ingresa el monto de viáticos.
+          </small>
+          }
+          @if (form.get('viaticosMonto')?.hasError('min') && form.get('viaticosMonto')?.touched) {
+          <small class="text-danger">
+            El monto debe ser mayor a 0.
+          </small>
+          }
+        </div>
+        }
+      </mat-card-content>
+    </mat-card>
+    }
+
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <mat-card-title>Mensaje del solicitante</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <textarea class="form-control" rows="3" formControlName="descripcion"
+          placeholder="Mensaje proporcionado en la solicitud"></textarea>
       </mat-card-content>
     </mat-card>
 

@@ -71,6 +71,9 @@ public dias: number | null,
 public CodEmp : number,
 public Direccion : string,
 public Observacion : string,
+public departamento?: string,
+public viaticosCliente?: boolean,
+public viaticosMonto?: number | null,
 
  ){}}
 

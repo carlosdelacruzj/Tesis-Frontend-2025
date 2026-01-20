@@ -176,6 +176,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       fechaEvento: [RegistrarCotizacionComponent.computeFechaMinimaEvento(), [Validators.required, this.fechaEventoEnRangoValidator()]],
       dias: [null, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
       departamento: ['Lima', Validators.required],
+      viaticosCliente: [true],
+      viaticosMonto: [{ value: null, disabled: true }],
       horasEstimadas: [{ value: '', disabled: true }, [Validators.pattern(/^\d+$/), Validators.min(1)]],
       descripcion: [''],
       totalEstimado: [0, Validators.min(0)],
@@ -195,7 +197,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.form.get('dias')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(value => this.applyDiasRules(value));
+    this.form.get('departamento')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.applyViaticosRules());
+    this.form.get('viaticosCliente')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.applyViaticosRules());
     this.applyDiasRules(this.form.get('dias')?.value);
+    this.applyViaticosRules();
   }
 
   ngOnDestroy(): void {
@@ -252,11 +261,24 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   get totalSeleccion(): number {
-    return this.selectedPaquetes.reduce((acc, item) => {
+    const subtotal = this.selectedPaquetes.reduce((acc, item) => {
       const precio = Number(item.precio) || 0;
       const cantidad = Number(item.cantidad ?? 1) || 1;
       return acc + (precio * cantidad);
     }, 0);
+    return subtotal + this.getViaticosMontoTotal();
+  }
+
+  private getViaticosMontoTotal(): number {
+    if (this.isDepartamentoLima()) {
+      return 0;
+    }
+    const viaticosCliente = !!this.form.get('viaticosCliente')?.value;
+    if (viaticosCliente) {
+      return 0;
+    }
+    const monto = this.parseNumber(this.form.get('viaticosMonto')?.value);
+    return monto != null && monto > 0 ? monto : 0;
   }
 
   private getTotalCantidadSeleccionada(): number {
@@ -779,6 +801,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const clienteContacto = this.sanitizeContacto((raw.clienteContacto ?? '').toString());
     const fechaEventoForm = raw.fechaEvento;
     const departamento = (raw.departamento ?? '').toString().trim();
+    const viaticosCliente = Boolean(raw.viaticosCliente);
+    const viaticosMonto = this.parseNumber(raw.viaticosMonto);
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const diasTexto = (raw.dias ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
@@ -913,7 +937,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         dias: diasNumero ?? undefined,
         horasEstimadas: horasEstimadasNumero ?? undefined,
         mensaje: descripcion,
-        estado: 'Borrador'
+        estado: 'Borrador',
+        viaticosCliente: departamento.toLowerCase() === 'lima' ? true : viaticosCliente,
+        viaticosMonto: departamento.toLowerCase() === 'lima'
+          ? undefined
+          : (viaticosCliente ? undefined : (viaticosMonto ?? undefined))
       },
       lead: {
         nombre: clienteNombre || undefined,
@@ -1038,6 +1066,15 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         }
         const fechasUnicas = this.getFechasProgramacionUnicas();
         if (fechasUnicas.length <= maxDias) {
+          const fechaAnterior = (lastValid ?? '').toString().trim();
+          if (fechaAnterior && fechaAnterior !== fecha && this.serviciosFechasSeleccionadas.length) {
+            const fechasActuales = this.getFechasProgramacionUnicas();
+            if (!fechasActuales.includes(fechaAnterior)) {
+              this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
+                entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
+              );
+            }
+          }
           lastValid = value;
           return;
         }
@@ -1184,6 +1221,43 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     this.refreshSelectedPaquetesColumns();
+  }
+
+  isDepartamentoLima(): boolean {
+    const depto = (this.form.get('departamento')?.value ?? '').toString().trim().toLowerCase();
+    return depto === 'lima';
+  }
+
+  private applyViaticosRules(): void {
+    const viaticosClienteControl = this.form.get('viaticosCliente');
+    const montoControl = this.form.get('viaticosMonto');
+    if (!viaticosClienteControl || !montoControl) {
+      return;
+    }
+    if (this.isDepartamentoLima()) {
+      viaticosClienteControl.setValue(true, { emitEvent: false });
+      montoControl.reset(null, { emitEvent: false });
+      montoControl.clearValidators();
+      if (!montoControl.disabled) {
+        montoControl.disable({ emitEvent: false });
+      }
+      montoControl.updateValueAndValidity({ emitEvent: false });
+      return;
+    }
+    const viaticosCliente = !!viaticosClienteControl.value;
+    if (viaticosCliente) {
+      montoControl.reset(null, { emitEvent: false });
+      montoControl.clearValidators();
+      if (!montoControl.disabled) {
+        montoControl.disable({ emitEvent: false });
+      }
+    } else {
+      if (montoControl.disabled) {
+        montoControl.enable({ emitEvent: false });
+      }
+      montoControl.setValidators([Validators.required, Validators.min(1)]);
+    }
+    montoControl.updateValueAndValidity({ emitEvent: false });
   }
 
   private normalizeHora24(value: string): string {
@@ -1653,6 +1727,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       fechaEvento: RegistrarCotizacionComponent.computeFechaMinimaEvento(),
       dias: null,
       departamento: 'Lima',
+      viaticosCliente: true,
+      viaticosMonto: null,
       horasEstimadas: '',
       descripcion: '',
       totalEstimado: 0
@@ -1662,6 +1738,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (horasControl) {
       horasControl.disable({ emitEvent: false });
     }
+    const montoControl = this.form.get('viaticosMonto');
+    if (montoControl) {
+      montoControl.disable({ emitEvent: false });
+    }
+    this.applyViaticosRules();
 
     while (this.programacion.length) {
       this.programacion.removeAt(0);

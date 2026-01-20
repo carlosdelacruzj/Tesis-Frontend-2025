@@ -130,6 +130,34 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   tagsPedido: Tag[] = [];
   tagsCliente: Tag[] = [];
 
+  readonly departamentos: string[] = [
+    'Amazonas',
+    'Ancash',
+    'Apurimac',
+    'Arequipa',
+    'Ayacucho',
+    'Cajamarca',
+    'Callao',
+    'Cusco',
+    'Huancavelica',
+    'Huanuco',
+    'Ica',
+    'Junin',
+    'La Libertad',
+    'Lambayeque',
+    'Lima',
+    'Loreto',
+    'Madre de Dios',
+    'Moquegua',
+    'Pasco',
+    'Piura',
+    'Puno',
+    'San Martin',
+    'Tacna',
+    'Tumbes',
+    'Ucayali'
+  ];
+
   // ====== Pedido actual ======
   private pedidoId!: number;
   private estadoPedidoId: number | null = null;
@@ -683,11 +711,25 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   get totalSeleccion(): number {
-    return this.selectedPaquetes.reduce((sum, p) => {
+    const subtotal = this.selectedPaquetes.reduce((sum, p) => {
       const precio = Number(p.precio) || 0;
       const cantidad = Number(p.cantidad ?? 1) || 1;
       return sum + (precio * cantidad);
     }, 0);
+    return subtotal + this.getViaticosMontoTotal();
+  }
+
+  private getViaticosMontoTotal(): number {
+    const departamento = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim().toLowerCase();
+    if (departamento === 'lima') {
+      return 0;
+    }
+    const viaticosCliente = Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente);
+    if (viaticosCliente) {
+      return 0;
+    }
+    const monto = this.parseNumber(this.visualizarService.selectAgregarPedido?.viaticosMonto);
+    return monto != null && monto > 0 ? monto : 0;
   }
 
   // ====== Edición inline en tabla de ubicaciones ======
@@ -752,6 +794,32 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return parsed != null && parsed <= 1;
   }
 
+  isDepartamentoLima(): boolean {
+    const depto = (this.visualizarService.selectAgregarPedido.departamento ?? '').toString().trim().toLowerCase();
+    return depto === 'lima';
+  }
+
+  onDepartamentoChange(value: unknown): void {
+    this.visualizarService.selectAgregarPedido.departamento = (value ?? '').toString();
+    this.applyViaticosRules();
+  }
+
+  onViaticosClienteChange(value: unknown): void {
+    this.visualizarService.selectAgregarPedido.viaticosCliente = Boolean(value);
+    this.applyViaticosRules();
+  }
+
+  private applyViaticosRules(): void {
+    if (this.isDepartamentoLima()) {
+      this.visualizarService.selectAgregarPedido.viaticosCliente = true;
+      this.visualizarService.selectAgregarPedido.viaticosMonto = null;
+      return;
+    }
+    if (this.visualizarService.selectAgregarPedido.viaticosCliente) {
+      this.visualizarService.selectAgregarPedido.viaticosMonto = null;
+    }
+  }
+
   onDiasChange(value: unknown): void {
     const parsed = this.parseNumber(value);
     this.visualizarService.selectAgregarPedido.dias = parsed != null ? Math.max(1, Math.floor(parsed)) : null;
@@ -777,6 +845,13 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
     const fechasUnicas = this.getFechasUbicacionUnicas();
     if (fechasUnicas.length <= maxDias) {
+      const fechaAnterior = (row._fechaPrev ?? '').toString().trim();
+      if (fechaAnterior && fechaAnterior !== fecha) {
+        const sigueUsada = this.ubicacion.some(item => item.Fecha === fechaAnterior);
+        if (!sigueUsada && this.visualizarService.selectAgregarPedido.fechaEvent === fechaAnterior) {
+          this.visualizarService.selectAgregarPedido.fechaEvent = fecha;
+        }
+      }
       row._fechaPrev = row.Fecha;
       return;
     }
@@ -826,6 +901,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
           editable._fechaPrev = fecha;
         }
       });
+      if (this.visualizarService.selectAgregarPedido.fechaEvent === fechaAnterior) {
+        this.visualizarService.selectAgregarPedido.fechaEvent = fecha;
+      }
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
     });
@@ -978,6 +1056,13 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       const cliente = this.asRecord(cabRecord['cliente']);
       this.visualizarService.selectAgregarPedido.NombrePedido = String(cabRecord['nombrePedido'] ?? cabRecord['nombre'] ?? '');
       this.visualizarService.selectAgregarPedido.Observacion = String(cabRecord['observaciones'] ?? '');
+      this.visualizarService.selectAgregarPedido.departamento = String(cabRecord['departamento'] ?? cabRecord['lugar'] ?? this.visualizarService.selectAgregarPedido.departamento ?? 'Lima');
+      const viaticosCliente = cabRecord['viaticosCliente'];
+      if (typeof viaticosCliente === 'boolean') {
+        this.visualizarService.selectAgregarPedido.viaticosCliente = viaticosCliente;
+      }
+      const viaticosMonto = this.parseNumber(cabRecord['viaticosMonto']);
+      this.visualizarService.selectAgregarPedido.viaticosMonto = viaticosMonto ?? null;
       this.CodigoEmpleado = this.parseNumber(cabRecord['empleadoId']) ?? this.CodigoEmpleado;
       this.estadoPedidoId = this.parseNumber(cabRecord['estadoPedidoId'] ?? estadoPedido['id'] ?? estadoPedido['idEstado']) ?? null;
       this.estadoPagoId = this.parseNumber(cabRecord['estadoPagoId'] ?? estadoPago['id'] ?? estadoPago['idEstado']) ?? null;
@@ -1003,6 +1088,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         this.visualizarService.selectAgregarPedido.fechaEvent = iso;
         this.fechaValidate(iso);
       }
+      this.applyViaticosRules();
 
       // Cliente
       this.infoCliente = {
@@ -1223,6 +1309,21 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    const departamento = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim();
+    const viaticosCliente = Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente);
+    const viaticosMonto = this.parseNumber(this.visualizarService.selectAgregarPedido?.viaticosMonto);
+    if (departamento && departamento.toLowerCase() !== 'lima' && !viaticosCliente) {
+      if (viaticosMonto == null || viaticosMonto <= 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Viáticos requeridos',
+          text: 'Ingresa el monto de viáticos.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+    }
+
     const fechaCreacion = this.convert(this.fechaCreate);
     const toHms = (h: string | null | undefined) => (h || '').length === 5 ? `${h}:00` : (h || '');
 
@@ -1236,7 +1337,16 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         estadoPedidoId: this.estadoPedidoId ?? 1,
         estadoPagoId: this.estadoPagoId ?? 1,
         nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || '',
-        cotizacionId: this.cotizacionId
+        cotizacionId: this.cotizacionId,
+        departamento: this.visualizarService.selectAgregarPedido?.departamento || undefined,
+        viaticosCliente: this.visualizarService.selectAgregarPedido?.departamento?.toLowerCase() === 'lima'
+          ? true
+          : Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente),
+        viaticosMonto: this.visualizarService.selectAgregarPedido?.departamento?.toLowerCase() === 'lima'
+          ? undefined
+          : (this.visualizarService.selectAgregarPedido?.viaticosCliente
+              ? undefined
+              : (this.parseNumber(this.visualizarService.selectAgregarPedido?.viaticosMonto) ?? undefined))
       },
       eventos: (this.ubicacion || [])
         .filter(u => (u?.Direccion || '').trim())

@@ -42,19 +42,19 @@
                 [(ngModel)]="visualizarService.selectAgregarPedido.fechaCreate" disabled>
             </div>
 
-            <div class="row g-3">
-              <div [ngClass]="shouldShowFechaEvento() ? 'col-md-6' : 'col-md-12'">
-                <div class="form-group">
-                  <label class="col-form-label" for="diasTrabajo">Cantidad de días</label>
+                <div class="row g-3">
+                  <div [ngClass]="shouldShowFechaEvento() ? 'col-md-6' : 'col-md-12'">
+                    <div class="form-group">
+                      <label class="col-form-label" for="diasTrabajo">Cantidad de días</label>
                   <input id="diasTrabajo" type="number" class="form-control" name="diasTrabajo"
                     [(ngModel)]="visualizarService.selectAgregarPedido.dias"
                     (ngModelChange)="onDiasChange($event)" min="1" step="1" inputmode="numeric" required>
                 </div>
-              </div>
-              @if (shouldShowFechaEvento()) {
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label class="col-form-label" for="fechaEvent">Fecha del evento</label>
+                  </div>
+                  @if (shouldShowFechaEvento()) {
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label class="col-form-label" for="fechaEvent">Fecha del evento</label>
                     <input id="fechaEvent" type="date" class="form-control"
                       [min]="fechaMinimaEvento" [max]="fechaMaximaEvento"
                       name="fechaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent"
@@ -76,11 +76,27 @@
                       }
                     }
                   </div>
+                    </div>
+                  }
                 </div>
-              }
-            </div>
+                <div class="row g-3 mt-2">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label class="col-form-label" for="departamentoPedido">Departamento</label>
+                      <select id="departamentoPedido" class="form-control"
+                        [(ngModel)]="visualizarService.selectAgregarPedido.departamento"
+                        (ngModelChange)="onDepartamentoChange($event)">
+                        <option value="">Selecciona un departamento</option>
+                        @for (dep of departamentos; track dep) {
+                          <option [value]="dep">{{ dep }}</option>
+                        }
+                      </select>
+                    </div>
+                  </div>
+                </div>
           </mat-card-content>
-        </mat-card>
+            </mat-card>
+
       </div>
 
       <div class="col-12">
@@ -193,19 +209,6 @@
                 Agregar locación
               </button>
             </div>
-          </mat-card-content>
-        </mat-card>
-      </div>
-
-      <div class="col-12">
-        <mat-card class="card mb-3">
-          <mat-card-header>
-            <mat-card-title>Mensaje del solicitante</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <textarea class="form-control" rows="3" name="Observacion"
-              [(ngModel)]="visualizarService.selectAgregarPedido.Observacion"
-              placeholder="Mensaje proporcionado en la solicitud"></textarea>
           </mat-card-content>
         </mat-card>
       </div>
@@ -386,6 +389,45 @@
                 </div>
               </div>
             }
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <div class="col-12">
+        @if (!isDepartamentoLima()) {
+        <mat-card class="card mb-3">
+          <mat-card-header>
+            <mat-card-title>Viáticos</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="form-check mb-3">
+              <input id="viaticosClientePedido" type="checkbox" class="form-check-input"
+                [(ngModel)]="visualizarService.selectAgregarPedido.viaticosCliente"
+                (ngModelChange)="onViaticosClienteChange($event)">
+              <label class="form-check-label" for="viaticosClientePedido">El cliente cubre viáticos</label>
+            </div>
+            @if (!visualizarService.selectAgregarPedido.viaticosCliente) {
+            <div class="form-group">
+              <label class="col-form-label" for="viaticosMontoPedido">Monto de viáticos (USD)</label>
+              <input id="viaticosMontoPedido" type="number" class="form-control"
+                [(ngModel)]="visualizarService.selectAgregarPedido.viaticosMonto" min="1" step="1"
+                inputmode="numeric">
+            </div>
+            }
+          </mat-card-content>
+        </mat-card>
+        }
+      </div>
+
+      <div class="col-12">
+        <mat-card class="card mb-3">
+          <mat-card-header>
+            <mat-card-title>Mensaje del solicitante</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <textarea class="form-control" rows="3" name="Observacion"
+              [(ngModel)]="visualizarService.selectAgregarPedido.Observacion"
+              placeholder="Mensaje proporcionado en la solicitud"></textarea>
           </mat-card-content>
         </mat-card>
       </div>

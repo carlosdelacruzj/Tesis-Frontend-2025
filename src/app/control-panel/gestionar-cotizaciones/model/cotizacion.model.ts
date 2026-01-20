@@ -211,6 +211,8 @@ export interface CotizacionAdminBasePayload {
     horasEstimadas?: number | null;
     mensaje?: string;
     estado?: string;
+    viaticosCliente?: boolean;
+    viaticosMonto?: number | null;
   };
   items: CotizacionAdminItemPayload[];
   serviciosFechas?: CotizacionAdminServicioFechaPayload[];
