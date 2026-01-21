@@ -464,6 +464,7 @@
               <div class="text-center">
                 <input type="number" class="form-control form-control-sm text-center"
                   [value]="row.cantidad || 1" min="1" step="1" inputmode="numeric"
+                  [attr.max]="getCantidadMaximaPorDias() || null"
                   (input)="onCantidadChange(row, $any($event.target).value)">
               </div>
             </ng-template>
@@ -521,7 +522,7 @@
           </app-table-base>
         </div>
         <div class="text-end mt-2">
-          <strong>Total: {{ totalSeleccion | usd:'1.2-2' }}</strong>
+          <strong>Subtotal paquetes: {{ totalPaquetes | usd:'1.2-2' }}</strong>
         </div>
       </mat-card-content>
     </mat-card>
@@ -571,7 +572,7 @@
 
     <div class="row mb-3">
       <div class="col-md-4 ms-auto">
-        <label class="col-form-label" for="totalEstimado">Total estimado</label>
+        <label class="col-form-label" for="totalEstimado">Total final</label>
         <div class="input-group">
           <span class="input-group-text">US$</span>
           <input id="totalEstimado" type="number" class="form-control" formControlName="totalEstimado" min="0" step="1">
@@ -718,25 +719,25 @@
         </tr>
       </thead>
       <tbody>
-        @for (item of selectedPaquetes; track item.key; let itemIndex = $index) {
-        <tr>
-          <td>
-            <div class="fw-semibold">{{ item.titulo }}</div>
-            <div class="small text-muted">Cantidad: {{ item.cantidad || 1 }}</div>
-          </td>
+            @for (item of selectedPaquetes; track item.key; let itemIndex = $index) {
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ item.titulo }}</div>
+                <div class="small text-muted">Cantidad: {{ item.cantidad || 1 }}</div>
+              </td>
               @for (fecha of fechasDisponibles; track fecha) {
-          <td class="text-center">
-            <input type="checkbox" class="form-check-input"
-              [checked]="isFechaAsignada('i' + (itemIndex + 1), fecha)"
-              [disabled]="!isFechaAsignada('i' + (itemIndex + 1), fecha) && getCantidadAsignada('i' + (itemIndex + 1)) >= (item.cantidad || 1)"
-              (change)="toggleFechaAsignada('i' + (itemIndex + 1), fecha, $any($event.target).checked, item.cantidad || 1)">
-          </td>
-          }
-          <td class="text-center">
-            {{ getCantidadAsignada('i' + (itemIndex + 1)) }}/{{ item.cantidad || 1 }}
-          </td>
-        </tr>
-        }
+              <td class="text-center">
+                <input type="checkbox" class="form-check-input"
+                  [checked]="isFechaAsignada(item.tmpId, fecha)"
+                  [disabled]="!isFechaAsignada(item.tmpId, fecha) && getCantidadAsignada(item.tmpId) >= (item.cantidad || 1)"
+                  (change)="toggleFechaAsignada(item.tmpId, fecha, $any($event.target).checked, item.cantidad || 1)">
+              </td>
+              }
+              <td class="text-center">
+                {{ getCantidadAsignada(item.tmpId) }}/{{ item.cantidad || 1 }}
+              </td>
+            </tr>
+            }
       </tbody>
     </table>
   </div>

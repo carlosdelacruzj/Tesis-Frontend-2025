@@ -484,11 +484,14 @@ downloadPdf(
       horasEstimadas: horasEstimadas ?? undefined,
       mensaje: detalleInput.mensaje ?? undefined,
       estado: detalleInput.estado ?? undefined,
-      totalEstimado: totalEstimado
+      totalEstimado: totalEstimado,
+      viaticosCliente: detalleInput.viaticosCliente ?? undefined,
+      viaticosMonto: detalleInput.viaticosMonto ?? undefined
     };
 
     const items = Array.isArray(payload?.items) ? payload.items.filter(Boolean) : [];
     const eventos = Array.isArray(payload?.eventos) ? payload.eventos.filter(Boolean) : [];
+    const serviciosFechas = Array.isArray(payload?.serviciosFechas) ? payload.serviciosFechas.filter(Boolean) : [];
 
     const horasTexto = contexto.horasEstimadasTexto ?? this.formatHoras(detalle.horasEstimadas);
 
@@ -497,6 +500,7 @@ downloadPdf(
       cotizacion: detalle,
       items,
       eventos,
+      serviciosFechas,
       contexto: {
         ...contexto,
         horasEstimadasTexto: horasTexto ?? undefined
@@ -521,6 +525,7 @@ downloadPdf(
 
     return {
       idEventoServicio: idEventoServicio ?? undefined,
+      idCotizacionServicio: this.parseNumberNullable(item.idCotizacionServicio) ?? undefined,
       eventoId: eventoId ?? undefined,
       servicioId: servicioId ?? undefined,
       grupo: item.grupo ?? null,
@@ -800,6 +805,19 @@ downloadPdf(
       ?? undefined;
     const totalNumber = this.parseNumberNullable(totalRaw ?? undefined);
 
+    const viaticosMontoRaw = detalleApi?.viaticosMonto
+      ?? api.viaticosMonto
+      ?? api.viaticos_monto
+      ?? undefined;
+    const viaticosMonto = this.parseNumberNullable(viaticosMontoRaw);
+    const viaticosClienteRaw = detalleApi?.viaticosCliente
+      ?? api.viaticosCliente
+      ?? api.viaticos_cliente
+      ?? undefined;
+    const viaticosCliente = typeof viaticosClienteRaw === 'boolean'
+      ? viaticosClienteRaw
+      : (viaticosMonto != null ? viaticosMonto === 0 : undefined);
+
     const detalle: CotizacionDetallePayload = {
       idCotizacion: idCotizacion ?? undefined,
       eventoId: eventoId ?? undefined,
@@ -810,7 +828,9 @@ downloadPdf(
       horasEstimadas: horasNumero ?? undefined,
       mensaje: detalleApi?.mensaje ?? api.mensaje ?? api.notas ?? undefined,
       estado: detalleApi?.estado ?? api.estado ?? undefined,
-      totalEstimado: totalNumber ?? undefined
+      totalEstimado: totalNumber ?? undefined,
+      viaticosCliente: viaticosCliente ?? undefined,
+      viaticosMonto: viaticosMonto ?? undefined
     };
 
     const itemsSource = Array.isArray(api.items) && api.items.length
@@ -835,13 +855,17 @@ downloadPdf(
     const eventos = eventosFuente
       .map((evento, index) => this.extractEventoFromApi(evento as Record<string, unknown>, index))
       .filter(evento => evento != null);
+    const serviciosFechas = Array.isArray(api.serviciosFechas)
+      ? api.serviciosFechas
+      : (Array.isArray(detalleApi?.serviciosFechas) ? detalleApi?.serviciosFechas : []);
 
     return {
       contacto,
       cotizacion: detalle,
       items,
       eventos,
-      contexto
+      contexto,
+      serviciosFechas
     };
   }
 
@@ -945,8 +969,11 @@ downloadPdf(
     const descuento = this.parseNumberNullable(item['descuento']);
     const recargo = this.parseNumberNullable(item['recargo']);
     const opcion = this.parseNumberNullable(item['opcion']);
+    const idCotizacionServicio = this.parseNumberNullable(
+      item['idCotizacionServicio'] ?? item['idCotizacion_servicio']
+    );
     const idEventoServicio = this.parseNumberNullable(
-      item['idEventoServicio'] ?? item['eventoServicioId'] ?? item['idCotizacionServicio']
+      item['idEventoServicio'] ?? item['eventoServicioId'] ?? item['id']
     );
     const eventoId = this.parseNumberNullable(
       item['eventoId'] ?? item['idEvento'] ?? item['evento_id']
@@ -969,6 +996,7 @@ downloadPdf(
 
     return {
       idEventoServicio: idEventoServicio != null ? idEventoServicio : undefined,
+      idCotizacionServicio: idCotizacionServicio != null ? idCotizacionServicio : undefined,
       grupo: this.toOptionalString(item['grupo']) ?? this.toOptionalString(item['Grupo']) ?? null,
       opcion: opcion != null ? opcion : null,
       titulo,

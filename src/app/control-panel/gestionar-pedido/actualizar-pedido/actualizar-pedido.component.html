@@ -385,7 +385,7 @@
                   </app-table-base>
                 </div>
                 <div class="text-end mt-2">
-                  <strong>Total: {{ totalSeleccion | usd:'1.2-2' }}</strong>
+                  <strong>Subtotal paquetes: {{ totalPaquetes | usd:'1.2-2' }}</strong>
                 </div>
               </div>
             }
@@ -436,7 +436,7 @@
 
     <div class="row mb-3">
       <div class="col-md-4 ms-auto">
-        <label class="col-form-label" for="totalEstimado">Total estimado</label>
+        <label class="col-form-label" for="totalEstimado">Total final</label>
         <div class="input-group">
           <span class="input-group-text">US$</span>
           <input id="totalEstimado" type="number" class="form-control" [value]="totalSeleccion" disabled>

@@ -70,6 +70,8 @@ export interface CotizacionDetallePayload {
   mensaje?: string;
   estado?: string;
   totalEstimado?: number;
+  viaticosCliente?: boolean;
+  viaticosMonto?: number | null;
 }
 
 export interface CotizacionApiResponse {
@@ -95,6 +97,10 @@ export interface CotizacionApiResponse {
   notas?: string | null;
   total?: number | string | null;
   totalEstimado?: number | string | null;
+  viaticosMonto?: number | string | null;
+  viaticos_monto?: number | string | null;
+  viaticosCliente?: boolean | null;
+  viaticos_cliente?: boolean | null;
   lead?: CotizacionApiContacto | null;
   contacto?: CotizacionApiContacto | null;
   cotizacion?: (Partial<CotizacionDetallePayload> & {
@@ -106,13 +112,16 @@ export interface CotizacionApiResponse {
     estado?: string | null;
     idTipoEvento?: number | string | null;
     items?: Record<string, unknown>[] | null;
+    serviciosFechas?: Record<string, unknown>[] | null;
   }) | null;
   items?: Record<string, unknown>[] | null;
   eventos?: Record<string, unknown>[] | null;
+  serviciosFechas?: Record<string, unknown>[] | null;
 }
 
 export interface CotizacionItemPayload {
   idEventoServicio?: number;
+  idCotizacionServicio?: number;
   eventoId?: number;
   servicioId?: number;
   grupo?: string | null;
@@ -157,6 +166,7 @@ export interface CotizacionPayload {
   items: CotizacionItemPayload[];
   eventos?: CotizacionEventoPayload[];
   contexto?: CotizacionContextoPayload;
+  serviciosFechas?: Record<string, unknown>[];
 }
 
 export interface CotizacionAdminClientePayload {

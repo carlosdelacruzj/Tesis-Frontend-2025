@@ -14,6 +14,7 @@ type AnyRecord = Record<string, unknown>;
 
 interface PaqueteSeleccionado {
   key: string | number;
+  tmpId: string;
   titulo: string;
   descripcion: string;
   precio: number;
@@ -162,6 +163,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   asignacionFechasAbierta = false;
   fechasDisponibles: string[] = [];
   serviciosFechasSeleccionadas: CotizacionAdminServicioFechaPayload[] = [];
+  private tmpIdSequence = 0;
 
   private readonly destroy$ = new Subject<void>();
 
@@ -180,7 +182,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       viaticosMonto: [{ value: null, disabled: true }],
       horasEstimadas: [{ value: '', disabled: true }, [Validators.pattern(/^\d+$/), Validators.min(1)]],
       descripcion: [''],
-      totalEstimado: [0, Validators.min(0)],
+      totalEstimado: [{ value: 0, disabled: true }, Validators.min(0)],
       programacion: this.fb.array([])
     });
   }
@@ -203,6 +205,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.form.get('viaticosCliente')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.applyViaticosRules());
+    this.form.get('viaticosMonto')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.syncTotalEstimado());
     this.applyDiasRules(this.form.get('dias')?.value);
     this.applyViaticosRules();
   }
@@ -267,6 +272,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       return acc + (precio * cantidad);
     }, 0);
     return subtotal + this.getViaticosMontoTotal();
+  }
+
+  get totalPaquetes(): number {
+    return this.selectedPaquetes.reduce((acc, item) => {
+      const precio = Number(item.precio) || 0;
+      const cantidad = Number(item.cantidad ?? 1) || 1;
+      return acc + (precio * cantidad);
+    }, 0);
   }
 
   private getViaticosMontoTotal(): number {
@@ -379,6 +392,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       ...restantes,
       {
         key,
+        tmpId: `i${this.tmpIdSequence + 1}`,
         titulo,
         descripcion,
         precio: precioBase,
@@ -402,7 +416,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         editandoPrecio: false
       }
     ];
-    this.serviciosFechasSeleccionadas = [];
+    this.tmpIdSequence += 1;
+    if (this.serviciosFechasSeleccionadas.length) {
+      const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => tmpIds.has(entry.itemTmpId));
+    }
     this.syncTotalEstimado();
   }
 
@@ -416,8 +434,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   removePaquete(key: string | number): void {
+    const removed = this.selectedPaquetes.find(p => p.key === key);
     this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
-    this.serviciosFechasSeleccionadas = [];
+    if (removed?.tmpId) {
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId !== removed.tmpId);
+    }
     this.syncTotalEstimado();
   }
 
@@ -733,8 +754,22 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   onCantidadChange(paquete: PaqueteSeleccionado, value: unknown): void {
     const parsed = this.parseNumber(value);
-    paquete.cantidad = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
-    this.serviciosFechasSeleccionadas = [];
+    const base = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+    const max = this.getCantidadMaximaPorDias();
+    paquete.cantidad = max != null ? Math.min(base, max) : base;
+    if (paquete.tmpId) {
+      let count = 0;
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => {
+        if (entry.itemTmpId !== paquete.tmpId) {
+          return true;
+        }
+        if (count < paquete.cantidad) {
+          count += 1;
+          return true;
+        }
+        return false;
+      });
+    }
     this.syncTotalEstimado();
   }
 
@@ -846,6 +881,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         );
         return;
       }
+      if (fechasUnicas.size > diasNumero) {
+        this.showAlert(
+          'warning',
+          'Fechas excedidas',
+          `Tienes ${fechasUnicas.size} fechas diferentes. Reduce a ${diasNumero} fechas para continuar.`
+        );
+        return;
+      }
     }
     const fechaEvento = this.isMultipleDias()
       ? (eventos.find(ev => ev.fecha)?.fecha ?? '')
@@ -863,7 +906,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       const filmMin = this.parseNumber(item.filmMin ?? this.getFilmMin(item.origen));
 
       const payloadItem: CotizacionAdminItemPayload = {
-        tmpId: `i${index + 1}`,
+        tmpId: item.tmpId ?? `i${index + 1}`,
         idEventoServicio: eventoServicioId ?? undefined,
         eventoId: this.selectedEventoId ?? undefined,
         servicioId: servicioId ?? undefined,
@@ -1136,6 +1179,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return parsed != null && parsed > 1;
   }
 
+  getCantidadMaximaPorDias(): number | null {
+    const parsed = this.parseNumber(this.form.get('dias')?.value);
+    return parsed != null && parsed >= 1 ? parsed : null;
+  }
+
   private getFechasProgramacionUnicas(): string[] {
     const fechas = this.programacion.controls
       .map(control => (control as UntypedFormGroup).get('fecha')?.value)
@@ -1212,6 +1260,21 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
       this.syncTotalEstimado();
     }
+    if (multiple) {
+      const max = this.getCantidadMaximaPorDias();
+      if (max != null) {
+        const ajustados = this.selectedPaquetes.map(item => ({
+          ...item,
+          cantidad: Math.min(Number(item.cantidad ?? 1) || 1, max)
+        }));
+        const changed = ajustados.some((item, index) => item.cantidad !== this.selectedPaquetes[index]?.cantidad);
+        if (changed) {
+          this.selectedPaquetes = ajustados;
+          this.serviciosFechasSeleccionadas = [];
+          this.syncTotalEstimado();
+        }
+      }
+    }
 
     if (!multiple && this.serviciosFechasSeleccionadas.length) {
       this.serviciosFechasSeleccionadas = [];
@@ -1258,6 +1321,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       montoControl.setValidators([Validators.required, Validators.min(1)]);
     }
     montoControl.updateValueAndValidity({ emitEvent: false });
+    this.syncTotalEstimado();
   }
 
   private normalizeHora24(value: string): string {
@@ -1450,9 +1514,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   syncTotalEstimado(): void {
     const control = this.form.get('totalEstimado');
-    if (!control?.dirty) {
-      control?.setValue(this.totalSeleccion, { emitEvent: false });
-    }
+    control?.setValue(this.totalSeleccion, { emitEvent: false });
     this.refreshSelectedPaquetesColumns();
   }
 
@@ -1738,6 +1800,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (horasControl) {
       horasControl.disable({ emitEvent: false });
     }
+    const totalControl = this.form.get('totalEstimado');
+    if (totalControl && !totalControl.disabled) {
+      totalControl.disable({ emitEvent: false });
+    }
     const montoControl = this.form.get('viaticosMonto');
     if (montoControl) {
       montoControl.disable({ emitEvent: false });
@@ -1749,6 +1815,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     this.selectedPaquetes = [];
+    this.tmpIdSequence = 0;
     this.paquetesRows = [];
     this.selectedEventoId = null;
     this.selectedEventoNombre = '';

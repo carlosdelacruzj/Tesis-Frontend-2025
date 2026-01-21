@@ -495,7 +495,7 @@
 
                             </app-table-base>
                             <div class="text-end mt-2">
-                                <strong>Total: {{ totalSeleccion | usd:'1.2-2' }}</strong>
+                                <strong>Subtotal paquetes: {{ totalPaquetes | usd:'1.2-2' }}</strong>
                             </div>
                         </div>
                     </div>
@@ -538,6 +538,16 @@
                         placeholder="Mensaje proporcionado en la solicitud"></textarea>
                 </mat-card-content>
             </mat-card>
+
+            <div class="row mb-3">
+                <div class="col-md-4 ms-auto">
+                    <label class="col-form-label" for="totalFinalPedido">Total final</label>
+                    <div class="input-group">
+                        <span class="input-group-text">US$</span>
+                        <input id="totalFinalPedido" type="number" class="form-control" [value]="totalSeleccion" disabled>
+                    </div>
+                </div>
+            </div>
 
             <div class="row" style="text-align: center;">
                 <div class="col-6" style="text-align: right;">

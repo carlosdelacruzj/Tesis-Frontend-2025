@@ -719,6 +719,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return subtotal + this.getViaticosMontoTotal();
   }
 
+  get totalPaquetes(): number {
+    return this.selectedPaquetes.reduce((sum, p) => {
+      const precio = Number(p.precio) || 0;
+      const cantidad = Number(p.cantidad ?? 1) || 1;
+      return sum + (precio * cantidad);
+    }, 0);
+  }
+
   private getViaticosMontoTotal(): number {
     const departamento = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim().toLowerCase();
     if (departamento === 'lima') {
@@ -1273,6 +1281,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
           icon: 'warning',
           title: 'Fechas insuficientes',
           text: `Para ${diasTrabajo} días de trabajo debes registrar al menos ${diasTrabajo} fechas diferentes en las locaciones.`,
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+      if (fechasUnicas.size > diasTrabajo) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Fechas excedidas',
+          text: `Tienes ${fechasUnicas.size} fechas diferentes. Reduce a ${diasTrabajo} fechas para continuar.`,
           confirmButtonText: 'Entendido'
         });
         return;

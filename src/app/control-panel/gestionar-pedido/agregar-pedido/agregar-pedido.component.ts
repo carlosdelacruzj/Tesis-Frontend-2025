@@ -717,6 +717,14 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     return subtotal + this.getViaticosMontoTotal();
   }
 
+  get totalPaquetes(): number {
+    return this.selectedPaquetes.reduce((sum, p) => {
+      const precio = Number(p.precio) || 0;
+      const cantidad = Number(p.cantidad ?? 1) || 1;
+      return sum + (precio * cantidad);
+    }, 0);
+  }
+
   private getViaticosMontoTotal(): number {
     const departamento = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim().toLowerCase();
     if (departamento === 'lima') {
@@ -1110,6 +1118,16 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       if (fechasUnicas.size < diasTrabajo) {
         Swal.fire({
           text: `Para ${diasTrabajo} días de trabajo debes registrar al menos ${diasTrabajo} fechas diferentes en las locaciones.`,
+          icon: 'warning',
+          showCancelButton: false,
+          customClass: { confirmButton: 'btn btn-warning' },
+          buttonsStyling: false
+        });
+        return;
+      }
+      if (fechasUnicas.size > diasTrabajo) {
+        Swal.fire({
+          text: `Tienes ${fechasUnicas.size} fechas diferentes. Reduce a ${diasTrabajo} fechas para continuar.`,
           icon: 'warning',
           showCancelButton: false,
           customClass: { confirmButton: 'btn btn-warning' },
