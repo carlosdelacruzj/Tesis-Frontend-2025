@@ -976,6 +976,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     }
   }
 
+
   onCantidadChange(paquete: PedidoPaqueteSeleccionado, value: unknown): void {
     const parsed = this.parseNumberNullable(value);
     paquete.cantidad = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;

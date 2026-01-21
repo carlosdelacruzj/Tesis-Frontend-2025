@@ -1192,6 +1192,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return Array.from(new Set(fechas)).sort();
   }
 
+
   formatFechaConDia(fecha: string): string {
     const parsed = parseDateInput(fecha);
     if (!parsed) {

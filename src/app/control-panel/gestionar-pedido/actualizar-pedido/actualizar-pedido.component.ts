@@ -912,8 +912,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       if (this.visualizarService.selectAgregarPedido.fechaEvent === fechaAnterior) {
         this.visualizarService.selectAgregarPedido.fechaEvent = fecha;
       }
-      this.dataSource.data = this.ubicacion;
-      this.bindSorts();
     });
   }
 
@@ -1001,6 +999,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
   }
+
 
   async deleteElement(p: string, c: string) {
     const fila = this.ubicacion.find(x => x.Hora == c && x.Direccion == p);
