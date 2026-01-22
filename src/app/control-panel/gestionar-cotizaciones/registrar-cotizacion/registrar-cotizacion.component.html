@@ -209,9 +209,9 @@
 
             <div class="form-group mt-3">
               <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
-              <select id="eventoSelect" class="form-control" [value]="selectedEventoId ?? ''"
-                (change)="onEventoDropdownChange($any($event.target).value)" [disabled]="!eventos.length"
-                [ngClass]="{'is-invalid': eventoSelectTouched && !selectedEventoId}">
+                  <select id="eventoSelect" class="form-control" [value]="selectedEventoId ?? ''"
+                    (change)="onEventoDropdownChange($event)" [disabled]="!eventos.length"
+                    [ngClass]="{'is-invalid': eventoSelectTouched && !selectedEventoId}">
                 <option value="" disabled>Selecciona un tipo de evento</option>
                 @for (evento of eventos; track evento.id !== null && evento.id !== undefined ? evento.id : $index) {
                 <option [value]="evento.id ?? ''">

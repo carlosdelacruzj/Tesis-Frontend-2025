@@ -128,6 +128,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   fechasDisponibles: string[] = [];
   serviciosFechasSeleccionadas: CotizacionAdminServicioFechaPayload[] = [];
   private tmpIdSequence = 0;
+  private lastDepartamento = '';
+  private departamentoChangeLock = false;
 
   private cotizacion: Cotizacion | null = null;
   private pendingServicioId: number | null = null;
@@ -201,9 +203,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.form.get('dias')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(value => this.applyDiasRules(value));
+    this.lastDepartamento = (this.form.get('departamento')?.value ?? '').toString().trim();
     this.form.get('departamento')?.valueChanges
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.applyViaticosRules());
+      .subscribe(value => this.handleDepartamentoChange(value));
     this.form.get('viaticosCliente')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.applyViaticosRules());
@@ -318,9 +321,13 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.loadEventosServicio();
   }
 
-  onEventoDropdownChange(rawValue: string): void {
+  onEventoDropdownChange(event: Event): void {
     this.eventoSelectTouched = true;
+    const target = event.target as HTMLSelectElement | null;
+    const rawValue = target?.value ?? '';
     const nextEventoId = this.parseNumber(rawValue);
+    const prevEventoId = this.selectedEventoId;
+    const prevValue = prevEventoId != null ? String(prevEventoId) : '';
     if (this.selectedPaquetes.length && nextEventoId !== this.selectedEventoId) {
       void Swal.fire({
         icon: 'warning',
@@ -332,6 +339,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         reverseButtons: true
       }).then(result => {
         if (!result.isConfirmed) {
+          if (target) {
+            target.value = prevValue;
+          }
+          this.selectedEventoIdValue = prevValue;
           return;
         }
         this.selectedPaquetes = [];
@@ -1019,6 +1030,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       descripcion: detalle?.mensaje ?? cotizacion.notas ?? '',
       totalEstimado: detalle?.totalEstimado ?? cotizacion.total ?? 0
     }, { emitEvent: false });
+    this.lastDepartamento = (this.form.get('departamento')?.value ?? '').toString().trim();
 
     const servicioId = this.parseNumber(contexto?.servicioId ?? cotizacion.servicioId);
     this.pendingServicioId = servicioId != null && servicioId > 0 ? servicioId : null;
@@ -1669,6 +1681,49 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
     montoControl.updateValueAndValidity({ emitEvent: false });
     this.syncTotalEstimado();
+  }
+
+  private handleDepartamentoChange(value: unknown): void {
+    if (this.departamentoChangeLock) {
+      return;
+    }
+    const next = (value ?? '').toString().trim();
+    const prev = (this.lastDepartamento ?? '').toString().trim();
+    if (!prev) {
+      this.lastDepartamento = next;
+      this.applyViaticosRules();
+      return;
+    }
+    if (!next || next === prev) {
+      this.lastDepartamento = next;
+      this.applyViaticosRules();
+      return;
+    }
+    const monto = this.parseNumber(this.form.get('viaticosMonto')?.value);
+    const avisoMonto = monto != null && monto > 0
+      ? 'El monto de viaticos podria variar si cambias de departamento.'
+      : '';
+    const texto = avisoMonto
+      ? `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"? ${avisoMonto}`
+      : `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"?`;
+
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Cambiar departamento',
+      text: texto,
+      showCancelButton: true,
+      confirmButtonText: 'Cambiar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.lastDepartamento = next;
+        this.applyViaticosRules();
+        return;
+      }
+      this.departamentoChangeLock = true;
+      this.form.get('departamento')?.setValue(prev, { emitEvent: false });
+      this.departamentoChangeLock = false;
+    });
   }
 
   private normalizeProgramacionFecha(valor: unknown): string | undefined {

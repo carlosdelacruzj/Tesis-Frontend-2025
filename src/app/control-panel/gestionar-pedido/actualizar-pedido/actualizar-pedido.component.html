@@ -69,7 +69,7 @@
                   <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
                   <select id="eventoSelect" class="form-control"
                     [value]="(eventoSeleccionado ?? '').toString()"
-                    (change)="onEventoDropdownChange($any($event.target).value)" (blur)="eventoSelectTouched = true"
+                    (change)="onEventoDropdownChange($event)" (blur)="eventoSelectTouched = true"
                     [disabled]="!evento.length"
                     [ngClass]="{'is-invalid': eventoSelectTouched && !eventoSeleccionado}">
                     <option value="" disabled>Selecciona un tipo de evento</option>

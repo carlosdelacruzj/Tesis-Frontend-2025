@@ -113,6 +113,8 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   fechasDisponibles: string[] = [];
   serviciosFechasSeleccionadas: PedidoServicioFecha[] = [];
   private tmpIdSequence = 0;
+  private lastDepartamento = '';
+  private departamentoChangeLock = false;
 
   // ====== TAGS ======
   tagsPedido: Tag[] = [];
@@ -157,6 +159,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     this.getEventos();
     this.getServicio();
     this.getEventoxServicio();
+    this.lastDepartamento = (this.visualizarService.selectAgregarPedido.departamento ?? '').toString().trim();
 
     if (this.dniCliente) this.loadTagsCliente();
 
@@ -890,8 +893,48 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   onDepartamentoChange(value: unknown): void {
-    this.visualizarService.selectAgregarPedido.departamento = (value ?? '').toString();
-    this.applyViaticosRules();
+    if (this.departamentoChangeLock) {
+      return;
+    }
+    const next = (value ?? '').toString().trim();
+    const prev = (this.lastDepartamento ?? '').toString().trim();
+    if (!prev) {
+      this.visualizarService.selectAgregarPedido.departamento = next;
+      this.lastDepartamento = next;
+      this.applyViaticosRules();
+      return;
+    }
+    if (!next || next === prev) {
+      this.visualizarService.selectAgregarPedido.departamento = next;
+      this.lastDepartamento = next;
+      this.applyViaticosRules();
+      return;
+    }
+    const monto = this.parseNumberNullable(this.visualizarService.selectAgregarPedido?.viaticosMonto);
+    const avisoMonto = monto != null && monto > 0
+      ? 'El monto de viaticos podria variar si cambias de departamento.'
+      : '';
+    const texto = avisoMonto
+      ? `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"? ${avisoMonto}`
+      : `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"?`;
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Cambiar departamento',
+      text: texto,
+      showCancelButton: true,
+      confirmButtonText: 'Cambiar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.visualizarService.selectAgregarPedido.departamento = next;
+        this.lastDepartamento = next;
+        this.applyViaticosRules();
+        return;
+      }
+      this.departamentoChangeLock = true;
+      this.visualizarService.selectAgregarPedido.departamento = prev;
+      this.departamentoChangeLock = false;
+    });
   }
 
   onViaticosClienteChange(value: unknown): void {

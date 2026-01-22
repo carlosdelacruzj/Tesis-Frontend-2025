@@ -139,6 +139,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   fechasDisponibles: string[] = [];
   serviciosFechasSeleccionadas: PedidoServicioFecha[] = [];
   private tmpIdSequence = 0;
+  private lastDepartamento = '';
+  private departamentoChangeLock = false;
 
   // ====== TAGS ======
   tagsPedido: Tag[] = [];
@@ -211,6 +213,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
     // Cargar el pedido existente
     this.loadPedido(this.pedidoId);
+    this.lastDepartamento = (this.visualizarService.selectAgregarPedido.departamento ?? '').toString().trim();
   }
 
   ngAfterViewInit(): void {
@@ -432,7 +435,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     });
   }
 
-  asignarEvento(event: string | number) {
+  asignarEvento(event: string | number, target?: HTMLSelectElement | null, prevValue?: string) {
     const parsed = this.parseNumber(event);
     if (parsed == null) {
       return;
@@ -448,6 +451,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         reverseButtons: true
       }).then(result => {
         if (!result.isConfirmed) {
+          if (target) {
+            target.value = prevValue ?? '';
+          }
           return;
         }
         this.selectedPaquetes = [];
@@ -469,9 +475,12 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
   }
 
-  onEventoDropdownChange(value: string | number): void {
+  onEventoDropdownChange(event: Event): void {
     this.eventoSelectTouched = true;
-    this.asignarEvento(value);
+    const target = event.target as HTMLSelectElement | null;
+    const rawValue = target?.value ?? '';
+    const prevValue = (this.eventoSeleccionado ?? '').toString();
+    this.asignarEvento(rawValue, target, prevValue);
   }
 
   getEventoxServicio() {
@@ -888,8 +897,48 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   onDepartamentoChange(value: unknown): void {
-    this.visualizarService.selectAgregarPedido.departamento = (value ?? '').toString();
-    this.applyViaticosRules();
+    if (this.departamentoChangeLock) {
+      return;
+    }
+    const next = (value ?? '').toString().trim();
+    const prev = (this.lastDepartamento ?? '').toString().trim();
+    if (!prev) {
+      this.visualizarService.selectAgregarPedido.departamento = next;
+      this.lastDepartamento = next;
+      this.applyViaticosRules();
+      return;
+    }
+    if (!next || next === prev) {
+      this.visualizarService.selectAgregarPedido.departamento = next;
+      this.lastDepartamento = next;
+      this.applyViaticosRules();
+      return;
+    }
+    const monto = this.parseNumber(this.visualizarService.selectAgregarPedido?.viaticosMonto);
+    const avisoMonto = monto != null && monto > 0
+      ? 'El monto de viaticos podria variar si cambias de departamento.'
+      : '';
+    const texto = avisoMonto
+      ? `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"? ${avisoMonto}`
+      : `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"?`;
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Cambiar departamento',
+      text: texto,
+      showCancelButton: true,
+      confirmButtonText: 'Cambiar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.visualizarService.selectAgregarPedido.departamento = next;
+        this.lastDepartamento = next;
+        this.applyViaticosRules();
+        return;
+      }
+      this.departamentoChangeLock = true;
+      this.visualizarService.selectAgregarPedido.departamento = prev;
+      this.departamentoChangeLock = false;
+    });
   }
 
   onViaticosClienteChange(value: unknown): void {
@@ -1160,6 +1209,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.visualizarService.selectAgregarPedido.NombrePedido = String(cabRecord['nombrePedido'] ?? cabRecord['nombre'] ?? '');
       this.visualizarService.selectAgregarPedido.Observacion = String(cabRecord['observaciones'] ?? '');
       this.visualizarService.selectAgregarPedido.departamento = String(cabRecord['departamento'] ?? cabRecord['lugar'] ?? this.visualizarService.selectAgregarPedido.departamento ?? 'Lima');
+      this.lastDepartamento = this.visualizarService.selectAgregarPedido.departamento.toString().trim();
       const viaticosCliente = cabRecord['viaticosCliente'];
       if (typeof viaticosCliente === 'boolean') {
         this.visualizarService.selectAgregarPedido.viaticosCliente = viaticosCliente;
@@ -1253,6 +1303,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       const diasInferidos = fechasUnicas.size ? fechasUnicas.size : (fechaEventoCab ? 1 : null);
       this.visualizarService.selectAgregarPedido.dias = diasCab ?? diasInferidos ?? 1;
       this.onDiasChange(this.visualizarService.selectAgregarPedido.dias);
+      const horasEstimadasRaw = cabRecord['horasEstimadas'] ?? cabRecord['horas_estimadas'];
+      const horasEstimadasNumero = Number(horasEstimadasRaw);
+      this.visualizarService.selectAgregarPedido.horasEstimadas = Number.isFinite(horasEstimadasNumero)
+        ? horasEstimadasNumero
+        : null;
 
       // Precargar controles "Fecha/Hora" superiores con el primer evento (UX)
       const first = this.ubicacion[0];

@@ -164,6 +164,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   fechasDisponibles: string[] = [];
   serviciosFechasSeleccionadas: CotizacionAdminServicioFechaPayload[] = [];
   private tmpIdSequence = 0;
+  private lastDepartamento = '';
+  private departamentoChangeLock = false;
 
   private readonly destroy$ = new Subject<void>();
 
@@ -199,9 +201,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.form.get('dias')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(value => this.applyDiasRules(value));
+    this.lastDepartamento = (this.form.get('departamento')?.value ?? '').toString().trim();
     this.form.get('departamento')?.valueChanges
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.applyViaticosRules());
+      .subscribe(value => this.handleDepartamentoChange(value));
     this.form.get('viaticosCliente')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.applyViaticosRules());
@@ -317,9 +320,13 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.onServicioChange(this.parseNumber(rawValue));
   }
 
-  onEventoDropdownChange(rawValue: string): void {
+  onEventoDropdownChange(event: Event): void {
     this.eventoSelectTouched = true;
+    const target = event.target as HTMLSelectElement | null;
+    const rawValue = target?.value ?? '';
     const nextEventoId = this.parseNumber(rawValue);
+    const prevEventoId = this.selectedEventoId;
+    const prevValue = prevEventoId != null ? String(prevEventoId) : '';
     if (this.selectedPaquetes.length && nextEventoId !== this.selectedEventoId) {
       void Swal.fire({
         icon: 'warning',
@@ -331,6 +338,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         reverseButtons: true
       }).then(result => {
         if (!result.isConfirmed) {
+          if (target) {
+            target.value = prevValue;
+          }
           return;
         }
         this.selectedPaquetes = [];
@@ -1323,6 +1333,49 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
     montoControl.updateValueAndValidity({ emitEvent: false });
     this.syncTotalEstimado();
+  }
+
+  private handleDepartamentoChange(value: unknown): void {
+    if (this.departamentoChangeLock) {
+      return;
+    }
+    const next = (value ?? '').toString().trim();
+    const prev = (this.lastDepartamento ?? '').toString().trim();
+    if (!prev) {
+      this.lastDepartamento = next;
+      this.applyViaticosRules();
+      return;
+    }
+    if (!next || next === prev) {
+      this.lastDepartamento = next;
+      this.applyViaticosRules();
+      return;
+    }
+    const monto = this.parseNumber(this.form.get('viaticosMonto')?.value);
+    const avisoMonto = monto != null && monto > 0
+      ? 'El monto de viaticos podria variar si cambias de departamento.'
+      : '';
+    const texto = avisoMonto
+      ? `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"? ${avisoMonto}`
+      : `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"?`;
+
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Cambiar departamento',
+      text: texto,
+      showCancelButton: true,
+      confirmButtonText: 'Cambiar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.lastDepartamento = next;
+        this.applyViaticosRules();
+        return;
+      }
+      this.departamentoChangeLock = true;
+      this.form.get('departamento')?.setValue(prev, { emitEvent: false });
+      this.departamentoChangeLock = false;
+    });
   }
 
   private normalizeHora24(value: string): string {
