@@ -22,6 +22,7 @@ interface Tag {
 interface PedidoPaqueteSeleccionado {
   key: string | number;
   eventKey: string | number | null;
+  tmpId: string;
   id?: number;
   idEventoServicio?: number | null;
   eventoId?: number | null;
@@ -45,6 +46,11 @@ interface PedidoPaqueteSeleccionado {
   precioOriginal?: number;
   editandoPrecio?: boolean;
   servicioNombre?: string;
+}
+
+interface PedidoServicioFecha {
+  itemTmpId: string;
+  fecha: string;
 }
 
 type AnyRecord = Record<string, unknown>;
@@ -92,6 +98,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   evento: AnyRecord[] = [];
   servicioSeleccionado = 1;
   eventoSeleccionado = 1;
+  eventoSelectTouched = false;
 
   dataSource: MatTableDataSource<UbicacionRow> = new MatTableDataSource<UbicacionRow>([]);
   paquetesRows: PaqueteRow[] = [];
@@ -125,6 +132,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   selectedPaquetes: PedidoPaqueteSeleccionado[] = [];
   currentEventoKey: string | number | null = null;
   selectedPaquetesColumns: TableColumn<PedidoPaqueteSeleccionado>[] = [];
+  asignacionFechasAbierta = false;
+  fechasDisponibles: string[] = [];
+  serviciosFechasSeleccionadas: PedidoServicioFecha[] = [];
+  private tmpIdSequence = 0;
 
   // ====== TAGS ======
   tagsPedido: Tag[] = [];
@@ -468,6 +479,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
           return;
         }
         this.selectedPaquetes = [];
+        this.serviciosFechasSeleccionadas = [];
+        this.asignacionFechasAbierta = false;
+        this.fechasDisponibles = [];
+        this.tmpIdSequence = 0;
         this.refreshSelectedPaquetesColumns();
         this.eventoSeleccionado = parsed;
         if (this.puedeCargarPaquetes) {
@@ -480,6 +495,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (this.puedeCargarPaquetes) {
       this.getEventoxServicio();
     }
+  }
+
+  onEventoDropdownChange(value: string | number): void {
+    this.eventoSelectTouched = true;
+    this.asignarEvento(value);
   }
 
   getEventoxServicio() {
@@ -599,7 +619,22 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   onCantidadChange(paquete: PedidoPaqueteSeleccionado, value: unknown): void {
     const parsed = this.parseNumber(value);
-    paquete.cantidad = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+    const base = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+    const max = this.getCantidadMaximaPorDias();
+    paquete.cantidad = max != null ? Math.min(base, max) : base;
+    if (paquete.tmpId) {
+      let count = 0;
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => {
+        if (entry.itemTmpId !== paquete.tmpId) {
+          return true;
+        }
+        if (count < (paquete.cantidad || 1)) {
+          count += 1;
+          return true;
+        }
+        return false;
+      });
+    }
   }
 
   getPrecioInputId(paquete: PedidoPaqueteSeleccionado): string {
@@ -639,12 +674,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const fotosImpresas = record['fotosImpresas'] != null ? Number(record['fotosImpresas']) : null;
     const trailerMin = record['trailerMin'] != null ? Number(record['trailerMin']) : null;
     const filmMin = record['filmMin'] != null ? Number(record['filmMin']) : null;
+    this.tmpIdSequence += 1;
+    const tmpId = `i${this.tmpIdSequence}`;
     const restantes = this.selectedPaquetes.filter(item => (item.servicioId ?? null) !== servicioId);
     this.selectedPaquetes = [
       ...restantes,
       {
         key: this.getPkgKey(el),
         eventKey: eventoKey ?? null,
+        tmpId,
         idEventoServicio,
         eventoId,
         servicioId,
@@ -668,10 +706,18 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         editandoPrecio: false
       }
     ];
+    if (this.serviciosFechasSeleccionadas.length) {
+      const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => tmpIds.has(entry.itemTmpId));
+    }
     this.refreshSelectedPaquetesColumns();
   }
   removePaquete(key: string | number | null, eventoKey: string | number | null = this.currentEventoKey) {
+    const removed = this.selectedPaquetes.find(p => p.key === key && p.eventKey === eventoKey);
     this.selectedPaquetes = this.selectedPaquetes.filter(p => !(p.key === key && p.eventKey === eventoKey));
+    if (removed?.tmpId) {
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId !== removed.tmpId);
+    }
     this.refreshSelectedPaquetesColumns();
   }
 
@@ -772,6 +818,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return parsed != null && parsed >= 1 ? parsed : null;
   }
 
+  getCantidadMaximaPorDias(): number | null {
+    const parsed = this.getDiasTrabajo();
+    return parsed != null && parsed >= 1 ? parsed : null;
+  }
+
   private getFechasUbicacionUnicas(): string[] {
     const fechas = this.ubicacion
       .map(item => (item.Fecha ?? '').toString().trim())
@@ -779,7 +830,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return Array.from(new Set(fechas)).sort();
   }
 
-  private formatFechaConDia(fecha: string): string {
+  formatFechaConDia(fecha: string): string {
     const parsed = parseDateInput(fecha);
     if (!parsed) {
       return fecha;
@@ -790,6 +841,63 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const mm = String(parsed.getMonth() + 1).padStart(2, '0');
     const yyyy = parsed.getFullYear();
     return `${dia} ${dd}-${mm}-${yyyy}`;
+  }
+
+  abrirAsignacionFechas(): void {
+    if (!this.isMultipleDias()) {
+      return;
+    }
+    const fechasUnicas = this.getFechasUbicacionUnicas();
+    this.fechasDisponibles = fechasUnicas.length ? fechasUnicas : [];
+    if (!this.fechasDisponibles.length) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Fechas pendientes',
+        text: 'Registra fechas en la programación para asignarlas a los servicios.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
+    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+      tmpIds.has(entry.itemTmpId) && this.fechasDisponibles.includes(entry.fecha)
+    );
+    this.asignacionFechasAbierta = true;
+  }
+
+  cerrarAsignacionFechas(): void {
+    this.asignacionFechasAbierta = false;
+  }
+
+  isFechaAsignada(itemTmpId: string, fecha: string): boolean {
+    return this.serviciosFechasSeleccionadas.some(entry => entry.itemTmpId === itemTmpId && entry.fecha === fecha);
+  }
+
+  toggleFechaAsignada(itemTmpId: string, fecha: string, checked: boolean, maxCantidad: number): void {
+    if (checked) {
+      const count = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
+      if (count >= maxCantidad) {
+        Swal.fire({
+          icon: 'info',
+          title: 'Cantidad completa',
+          text: 'Ya asignaste todas las fechas requeridas para este servicio.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+      this.serviciosFechasSeleccionadas = [
+        ...this.serviciosFechasSeleccionadas,
+        { itemTmpId, fecha }
+      ];
+      return;
+    }
+    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+      !(entry.itemTmpId === itemTmpId && entry.fecha === fecha)
+    );
+  }
+
+  getCantidadAsignada(itemTmpId: string): number {
+    return this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
   }
 
   isMultipleDias(): boolean {
@@ -837,6 +945,12 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (this.isMultipleDias()) {
       this.visualizarService.selectAgregarPedido.fechaEvent = '';
     }
+    if (!this.isMultipleDias()) {
+      this.serviciosFechasSeleccionadas = [];
+      if (this.asignacionFechasAbierta) {
+        this.asignacionFechasAbierta = false;
+      }
+    }
     this.refreshSelectedPaquetesColumns();
   }
 
@@ -858,6 +972,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         const sigueUsada = this.ubicacion.some(item => item.Fecha === fechaAnterior);
         if (!sigueUsada && this.visualizarService.selectAgregarPedido.fechaEvent === fechaAnterior) {
           this.visualizarService.selectAgregarPedido.fechaEvent = fecha;
+        }
+        if (!sigueUsada && this.serviciosFechasSeleccionadas.length) {
+          this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
+            entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
+          );
         }
       }
       row._fechaPrev = row.Fecha;
@@ -911,6 +1030,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       });
       if (this.visualizarService.selectAgregarPedido.fechaEvent === fechaAnterior) {
         this.visualizarService.selectAgregarPedido.fechaEvent = fecha;
+      }
+      if (this.serviciosFechasSeleccionadas.length) {
+        this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
+          entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
+        );
       }
     });
   }
@@ -1178,7 +1302,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       //   notas: it.notas ?? ''
       // }));
       const dataItems = Array.isArray((data as AnyRecord)['items']) ? (data as AnyRecord)['items'] as AnyRecord[] : [];
-      this.selectedPaquetes = dataItems.map((it: AnyRecord) => {
+      this.selectedPaquetes = dataItems.map((it: AnyRecord, index: number) => {
         const record = it as Record<string, unknown>;
         const eventoCodigoValue = record['eventoCodigo'];
         let eventoCodigo: string | number | null = null;
@@ -1188,10 +1312,13 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         } else if (typeof eventoCodigoValue === 'number') {
           eventoCodigo = eventoCodigoValue;
         }
+        const idValue = Number(record['id'] ?? record['idPedidoServicio'] ?? record['idItem'] ?? 0) || undefined;
+        const tmpId = idValue != null ? `i${idValue}` : `i${index + 1}`;
         return {
-          id: Number(record['id'] ?? 0) || undefined,
+          id: idValue,
           key: this.getPkgKey(it),
           eventKey: eventoCodigo,
+          tmpId,
           eventoCodigo,
           idEventoServicio: Number(record['idEventoServicio'] ?? 0) || null,
           eventoId: Number(record['eventoId'] ?? 0) || null,
@@ -1215,6 +1342,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
           editandoPrecio: false
         };
       });
+      this.tmpIdSequence = this.selectedPaquetes.reduce((acc, item) => {
+        const match = /^i(\d+)$/.exec(item.tmpId);
+        if (!match) {
+          return acc;
+        }
+        const value = Number(match[1]);
+        return Number.isFinite(value) && value > acc ? value : acc;
+      }, 0);
       const servicioDesdeItems = this.selectedPaquetes.find(item => item.servicioId != null)?.servicioId ?? null;
       if (servicioDesdeItems != null) {
         this.servicioSeleccionado = servicioDesdeItems;
@@ -1222,6 +1357,43 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       const eventoDesdeItems = this.selectedPaquetes.find(item => item.eventoId != null)?.eventoId ?? null;
       if (eventoDesdeItems != null) {
         this.eventoSeleccionado = eventoDesdeItems;
+      }
+
+      const serviciosFechasRaw = (data as AnyRecord)['serviciosFechas'];
+      if (Array.isArray(serviciosFechasRaw)) {
+        const tmpIdMap = new Map<string, string>();
+        this.selectedPaquetes.forEach(item => {
+          if (item.id != null) {
+            tmpIdMap.set(String(item.id), item.tmpId);
+          }
+        });
+        this.serviciosFechasSeleccionadas = serviciosFechasRaw
+          .map((raw: AnyRecord) => {
+            const record = raw as Record<string, unknown>;
+            const fecha = String(record['fecha'] ?? '').slice(0, 10);
+            const tmpIdRaw = record['itemTmpId'] ?? record['tmpId']
+              ?? record['idPedidoServicio'] ?? record['pedidoServicioId']
+              ?? record['idItem'] ?? record['itemId'] ?? record['id'];
+            let itemTmpId = '';
+            if (typeof tmpIdRaw === 'string' && tmpIdRaw.trim()) {
+              itemTmpId = tmpIdRaw.trim();
+            } else {
+              const numeric = this.parseNumber(tmpIdRaw);
+              if (numeric != null) {
+                itemTmpId = tmpIdMap.get(String(numeric)) ?? `i${numeric}`;
+              }
+            }
+            return { itemTmpId, fecha };
+          })
+          .filter(entry => entry.itemTmpId && entry.fecha);
+      } else {
+        this.serviciosFechasSeleccionadas = [];
+      }
+      if (this.serviciosFechasSeleccionadas.length) {
+        const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
+        this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+          tmpIds.has(entry.itemTmpId)
+        );
       }
       this.refreshSelectedPaquetesColumns();
       this.puedeCargarPaquetes = true;
@@ -1340,6 +1512,54 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       }
     }
 
+    const fechasUnicas = Array.from(new Set(
+      (this.ubicacion || [])
+        .map(u => String(u.Fecha || '').trim())
+        .filter(Boolean)
+    )).sort();
+    const fechaEventoForm = this.visualizarService.selectAgregarPedido?.fechaEvent;
+    const fechasBase = fechasUnicas.length ? fechasUnicas : (fechaEventoForm ? [String(fechaEventoForm)] : []);
+    const serviciosFechasAuto = (this.selectedPaquetes || []).flatMap((item, index) => {
+      const itemTmpId = item.tmpId ?? `i${index + 1}`;
+      const cantidad = Number(item.cantidad ?? 1) || 1;
+      const fechas = fechasBase.slice(0, cantidad);
+      return fechas.map(fecha => ({ itemTmpId, fecha }));
+    });
+    const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId ?? ''));
+    const serviciosFechas = this.isMultipleDias()
+      ? this.serviciosFechasSeleccionadas.filter(entry =>
+          tmpIds.has(entry.itemTmpId) && fechasBase.includes(entry.fecha)
+        )
+      : serviciosFechasAuto;
+    if (this.isMultipleDias()) {
+      for (const item of this.selectedPaquetes) {
+        const itemTmpId = item.tmpId;
+        const cantidad = Number(item.cantidad ?? 1) || 1;
+        const asignadas = serviciosFechas.filter(entry => entry.itemTmpId === itemTmpId).length;
+        if (asignadas !== cantidad) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Asignación pendiente',
+            text: 'Completa la asignación de fechas para todos los servicios.',
+            confirmButtonText: 'Entendido'
+          });
+          return;
+        }
+      }
+      const fechasSinAsignar = fechasBase.filter(
+        fecha => !serviciosFechas.some(entry => entry.fecha === fecha)
+      );
+      if (fechasSinAsignar.length) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Fechas sin asignar',
+          text: 'Asigna al menos un servicio por cada fecha seleccionada.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+    }
+
     const fechaCreacion = this.convert(this.fechaCreate);
     const toHms = (h: string | null | undefined) => (h || '').length === 5 ? `${h}:00` : (h || '');
 
@@ -1375,6 +1595,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
           notas: String(u.Notas || '').trim()
         })),
       items: (this.selectedPaquetes || []).map(it => ({
+        tmpId: it.tmpId,
         id: it.id ?? null,
         idEventoServicio: it.idEventoServicio ?? null,
         eventoId: it.eventoId ?? null,
@@ -1393,7 +1614,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         fotosImpresas: it.fotosImpresas ?? null,
         trailerMin: it.trailerMin ?? null,
         filmMin: it.filmMin ?? null
-      }))
+      })),
+      serviciosFechas: serviciosFechas.length ? serviciosFechas : undefined
     };
 
     // Validación de formatos ANTES de activar el candado
@@ -1616,7 +1838,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       descuento: Number(it.descuento ?? 0),
       recargo: Number(it.recargo ?? 0)
     }));
-    return { pedido, eventos, items };
+    const serviciosFechas = [...(this.serviciosFechasSeleccionadas || [])]
+      .map(entry => ({ itemTmpId: entry.itemTmpId, fecha: entry.fecha }))
+      .sort((a, b) => {
+        if (a.itemTmpId !== b.itemTmpId) {
+          return a.itemTmpId.localeCompare(b.itemTmpId);
+        }
+        return a.fecha.localeCompare(b.fecha);
+      });
+    return { pedido, eventos, items, serviciosFechas };
   }
 
   private getPedidoChanges(
@@ -1856,6 +2086,7 @@ interface PedidoSnapshot {
   };
   eventos: PedidoEventoSnapshot[];
   items: PedidoItemSnapshot[];
+  serviciosFechas: PedidoServicioFecha[];
 }
 
 interface PedidoEventoSnapshot {

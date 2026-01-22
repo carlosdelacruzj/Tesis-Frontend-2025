@@ -22,11 +22,17 @@ interface Tag {
 interface PedidoPaqueteSeleccionado {
   key: string | number;
   eventKey: string | number | null;
+  tmpId: string;
   ID?: number;
   descripcion: string;
   precio: number;
   cantidad?: number;
   notas: string;
+}
+
+interface PedidoServicioFecha {
+  itemTmpId: string;
+  fecha: string;
 }
 
 type AnyRecord = Record<string, unknown>;
@@ -103,6 +109,10 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   desID = 0;
   currentEventoKey: string | number | null = null;
   selectedPaquetesColumns: TableColumn<PedidoPaqueteSeleccionado>[] = [];
+  asignacionFechasAbierta = false;
+  fechasDisponibles: string[] = [];
+  serviciosFechasSeleccionadas: PedidoServicioFecha[] = [];
+  private tmpIdSequence = 0;
 
   // ====== TAGS ======
   tagsPedido: Tag[] = [];
@@ -692,20 +702,32 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     }
     // console.log('addPaquete', { el, eventoKey });
     const record = this.asRecord(el);
+    this.tmpIdSequence += 1;
+    const tmpId = `i${this.tmpIdSequence}`;
     this.selectedPaquetes.push({
       key: this.getPkgKey(el),
       eventKey: eventoKey ?? null,
+      tmpId,
       ID: this.parseNumberNullable(record['idEventoServicio']),
       descripcion: String(record['descripcion'] ?? ''),
       precio: Number(record['precio'] ?? 0),
       cantidad: 1,
       notas: ''
     });
+    if (this.serviciosFechasSeleccionadas.length) {
+      const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => tmpIds.has(entry.itemTmpId));
+    }
     this.refreshSelectedPaquetesColumns();
   }
 
   removePaquete(key: string | number | null, eventoKey: string | number | null = this.currentEventoKey) {
+    const removed = this.selectedPaquetes.find(p => p.key === key && p.eventKey === eventoKey);
     this.selectedPaquetes = this.selectedPaquetes.filter(p => !(p.key === key && p.eventKey === eventoKey));
+    if (removed?.tmpId) {
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId !== removed.tmpId);
+    }
+    this.refreshSelectedPaquetesColumns();
   }
 
   get totalSeleccion(): number {
@@ -770,6 +792,11 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     return parsed != null && parsed >= 1 ? parsed : null;
   }
 
+  getCantidadMaximaPorDias(): number | null {
+    const parsed = this.getDiasTrabajo();
+    return parsed != null && parsed >= 1 ? parsed : null;
+  }
+
   private getFechasUbicacionUnicas(): string[] {
     const fechas = this.ubicacion
       .map(item => (item.Fecha ?? '').toString().trim())
@@ -777,7 +804,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     return Array.from(new Set(fechas)).sort();
   }
 
-  private formatFechaConDia(fecha: string): string {
+  formatFechaConDia(fecha: string): string {
     const parsed = parseDateInput(fecha);
     if (!parsed) {
       return fecha;
@@ -788,6 +815,63 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     const mm = String(parsed.getMonth() + 1).padStart(2, '0');
     const yyyy = parsed.getFullYear();
     return `${dia} ${dd}-${mm}-${yyyy}`;
+  }
+
+  abrirAsignacionFechas(): void {
+    if (!this.isMultipleDias()) {
+      return;
+    }
+    const fechasUnicas = this.getFechasUbicacionUnicas();
+    this.fechasDisponibles = fechasUnicas.length ? fechasUnicas : [];
+    if (!this.fechasDisponibles.length) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Fechas pendientes',
+        text: 'Registra fechas en la programación para asignarlas a los servicios.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
+    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+      tmpIds.has(entry.itemTmpId) && this.fechasDisponibles.includes(entry.fecha)
+    );
+    this.asignacionFechasAbierta = true;
+  }
+
+  cerrarAsignacionFechas(): void {
+    this.asignacionFechasAbierta = false;
+  }
+
+  isFechaAsignada(itemTmpId: string, fecha: string): boolean {
+    return this.serviciosFechasSeleccionadas.some(entry => entry.itemTmpId === itemTmpId && entry.fecha === fecha);
+  }
+
+  toggleFechaAsignada(itemTmpId: string, fecha: string, checked: boolean, maxCantidad: number): void {
+    if (checked) {
+      const count = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
+      if (count >= maxCantidad) {
+        Swal.fire({
+          icon: 'info',
+          title: 'Cantidad completa',
+          text: 'Ya asignaste todas las fechas requeridas para este servicio.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+      this.serviciosFechasSeleccionadas = [
+        ...this.serviciosFechasSeleccionadas,
+        { itemTmpId, fecha }
+      ];
+      return;
+    }
+    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+      !(entry.itemTmpId === itemTmpId && entry.fecha === fecha)
+    );
+  }
+
+  getCantidadAsignada(itemTmpId: string): number {
+    return this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
   }
 
   isMultipleDias(): boolean {
@@ -835,6 +919,12 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     if (this.isMultipleDias()) {
       this.visualizarService.selectAgregarPedido.fechaEvent = '';
     }
+    if (!this.isMultipleDias()) {
+      this.serviciosFechasSeleccionadas = [];
+      if (this.asignacionFechasAbierta) {
+        this.asignacionFechasAbierta = false;
+      }
+    }
     this.refreshSelectedPaquetesColumns();
   }
 
@@ -856,6 +946,11 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
         const sigueUsada = this.ubicacion.some(item => item.Fecha === fechaAnterior);
         if (!sigueUsada && this.visualizarService.selectAgregarPedido.fechaEvent === fechaAnterior) {
           this.visualizarService.selectAgregarPedido.fechaEvent = fecha;
+        }
+        if (!sigueUsada && this.serviciosFechasSeleccionadas.length) {
+          this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
+            entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
+          );
         }
       }
       row._fechaPrev = row.Fecha;
@@ -909,6 +1004,11 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       });
       if (this.visualizarService.selectAgregarPedido.fechaEvent === fechaAnterior) {
         this.visualizarService.selectAgregarPedido.fechaEvent = fecha;
+      }
+      if (this.serviciosFechasSeleccionadas.length) {
+        this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
+          entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
+        );
       }
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
@@ -979,7 +1079,22 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
 
   onCantidadChange(paquete: PedidoPaqueteSeleccionado, value: unknown): void {
     const parsed = this.parseNumberNullable(value);
-    paquete.cantidad = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+    const base = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
+    const max = this.getCantidadMaximaPorDias();
+    paquete.cantidad = max != null ? Math.min(base, max) : base;
+    if (paquete.tmpId) {
+      let count = 0;
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => {
+        if (entry.itemTmpId !== paquete.tmpId) {
+          return true;
+        }
+        if (count < (paquete.cantidad || 1)) {
+          count += 1;
+          return true;
+        }
+        return false;
+      });
+    }
   }
 
   private refreshSelectedPaquetesColumns(): void {
@@ -1009,6 +1124,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       horaEvent: '',
       dias: null,
       CodEmp: 0,
+      horasEstimadas: null,
       Direccion: '',
       Observacion: '',
       departamento: 'Lima',
@@ -1035,6 +1151,10 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
 
     this.selectedPaquetes = [];
     this.currentEventoKey = null;
+    this.serviciosFechasSeleccionadas = [];
+    this.fechasDisponibles = [];
+    this.asignacionFechasAbierta = false;
+    this.tmpIdSequence = 0;
     this.tagsPedido = [];
     this.tagsCliente = [];
     this.refreshSelectedPaquetesColumns();
@@ -1165,6 +1285,53 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       }
     }
 
+    const fechasUnicas = Array.from(new Set(
+      (this.ubicacion || [])
+        .map(u => String(u.Fecha || '').trim())
+        .filter(Boolean)
+    )).sort();
+    const fechaEventoForm = this.visualizarService.selectAgregarPedido?.fechaEvent;
+    const fechasBase = fechasUnicas.length ? fechasUnicas : (fechaEventoForm ? [String(fechaEventoForm)] : []);
+    const serviciosFechasAuto = (this.selectedPaquetes || []).flatMap((item, index) => {
+      const itemTmpId = item.tmpId ?? `i${index + 1}`;
+      const cantidad = Number(item.cantidad ?? 1) || 1;
+      const fechas = fechasBase.slice(0, cantidad);
+      return fechas.map(fecha => ({ itemTmpId, fecha }));
+    });
+    const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId ?? ''));
+    const serviciosFechas = this.isMultipleDias()
+      ? this.serviciosFechasSeleccionadas.filter(entry =>
+          tmpIds.has(entry.itemTmpId) && fechasBase.includes(entry.fecha)
+        )
+      : serviciosFechasAuto;
+    if (this.isMultipleDias()) {
+      for (const item of this.selectedPaquetes) {
+        const itemTmpId = item.tmpId;
+        const cantidad = Number(item.cantidad ?? 1) || 1;
+        const asignadas = serviciosFechas.filter(entry => entry.itemTmpId === itemTmpId).length;
+        if (asignadas !== cantidad) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Asignación pendiente',
+            text: 'Completa la asignación de fechas para todos los servicios.',
+            confirmButtonText: 'Entendido'
+          });
+          return;
+        }
+      }
+      const fechasSinAsignar = fechasBase.filter(
+        fecha => !serviciosFechas.some(entry => entry.fecha === fecha)
+      );
+      if (fechasSinAsignar.length) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Fechas sin asignar',
+          text: 'Asigna al menos un servicio por cada fecha seleccionada.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+    }
 
 
     // ====== Formatos canónicos ======
@@ -1206,6 +1373,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
           notas: String(u.Notas || '').trim()
         })),
       items: (this.selectedPaquetes || []).map(it => ({
+        tmpId: it.tmpId,
         exsId: it.ID ?? null,                    // FK_ExS_Cod si proviene de catálogo
         eventoCodigo: null,                      // Si luego asocias al evento, coloca el PK_PE_Cod
         moneda: 'USD',                           // Cambia a 'USD' si corresponde
@@ -1216,7 +1384,8 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
         descuento: 0,
         recargo: 0,
         notas: String(it.notas || '').trim()
-      }))
+      })),
+      serviciosFechas: serviciosFechas.length ? serviciosFechas : undefined
     };
 
     // ====== Validaciones de coherencia (extra) ======

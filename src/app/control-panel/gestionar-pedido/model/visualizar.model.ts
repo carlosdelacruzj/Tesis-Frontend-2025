@@ -59,7 +59,7 @@ export class EditarPedido {
  ){}}
 
  export class AgregarPedido {
-  constructor(
+ constructor(
  
 public NombrePedido:string,
 public ExS :number,
@@ -69,6 +69,7 @@ public fechaEvent : string,
 public horaEvent: string,
 public dias: number | null,
 public CodEmp : number,
+public horasEstimadas: number | null,
 public Direccion : string,
 public Observacion : string,
 public departamento?: string,

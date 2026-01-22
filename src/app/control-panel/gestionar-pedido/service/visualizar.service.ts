@@ -25,7 +25,7 @@ export class VisualizarService {
 
   selectAgregarPedido: AgregarPedido = {
     NombrePedido: '', ExS: 0, doc: '', fechaCreate: '', fechaEvent: '', horaEvent: '',
-    dias: null, CodEmp: 0, Direccion: '', Observacion: '',
+    dias: null, horasEstimadas: null, CodEmp: 0, Direccion: '', Observacion: '',
     departamento: 'Lima', viaticosCliente: true, viaticosMonto: null,
   };
 
