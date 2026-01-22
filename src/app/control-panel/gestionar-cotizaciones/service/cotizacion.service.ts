@@ -331,7 +331,6 @@ downloadPdf(
 
     const codigoCache = this.cotizaciones.find(item => item.id === id)?.codigo;
     const normalized = this.buildCotizacion(id, payload, codigoApi ?? codigoCache ?? undefined);
-
     const estado = api.estado ?? payload.cotizacion.estado;
     if (estado) {
       normalized.estado = estado;

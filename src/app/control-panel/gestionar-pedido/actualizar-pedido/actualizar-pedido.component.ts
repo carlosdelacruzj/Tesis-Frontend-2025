@@ -114,8 +114,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Estado general ======
   CodigoEmpleado = 1;
-  infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', razonSocial: '-', idCliente: 0, idUsuario: 0 };
+  infoCliente = { nombre: '', apellido: '', celular: '', correo: '', documento: '', direccion: '', razonSocial: '', idCliente: 0, idUsuario: 0 };
   dniCliente = '';
+  clienteNombreCompleto = '';
+  clienteCelular = '';
+  clienteDocumento = '';
 
   // ====== Evento actual (inputs) ======
   Direccion = '';
@@ -176,43 +179,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   private cotizacionId: number | null = null;
   readonly programacionMinimaRecomendada = 1;
   readonly programacionMaxima = 6;
-
-  private toOptionalString(value: unknown): string | undefined {
-    if (value == null) {
-      return undefined;
-    }
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      return trimmed ? trimmed : undefined;
-    }
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return String(value);
-    }
-    return undefined;
-  }
-
-  get clienteNombreCompleto(): string {
-    const razonSocial = this.toOptionalString(this.infoCliente?.razonSocial);
-    if (razonSocial) {
-      return razonSocial;
-    }
-    const nombre = this.toOptionalString(this.infoCliente?.nombre);
-    const apellido = this.toOptionalString(this.infoCliente?.apellido);
-    const texto = [nombre, apellido].filter(Boolean).join(' ').trim();
-    return texto || '-';
-  }
-
-  get clienteDocumento(): string {
-    return (
-      this.toOptionalString(this.infoCliente?.documento) ??
-      this.toOptionalString(this.dniCliente) ??
-      '-'
-    );
-  }
-
-  get clienteCelular(): string {
-    return this.toOptionalString(this.infoCliente?.celular) ?? '-';
-  }
 
   public readonly pedidoService = inject(PedidoService);
   public readonly visualizarService = inject(VisualizarService);
@@ -409,6 +375,12 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     ).subscribe((res: unknown) => {
       if (!Array.isArray(res) || !res.length) return;
       this.infoCliente = res[0] as typeof this.infoCliente;
+      const razonSocial = String(this.infoCliente.razonSocial ?? '').trim();
+      const nombres = String(this.infoCliente.nombre ?? '').trim();
+      const apellidos = String(this.infoCliente.apellido ?? '').trim();
+      this.clienteNombreCompleto = razonSocial || [nombres, apellidos].filter(Boolean).join(' ').trim();
+      this.clienteCelular = String(this.infoCliente.celular ?? '').trim();
+      this.clienteDocumento = String(this.infoCliente.documento ?? '').trim();
       this.loadTagsCliente();
     });
   }
@@ -1223,16 +1195,22 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
       // Cliente
       this.infoCliente = {
-        nombre: String(cliente['nombres'] ?? '-'),
-        apellido: String(cliente['apellidos'] ?? '-'),
-        celular: String(cliente['celular'] ?? '-'),
-        correo: String(cliente['correo'] ?? '-'),
-        documento: String(cliente['documento'] ?? '-'),
-        direccion: String(cliente['direccion'] ?? '-'),
-        razonSocial: String(cliente['razonSocial'] ?? '-'),
+        nombre: String(cliente['nombres'] ?? ''),
+        apellido: String(cliente['apellidos'] ?? ''),
+        celular: String(cliente['celular'] ?? ''),
+        correo: String(cliente['correo'] ?? ''),
+        documento: String(cliente['documento'] ?? ''),
+        direccion: String(cliente['direccion'] ?? ''),
+        razonSocial: String(cliente['razonSocial'] ?? ''),
         idCliente: this.parseNumber(cabRecord['clienteId'] ?? cliente['id']) ?? 0,
         idUsuario: 0
       };
+      const razonSocial = String(cliente['razonSocial'] ?? '').trim();
+      const nombres = String(cliente['nombres'] ?? '').trim();
+      const apellidos = String(cliente['apellidos'] ?? '').trim();
+      this.clienteNombreCompleto = razonSocial || [nombres, apellidos].filter(Boolean).join(' ').trim();
+      this.clienteCelular = String(cliente['celular'] ?? '').trim();
+      this.clienteDocumento = String(cliente['documento'] ?? '').trim();
       this.dniCliente = this.infoCliente.documento || '';
 
       // === Mapear eventos ===

@@ -31,7 +31,7 @@
           </mat-card-header>
           <mat-card-content>
             <div class="row g-3">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="form-group">
                   <label class="col-form-label" for="pedidoNombre">Pedido</label>
                   <input id="pedidoNombre" type="text" class="form-control" name="NombrePedido"
@@ -45,14 +45,48 @@
                   }
                 </div>
               </div>
-
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="form-group">
-                  <label class="col-form-label" for="fechaCreate">Fecha de registro</label>
-                  <input id="fechaCreate" type="text" class="form-control" name="fechaCreate"
-                    [(ngModel)]="visualizarService.selectAgregarPedido.fechaCreate" disabled>
+                  <label class="col-form-label" for="departamentoPedido">Departamento</label>
+                  <select id="departamentoPedido" class="form-control" name="departamentoPedido"
+                    [(ngModel)]="visualizarService.selectAgregarPedido.departamento"
+                    (ngModelChange)="onDepartamentoChange($event)" #departamentoPedido="ngModel" required
+                    [class.is-invalid]="departamentoPedido.invalid && departamentoPedido.touched">
+                    <option value="">Selecciona un departamento</option>
+                    @for (dep of departamentos; track dep) {
+                    <option [value]="dep">{{ dep }}</option>
+                    }
+                  </select>
+                  @if (departamentoPedido.invalid && departamentoPedido.touched) {
+                  <small class="text-danger">
+                    Selecciona el departamento del evento.
+                  </small>
+                  }
                 </div>
               </div>
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
+                  <select id="eventoSelect" class="form-control"
+                    [value]="(eventoSeleccionado ?? '').toString()"
+                    (change)="onEventoDropdownChange($any($event.target).value)" (blur)="eventoSelectTouched = true"
+                    [disabled]="!evento.length"
+                    [ngClass]="{'is-invalid': eventoSelectTouched && !eventoSeleccionado}">
+                    <option value="" disabled>Selecciona un tipo de evento</option>
+                    @for (e of evento; track e.id !== null && e.id !== undefined ? e.id : $index) {
+                    <option [value]="(e.id ?? '').toString()" [selected]="e.id === eventoSeleccionado">
+                      {{ e.nombre }}
+                    </option>
+                    }
+                  </select>
+                  @if (eventoSelectTouched && !eventoSeleccionado) {
+                  <small class="text-danger">
+                    Selecciona un tipo de evento.
+                  </small>
+                  }
+                </div>
+              </div>
+
             </div>
 
             <div class="row g-3 mt-1">
@@ -136,49 +170,6 @@
               </div>
             </div>
 
-            <div class="row g-3 mt-1">
-              <div class="col-sm-6">
-                <div class="form-group">
-                  <label class="col-form-label" for="departamentoPedido">Departamento</label>
-                  <select id="departamentoPedido" class="form-control" name="departamentoPedido"
-                    [(ngModel)]="visualizarService.selectAgregarPedido.departamento"
-                    (ngModelChange)="onDepartamentoChange($event)" #departamentoPedido="ngModel" required
-                    [class.is-invalid]="departamentoPedido.invalid && departamentoPedido.touched">
-                    <option value="">Selecciona un departamento</option>
-                    @for (dep of departamentos; track dep) {
-                    <option [value]="dep">{{ dep }}</option>
-                    }
-                  </select>
-                  @if (departamentoPedido.invalid && departamentoPedido.touched) {
-                  <small class="text-danger">
-                    Selecciona el departamento del evento.
-                  </small>
-                  }
-                </div>
-              </div>
-              <div class="col-sm-6">
-                <div class="form-group">
-                  <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
-                  <select id="eventoSelect" class="form-control"
-                    [value]="(eventoSeleccionado ?? '').toString()"
-                    (change)="onEventoDropdownChange($any($event.target).value)" (blur)="eventoSelectTouched = true"
-                    [disabled]="!evento.length"
-                    [ngClass]="{'is-invalid': eventoSelectTouched && !eventoSeleccionado}">
-                    <option value="" disabled>Selecciona un tipo de evento</option>
-                    @for (e of evento; track e.id !== null && e.id !== undefined ? e.id : $index) {
-                    <option [value]="(e.id ?? '').toString()" [selected]="e.id === eventoSeleccionado">
-                      {{ e.nombre }}
-                    </option>
-                    }
-                  </select>
-                  @if (eventoSelectTouched && !eventoSeleccionado) {
-                  <small class="text-danger">
-                    Selecciona un tipo de evento.
-                  </small>
-                  }
-                </div>
-              </div>
-            </div>
           </mat-card-content>
             </mat-card>
 
