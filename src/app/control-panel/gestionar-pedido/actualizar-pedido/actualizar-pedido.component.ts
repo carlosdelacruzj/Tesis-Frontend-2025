@@ -881,6 +881,13 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
   }
 
+  private getTotalCantidadSeleccionada(): number {
+    return this.selectedPaquetes.reduce((acc, item) => {
+      const cantidad = Number(item.cantidad ?? 1) || 1;
+      return acc + cantidad;
+    }, 0);
+  }
+
   isMultipleDias(): boolean {
     const parsed = this.getDiasTrabajo();
     return parsed != null && parsed > 1;
@@ -960,13 +967,24 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   onDiasChange(value: unknown): void {
     const parsed = this.parseNumber(value);
     this.visualizarService.selectAgregarPedido.dias = parsed != null ? Math.max(1, Math.floor(parsed)) : null;
-    if (!this.isMultipleDias()) {
+    const multiple = this.isMultipleDias();
+    const max = this.getCantidadMaximaPorDias();
+    if (!multiple) {
       this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
+    } else if (max != null) {
+      const ajustados = this.selectedPaquetes.map(item => ({
+        ...item,
+        cantidad: Math.min(Number(item.cantidad ?? 1) || 1, max)
+      }));
+      const changed = ajustados.some((item, index) => item.cantidad !== this.selectedPaquetes[index]?.cantidad);
+      if (changed) {
+        this.selectedPaquetes = ajustados;
+        this.serviciosFechasSeleccionadas = [];
+      }
     }
-    if (this.isMultipleDias()) {
+    if (multiple) {
       this.visualizarService.selectAgregarPedido.fechaEvent = '';
-    }
-    if (!this.isMultipleDias()) {
+    } else {
       this.serviciosFechasSeleccionadas = [];
       if (this.asignacionFechasAbierta) {
         this.asignacionFechasAbierta = false;
@@ -1528,6 +1546,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         confirmButtonText: 'Entendido'
       });
       return;
+    }
+
+    if (diasTrabajo > 2) {
+      const totalCantidad = this.getTotalCantidadSeleccionada();
+      if (totalCantidad < diasTrabajo) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Cantidades insuficientes',
+          text: `Para ${diasTrabajo} días debes asignar al menos ${diasTrabajo} servicios en total.`,
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
     }
 
     const departamento = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim();
