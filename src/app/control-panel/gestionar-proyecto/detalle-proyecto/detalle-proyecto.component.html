@@ -154,17 +154,30 @@
             }
           </div>
         </header>
-        <app-table-base
-          [data]="getEventosPedido()"
-          [columns]="eventosColumns"
-          [showCreateButton]="false"
-          [showSearch]="false"
-          [showPagination]="false"
-          [showFooterInfo]="false">
-          <ng-template appCell="fecha" let-row>
-            {{ formatFechaDisplay(row.fecha) }}
-          </ng-template>
-        </app-table-base>
+        <div class="locaciones-grid">
+          @for (grupo of getEventosAgrupados(); track grupo.fecha) {
+            <div class="locacion-day">
+              <div class="locacion-day__header">
+                <span class="locacion-day__date">{{ grupo.fechaLabel }}</span>
+                <span class="locacion-day__count">{{ grupo.items.length }} locaciones</span>
+              </div>
+              <div class="locacion-list">
+                @for (item of grupo.items; track $index) {
+                  <div class="locacion-card">
+                    <div class="locacion-card__time">{{ item.hora || '—' }}</div>
+                    <div class="locacion-card__body">
+                      <div class="locacion-card__title">{{ item.ubicacion || '—' }}</div>
+                      <div class="locacion-card__meta">{{ item.direccion || '—' }}</div>
+                      @if (item.notas) {
+                        <div class="locacion-card__notes">{{ item.notas }}</div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
       </section>
       }
 

@@ -5,11 +5,12 @@ import { VisualizarService } from '../service/visualizar.service';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatSort } from '@angular/material/sort';
-import { of, take, finalize } from 'rxjs';
+import { of, take, finalize, Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
+import { PedidoResponse, PedidoUpdatePayload } from '../model/visualizar.model';
 
 type AlertIcon = 'success' | 'error' | 'warning' | 'info' | 'question';
 
@@ -78,6 +79,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   private initialSnapshot = '';
   private initialSnapshotData: PedidoSnapshot | null = null;
   private puedeCargarPaquetes = false;
+  private viaticosChangeLock = false;
+  private lastViaticosCliente: boolean | null = null;
+  private lastViaticosMonto: number | null = null;
   readonly fechaMinimaEvento = ActualizarPedidoComponent.computeFechaMinimaEvento();
   readonly fechaMaximaEvento = ActualizarPedidoComponent.computeFechaMaximaEvento();
   readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
@@ -940,6 +944,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         this.visualizarService.selectAgregarPedido.departamento = next;
         this.lastDepartamento = next;
         this.applyViaticosRules();
+        this.syncViaticosSnapshot();
         return;
       }
       this.departamentoChangeLock = true;
@@ -949,8 +954,36 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   onViaticosClienteChange(value: unknown): void {
-    this.visualizarService.selectAgregarPedido.viaticosCliente = Boolean(value);
-    this.applyViaticosRules();
+    if (this.viaticosChangeLock) {
+      return;
+    }
+    const prev = this.lastViaticosCliente ?? Boolean(this.visualizarService.selectAgregarPedido.viaticosCliente);
+    const next = Boolean(value);
+    if (prev === next) {
+      return;
+    }
+    const beforeText = prev ? 'Cliente cubre viaticos' : 'Cliente NO cubre viaticos';
+    const afterText = next ? 'Cliente cubre viaticos' : 'Cliente NO cubre viaticos';
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Confirmar cambio de viaticos',
+      text: `Actual: ${beforeText}. Nuevo: ${afterText}.`,
+      showCancelButton: true,
+      confirmButtonText: 'Aceptar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.visualizarService.selectAgregarPedido.viaticosCliente = next;
+        this.applyViaticosRules();
+        this.syncViaticosSnapshot();
+        return;
+      }
+      this.viaticosChangeLock = true;
+      this.visualizarService.selectAgregarPedido.viaticosCliente = prev;
+      this.applyViaticosRules();
+      this.visualizarService.selectAgregarPedido.viaticosMonto = this.lastViaticosMonto ?? null;
+      this.viaticosChangeLock = false;
+    });
   }
 
   private applyViaticosRules(): void {
@@ -962,6 +995,48 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (this.visualizarService.selectAgregarPedido.viaticosCliente) {
       this.visualizarService.selectAgregarPedido.viaticosMonto = null;
     }
+  }
+
+  onViaticosMontoBlur(value: unknown): void {
+    if (this.viaticosChangeLock || this.visualizarService.selectAgregarPedido.viaticosCliente) {
+      return;
+    }
+    const parsed = this.parseNumber(value);
+    const next = parsed != null && parsed > 0 ? parsed : null;
+    const prev = this.lastViaticosMonto ?? null;
+    if (prev === next) {
+      return;
+    }
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Confirmar cambio de viaticos',
+      text: `Actual: ${prev ?? 'sin monto'}. Nuevo: ${next ?? 'sin monto'}.`,
+      showCancelButton: true,
+      confirmButtonText: 'Aceptar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.visualizarService.selectAgregarPedido.viaticosMonto = next;
+        this.syncViaticosSnapshot();
+        return;
+      }
+      this.viaticosChangeLock = true;
+      this.visualizarService.selectAgregarPedido.viaticosMonto = prev;
+      this.viaticosChangeLock = false;
+    });
+  }
+
+  private syncViaticosSnapshot(): void {
+    const lugar = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim();
+    const lugarLower = lugar.toLowerCase();
+    const viaticosCliente = lugarLower === 'lima'
+      ? true
+      : Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente);
+    const viaticosMonto = viaticosCliente
+      ? null
+      : (this.parseNumber(this.visualizarService.selectAgregarPedido?.viaticosMonto) ?? null);
+    this.lastViaticosCliente = viaticosCliente;
+    this.lastViaticosMonto = viaticosMonto;
   }
 
   onDiasChange(value: unknown): void {
@@ -1197,7 +1272,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Carga del pedido existente ======
   private loadPedido(id: number) {
-    const obs = this.visualizarService.getPedidoById?.(id);
+    const obs = this.visualizarService.getPedidoById?.(id) as Observable<PedidoResponse> | undefined;
     if (!obs || typeof obs.subscribe !== 'function') {
       console.error('[getPedidoById] no disponible');
       return;
@@ -1214,118 +1289,96 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         });
         return of(null);
       })
-    ).subscribe((data: AnyRecord | null) => {
+    ).subscribe((data: PedidoResponse | null) => {
       if (!data) return;
 
+      const { pedido, eventos, items, serviciosFechas } = data;
 
       // === Mapear cabecera ===
-      // Ajusta nombres según tu DTO real
-      const cabRecord = this.asRecord(data.pedido ?? data);
-      const estadoPedido = this.asRecord(cabRecord['estadoPedido']);
-      const estadoPago = this.asRecord(cabRecord['estadoPago']);
-      const cliente = this.asRecord(cabRecord['cliente']);
-      this.visualizarService.selectAgregarPedido.NombrePedido = String(cabRecord['nombrePedido'] ?? cabRecord['nombre'] ?? '');
-      this.visualizarService.selectAgregarPedido.Observacion = String(cabRecord['observaciones'] ?? '');
-      this.visualizarService.selectAgregarPedido.departamento = String(cabRecord['departamento'] ?? cabRecord['lugar'] ?? this.visualizarService.selectAgregarPedido.departamento ?? 'Lima');
+      this.visualizarService.selectAgregarPedido.NombrePedido = pedido.nombrePedido ?? '';
+      this.visualizarService.selectAgregarPedido.Observacion = pedido.observaciones ?? '';
+      this.visualizarService.selectAgregarPedido.mensaje = pedido.mensaje ?? '';
+      this.visualizarService.selectAgregarPedido.departamento = pedido.lugar ?? 'Lima';
       this.lastDepartamento = this.visualizarService.selectAgregarPedido.departamento.toString().trim();
-      const viaticosCliente = cabRecord['viaticosCliente'];
-      if (typeof viaticosCliente === 'boolean') {
-        this.visualizarService.selectAgregarPedido.viaticosCliente = viaticosCliente;
+      const viaticosClienteApi = typeof pedido.viaticosCliente === 'boolean'
+        ? pedido.viaticosCliente
+        : !(pedido.viaticosMonto && pedido.viaticosMonto > 0);
+      this.visualizarService.selectAgregarPedido.viaticosCliente = viaticosClienteApi;
+      this.visualizarService.selectAgregarPedido.viaticosMonto = pedido.viaticosMonto ?? null;
+      this.CodigoEmpleado = pedido.empleadoId ?? this.CodigoEmpleado;
+      this.estadoPedidoId = pedido.estadoPedidoId ?? null;
+      this.estadoPagoId = pedido.estadoPagoId ?? null;
+      if (pedido.idTipoEvento != null) {
+        this.eventoSeleccionado = pedido.idTipoEvento;
       }
-      const viaticosMonto = this.parseNumber(cabRecord['viaticosMonto']);
-      this.visualizarService.selectAgregarPedido.viaticosMonto = viaticosMonto ?? null;
-      this.CodigoEmpleado = this.parseNumber(cabRecord['empleadoId']) ?? this.CodigoEmpleado;
-      this.estadoPedidoId = this.parseNumber(cabRecord['estadoPedidoId'] ?? estadoPedido['id'] ?? estadoPedido['idEstado']) ?? null;
-      this.estadoPagoId = this.parseNumber(cabRecord['estadoPagoId'] ?? estadoPago['id'] ?? estadoPago['idEstado']) ?? null;
-      const tipoEventoId = this.parseNumber(cabRecord['idTipoEvento'] ?? cabRecord['tipoEventoId'] ?? cabRecord['eventoId']);
-      if (tipoEventoId != null) {
-        this.eventoSeleccionado = tipoEventoId;
+      if (pedido.cotizacionId != null) {
+        this.cotizacionId = pedido.cotizacionId;
+      } else {
+        this.cotizacionId = null;
       }
-      const servicioIdCab = this.parseNumber(cabRecord['servicioId'] ?? cabRecord['idServicio']);
-      if (servicioIdCab != null) {
-        this.servicioSeleccionado = servicioIdCab;
-      }
-      const cotizacionRaw = cabRecord['cotizacionId'];
-      const cotizacionParsed = Number(cotizacionRaw);
-      this.cotizacionId = Number.isFinite(cotizacionParsed) ? cotizacionParsed : null;
-      const fechaCreacionParsed = parseDateInput(cabRecord['fechaCreacion'] as string | undefined) ?? new Date();
+      const fechaCreacionParsed = parseDateInput(pedido.fechaCreacion) ?? new Date();
       this.fechaCreate = fechaCreacionParsed;
       this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(fechaCreacionParsed, '');
 
       // Fecha base del evento (cabecera)
-      const fechaEventoCab = cabRecord['fechaEvento'] ?? cabRecord['fecha_evento'] ?? null;
-      if (typeof fechaEventoCab === 'string' || fechaEventoCab instanceof Date) {
-        const iso = this.toIsoDate(fechaEventoCab);
+      if (pedido.fechaEvento) {
+        const iso = this.toIsoDate(pedido.fechaEvento);
         this.visualizarService.selectAgregarPedido.fechaEvent = iso;
         this.fechaValidate(iso);
       }
       this.applyViaticosRules();
+      this.syncViaticosSnapshot();
 
       // Cliente
       this.infoCliente = {
-        nombre: String(cliente['nombres'] ?? ''),
-        apellido: String(cliente['apellidos'] ?? ''),
-        celular: String(cliente['celular'] ?? ''),
-        correo: String(cliente['correo'] ?? ''),
-        documento: String(cliente['documento'] ?? ''),
-        direccion: String(cliente['direccion'] ?? ''),
-        razonSocial: String(cliente['razonSocial'] ?? ''),
-        idCliente: this.parseNumber(cabRecord['clienteId'] ?? cliente['id']) ?? 0,
+        nombre: pedido.cliente.nombres ?? '',
+        apellido: pedido.cliente.apellidos ?? '',
+        celular: pedido.cliente.celular ?? '',
+        correo: pedido.cliente.correo ?? '',
+        documento: pedido.cliente.documento ?? '',
+        direccion: pedido.cliente.direccion ?? '',
+        razonSocial: pedido.cliente.razonSocial ?? '',
+        idCliente: pedido.clienteId ?? 0,
         idUsuario: 0
       };
-      const razonSocial = String(cliente['razonSocial'] ?? '').trim();
-      const nombres = String(cliente['nombres'] ?? '').trim();
-      const apellidos = String(cliente['apellidos'] ?? '').trim();
+      const razonSocial = String(pedido.cliente.razonSocial ?? '').trim();
+      const nombres = String(pedido.cliente.nombres ?? '').trim();
+      const apellidos = String(pedido.cliente.apellidos ?? '').trim();
       this.clienteNombreCompleto = razonSocial || [nombres, apellidos].filter(Boolean).join(' ').trim();
-      this.clienteCelular = String(cliente['celular'] ?? '').trim();
-      this.clienteDocumento = String(cliente['documento'] ?? '').trim();
+      this.clienteCelular = String(pedido.cliente.celular ?? '').trim();
+      this.clienteDocumento = String(pedido.cliente.documento ?? '').trim();
       this.dniCliente = this.infoCliente.documento || '';
 
       // === Mapear eventos ===
-      // Normaliza a {ID, Direccion, Fecha, Hora, DireccionExacta, Notas}
-      // this.ubicacion = (Array.isArray(eventos) ? eventos : []).map((e: any, idx: number) => ({
-      //   ID: idx + 1,
-      //   Direccion: e.ubicacion ?? e.lugar ?? '',
-      //   Fecha: (e.fecha ? String(e.fecha).slice(0, 10) : ''),
-      //   Hora: (e.hora ? String(e.hora).slice(0, 5) : ''), // HH:mm[:ss] -> HH:mm
-      //   DireccionExacta: e.direccion ?? '',
-      //   Notas: e.notas ?? ''
-      // }));
-      const dataEventos = Array.isArray((data as AnyRecord)['eventos']) ? (data as AnyRecord)['eventos'] as AnyRecord[] : [];
-      this.ubicacion = dataEventos.map((e: AnyRecord, idx: number) => {
-        const record = e as Record<string, unknown>;
-        const horaValue = String(record['hora'] ?? '').slice(0, 5);
+      this.ubicacion = eventos.map((record, idx) => {
+        const horaValue = String(record.hora ?? '').slice(0, 5);
         const parts = this.splitHoraParts(horaValue);
         return {
           ID: idx + 1,                 // solo para la tabla
-        dbId: Number(record['id'] ?? record['dbId'] ?? 0),
-        Direccion: String(record['ubicacion'] ?? ''),
-        Fecha: String(record['fecha'] ?? '').slice(0, 10),
-        Hora: horaValue,
-        DireccionExacta: String(record['direccion'] ?? ''),
-        Notas: String(record['notas'] ?? ''),
-        hora12: parts.hora12,
-        minuto: parts.minuto,
-        ampm: parts.ampm
+          dbId: Number(record.id ?? 0),
+          Direccion: String(record.ubicacion ?? ''),
+          Fecha: String(record.fecha ?? '').slice(0, 10),
+          Hora: horaValue,
+          DireccionExacta: String(record.direccion ?? ''),
+          Notas: String(record.notas ?? ''),
+          hora12: parts.hora12,
+          minuto: parts.minuto,
+          ampm: parts.ampm
         };
       });
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
 
-      const diasCab = this.parseNumber(cabRecord['dias'] ?? cabRecord['diasTrabajo']);
+      const diasCab = pedido.dias ?? null;
       const fechasUnicas = new Set(
-        dataEventos
-          .map(ev => String((ev as AnyRecord)['fecha'] ?? '').slice(0, 10))
+        eventos
+          .map(ev => String(ev.fecha ?? '').slice(0, 10))
           .filter(Boolean)
       );
-      const diasInferidos = fechasUnicas.size ? fechasUnicas.size : (fechaEventoCab ? 1 : null);
+      const diasInferidos = fechasUnicas.size ? fechasUnicas.size : (pedido.fechaEvento ? 1 : null);
       this.visualizarService.selectAgregarPedido.dias = diasCab ?? diasInferidos ?? 1;
       this.onDiasChange(this.visualizarService.selectAgregarPedido.dias);
-      const horasEstimadasRaw = cabRecord['horasEstimadas'] ?? cabRecord['horas_estimadas'];
-      const horasEstimadasNumero = Number(horasEstimadasRaw);
-      this.visualizarService.selectAgregarPedido.horasEstimadas = Number.isFinite(horasEstimadasNumero)
-        ? horasEstimadasNumero
-        : null;
+      this.visualizarService.selectAgregarPedido.horasEstimadas = pedido.horasEstimadas ?? null;
 
       // Precargar controles "Fecha/Hora" superiores con el primer evento (UX)
       const first = this.ubicacion[0];
@@ -1352,44 +1405,35 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       //   precio: Number(it.precioUnit ?? it.precio ?? 0), // normaliza precio
       //   notas: it.notas ?? ''
       // }));
-      const dataItems = Array.isArray((data as AnyRecord)['items']) ? (data as AnyRecord)['items'] as AnyRecord[] : [];
-      this.selectedPaquetes = dataItems.map((it: AnyRecord, index: number) => {
-        const record = it as Record<string, unknown>;
-        const eventoCodigoValue = record['eventoCodigo'];
-        let eventoCodigo: string | number | null = null;
-        if (typeof eventoCodigoValue === 'string') {
-          const trimmed = eventoCodigoValue.trim();
-          eventoCodigo = trimmed ? trimmed : null;
-        } else if (typeof eventoCodigoValue === 'number') {
-          eventoCodigo = eventoCodigoValue;
-        }
-        const idValue = Number(record['id'] ?? record['idPedidoServicio'] ?? record['idItem'] ?? 0) || undefined;
+      this.selectedPaquetes = items.map((record, index) => {
+        const eventoCodigo = record.eventoCodigo ?? null;
+        const idValue = record.id ?? undefined;
         const tmpId = idValue != null ? `i${idValue}` : `i${index + 1}`;
         return {
           id: idValue,
-          key: this.getPkgKey(it),
+          key: record.id ?? this.getPkgKey(record as unknown as AnyRecord),
           eventKey: eventoCodigo,
           tmpId,
           eventoCodigo,
-          idEventoServicio: Number(record['idEventoServicio'] ?? 0) || null,
-          eventoId: Number(record['eventoId'] ?? 0) || null,
-          servicioId: Number(record['servicioId'] ?? 0) || null,
-          nombre: String(record['nombre'] ?? ''),
-          titulo: String(record['nombre'] ?? ''),
-          descripcion: String(record['descripcion'] ?? ''),
-          precioUnit: Number(record['precioUnit'] ?? 0),
-          precio: Number(record['precioUnit'] ?? 0),
-          notas: String(record['notas'] ?? ''),
-          moneda: String(record['moneda'] ?? 'USD'),
-          cantidad: Number(record['cantidad'] ?? 1),
-          descuento: Number(record['descuento'] ?? 0),
-          recargo: Number(record['recargo'] ?? 0),
-          horas: record['horas'] != null ? Number(record['horas']) : null,
-          personal: record['personal'] != null ? Number(record['personal']) : null,
-          fotosImpresas: record['fotosImpresas'] != null ? Number(record['fotosImpresas']) : null,
-          trailerMin: record['trailerMin'] != null ? Number(record['trailerMin']) : null,
-          filmMin: record['filmMin'] != null ? Number(record['filmMin']) : null,
-          precioOriginal: Number(record['precioUnit'] ?? 0),
+          idEventoServicio: record.idEventoServicio ?? null,
+          eventoId: record.eventoId ?? null,
+          servicioId: record.servicioId ?? null,
+          nombre: record.nombre ?? '',
+          titulo: record.nombre ?? '',
+          descripcion: record.descripcion ?? '',
+          precioUnit: record.precioUnit ?? 0,
+          precio: record.precioUnit ?? 0,
+          notas: record.notas ?? '',
+          moneda: record.moneda ?? 'USD',
+          cantidad: record.cantidad ?? 1,
+          descuento: record.descuento ?? 0,
+          recargo: record.recargo ?? 0,
+          horas: record.horas ?? null,
+          personal: record.personal ?? null,
+          fotosImpresas: record.fotosImpresas ?? null,
+          trailerMin: record.trailerMin ?? null,
+          filmMin: record.filmMin ?? null,
+          precioOriginal: record.precioUnit ?? 0,
           editandoPrecio: false
         };
       });
@@ -1410,36 +1454,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         this.eventoSeleccionado = eventoDesdeItems;
       }
 
-      const serviciosFechasRaw = (data as AnyRecord)['serviciosFechas'];
-      if (Array.isArray(serviciosFechasRaw)) {
-        const tmpIdMap = new Map<string, string>();
-        this.selectedPaquetes.forEach(item => {
-          if (item.id != null) {
-            tmpIdMap.set(String(item.id), item.tmpId);
-          }
-        });
-        this.serviciosFechasSeleccionadas = serviciosFechasRaw
-          .map((raw: AnyRecord) => {
-            const record = raw as Record<string, unknown>;
-            const fecha = String(record['fecha'] ?? '').slice(0, 10);
-            const tmpIdRaw = record['itemTmpId'] ?? record['tmpId']
-              ?? record['idPedidoServicio'] ?? record['pedidoServicioId']
-              ?? record['idItem'] ?? record['itemId'] ?? record['id'];
-            let itemTmpId = '';
-            if (typeof tmpIdRaw === 'string' && tmpIdRaw.trim()) {
-              itemTmpId = tmpIdRaw.trim();
-            } else {
-              const numeric = this.parseNumber(tmpIdRaw);
-              if (numeric != null) {
-                itemTmpId = tmpIdMap.get(String(numeric)) ?? `i${numeric}`;
-              }
-            }
-            return { itemTmpId, fecha };
-          })
-          .filter(entry => entry.itemTmpId && entry.fecha);
-      } else {
-        this.serviciosFechasSeleccionadas = [];
-      }
+      const tmpIdMap = new Map<number, string>();
+      this.selectedPaquetes.forEach(item => {
+        if (item.id != null) {
+          tmpIdMap.set(item.id, item.tmpId);
+        }
+      });
+      this.serviciosFechasSeleccionadas = serviciosFechas
+        .map((entry) => {
+          const fecha = String(entry.fecha ?? '').slice(0, 10);
+          const itemTmpId = tmpIdMap.get(entry.idPedidoServicio) ?? `i${entry.idPedidoServicio}`;
+          return { itemTmpId, fecha };
+        })
+        .filter(entry => entry.itemTmpId && entry.fecha);
       if (this.serviciosFechasSeleccionadas.length) {
         const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
         this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
@@ -1626,32 +1653,59 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
     const fechaCreacion = this.convert(this.fechaCreate);
     const toHms = (h: string | null | undefined) => (h || '').length === 5 ? `${h}:00` : (h || '');
+    const lugar = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim();
+    const lugarLower = lugar.toLowerCase();
+    const viaticosClienteFinal = lugarLower === 'lima'
+      ? true
+      : Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente);
+    const viaticosMontoFinal = viaticosClienteFinal
+      ? 0
+      : (this.parseNumber(this.visualizarService.selectAgregarPedido?.viaticosMonto) ?? 0);
+    const mensaje = (this.visualizarService.selectAgregarPedido as { mensaje?: string } | null)?.mensaje ?? '';
+    const fechaEvento = this.shouldShowFechaEvento()
+      ? (this.visualizarService.selectAgregarPedido?.fechaEvent ?? null)
+      : null;
 
-    const payload = {
+    const tmpIdToId = new Map<string, number>();
+    this.selectedPaquetes.forEach(item => {
+      if (item.id != null) {
+        tmpIdToId.set(item.tmpId, item.id);
+      }
+    });
+    const serviciosFechasPayload = serviciosFechas
+      .map(entry => {
+        const idPedidoServicio = tmpIdToId.get(entry.itemTmpId);
+        return idPedidoServicio != null
+          ? { idPedidoServicio, fecha: entry.fecha }
+          : null;
+      })
+      .filter((entry): entry is { idPedidoServicio: number; fecha: string } => !!entry);
+
+    const payload: PedidoUpdatePayload = {
       pedido: {
-        id: this.pedidoId,
         clienteId: this.infoCliente.idCliente,
         empleadoId: this.CodigoEmpleado ?? 1,
         fechaCreacion: fechaCreacion,
-        observaciones: this.visualizarService.selectAgregarPedido?.Observacion || '',
         estadoPedidoId: this.estadoPedidoId ?? 1,
         estadoPagoId: this.estadoPagoId ?? 1,
+        fechaEvento: fechaEvento,
+        lugar: lugar,
+        observaciones: this.visualizarService.selectAgregarPedido?.Observacion || '',
+        idTipoEvento: this.eventoSeleccionado ?? 0,
+        dias: this.visualizarService.selectAgregarPedido?.dias ?? 1,
+        horasEstimadas: this.visualizarService.selectAgregarPedido?.horasEstimadas ?? null,
+        viaticosMonto: viaticosMontoFinal,
+        viaticosCliente: viaticosClienteFinal,
+        mensaje: mensaje,
         nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || '',
         cotizacionId: this.cotizacionId,
-        departamento: this.visualizarService.selectAgregarPedido?.departamento || undefined,
-        viaticosCliente: this.visualizarService.selectAgregarPedido?.departamento?.toLowerCase() === 'lima'
-          ? true
-          : Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente),
-        viaticosMonto: this.visualizarService.selectAgregarPedido?.departamento?.toLowerCase() === 'lima'
-          ? undefined
-          : (this.visualizarService.selectAgregarPedido?.viaticosCliente
-              ? undefined
-              : (this.parseNumber(this.visualizarService.selectAgregarPedido?.viaticosMonto) ?? undefined))
+        cliente: { documento: this.infoCliente.documento || '' }
       },
       eventos: (this.ubicacion || [])
         .filter(u => (u?.Direccion || '').trim())
         .map(u => ({
           id: (u.dbId ?? u.ID ?? null),
+          clientEventKey: u.ID ?? null,
           fecha: String(u.Fecha || '').trim(),
           hora: toHms(String(u.Hora || '').trim()),
           ubicacion: String(u.Direccion || '').trim(),
@@ -1659,27 +1713,28 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
           notas: String(u.Notas || '').trim()
         })),
       items: (this.selectedPaquetes || []).map(it => ({
-        tmpId: it.tmpId,
         id: it.id ?? null,
+        exsId: it.idEventoServicio ?? null,
         idEventoServicio: it.idEventoServicio ?? null,
+        tmpId: it.tmpId,
         eventoId: it.eventoId ?? null,
         servicioId: it.servicioId ?? null,
         eventoCodigo: it.eventoCodigo ?? null,
+        moneda: it.moneda ?? 'USD',
         nombre: String(it.nombre ?? '').trim(),
         descripcion: String(it.descripcion ?? '').trim(),
-        moneda: it.moneda ?? 'USD',
         precioUnit: Number(it.precioUnit ?? 0),
         cantidad: Number(it.cantidad ?? 1),
         descuento: Number(it.descuento ?? 0),
         recargo: Number(it.recargo ?? 0),
-        notas: String(it.notas ?? '').trim(),
         horas: it.horas ?? null,
         personal: it.personal ?? null,
         fotosImpresas: it.fotosImpresas ?? null,
         trailerMin: it.trailerMin ?? null,
-        filmMin: it.filmMin ?? null
+        filmMin: it.filmMin ?? null,
+        notas: String(it.notas ?? '').trim()
       })),
-      serviciosFechas: serviciosFechas.length ? serviciosFechas : undefined
+      serviciosFechas: serviciosFechasPayload
     };
 
     // Validación de formatos ANTES de activar el candado
@@ -1877,9 +1932,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   private buildSnapshotData(): PedidoSnapshot {
+    const lugar = (this.visualizarService.selectAgregarPedido?.departamento ?? '').toString().trim();
+    const lugarLower = lugar.toLowerCase();
+    const viaticosCliente = lugarLower === 'lima'
+      ? true
+      : Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente);
+    const viaticosMonto = viaticosCliente
+      ? 0
+      : (this.parseNumber(this.visualizarService.selectAgregarPedido?.viaticosMonto) ?? 0);
     const pedido = {
       nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || '',
-      observaciones: this.visualizarService.selectAgregarPedido?.Observacion || ''
+      observaciones: this.visualizarService.selectAgregarPedido?.Observacion || '',
+      viaticosCliente,
+      viaticosMonto
     };
     const eventos = (this.ubicacion || [])
       .filter(u => (u?.Direccion || '').trim())
@@ -1944,6 +2009,21 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       });
     }
 
+    const viaticosClienteAntes = anterior.pedido.viaticosCliente;
+    const viaticosClienteAhora = actual.pedido.viaticosCliente;
+    const viaticosMontoAntes = anterior.pedido.viaticosMonto;
+    const viaticosMontoAhora = actual.pedido.viaticosMonto;
+    if (viaticosClienteAntes !== viaticosClienteAhora || viaticosMontoAntes !== viaticosMontoAhora) {
+      const before = viaticosClienteAntes ? 'Cliente cubre viaticos' : `Monto: ${viaticosMontoAntes}`;
+      const after = viaticosClienteAhora ? 'Cliente cubre viaticos' : `Monto: ${viaticosMontoAhora}`;
+      cambios.push({
+        label: 'Viaticos',
+        before,
+        after,
+        level: 'strong'
+      });
+    }
+
     const eventosAntes = anterior.eventos ?? [];
     const eventosAhora = actual.eventos ?? [];
     const maxEventos = Math.max(eventosAntes.length, eventosAhora.length);
@@ -2000,12 +2080,23 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   private formatEventoResumen(evento?: PedidoEventoSnapshot): string {
     if (!evento) return '—';
-    const fecha = evento.fecha || '—';
+    const fecha = evento.fecha ? this.formatFechaResumen(evento.fecha) : '—';
     const hora = evento.hora || '—';
     const ubicacion = evento.ubicacion || '—';
     const direccion = evento.direccion ? ` (${evento.direccion})` : '';
     const notas = evento.notas ? ` | ${evento.notas}` : '';
     return `${fecha} ${hora} - ${ubicacion}${direccion}${notas}`;
+  }
+
+  private formatFechaResumen(value: string): string {
+    const parsed = parseDateInput(value);
+    if (!parsed) {
+      return value;
+    }
+    const dd = String(parsed.getDate()).padStart(2, '0');
+    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+    const yyyy = parsed.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
   }
 
   private eventoSinNombre(evento?: PedidoEventoSnapshot): PedidoEventoSnapshot {
@@ -2032,7 +2123,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (!item) return '—';
     const precio = Number.isFinite(item.precio) ? item.precio.toFixed(2) : '0.00';
     const cantidad = item.cantidad ?? 1;
-    return `Precio: ${precio} | Cant: ${cantidad} | Desc: ${item.descuento ?? 0} | Rec: ${item.recargo ?? 0}`;
+    return `Precio: ${precio} | Cant: ${cantidad}`;
   }
 
   private confirmStrongChanges(items: PedidoChangeItem[]): Promise<boolean> {
@@ -2061,11 +2152,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }).then(result => result.isConfirmed);
   }
 
-  private enviarActualizacion(payload: {
-    pedido: Record<string, unknown>;
-    eventos: Record<string, unknown>[];
-    items: Record<string, unknown>[];
-  }): void {
+  private enviarActualizacion(payload: PedidoUpdatePayload): void {
     const obs = this.visualizarService.updatePedido?.(this.pedidoId, payload);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.error('[updatePedido] no disponible');
@@ -2147,6 +2234,8 @@ interface PedidoSnapshot {
   pedido: {
     nombrePedido: string;
     observaciones: string;
+    viaticosCliente: boolean;
+    viaticosMonto: number;
   };
   eventos: PedidoEventoSnapshot[];
   items: PedidoItemSnapshot[];

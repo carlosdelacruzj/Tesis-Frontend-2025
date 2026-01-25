@@ -1,5 +1,5 @@
 @if (!loading) {
-<div class="dashboard-content">
+<div class="dashboard-content" [class.is-saving]="saving">
   <app-list-toolbar [title]="'Editar cotización'" [showSearch]="false" [showCreateButton]="false">
   </app-list-toolbar>
 
@@ -479,6 +479,7 @@
         <div class="form-group">
           <label class="col-form-label" for="viaticosMonto">Monto de viáticos (USD)</label>
           <input id="viaticosMonto" type="number" class="form-control" formControlName="viaticosMonto" min="1" step="1"
+            (blur)="onViaticosMontoBlur($any($event.target).value)"
             inputmode="numeric"
             [class.is-invalid]="form.get('viaticosMonto')?.invalid && form.get('viaticosMonto')?.touched">
           @if (form.get('viaticosMonto')?.hasError('required') && form.get('viaticosMonto')?.touched) {

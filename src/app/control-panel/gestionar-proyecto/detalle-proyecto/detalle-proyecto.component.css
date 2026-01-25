@@ -15,6 +15,80 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
 }
 
+.locaciones-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.locacion-day {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f9fafb;
+}
+
+.locacion-day__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.locacion-day__date {
+  font-weight: 700;
+  color: #111827;
+}
+
+.locacion-day__count {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.locacion-list {
+  display: grid;
+  gap: 8px;
+}
+
+.locacion-card {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #eef2f7;
+}
+
+.locacion-card__time {
+  font-weight: 700;
+  color: #111827;
+}
+
+.locacion-card__title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.locacion-card__meta {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.locacion-card__notes {
+  margin-top: 4px;
+  color: #4b5563;
+  font-size: 0.85rem;
+  background: #f3f4f6;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .locacion-card {
+    grid-template-columns: 1fr;
+  }
+}
+
 .card-header {
   display: flex;
   align-items: center;

@@ -130,6 +130,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private tmpIdSequence = 0;
   private lastDepartamento = '';
   private departamentoChangeLock = false;
+  private viaticosChangeLock = false;
+  private lastViaticosCliente: boolean | null = null;
+  private lastViaticosMonto: number | null = null;
 
   private cotizacion: Cotizacion | null = null;
   private pendingServicioId: number | null = null;
@@ -209,7 +212,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       .subscribe(value => this.handleDepartamentoChange(value));
     this.form.get('viaticosCliente')?.valueChanges
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.applyViaticosRules());
+      .subscribe(value => this.handleViaticosClienteChange(value));
     this.form.get('viaticosMonto')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.syncTotalEstimado());
@@ -1031,6 +1034,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       totalEstimado: detalle?.totalEstimado ?? cotizacion.total ?? 0
     }, { emitEvent: false });
     this.lastDepartamento = (this.form.get('departamento')?.value ?? '').toString().trim();
+    this.applyViaticosRules();
+    this.syncViaticosSnapshot();
 
     const servicioId = this.parseNumber(contexto?.servicioId ?? cotizacion.servicioId);
     this.pendingServicioId = servicioId != null && servicioId > 0 ? servicioId : null;
@@ -1683,6 +1688,84 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.syncTotalEstimado();
   }
 
+  private handleViaticosClienteChange(value: unknown): void {
+    if (this.viaticosChangeLock) {
+      return;
+    }
+    const prev = this.lastViaticosCliente ?? Boolean(this.form.get('viaticosCliente')?.value);
+    const next = Boolean(value);
+    if (prev === next) {
+      return;
+    }
+    const beforeText = prev ? 'Cliente cubre viaticos' : 'Cliente NO cubre viaticos';
+    const afterText = next ? 'Cliente cubre viaticos' : 'Cliente NO cubre viaticos';
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Confirmar cambio de viaticos',
+      text: `Actual: ${beforeText}. Nuevo: ${afterText}.`,
+      showCancelButton: true,
+      confirmButtonText: 'Aceptar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.form.get('viaticosCliente')?.setValue(next, { emitEvent: false });
+        this.applyViaticosRules();
+        this.syncViaticosSnapshot();
+        return;
+      }
+      this.viaticosChangeLock = true;
+      this.form.get('viaticosCliente')?.setValue(prev, { emitEvent: false });
+      this.applyViaticosRules();
+      if (this.lastViaticosMonto != null) {
+        this.form.get('viaticosMonto')?.setValue(this.lastViaticosMonto, { emitEvent: false });
+      } else {
+        this.form.get('viaticosMonto')?.reset(null, { emitEvent: false });
+      }
+      this.viaticosChangeLock = false;
+    });
+  }
+
+  onViaticosMontoBlur(value: unknown): void {
+    if (this.viaticosChangeLock || Boolean(this.form.get('viaticosCliente')?.value)) {
+      return;
+    }
+    const parsed = this.parseNumber(value);
+    const next = parsed != null && parsed > 0 ? parsed : null;
+    const prev = this.lastViaticosMonto ?? null;
+    if (prev === next) {
+      return;
+    }
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Confirmar cambio de viaticos',
+      text: `Actual: ${prev ?? 'sin monto'}. Nuevo: ${next ?? 'sin monto'}.`,
+      showCancelButton: true,
+      confirmButtonText: 'Aceptar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.form.get('viaticosMonto')?.setValue(next, { emitEvent: false });
+        this.syncViaticosSnapshot();
+        this.syncTotalEstimado();
+        return;
+      }
+      this.viaticosChangeLock = true;
+      if (prev != null) {
+        this.form.get('viaticosMonto')?.setValue(prev, { emitEvent: false });
+      } else {
+        this.form.get('viaticosMonto')?.reset(null, { emitEvent: false });
+      }
+      this.viaticosChangeLock = false;
+    });
+  }
+
+  private syncViaticosSnapshot(): void {
+    const viaticosCliente = Boolean(this.form.get('viaticosCliente')?.value);
+    const viaticosMonto = this.parseNumber(this.form.get('viaticosMonto')?.value);
+    this.lastViaticosCliente = viaticosCliente;
+    this.lastViaticosMonto = viaticosMonto != null && viaticosMonto > 0 ? viaticosMonto : null;
+  }
+
   private handleDepartamentoChange(value: unknown): void {
     if (this.departamentoChangeLock) {
       return;
@@ -1718,6 +1801,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       if (result.isConfirmed) {
         this.lastDepartamento = next;
         this.applyViaticosRules();
+        this.syncViaticosSnapshot();
         return;
       }
       this.departamentoChangeLock = true;

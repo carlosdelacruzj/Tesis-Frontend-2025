@@ -1,4 +1,4 @@
-<div class="dashboard-content">
+<div class="dashboard-content" [class.is-saving]="saving">
   <app-list-toolbar [title]="'Actualizar pedido'" [showSearch]="false" [showCreateButton]="false">
   </app-list-toolbar>
 
@@ -471,6 +471,7 @@
           <mat-card-content>
             <div class="form-check mb-3">
               <input id="viaticosClientePedido" type="checkbox" class="form-check-input"
+                name="viaticosClientePedido"
                 [(ngModel)]="visualizarService.selectAgregarPedido.viaticosCliente"
                 (ngModelChange)="onViaticosClienteChange($event)">
               <label class="form-check-label" for="viaticosClientePedido">El cliente cubre viáticos</label>
@@ -479,7 +480,9 @@
             <div class="form-group">
               <label class="col-form-label" for="viaticosMontoPedido">Monto de viáticos (USD)</label>
               <input id="viaticosMontoPedido" type="number" class="form-control"
+                name="viaticosMontoPedido"
                 [(ngModel)]="visualizarService.selectAgregarPedido.viaticosMonto" min="1" step="1"
+                (blur)="onViaticosMontoBlur($any($event.target).value)"
                 inputmode="numeric">
             </div>
             }

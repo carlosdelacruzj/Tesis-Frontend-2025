@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AgregarPedido, EditarPedido, Proyecto } from '../model/visualizar.model';
+import { AgregarPedido, EditarPedido, PedidoResponse, PedidoUpdatePayload, Proyecto } from '../model/visualizar.model';
 import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +26,7 @@ export class VisualizarService {
   selectAgregarPedido: AgregarPedido = {
     NombrePedido: '', ExS: 0, doc: '', fechaCreate: '', fechaEvent: '', horaEvent: '',
     dias: null, horasEstimadas: null, CodEmp: 0, Direccion: '', Observacion: '',
+    mensaje: '',
     departamento: 'Lima', viaticosCliente: true, viaticosMonto: null,
   };
 
@@ -41,15 +42,15 @@ export class VisualizarService {
   // =========================
 
   /** Traer pedido por id */
-  public getPedidoById(id: number | string): Observable<unknown> {
-    return this.http.get<unknown>(`${this.apiPedido}/${id}`);
+  public getPedidoById(id: number | string): Observable<PedidoResponse> {
+    return this.http.get<PedidoResponse>(`${this.apiPedido}/${id}`);
   }
 
   /**
    * Actualizar pedido compuesto (PUT /pedido/:id)
    * Mantiene la firma que ya usas: updatePedido(id, data)
    */
-  public updatePedido(id: number | string, data: unknown): Observable<unknown> {
+  public updatePedido(id: number | string, data: PedidoUpdatePayload): Observable<unknown> {
     // Antes apuntabas a /pedido/actualiza/putByIdPedido (legacy). Ahora usamos /pedido/:id
     return this.http.put<unknown>(`${this.apiPedido}/${id}`, data);
   }

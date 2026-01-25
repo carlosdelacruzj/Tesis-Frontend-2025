@@ -11,7 +11,9 @@ import { AdministrarEquiposService } from '../../administrar-equipos/service/adm
 import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
+import { PedidoResponse } from '../../gestionar-pedido/model/visualizar.model';
 import { DisponibilidadEmpleado, DisponibilidadEquipo } from '../model/proyecto-disponibilidad.model';
+import { parseDateInput } from '../../../shared/utils/date-utils';
 
 @Component({
   selector: 'app-detalle-proyecto',
@@ -30,7 +32,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   error: string | null = null;
   proyecto: ProyectoDetalle | null = null;
   requerimientos: PedidoRequerimientos | null = null;
-  pedidoDetalle: Record<string, unknown> | null = null;
+  pedidoDetalle: PedidoResponse | null = null;
   estados: { estadoId: number; estadoNombre: string }[] = [];
   guardandoDevoluciones = false;
   guardandoProyecto = false;
@@ -524,7 +526,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
-          this.pedidoDetalle = (data ?? null) as Record<string, unknown> | null;
+          this.pedidoDetalle = data ?? null;
           if (this.proyecto?.proyectoId) {
             this.loadDisponibilidad(this.proyecto.proyectoId);
           }
@@ -724,6 +726,43 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     });
   }
 
+  getEventosAgrupados(): { fecha: string; fechaLabel: string; items: { hora: string; ubicacion: string; direccion: string; notas: string }[] }[] {
+    const eventos = this.getEventosPedido();
+    const mapa = new Map<string, { fecha: string; fechaLabel: string; items: { hora: string; ubicacion: string; direccion: string; notas: string }[] }>();
+    eventos.forEach((evento) => {
+      const fecha = String(evento?.fecha ?? '').slice(0, 10);
+      if (!fecha) {
+        return;
+      }
+      const grupo = mapa.get(fecha) ?? {
+        fecha,
+        fechaLabel: this.formatFechaLarga(fecha),
+        items: []
+      };
+      grupo.items.push({
+        hora: String(evento?.hora ?? '').slice(0, 5),
+        ubicacion: String(evento?.ubicacion ?? ''),
+        direccion: String(evento?.direccion ?? ''),
+        notas: String(evento?.notas ?? '')
+      });
+      mapa.set(fecha, grupo);
+    });
+    return Array.from(mapa.values()).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }
+
+  private formatFechaLarga(value: string): string {
+    const parsed = parseDateInput(value);
+    if (!parsed) {
+      return this.formatFechaDisplay(value);
+    }
+    return new Intl.DateTimeFormat('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(parsed);
+  }
+
   private inicializarTableroAsignacion(): void {
     const reserva = [...this.selectedEquipos];
     const empleados: Record<number, number[]> = {};
@@ -777,15 +816,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   getServiciosContratados(): { nombre: string; evento: string; precio: number; notas: string }[] {
-    const pedido = this.pedidoDetalle as Record<string, unknown> | null;
-    const nestedPedido = (pedido?.pedido ?? null) as Record<string, unknown> | null;
-    const items = this.getArray(pedido?.items ?? nestedPedido?.items);
-    if (!Array.isArray(items)) return [];
+    const items = this.pedidoDetalle?.items ?? [];
     return items.map(it => ({
-      nombre: String(it.nombre ?? it.descripcion ?? it.titulo ?? ''),
-      evento: String(it.eventoNombre ?? it.evento ?? it.eventoCodigo ?? ''),
-      precio: Number(it.precioUnit ?? it.precio ?? it.costo ?? 0),
-      notas: String(it.notas ?? '')
+      nombre: it.nombre ?? it.descripcion ?? '',
+      evento: String(it.eventoCodigo ?? ''),
+      precio: it.precioUnit ?? 0,
+      notas: it.notas ?? ''
     }));
   }
 

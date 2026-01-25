@@ -40,6 +40,11 @@
   overflow-x: auto;
 }
 
+.is-saving {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
 .cotizacion-form .spinner-border {
   width: 1.4rem;
   height: 1.4rem;
