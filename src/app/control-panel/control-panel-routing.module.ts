@@ -23,6 +23,7 @@ import { GestionarProyectoComponent } from './gestionar-proyecto/gestionar-proye
 import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/detalle-proyecto.component';
 import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.component';
 import { RoleGuard } from '../guards/role.guard';
+import { GestionarPortafolioComponent } from './gestionar-portafolio/gestionar-portafolio.component';
 
 const routes: Routes = [
   {
@@ -52,6 +53,7 @@ const routes: Routes = [
       { path: 'gestionar-cotizaciones/editar/:id', component: EditarCotizacionComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
       { path: 'gestionar-proyecto', component: GestionarProyectoComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
       { path: 'gestionar-proyecto/:id', component: DetalleProyectoComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'gestionar-portafolio', component: GestionarPortafolioComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
       { path: '**', redirectTo: 'dashboard' },
     ]
   }

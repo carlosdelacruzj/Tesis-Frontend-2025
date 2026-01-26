@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, AfterViewInit, ViewChild, HostListener, ElementRef, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, Validators, FormGroupDirective, ValidationErrors } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -6,7 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, take, takeUntil } from 'rxjs/operators';
 import { DateInput, formatDisplayDate, formatIsoDate, parseDateInput } from '../shared/utils/date-utils';
-import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload } from './services';
+import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload, LandingPortafolioService, PortafolioPublicoEvento } from './services';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 // Landing copy decks for cards and sections
@@ -19,12 +19,21 @@ interface LandingServiceCard {
 
 interface PortfolioItem {
   id: string;
-  type: 'Bodas' | 'Eventos' | 'Corporativo' | 'Quinceañera' | 'Religioso';
+  type: string;
   title: string;
   thumbnail: string;
   mediaType: 'image' | 'video';
   source: string;
   poster?: string;
+  orden?: number | null;
+  fechaCreacion?: string | null;
+}
+
+interface PortfolioCategory {
+  name: string;
+  items: PortfolioItem[];
+  preview: PortfolioItem[];
+  total: number;
 }
 
 interface PackageTier {
@@ -61,7 +70,7 @@ const FALLBACK_EVENT_OPTIONS: LandingEventOption[] = [
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.css']
 })
-export class LandingComponent implements OnInit, OnDestroy {
+export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   readonly currentYear = new Date().getFullYear();
 
@@ -136,85 +145,12 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
   ];
 
-  readonly portfolioFilters: ('Todos' | PortfolioItem['type'])[] = ['Todos', 'Bodas', 'Eventos', 'Corporativo', 'Quinceañera', 'Religioso'];
-
-  // Static showcase for the portfolio grid
-  readonly portfolio: PortfolioItem[] = [
-    {
-      id: 'pf-boda-01',
-      type: 'Bodas',
-      title: 'Lucía & Rafael – Hacienda Los Ficus',
-      thumbnail: 'https://images.unsplash.com/photo-1520854221050-0f4caff449fb?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'image',
-      source: 'https://images.unsplash.com/photo-1520854221050-0f4caff449fb?auto=format&fit=crop&w=1600&q=80'
-    },
-    {
-      id: 'pf-boda-02',
-      type: 'Bodas',
-      title: 'Karen & Diego – Sunset en Paracas',
-      thumbnail: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'image',
-      source: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80'
-    },
-    {
-      id: 'pf-evento-01',
-      type: 'Eventos',
-      title: 'Aniversario 50 años – Grupo Salcantay',
-      thumbnail: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'image',
-      source: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80'
-    },
-    {
-      id: 'pf-corporativo-01',
-      type: 'Corporativo',
-      title: 'Congreso de Innovación 2024',
-      thumbnail: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'image',
-      source: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80'
-    },
-    {
-      id: 'pf-religioso-01',
-      type: 'Religioso',
-      title: 'Primera comunión – Catedral de Lima',
-      thumbnail: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'image',
-      source: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80'
-    },
-    {
-      id: 'pf-religioso-02',
-      type: 'Religioso',
-      title: 'Bar Mitzvah – Comunidad Judía de Lima',
-      thumbnail: 'https://images.unsplash.com/photo-1528222354212-a29573cdb844?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'image',
-      source: 'https://images.unsplash.com/photo-1528222354212-a29573cdb844?auto=format&fit=crop&w=1600&q=80'
-    },
-    {
-      id: 'pf-quince-01',
-      type: 'Quinceañera',
-      title: 'Valentina – Sesión editorial',
-      thumbnail: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'image',
-      source: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80'
-    },
-    {
-      id: 'pf-video-01',
-      type: 'Eventos',
-      title: 'Aftermovie – Festival Creativo',
-      thumbnail: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'video',
-      source: 'https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4',
-      poster: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=1600&q=80'
-    },
-    {
-      id: 'pf-video-02',
-      type: 'Corporativo',
-      title: 'Spot – Lanzamiento Tech 2025',
-      thumbnail: 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'video',
-      source: 'https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4',
-      poster: 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1600&q=80'
-    }
-  ];
+  portfolio: PortfolioItem[] = [];
+  portfolioCategories: PortfolioCategory[] = [];
+  portfolioTotalImages = 0;
+  portfolioTotalCategories = 0;
+  portfolioLoading = false;
+  portfolioError: string | null = null;
 
   // Pricing tiers surfaced in “Paquetes”
   readonly packages: PackageTier[] = [
@@ -356,7 +292,9 @@ export class LandingComponent implements OnInit, OnDestroy {
   quoteStarted = false;
   whatsAppLink: string | null = null;
   selectedLightboxItem: PortfolioItem | null = null;
-  activePortfolioFilter: PortfolioItem['type'] | 'Todos' = 'Todos';
+  selectedCategory: string | null = null;
+  galleryPage = 1;
+  readonly galleryPageSize = 12;
   selectedPackageId: string | null = null;
 
   readonly localBusinessSchema = this.createSchemaScript({
@@ -398,9 +336,15 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
   @ViewChild(FormGroupDirective, { static: false }) private quoteFormDirective?: FormGroupDirective;
+  @ViewChild('categoryTrack', { static: false }) private categoryTrack?: ElementRef<HTMLDivElement>;
+  private readonly portafolioService = inject(LandingPortafolioService);
+  private readonly portfolioAssetBase = this.getPortfolioAssetBase();
+  categoryAtStart = true;
+  categoryAtEnd = false;
 
   ngOnInit(): void {
     this.loadEventOptions();
+    this.loadPortfolioPublico();
     this.route.fragment
       .pipe(takeUntil(this.destroy$))
       .subscribe(fragment => {
@@ -413,24 +357,12 @@ export class LandingComponent implements OnInit, OnDestroy {
       .subscribe(value => this.syncHorasControl(value));
   }
 
-  get filteredPortfolio(): PortfolioItem[] {
-    if (this.activePortfolioFilter === 'Todos') {
-      return this.portfolio;
-    }
-    return this.portfolio.filter(item => item.type === this.activePortfolioFilter);
-  }
-
   // Marks the quote as started once any field is focused
   handleQuoteStart(): void {
     if (!this.quoteStarted) {
       this.quoteStarted = true;
       this.trackEvent('quote_start');
     }
-  }
-
-  setPortfolioFilter(filter: PortfolioItem['type'] | 'Todos'): void {
-    this.activePortfolioFilter = filter;
-    this.trackEvent('portfolio_view', { filter });
   }
 
   // Opens the lightbox modal for portfolio items
@@ -441,6 +373,205 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   closeLightbox(): void {
     this.selectedLightboxItem = null;
+  }
+
+  openCategory(nombre: string): void {
+    this.selectedCategory = nombre;
+    this.galleryPage = 1;
+    this.trackEvent('portfolio_view', { category: nombre });
+  }
+
+  closeCategory(): void {
+    this.selectedCategory = null;
+    this.galleryPage = 1;
+  }
+
+  scrollCategoryNext(): void {
+    const track = this.categoryTrack?.nativeElement;
+    if (!track) return;
+    const step = this.getCategoryScrollStep(track);
+    if (!step) return;
+    track.scrollBy({ left: step, behavior: 'smooth' });
+    setTimeout(() => this.updateCategoryBounds(), 350);
+  }
+
+  scrollCategoryPrev(): void {
+    const track = this.categoryTrack?.nativeElement;
+    if (!track) return;
+    const step = this.getCategoryScrollStep(track);
+    if (!step) return;
+    track.scrollBy({ left: -step, behavior: 'smooth' });
+    setTimeout(() => this.updateCategoryBounds(), 350);
+  }
+
+  get canScrollCategories(): boolean {
+    const track = this.categoryTrack?.nativeElement;
+    if (!track) return false;
+    return track.scrollWidth > track.clientWidth + 4;
+  }
+
+  get carouselCategories(): PortfolioCategory[] {
+    return this.portfolioCategories;
+  }
+
+  get selectedCategoryItems(): PortfolioItem[] {
+    if (!this.selectedCategory) return [];
+    return this.portfolio.filter(item => item.type === this.selectedCategory);
+  }
+
+  get pagedCategoryItems(): PortfolioItem[] {
+    const start = (this.galleryPage - 1) * this.galleryPageSize;
+    return this.selectedCategoryItems.slice(start, start + this.galleryPageSize);
+  }
+
+  get galleryTotalPages(): number {
+    return Math.max(1, Math.ceil(this.selectedCategoryItems.length / this.galleryPageSize));
+  }
+
+  nextGalleryPage(): void {
+    if (this.galleryPage < this.galleryTotalPages) {
+      this.galleryPage += 1;
+    }
+  }
+
+  prevGalleryPage(): void {
+    if (this.galleryPage > 1) {
+      this.galleryPage -= 1;
+    }
+  }
+
+  private loadPortfolioPublico(): void {
+    this.portfolioLoading = true;
+    this.portfolioError = null;
+    this.portafolioService.getPortafolioPublico()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: eventos => {
+          const listado = Array.isArray(eventos) ? eventos : [];
+          this.portfolio = this.mapPortfolioItems(listado);
+          this.portfolioCategories = this.mapPortfolioCategories(this.portfolio);
+          this.portfolioTotalImages = this.portfolio.length;
+          this.portfolioTotalCategories = this.portfolioCategories.length;
+          if (this.selectedCategory && !this.portfolioCategories.find(cat => cat.name === this.selectedCategory)) {
+            this.selectedCategory = null;
+          }
+          this.portfolioLoading = false;
+          this.resetCategoryScroll();
+          setTimeout(() => this.updateCategoryBounds(), 0);
+        },
+        error: (err) => {
+          console.error('[landing] portafolio', err);
+          this.portfolioError = 'No pudimos cargar el portafolio.';
+          this.portfolio = [];
+          this.portfolioCategories = [];
+          this.portfolioTotalImages = 0;
+          this.portfolioTotalCategories = 0;
+          this.selectedCategory = null;
+          this.portfolioLoading = false;
+        }
+      });
+  }
+
+  private mapPortfolioItems(eventos: PortafolioPublicoEvento[]): PortfolioItem[] {
+    const items: PortfolioItem[] = [];
+    eventos.forEach(evento => {
+      (evento.imagenes ?? []).forEach(imagen => {
+        const title = imagen.titulo?.trim() || imagen.descripcion?.trim() || evento.nombre;
+        const url = this.resolvePortfolioUrl(imagen.url);
+        items.push({
+          id: `${evento.id}-${imagen.id}`,
+          type: evento.nombre,
+          title,
+          thumbnail: url,
+          mediaType: 'image',
+          source: url,
+          orden: imagen.orden ?? null,
+          fechaCreacion: imagen.fechaCreacion ?? null
+        });
+      });
+    });
+    return items.sort((a, b) => {
+      const typeCmp = a.type.localeCompare(b.type);
+      if (typeCmp !== 0) return typeCmp;
+      const ordenA = a.orden ?? Number.MAX_SAFE_INTEGER;
+      const ordenB = b.orden ?? Number.MAX_SAFE_INTEGER;
+      if (ordenA !== ordenB) return ordenA - ordenB;
+      return a.title.localeCompare(b.title);
+    });
+  }
+
+  private mapPortfolioCategories(items: PortfolioItem[]): PortfolioCategory[] {
+    const grouped = new Map<string, PortfolioItem[]>();
+    items.forEach(item => {
+      if (!grouped.has(item.type)) {
+        grouped.set(item.type, []);
+      }
+      grouped.get(item.type)!.push(item);
+    });
+    return Array.from(grouped.entries()).map(([name, list]) => ({
+      name,
+      items: list.slice().sort((a, b) => {
+        const ordenA = a.orden ?? Number.MAX_SAFE_INTEGER;
+        const ordenB = b.orden ?? Number.MAX_SAFE_INTEGER;
+        if (ordenA !== ordenB) return ordenA - ordenB;
+        return a.title.localeCompare(b.title);
+      }),
+      preview: list.slice().sort((a, b) => {
+        const ordenA = a.orden ?? Number.MAX_SAFE_INTEGER;
+        const ordenB = b.orden ?? Number.MAX_SAFE_INTEGER;
+        if (ordenA !== ordenB) return ordenA - ordenB;
+        return a.title.localeCompare(b.title);
+      }).slice(0, 3),
+      total: list.length
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private resolvePortfolioUrl(path?: string | null): string {
+    if (!path) return 'assets/images/default.jpg';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('assets/')) return path;
+    const normalized = path.startsWith('/') ? path : `/${path}`;
+    return `${this.portfolioAssetBase}${normalized}`;
+  }
+
+  private getPortfolioAssetBase(): string {
+    try {
+      return new URL(this.portafolioService.baseUrl).origin;
+    } catch (error) {
+      console.warn('[landing] baseUrl invalida, usando fallback', error);
+      return this.portafolioService.baseUrl.replace(/\/api\/v1\/?$/, '');
+    }
+  }
+
+  private getCategoryScrollStep(track: HTMLDivElement): number {
+    const card = track.querySelector<HTMLElement>('.portfolio__category');
+    if (!card) return 0;
+    const styles = window.getComputedStyle(track);
+    const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
+    return card.offsetWidth + gap;
+  }
+
+  private resetCategoryScroll(): void {
+    const track = this.categoryTrack?.nativeElement;
+    if (!track) return;
+    track.scrollLeft = 0;
+    this.updateCategoryBounds();
+  }
+
+  onCategoryScroll(): void {
+    this.updateCategoryBounds();
+  }
+
+  private updateCategoryBounds(): void {
+    const track = this.categoryTrack?.nativeElement;
+    if (!track) {
+      this.categoryAtStart = true;
+      this.categoryAtEnd = false;
+      return;
+    }
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    this.categoryAtStart = track.scrollLeft <= 4;
+    this.categoryAtEnd = track.scrollLeft >= maxScroll - 4;
   }
 
   scrollToSection(anchor: string): void {
@@ -536,9 +667,18 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
   }
 
+  ngAfterViewInit(): void {
+    this.updateCategoryBounds();
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.updateCategoryBounds();
   }
   // Retrieves event names for the select input
   private loadEventOptions(): void {

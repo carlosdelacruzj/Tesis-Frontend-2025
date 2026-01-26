@@ -1,0 +1,276 @@
+<div class="dashboard-content">
+  <mat-tab-group>
+    <mat-tab label="Eventos">
+      <div class="section-spacing">
+        <app-list-toolbar
+          [title]="'Eventos visibles'"
+          [description]="'Activa los tipos de evento que apareceran en el portafolio publico.'"
+          [showSearch]="false"
+          [showCreateButton]="false">
+        </app-list-toolbar>
+
+        @if (errorEventos) {
+          <div class="alert alert-danger" role="alert">{{ errorEventos }}</div>
+        }
+
+        @if (!loadingEventos) {
+          <app-table-base
+            [columns]="columnasEventos"
+            [data]="eventos"
+            [showSearch]="false"
+            [showCreateButton]="false"
+            emptyText="Sin eventos registrados">
+
+            <ng-template appCell="iconUrl" let-row>
+              <img class="evento-icon" [src]="resolveImageUrl(row.iconUrl)" [alt]="row.nombre || 'Evento'" (error)="onEventoIconError(row)">
+            </ng-template>
+
+            <ng-template appCell="mostrarPortafolio" let-row>
+              <div class="d-flex justify-content-center">
+                <mat-slide-toggle
+                  [checked]="row.mostrarPortafolio === 1"
+                  (change)="toggleEvento(row, $event.checked)">
+                </mat-slide-toggle>
+              </div>
+            </ng-template>
+          </app-table-base>
+        } @else {
+          <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p class="mt-3 mb-0">Cargando eventos...</p>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Imagenes">
+      <div class="section-spacing">
+        <app-list-toolbar
+          [title]="'Portafolio'"
+          [description]="'Sube y organiza las imagenes que se mostraran en la web.'"
+          [showSearch]="true"
+          [searchPlaceholder]="'Buscar por titulo o evento...'"
+          [searchValue]="searchTerm"
+          [showCreateButton]="true"
+          [disableCreate]="isUiLocked"
+          [createButtonLabel]="'Nueva imagen'"
+          (searchChange)="onSearchChange($event)"
+          (createClick)="abrirCrear()">
+        </app-list-toolbar>
+
+        <div class="row g-3 align-items-end mb-3">
+          <div class="col-12 col-md-4">
+            <label class="col-form-label" for="filtroEvento">Filtrar por evento</label>
+            <select id="filtroEvento" class="form-select" [(ngModel)]="filtroEventoId" (ngModelChange)="onFiltroEventoChange($event)" [disabled]="isUiLocked">
+              <option [ngValue]="null">Todos</option>
+              @for (evento of eventos; track evento.id) {
+                <option [ngValue]="evento.id">{{ evento.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="col-form-label">Filtros</label>
+            <div class="d-flex gap-3 flex-wrap">
+              <label class="form-check d-flex align-items-center gap-2">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="soloSinTitulo" (change)="onFiltroOpcionalChange()" [disabled]="isUiLocked">
+                <span class="form-check-label">Sin titulo</span>
+              </label>
+              <label class="form-check d-flex align-items-center gap-2">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="soloSinDescripcion" (change)="onFiltroOpcionalChange()" [disabled]="isUiLocked">
+                <span class="form-check-label">Sin descripcion</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+          <div class="bulk-bar mb-3">
+            <div class="bulk-info">Seleccionadas: {{ selectedIds.size }}</div>
+            <div class="bulk-actions">
+              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="seleccionarTodo()" [disabled]="isUiLocked">Seleccionar todo</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="clearSelection()" [disabled]="selectedIds.size === 0 || isUiLocked">Limpiar</button>
+              <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminarSeleccionadas()" [disabled]="selectedIds.size === 0 || isUiLocked">Eliminar</button>
+              <div class="bulk-move">
+              <select class="form-select form-select-sm" [(ngModel)]="bulkEventoId" [disabled]="selectedIds.size === 0 || isUiLocked">
+                <option [ngValue]="null">Mover a evento...</option>
+                @for (evento of getEventosParaMover(); track evento.id) {
+                  <option [ngValue]="evento.id">{{ evento.nombre }}</option>
+                }
+              </select>
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="moverSeleccionadas()" [disabled]="selectedIds.size === 0 || isUiLocked">Mover</button>
+              </div>
+            </div>
+          </div>
+
+        @if (pendingOrderChanges) {
+          <div class="order-bar mb-3">
+            <span>Orden pendiente de guardar.</span>
+            <button type="button" class="btn btn-primary btn-sm" (click)="guardarOrden()" [disabled]="isUiLocked">Guardar orden</button>
+          </div>
+        }
+
+        @if (errorImagenes) {
+          <div class="alert alert-danger" role="alert">{{ errorImagenes }}</div>
+        }
+
+        @if (!loadingImagenes) {
+          @if (galleryItems.length === 0) {
+            <div class="text-muted py-4">Sin imagenes registradas</div>
+          } @else {
+            <div class="gallery-grid" cdkDropList [cdkDropListData]="galleryItems" [cdkDropListDisabled]="!filtroEventoId || isUiLocked" (cdkDropListDropped)="onDrop($event)">
+              @for (row of galleryItems; track row.id) {
+                <article class="gallery-card" [class.selected]="isSeleccionada(row)" cdkDrag>
+                  <div class="gallery-thumb">
+                    <img [src]="row.imagenUrl || resolveImageUrl(row.url)" [alt]="row.titulo || 'Portafolio'" (error)="onImagenError(row)" (click)="abrirLightbox(row)">
+                    <label class="gallery-check">
+                      <input type="checkbox" [checked]="isSeleccionada(row)" (change)="toggleSeleccion(row)" [disabled]="isUiLocked">
+                    </label>
+                  </div>
+                  <div class="gallery-body">
+                    <div class="gallery-top">
+                      <div class="gallery-title">{{ row.titulo || 'Sin titulo' }}</div>
+                      <button type="button" class="drag-handle" cdkDragHandle [disabled]="!filtroEventoId || isUiLocked" title="Arrastrar">
+                        <mat-icon>drag_indicator</mat-icon>
+                      </button>
+                    </div>
+                    <div class="gallery-meta">
+                      <span>{{ row.eventoNombre }}</span>
+                      <span>Orden: {{ row.orden ?? '—' }}</span>
+                    </div>
+                    @if (row.descripcion) {
+                      <p class="gallery-desc">{{ row.descripcion }}</p>
+                    }
+                    <div class="gallery-actions">
+                      <button mat-stroked-button color="primary" type="button" (click)="abrirEditar(row)" [disabled]="isUiLocked">
+                        <mat-icon>edit</mat-icon>
+                        Editar
+                      </button>
+                      <button mat-stroked-button color="warn" type="button" (click)="eliminar(row)" [disabled]="isUiLocked">
+                        <mat-icon>delete</mat-icon>
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        } @else {
+          <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p class="mt-3 mb-0">Cargando imagenes...</p>
+          </div>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+
+<app-modal-base
+  [open]="modal.open"
+  [title]="modal.titulo"
+  [disableClose]="modal.guardando"
+  [closeOnBackdrop]="false"
+  [closeOnEsc]="false"
+  [useDefaultFooter]="false"
+  [loading]="modal.guardando"
+  (closed)="cerrarModal()">
+
+  <div class="modal-body-wrapper">
+    @if (modal.guardando) {
+      <div class="modal-loading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="mb-0">Guardando...</p>
+      </div>
+    }
+    <form [formGroup]="form" class="row g-3" (ngSubmit)="guardar()">
+    <div class="col-12">
+      <label class="col-form-label" for="eventoId">Evento</label>
+      <select id="eventoId" class="form-select" formControlName="eventoId" required>
+        <option [ngValue]="null" disabled>Selecciona evento</option>
+        @for (evento of eventos; track evento.id) {
+          <option [ngValue]="evento.id">{{ evento.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label" for="titulo">Titulo</label>
+      <input id="titulo" type="text" class="form-control" formControlName="titulo">
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="col-form-label" for="orden">Orden</label>
+      <input id="orden" type="number" class="form-control" formControlName="orden" min="0">
+    </div>
+
+    <div class="col-12">
+      <label class="col-form-label" for="descripcion">Descripcion</label>
+      <textarea id="descripcion" class="form-control" rows="2" formControlName="descripcion"></textarea>
+    </div>
+
+    <div class="col-12">
+      <label class="col-form-label" for="file">Imagen</label>
+      <input
+        id="file"
+        type="file"
+        accept="image/*"
+        class="form-control"
+        [attr.multiple]="!modal.editId ? '' : null"
+        (change)="onFileChange($event)">
+      @if (modal.fileNames.length) {
+        <div class="text-muted small mt-1 d-flex align-items-center gap-2">
+          <mat-icon class="text-muted">attach_file</mat-icon>
+          <span class="text-truncate">{{ modal.fileNames.join(', ') }}</span>
+          <button type="button" class="btn btn-link p-0" (click)="limpiarArchivo()">Quitar</button>
+        </div>
+      }
+      @if (filePreviews.length) {
+        <div class="preview-grid mt-2">
+          @for (preview of filePreviews; track preview.url) {
+            <figure class="preview-item">
+              <img [src]="preview.url" [alt]="preview.name">
+            </figure>
+          }
+        </div>
+      }
+      @if (!modal.editId) {
+        <small class="text-muted d-block mt-1">Puedes seleccionar una o varias imagenes.</small>
+      }
+    </div>
+
+    <div class="text-end">
+      <button type="button" class="btn btn-outline-secondary me-2" (click)="cerrarModal()" [disabled]="modal.guardando">Cancelar</button>
+      <button type="submit" class="btn btn-primary" [disabled]="modal.guardando || form.invalid">
+        @if (!modal.guardando) {
+          <span>Guardar</span>
+        }
+        @if (modal.guardando) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+      </button>
+    </div>
+    </form>
+  </div>
+</app-modal-base>
+
+<app-modal-base
+  [open]="lightbox.open"
+  [title]="lightbox.item?.titulo || 'Vista previa'"
+  [disableClose]="false"
+  [closeOnBackdrop]="false"
+  [closeOnEsc]="false"
+  [useDefaultFooter]="false"
+  (closed)="cerrarLightbox()">
+
+  @if (lightbox.item) {
+    <div class="lightbox">
+      <img [src]="lightbox.item.imagenUrl || resolveImageUrl(lightbox.item.url)" [alt]="lightbox.item.titulo || 'Portafolio'">
+      @if (lightbox.item.descripcion) {
+        <p class="lightbox-desc">{{ lightbox.item.descripcion }}</p>
+      }
+      <div class="text-end">
+        <button type="button" class="btn btn-outline-secondary" (click)="cerrarLightbox()">Cerrar</button>
+      </div>
+    </div>
+  }
+</app-modal-base>

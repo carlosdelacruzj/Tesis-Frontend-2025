@@ -43,6 +43,7 @@ import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/
 import { OrderByEmpleadoPipe } from '../pipes/order-by-empleado.pipe';
 import { UsdPipe } from '../pipes/usd.pipe';
 import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.component';
+import { GestionarPortafolioComponent } from './gestionar-portafolio/gestionar-portafolio.component';
 
 @NgModule({
   declarations: [
@@ -72,7 +73,8 @@ import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.componen
     EditarCotizacionComponent,
     GestionarProyectoComponent,
     DetalleProyectoComponent,
-    PagosEstandarComponent
+    PagosEstandarComponent,
+    GestionarPortafolioComponent
   ],
   imports: [
     CommonModule,

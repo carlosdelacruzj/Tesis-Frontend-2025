@@ -54,35 +54,94 @@
     </div>
   </section>
 
-  @if (false) {
-    <section class="portfolio" id="portafolio">
-      <div class="section__header">
-        <h2>Portafolio reciente</h2>
-        <p>Selecciona una categoría y revisa sesiones reales en Lima y provincias.</p>
+  <section class="portfolio" id="portafolio">
+    <div class="section__header">
+      <h2>Portafolio reciente</h2>
+      <p>Selecciona una categoría y revisa sesiones reales en Lima y provincias.</p>
+    </div>
+    <div class="portfolio__summary">
+      <div class="portfolio__counts">
+        <div>
+          <span class="portfolio__count">{{ portfolioTotalImages }}</span>
+          <span class="portfolio__label">Proyectos</span>
+        </div>
+        <div>
+          <span class="portfolio__count">{{ portfolioTotalCategories }}</span>
+          <span class="portfolio__label">Categorias</span>
+        </div>
       </div>
-      <div class="portfolio__filters">
-        @for (filter of portfolioFilters; track filter) {
-          <button
-            mat-button
-            [color]="activePortfolioFilter === filter ? 'primary' : undefined"
-            (click)="setPortfolioFilter(filter)">
-            {{ filter }}
-          </button>
-        }
+      <p class="portfolio__hint">Cada imagen representa eventos reales gestionados desde el panel de control.</p>
+    </div>
+    @if (portfolioLoading) {
+      <p class="portfolio__status">Cargando portafolio...</p>
+    } @else if (portfolioError) {
+      <p class="portfolio__status">{{ portfolioError }}</p>
+    } @else if (portfolioCategories.length === 0) {
+      <p class="portfolio__status">Sin imagenes para mostrar.</p>
+    } @else {
+      <div class="portfolio__categories-wrap">
+        <button type="button" class="portfolio__nav portfolio__nav--prev" (click)="scrollCategoryPrev()" [disabled]="!canScrollCategories || categoryAtStart">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <div class="portfolio__carousel">
+          <div class="portfolio__categories" #categoryTrack (scroll)="onCategoryScroll()">
+            @for (category of carouselCategories; track category.name) {
+              <button
+                type="button"
+                class="portfolio__category"
+                [class.is-active]="selectedCategory === category.name"
+                (click)="openCategory(category.name)">
+                <div class="portfolio__category-images">
+                  @for (preview of category.preview; track preview.id) {
+                    <img [src]="preview.thumbnail" [alt]="preview.title" loading="lazy" />
+                  }
+                </div>
+                <div class="portfolio__category-meta">
+                  <h3>{{ category.name }}</h3>
+                  <span>{{ category.total }} imagenes</span>
+                </div>
+              </button>
+            }
+          </div>
+        </div>
+        <button type="button" class="portfolio__nav portfolio__nav--next" (click)="scrollCategoryNext()" [disabled]="!canScrollCategories || categoryAtEnd">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
       </div>
-      <div class="portfolio__grid">
-        @for (item of filteredPortfolio; track item.title) {
-          <article class="portfolio__item" (click)="openLightbox(item)" tabindex="0" (keydown.enter)="openLightbox(item)">
-            <img [src]="item.thumbnail" [alt]="item.title" loading="lazy" />
-            <div class="portfolio__overlay">
-              <span class="portfolio__type">{{ item.type }}</span>
-              <h3>{{ item.title }}</h3>
-            </div>
-          </article>
-        }
-      </div>
-    </section>
 
+      @if (selectedCategory) {
+        <div class="portfolio__gallery">
+          <div class="portfolio__gallery-header">
+            <div>
+              <h3>{{ selectedCategory }}</h3>
+              <p>{{ selectedCategoryItems.length }} imagenes disponibles</p>
+            </div>
+            <button type="button" class="portfolio__close" (click)="closeCategory()">Cerrar</button>
+          </div>
+          <div class="portfolio__grid">
+            @for (item of pagedCategoryItems; track item.id) {
+              <article class="portfolio__item" (click)="openLightbox(item)" tabindex="0" (keydown.enter)="openLightbox(item)">
+                <img class="portfolio__image" [src]="item.thumbnail" [alt]="item.title" loading="lazy" />
+                <div class="portfolio__overlay">
+                  <span class="portfolio__type">{{ item.type }}</span>
+                  <h3 class="portfolio__title">{{ item.title }}</h3>
+                </div>
+              </article>
+            }
+          </div>
+          @if (galleryTotalPages > 1) {
+            <div class="portfolio__pager">
+              <button type="button" class="portfolio__pager-btn" (click)="prevGalleryPage()" [disabled]="galleryPage === 1">Anterior</button>
+              <span>Pagina {{ galleryPage }} de {{ galleryTotalPages }}</span>
+              <button type="button" class="portfolio__pager-btn" (click)="nextGalleryPage()" [disabled]="galleryPage === galleryTotalPages">Siguiente</button>
+            </div>
+          }
+        </div>
+      }
+    }
+  </section>
+
+  @if (false) {
     <section class="packages" id="paquetes">
       <div class="section__header">
         <h2>Paquetes pensados para tu producción</h2>
