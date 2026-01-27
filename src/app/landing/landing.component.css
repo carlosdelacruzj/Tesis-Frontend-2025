@@ -236,6 +236,7 @@
   scroll-behavior: smooth;
   padding-bottom: 0.25rem;
   scrollbar-width: none;
+  justify-content: center;
 }
 
 .portfolio__category {
