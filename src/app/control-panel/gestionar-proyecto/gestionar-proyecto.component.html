@@ -4,10 +4,8 @@
     [showSearch]="true"
     [searchPlaceholder]="'Buscar: nombre, pedido, responsable…'"
     [searchValue]="searchTerm"
-    [showCreateButton]="true"
-    [createButtonLabel]="'Nuevo proyecto'"
     (searchChange)="onSearchChange($event)"
-    (createClick)="abrirCrear()">
+    [showCreateButton]="false">
   </app-list-toolbar>
 
   @if (error) {
@@ -91,24 +89,9 @@
   (closed)="cerrarModal()">
 
   <form [formGroup]="form" class="row g-3" (ngSubmit)="guardar()">
-    <div class="col-12">
-      <label class="col-form-label" for="proyectoNombre">Nombre del proyecto</label>
-      <input id="proyectoNombre" type="text" class="form-control" formControlName="proyectoNombre" required>
-    </div>
-
     <div class="col-12 col-md-6">
       <label class="col-form-label" for="pedidoId">Pedido asociado</label>
       <input id="pedidoId" type="number" class="form-control" formControlName="pedidoId" min="1" required>
-    </div>
-
-    <div class="col-12 col-md-6">
-      <label class="col-form-label" for="estadoId">Estado</label>
-      <select id="estadoId" class="form-select" formControlName="estadoId" required>
-        <option [ngValue]="null" disabled>Selecciona estado</option>
-        @for (est of estados; track est.estadoId) {
-          <option [ngValue]="est.estadoId">{{ est.estadoNombre }}</option>
-        }
-      </select>
     </div>
 
     <div class="col-12 col-md-6">
@@ -121,29 +104,9 @@
       <input id="enlace" type="url" class="form-control" formControlName="enlace" placeholder="https://...">
     </div>
 
-    <div class="col-12 col-md-6">
-      <label class="col-form-label" for="fechaInicioEdicion">Inicio edición</label>
-      <input id="fechaInicioEdicion" type="date" class="form-control" formControlName="fechaInicioEdicion">
-    </div>
-
-    <div class="col-12 col-md-6">
-      <label class="col-form-label" for="fechaFinEdicion">Fin edición</label>
-      <input id="fechaFinEdicion" type="date" class="form-control" formControlName="fechaFinEdicion">
-    </div>
-
     <div class="col-12">
       <label class="col-form-label" for="notas">Notas</label>
       <textarea id="notas" class="form-control" rows="2" formControlName="notas"></textarea>
-    </div>
-
-    <div class="col-12 col-md-6">
-      <label class="col-form-label" for="multimedia">Multimedia</label>
-      <input id="multimedia" type="number" class="form-control" formControlName="multimedia" min="0">
-    </div>
-
-    <div class="col-12 col-md-6">
-      <label class="col-form-label" for="edicion">Edición</label>
-      <input id="edicion" type="number" class="form-control" formControlName="edicion" min="0">
     </div>
 
     <div class="text-end">

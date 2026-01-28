@@ -1,19 +1,10 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
-import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import Swal from 'sweetalert2';
-import { ProyectoDetalle, ProyectoRecurso } from '../model/proyecto.model';
+import { BloqueDia, ProyectoDetalle, ProyectoDetalleResponse, ProyectoPayload } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
-import { PersonalService, Cargo } from '../../gestionar-personal/service/personal.service';
-import { AdministrarEquiposService } from '../../administrar-equipos/service/administrar-equipos.service';
-import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
-import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
-import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
-import { PedidoResponse } from '../../gestionar-pedido/model/visualizar.model';
-import { DisponibilidadEmpleado, DisponibilidadEquipo } from '../model/proyecto-disponibilidad.model';
-import { parseDateInput } from '../../../shared/utils/date-utils';
 
 @Component({
   selector: 'app-detalle-proyecto',
@@ -23,78 +14,22 @@ import { parseDateInput } from '../../../shared/utils/date-utils';
 export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly proyectoService = inject(ProyectoService);
-  private readonly personalService = inject(PersonalService);
-  private readonly equiposService = inject(AdministrarEquiposService);
-  private readonly visualizarService = inject(VisualizarService);
   private readonly fb = inject(UntypedFormBuilder);
 
   loading = true;
   error: string | null = null;
+  detalle: ProyectoDetalleResponse | null = null;
   proyecto: ProyectoDetalle | null = null;
-  requerimientos: PedidoRequerimientos | null = null;
-  pedidoDetalle: PedidoResponse | null = null;
-  estados: { estadoId: number; estadoNombre: string }[] = [];
-  guardandoDevoluciones = false;
   guardandoProyecto = false;
-  devolucionesRegistradas = false;
-
-  formAsignacion: UntypedFormGroup = this.fb.group({
-    empleadoId: [null, Validators.required],
-    equipoId: [null, Validators.required]
-  });
+  modalAsignarAbierto = false;
+  soloPendientes = false;
+  openDiaId: number | null = null;
 
   proyectoForm: UntypedFormGroup = this.fb.group({
-    proyectoNombre: ['', Validators.required],
-    fechaInicioEdicion: [''],
-    fechaFinEdicion: [''],
-    estadoId: [null, Validators.required],
     responsableId: [null],
     notas: [''],
-    enlace: [''],
-    multimedia: [null],
-    edicion: [null]
+    enlace: ['']
   });
-
-  devolucionForm: UntypedFormGroup = this.fb.group({
-    devoluciones: this.fb.array([])
-  });
-
-  readonly estadosDevolucion = [
-    { value: 'devuelto', label: 'Devuelto' },
-    { value: 'daniado', label: 'Dañado' },
-    { value: 'faltante', label: 'Faltante' }
-  ];
-
-  disponiblesPersonal: DisponibilidadEmpleado[] = [];
-  equiposDisponibles: DisponibilidadEquipo[] = [];
-  asignacionesPendientes: {
-    empleadoId: number | null;
-    equipoId: number;
-    fechaInicio: string;
-    fechaFin: string;
-    notas: string;
-  }[] = [];
-  modalAsignarAbierto = false;
-  filtroRol: string | null = null;
-  filtroTipoEquipoId: number | null = null;
-  seleccionados: number[] = [];
-  selectedEquipos: number[] = [];
-  stepIndex = 0;
-  rolesOperativos: string[] = [];
-  tiposEquipo: TipoEquipo[] = [];
-  tableroAsignacion: { reserva: number[]; empleados: Record<number, number[]> } = { reserva: [], empleados: {} };
-  recursosColumns = [
-    { key: 'empleadoNombre', header: 'Empleado', sortable: true },
-    { key: 'modelo', header: 'Equipo', sortable: true },
-    { key: 'equipoSerie', header: 'Serie', sortable: true },
-    { key: 'tipoEquipo', header: 'Tipo', sortable: true }
-  ];
-  serviciosColumns = [
-    { key: 'nombre', header: 'Título', sortable: true },
-    { key: 'evento', header: 'Evento', sortable: true },
-    { key: 'precio', header: 'Precio', sortable: true },
-    { key: 'notas', header: 'Notas', sortable: false }
-  ];
   eventosColumns = [
     { key: 'fecha', header: 'Fecha', sortable: true },
     { key: 'hora', header: 'Hora', sortable: true },
@@ -102,7 +37,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     { key: 'direccion', header: 'Dirección', sortable: true },
     { key: 'notas', header: 'Notas', sortable: false }
   ];
-  dropListIds: string[] = [];
 
   private readonly destroy$ = new Subject<void>();
 
@@ -123,16 +57,16 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (data) => {
-          this.proyecto = data;
-          this.patchProyectoForm(data);
-          this.buildDevolucionForm(data.recursos ?? []);
-          this.devolucionesRegistradas = this.devolucionesCompletas(data.recursos ?? []);
-          this.loadPedido(data.pedidoId);
-          this.loadAsignaciones(data.proyectoId);
-          this.loadRequerimientos(data.pedidoId);
-          this.loadRolesOperativos();
-          this.loadTiposEquipos();
-          this.loadEstados();
+          this.detalle = data;
+          this.proyecto = data?.proyecto ?? null;
+          if (!this.openDiaId) {
+            const diaInicial = [...(data?.dias ?? [])]
+              .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))[0];
+            this.openDiaId = diaInicial?.diaId ?? null;
+          }
+          if (this.proyecto) {
+            this.patchProyectoForm(this.proyecto);
+          }
         },
         error: (err) => {
           console.error('[proyecto] detalle', err);
@@ -141,419 +75,17 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
   }
 
-  abrirModalAsignar(): void {
-    if (!this.puedeAsignarRecursos()) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Asignación bloqueada',
-        text: 'En estado Ejecución no se pueden agregar nuevas asignaciones.'
-      });
-      return;
-    }
-    this.modalAsignarAbierto = true;
-    this.seleccionados = [];
-    this.filtroRol = null;
-    this.filtroTipoEquipoId = null;
-    this.selectedEquipos = [];
-    this.tableroAsignacion = { reserva: [], empleados: {} };
-    this.dropListIds = [];
-    this.asignacionesPendientes = [];
-    this.stepIndex = 0;
-
-    const recursos = this.proyecto?.recursos ?? [];
-    if (recursos.length) {
-      const empleadosMap: Record<number, number[]> = {};
-      const empleadosSet = new Set<number>();
-      const equiposSet = new Set<number>();
-      const reserva: number[] = [];
-
-      recursos.forEach(r => {
-        equiposSet.add(r.equipoId);
-        if (r.empleadoId) {
-          empleadosSet.add(r.empleadoId);
-          empleadosMap[r.empleadoId] = empleadosMap[r.empleadoId] || [];
-          empleadosMap[r.empleadoId].push(r.equipoId);
-        } else {
-          reserva.push(r.equipoId);
-        }
-      });
-
-      this.seleccionados = Array.from(empleadosSet);
-      this.selectedEquipos = Array.from(equiposSet);
-      const empleadosAsign = Array.from(empleadosSet).reduce<Record<number, number[]>>((acc, id) => {
-        acc[id] = empleadosMap[id] ?? [];
-        return acc;
-      }, {});
-      this.tableroAsignacion = { reserva, empleados: empleadosAsign };
-      this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
-    }
-  }
-
-  cerrarModalAsignar(): void {
-    this.modalAsignarAbierto = false;
-  }
-
-  get devoluciones(): UntypedFormArray {
-    return this.devolucionForm.get('devoluciones') as UntypedFormArray;
-  }
-
-  async toggleSeleccionEmpleado(idEmpleado: number): Promise<void> {
-    if (this.seleccionados.includes(idEmpleado)) {
-      const confirm = await Swal.fire({
-        title: 'Quitar empleado',
-        text: '¿Seguro que quieres quitar a este empleado de las asignaciones?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, quitar',
-        cancelButtonText: 'Cancelar',
-        allowOutsideClick: false,
-        allowEscapeKey: false
-      });
-      if (!confirm.isConfirmed) return;
-
-      this.seleccionados = this.seleccionados.filter(id => id !== idEmpleado);
-      if (this.tableroAsignacion.empleados[idEmpleado]?.length) {
-        this.tableroAsignacion.reserva.push(...this.tableroAsignacion.empleados[idEmpleado]);
-      }
-      delete this.tableroAsignacion.empleados[idEmpleado];
-      this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
-      return;
-    }
-    this.seleccionados = [...this.seleccionados, idEmpleado];
-  }
-
-  async toggleSeleccionEquipo(idEquipo: number): Promise<void> {
-    if (this.selectedEquipos.includes(idEquipo)) {
-      const confirm = await Swal.fire({
-        title: 'Quitar equipo',
-        text: '¿Seguro que quieres quitar este equipo de la asignación?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, quitar',
-        cancelButtonText: 'Cancelar',
-        allowOutsideClick: false,
-        allowEscapeKey: false
-      });
-      if (!confirm.isConfirmed) return;
-
-      this.selectedEquipos = this.selectedEquipos.filter(id => id !== idEquipo);
-      this.quitarEquipoDeTablero(idEquipo);
-      return;
-    }
-    this.selectedEquipos = [...this.selectedEquipos, idEquipo];
-  }
-
-  guardarAsignacionesEnModal(): void {
-    if (!this.proyecto?.proyectoId) {
-      return;
-    }
-
-    this.limpiarEquiposNoSeleccionados();
-
-    const { inicio, fin } = this.getRangoPedido();
-    const asignaciones: {
-      empleadoId: number | null;
-      equipoId: number;
-      fechaInicio: string;
-      fechaFin: string;
-      notas: string;
-    }[] = [];
-
-    Object.entries(this.tableroAsignacion.empleados)
-      .filter(([empleadoId]) => this.seleccionados.includes(Number(empleadoId)))
-      .forEach(([empleadoId, lista]) => {
-        lista.forEach(eqId => {
-          if (!this.selectedEquipos.includes(eqId)) return;
-          asignaciones.push({
-            empleadoId: Number(empleadoId),
-            equipoId: eqId,
-            fechaInicio: inicio,
-            fechaFin: fin,
-            notas: ''
-          });
-        });
-      });
-
-    this.tableroAsignacion.reserva.forEach(eqId => {
-      if (!this.selectedEquipos.includes(eqId)) return;
-      asignaciones.push({
-        empleadoId: null,
-        equipoId: eqId,
-        fechaInicio: inicio,
-        fechaFin: fin,
-        notas: 'Reserva'
-      });
-    });
-
-    this.asignacionesPendientes = asignaciones;
-
-    this.proyectoService.guardarRecursos({
-      proyectoId: this.proyecto.proyectoId,
-      asignaciones
-    }).subscribe({
-      next: () => {
-        this.cerrarModalAsignar();
-        this.loadAsignaciones(this.proyecto?.proyectoId ?? 0);
-      },
-      error: (err) => {
-        console.error('[proyecto] guardar recursos', err);
-      }
-    });
-  }
-
-  getPersonalFiltrado(): DisponibilidadEmpleado[] {
-    const base = this.disponiblesPersonal.filter(p => p.disponible);
-    if (!this.filtroRol) return base;
-    return base.filter(p =>
-      p.cargo?.toLowerCase().includes(this.filtroRol.toLowerCase())
-    );
-  }
-
-  getCupoRol(rol: string | null): number | null {
-    if (!rol || !this.requerimientos?.totales?.personal?.length) return null;
-    const found = this.requerimientos.totales.personal.find(
-      req => req.rol?.toLowerCase() === rol.toLowerCase()
-    );
-    return found ? found.cantidad : 0;
-  }
-
-  getSeleccionadosPorRol(rol: string | null): number {
-    if (!rol) return this.seleccionados.length;
-    return this.seleccionados
-      .map(id => this.disponiblesPersonal.find(per => per.empleadoId === id))
-      .filter(per => per && per.cargo?.toLowerCase() === rol.toLowerCase()).length;
-  }
-
-  isEmpleadoDisabled(p: DisponibilidadEmpleado): boolean {
-    if (!p.disponible) return true;
-    const rolObjetivo = this.filtroRol ?? p.cargo;
-    const cupo = this.getCupoRol(rolObjetivo);
-    if (cupo === null) return false;
-    const selectedForRol = this.getSeleccionadosPorRol(rolObjetivo);
-    const excedido = cupo === 0 || selectedForRol >= cupo;
-    return excedido && !this.seleccionados.includes(p.empleadoId);
-  }
-
-  async quitarSeleccion(idEmpleado: number): Promise<void> {
-    const confirm = await Swal.fire({
-      title: 'Quitar empleado',
-      text: '¿Seguro que quieres quitar a este empleado de las asignaciones?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, quitar',
-      cancelButtonText: 'Cancelar',
-      allowOutsideClick: false,
-      allowEscapeKey: false
-    });
-    if (!confirm.isConfirmed) return;
-
-    this.seleccionados = this.seleccionados.filter(id => id !== idEmpleado);
-    if (this.tableroAsignacion.empleados[idEmpleado]?.length) {
-      this.tableroAsignacion.reserva.push(...this.tableroAsignacion.empleados[idEmpleado]);
-    }
-    delete this.tableroAsignacion.empleados[idEmpleado];
-    this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
-  }
-
-  getEquipoCupo(tipoEquipoId: number | null): number | null {
-    if (!tipoEquipoId || !this.requerimientos?.totales?.equipos?.length) return null;
-    const found = this.requerimientos.totales.equipos.find(req => req.tipoEquipoId === tipoEquipoId);
-    return found ? found.cantidad : 0; // tipos no requeridos quedan con cupo 0
-  }
-
-  isEquipoDisabled(e: DisponibilidadEquipo): boolean {
-    if (!e.disponible) return true;
-    const cupo = this.getEquipoCupo(e.idTipoEquipo);
-    if (cupo === null) return false;
-    const seleccionadosTipo = this.selectedEquipos
-      .map(id => this.equiposDisponibles.find(eq => eq.idEquipo === id))
-      .filter(eq => eq && eq.idTipoEquipo === e.idTipoEquipo).length;
-    const excedido = cupo === 0 || seleccionadosTipo >= cupo;
-    return excedido && !this.selectedEquipos.includes(e.idEquipo);
-  }
-
-  getSeleccionadosEquipoPorTipo(tipoEquipoId: number | null): number {
-    if (!tipoEquipoId) return this.selectedEquipos.length;
-    return this.selectedEquipos
-      .map(id => this.equiposDisponibles.find(eq => eq.idEquipo === id))
-      .filter(eq => eq && eq.idTipoEquipo === tipoEquipoId).length;
-  }
-
-  irAlPaso(target: number): void {
-    if (target === this.stepIndex) return;
-    if (target < 0 || target > 2) return;
-    if (target === 0) {
-      this.stepIndex = 0;
-      return;
-    }
-    if (target === 1) {
-      if (!this.seleccionados.length) return;
-      this.stepIndex = 1;
-      return;
-    }
-    // target === 2
-    if (!this.seleccionados.length || !this.selectedEquipos.length) return;
-    const yaInicializado = this.dropListIds.length > 0 || this.tableroAsignacion.reserva.length || Object.keys(this.tableroAsignacion.empleados).length;
-    if (!yaInicializado) {
-      this.inicializarTableroAsignacion();
-    }
-    this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
-    this.stepIndex = 2;
-  }
-
-  avanzarPaso(): void {
-    if (this.stepIndex === 0 && !this.seleccionados.length) return;
-    if (this.stepIndex === 1 && !this.selectedEquipos.length) return;
-    if (this.stepIndex === 1) {
-      this.seleccionados.forEach(id => {
-        if (!this.tableroAsignacion.empleados[id]) {
-          this.tableroAsignacion.empleados[id] = [];
-        }
-      });
-
-      const equiposYaUbicados = new Set<number>([
-        ...this.tableroAsignacion.reserva,
-        ...Object.values(this.tableroAsignacion.empleados).flat()
-      ]);
-      this.selectedEquipos.forEach(idEq => {
-        if (!equiposYaUbicados.has(idEq)) {
-          this.tableroAsignacion.reserva.push(idEq);
-        }
-      });
-
-      const yaInicializado = this.dropListIds.length > 0 || this.tableroAsignacion.reserva.length || Object.keys(this.tableroAsignacion.empleados).length;
-      if (!yaInicializado) {
-        this.inicializarTableroAsignacion();
-      }
-      this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
-    }
-    this.stepIndex = Math.min(2, this.stepIndex + 1);
-  }
-
-  retrocederPaso(): void {
-    this.stepIndex = Math.max(0, this.stepIndex - 1);
-  }
-
-  getEquiposSeleccionados(): DisponibilidadEquipo[] {
-    return this.equiposDisponibles.filter(e => this.selectedEquipos.includes(e.idEquipo));
-  }
-
-  getEquiposFiltrados(): DisponibilidadEquipo[] {
-    const filtrados = this.equiposDisponibles.filter(e => e.disponible);
-    if (!this.filtroTipoEquipoId) return filtrados;
-    return filtrados.filter(e => e.idTipoEquipo === this.filtroTipoEquipoId);
-  }
-
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  private loadDisponibilidad(proyectoId: number): void {
-    if (!proyectoId) {
-      this.disponiblesPersonal = [];
-      this.equiposDisponibles = [];
-      return;
-    }
-    const rango = this.getRangoPedido();
-    const fechas = rango ?? (() => {
-      const hoy = new Date().toISOString().split('T')[0];
-      return { inicio: hoy, fin: hoy };
-    })();
-
-    this.proyectoService.getDisponibilidad({
-      fechaInicio: fechas.inicio,
-      fechaFin: fechas.fin,
-      proyectoId
-    })
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: data => {
-          this.disponiblesPersonal = Array.isArray(data?.empleados) ? data.empleados.filter(e => e.operativoCampo) : [];
-          this.equiposDisponibles = Array.isArray(data?.equipos) ? data.equipos : [];
-        },
-        error: err => {
-          console.error('[proyecto] disponibilidad', err);
-          this.disponiblesPersonal = [];
-          this.equiposDisponibles = [];
-        }
-      });
+  abrirModalAsignar(): void {
+    this.modalAsignarAbierto = true;
   }
 
-  private loadRequerimientos(pedidoId: number): void {
-    this.proyectoService.getPedidoRequerimientos(pedidoId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: data => { this.requerimientos = data; },
-        error: err => {
-          console.error('[pedido] requerimientos', err);
-          this.requerimientos = null;
-        }
-      });
-  }
-
-  private loadRolesOperativos(): void {
-    this.personalService.getCargos()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (cargos: Cargo[]) => {
-          this.rolesOperativos = (cargos ?? [])
-            .filter(c => c.esOperativoCampo === 1)
-            .map(c => c.cargoNombre);
-        },
-        error: err => {
-          console.error('[cargos] operativos', err);
-          this.rolesOperativos = [];
-        }
-      });
-  }
-
-  private loadTiposEquipos(): void {
-    this.equiposService.obtenerTipos()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (tipos) => { this.tiposEquipo = tipos ?? []; },
-        error: (err) => {
-          console.error('[equipos] tipos', err);
-          this.tiposEquipo = [];
-        }
-      });
-  }
-
-  private loadPedido(pedidoId: number): void {
-    if (!pedidoId) return;
-    this.visualizarService.getPedidoById(pedidoId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (data) => {
-          this.pedidoDetalle = data ?? null;
-          if (this.proyecto?.proyectoId) {
-            this.loadDisponibilidad(this.proyecto.proyectoId);
-          }
-        },
-        error: (err) => {
-          console.error('[pedido] detalle', err);
-          this.pedidoDetalle = null;
-        }
-      });
-  }
-
-  private loadAsignaciones(proyectoId: number): void {
-    if (!proyectoId) return;
-    this.proyectoService.getAsignaciones(proyectoId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (lista) => {
-          if (this.proyecto) {
-            this.proyecto = { ...this.proyecto, recursos: lista ?? [] };
-          }
-          this.buildDevolucionForm(lista ?? []);
-          this.devolucionesRegistradas = this.devolucionesCompletas(lista ?? []);
-        },
-        error: (err) => {
-          console.error('[proyecto] asignaciones', err);
-        }
-      });
+  cerrarModalAsignar(): void {
+    this.modalAsignarAbierto = false;
   }
 
   guardarProyecto(): void {
@@ -564,18 +96,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     }
 
     const raw = this.proyectoForm.value;
-    const cambios: Partial<ProyectoDetalle> = {};
-    const estadoActualId = this.proyecto?.estadoId ?? null;
-
-    this.addIfChanged(cambios, 'proyectoNombre', raw.proyectoNombre, this.proyecto?.proyectoNombre, 'string');
-    this.addIfChanged(cambios, 'estadoId', raw.estadoId, this.proyecto?.estadoId, 'number');
+    const cambios: Partial<ProyectoPayload> = {};
     this.addIfChanged(cambios, 'responsableId', raw.responsableId, this.proyecto?.responsableId, 'number');
-    this.addIfChanged(cambios, 'fechaInicioEdicion', raw.fechaInicioEdicion, this.proyecto?.fechaInicioEdicion, 'date');
-    this.addIfChanged(cambios, 'fechaFinEdicion', raw.fechaFinEdicion, this.proyecto?.fechaFinEdicion, 'date');
     this.addIfChanged(cambios, 'enlace', raw.enlace, this.proyecto?.enlace, 'string');
     this.addIfChanged(cambios, 'notas', raw.notas, this.proyecto?.notas, 'string');
-    this.addIfChanged(cambios, 'multimedia', raw.multimedia, this.proyecto?.multimedia, 'number');
-    this.addIfChanged(cambios, 'edicion', raw.edicion, this.proyecto?.edicion, 'number');
 
     const keysCambios = Object.keys(cambios);
     if (!keysCambios.length) {
@@ -585,40 +109,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
         text: 'No hay campos modificados para enviar.'
       });
       return;
-    }
-
-    const estadoDestinoId = 'estadoId' in cambios ? (cambios.estadoId ?? null) : estadoActualId;
-    const estadoDestinoNombre = this.getEstadoNombre(estadoDestinoId) ?? this.proyecto?.estadoNombre ?? null;
-    const estadoActualNombre = this.proyecto?.estadoNombre ?? this.getEstadoNombre(estadoActualId) ?? null;
-
-    if (!this.isEstadoPlanificado(estadoActualId, estadoActualNombre) && this.isEstadoPlanificado(estadoDestinoId, estadoDestinoNombre)) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'No puedes volver a Planificado',
-        text: 'Una vez que sales de Planificado no es posible regresar.'
-      });
-      return;
-    }
-
-    if (!this.isEstadoEjecucion(estadoActualId, estadoActualNombre) && this.isEstadoEjecucion(estadoDestinoId, estadoDestinoNombre) && !this.tieneAsignaciones()) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Faltan asignaciones',
-        text: 'Asigna al menos un recurso antes de pasar a Ejecución.'
-      });
-      return;
-    }
-
-    if (this.isEstadoEjecucion(estadoActualId, estadoActualNombre) && !this.isEstadoEjecucion(estadoDestinoId, estadoDestinoNombre)) {
-      const hayEquipos = (this.proyecto?.recursos?.length ?? 0) > 0;
-      if (hayEquipos && !this.devolucionesRegistradas) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Termina las devoluciones',
-          text: 'Registra las devoluciones antes de cambiar a otro estado.'
-        });
-        return;
-      }
     }
 
     this.guardandoProyecto = true;
@@ -634,11 +124,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           });
           this.proyecto = {
             ...this.proyecto,
-            ...cambios,
-            estadoNombre: this.getEstadoNombre(cambios.estadoId ?? this.proyecto?.estadoId ?? null)
+            ...cambios
           } as ProyectoDetalle;
-          const esEjecucionDestino = this.isEstadoEjecucion(estadoDestinoId, estadoDestinoNombre);
-          this.devolucionesRegistradas = esEjecucionDestino ? (this.proyecto?.recursos?.length ?? 0) === 0 : this.devolucionesRegistradas;
         },
         error: (err) => {
           console.error('[proyecto] actualizar parcial', err);
@@ -649,180 +136,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           });
         }
       });
-  }
-
-  getNombreEmpleado(id: number | null): string {
-    if (!id) return '';
-    const found = this.disponiblesPersonal.find(p => p.empleadoId === id);
-    return found ? `${found.nombre} ${found.apellido}` : '';
-  }
-
-  getEquipoLabel(id: number | null): string {
-    if (!id) return '';
-    const found = this.equiposDisponibles.find(e => e.idEquipo === id);
-    if (found) return `${found.nombreModelo} (${found.serie})`;
-    const recurso = this.proyecto?.recursos?.find(r => r.equipoId === id);
-    if (recurso) return `${recurso.modelo} (${recurso.equipoSerie})`;
-    return '';
-  }
-
-  getTipoEquipoNombre(id: number | null): string {
-    if (!id) return '';
-    const found = this.equiposDisponibles.find(e => e.idEquipo === id);
-    if (found?.nombreTipoEquipo) return found.nombreTipoEquipo;
-    const recurso = this.proyecto?.recursos?.find(r => r.equipoId === id);
-    return recurso?.tipoEquipo || '';
-  }
-
-  faltanAsignaciones(): boolean {
-    if (!this.seleccionados.length) return true;
-    return this.seleccionados.some(id => !(this.tableroAsignacion.empleados[id]?.length));
-  }
-
-  getCargoEmpleado(id: number | null): string {
-    if (!id) return '';
-    const found = this.disponiblesPersonal.find(p => p.empleadoId === id);
-    return found?.cargo || '';
-  }
-
-  dropEquipo(event: CdkDragDrop<number[]>, destino: 'reserva' | number): void {
-    const targetList = event.container.data as number[];
-    const prevList = event.previousContainer.data as number[];
-
-    if (event.previousContainer === event.container) {
-      moveItemInArray(targetList, event.previousIndex, event.currentIndex);
-    } else {
-      transferArrayItem(prevList, targetList, event.previousIndex, event.currentIndex);
-    }
-
-    if (destino === 'reserva') {
-      this.tableroAsignacion.reserva = targetList;
-    } else {
-      this.tableroAsignacion.empleados[destino] = targetList;
-    }
-  }
-
-  getListaReserva(): number[] {
-    return this.tableroAsignacion.reserva;
-  }
-
-  getListaEmpleado(idEmpleado: number): number[] {
-    if (!this.tableroAsignacion.empleados[idEmpleado]) {
-      this.tableroAsignacion.empleados[idEmpleado] = [];
-    }
-    return this.tableroAsignacion.empleados[idEmpleado];
-  }
-
-  getDropConnections(targetId: string): string[] {
-    return this.dropListIds.filter(id => id !== targetId);
-  }
-
-  getEventosPedido(): Record<string, unknown>[] {
-    const eventos = this.getArray(this.pedidoDetalle?.eventos);
-    return [...eventos].sort((a, b) => {
-      const fa = String(a?.fecha ?? '');
-      const fb = String(b?.fecha ?? '');
-      return fa.localeCompare(fb);
-    });
-  }
-
-  getEventosAgrupados(): { fecha: string; fechaLabel: string; items: { hora: string; ubicacion: string; direccion: string; notas: string }[] }[] {
-    const eventos = this.getEventosPedido();
-    const mapa = new Map<string, { fecha: string; fechaLabel: string; items: { hora: string; ubicacion: string; direccion: string; notas: string }[] }>();
-    eventos.forEach((evento) => {
-      const fecha = String(evento?.fecha ?? '').slice(0, 10);
-      if (!fecha) {
-        return;
-      }
-      const grupo = mapa.get(fecha) ?? {
-        fecha,
-        fechaLabel: this.formatFechaLarga(fecha),
-        items: []
-      };
-      grupo.items.push({
-        hora: String(evento?.hora ?? '').slice(0, 5),
-        ubicacion: String(evento?.ubicacion ?? ''),
-        direccion: String(evento?.direccion ?? ''),
-        notas: String(evento?.notas ?? '')
-      });
-      mapa.set(fecha, grupo);
-    });
-    return Array.from(mapa.values()).sort((a, b) => a.fecha.localeCompare(b.fecha));
-  }
-
-  private formatFechaLarga(value: string): string {
-    const parsed = parseDateInput(value);
-    if (!parsed) {
-      return this.formatFechaDisplay(value);
-    }
-    return new Intl.DateTimeFormat('es-PE', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    }).format(parsed);
-  }
-
-  private inicializarTableroAsignacion(): void {
-    const reserva = [...this.selectedEquipos];
-    const empleados: Record<number, number[]> = {};
-    this.seleccionados.forEach(id => { empleados[id] = []; });
-    this.tableroAsignacion = { reserva, empleados };
-    this.dropListIds = ['reserva', ...this.seleccionados.map(id => `emp-${id}`)];
-  }
-
-  private quitarEquipoDeTablero(idEquipo: number): void {
-    this.tableroAsignacion.reserva = this.tableroAsignacion.reserva.filter(id => id !== idEquipo);
-    Object.keys(this.tableroAsignacion.empleados).forEach(key => {
-      const k = Number(key);
-      this.tableroAsignacion.empleados[k] = (this.tableroAsignacion.empleados[k] ?? []).filter(id => id !== idEquipo);
-    });
-  }
-
-  private limpiarEquiposNoSeleccionados(): void {
-    const seleccionadosSet = new Set(this.selectedEquipos);
-    this.tableroAsignacion.reserva = (this.tableroAsignacion.reserva ?? []).filter(id => seleccionadosSet.has(id));
-    Object.keys(this.tableroAsignacion.empleados).forEach(key => {
-      const k = Number(key);
-      this.tableroAsignacion.empleados[k] = (this.tableroAsignacion.empleados[k] ?? []).filter(id => seleccionadosSet.has(id));
-    });
-  }
-
-  getPedidoRangoFechas(): { inicio: string; fin: string } | null {
-    const eventos = this.getArray(this.pedidoDetalle?.eventos) as { fecha?: string | null }[];
-    const fechas = eventos
-      .map(e => e.fecha)
-      .filter(f => !!f)
-      .map(f => f as string);
-    if (!fechas.length) return null;
-    fechas.sort();
-    return { inicio: fechas[0], fin: fechas[fechas.length - 1] };
-  }
-
-  private getRangoPedido(): { inicio: string; fin: string } {
-    const eventos = this.getArray(this.pedidoDetalle?.eventos) as { fecha?: string | null }[];
-    const fechas = eventos
-      .map(e => e.fecha)
-      .filter(f => !!f)
-      .map(f => f as string);
-    if (!fechas.length) {
-      const hoy = new Date().toISOString().split('T')[0];
-      return { inicio: hoy, fin: hoy };
-    }
-    fechas.sort();
-    const inicio = fechas[0];
-    const fin = fechas[fechas.length - 1];
-    return { inicio, fin };
-  }
-
-  getServiciosContratados(): { nombre: string; evento: string; precio: number; notas: string }[] {
-    const items = this.pedidoDetalle?.items ?? [];
-    return items.map(it => ({
-      nombre: it.nombre ?? it.descripcion ?? '',
-      evento: String(it.eventoCodigo ?? ''),
-      precio: it.precioUnit ?? 0,
-      notas: it.notas ?? ''
-    }));
   }
 
   formatFechaDisplay(value: string | Date | null | undefined): string {
@@ -851,6 +164,244 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return `${day}-${month}-${year}`;
   }
 
+  formatFechaLarga(value: string | Date | null | undefined): string {
+    if (!value) return '—';
+    const parsed = value instanceof Date ? value : new Date(String(value));
+    if (isNaN(parsed.getTime())) return '—';
+    return new Intl.DateTimeFormat('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(parsed);
+  }
+
+  formatHora12(value: string | null | undefined): string {
+    if (!value) return '—';
+    const raw = String(value);
+    let date: Date;
+    if (raw.includes('T')) {
+      date = new Date(raw);
+    } else {
+      const base = '1970-01-01';
+      date = new Date(`${base}T${raw}`);
+    }
+    if (isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('es-PE', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).format(date);
+  }
+
+  getServiciosDia(diaId: number): ProyectoDetalleResponse['serviciosDia'] {
+    const lista = this.detalle?.serviciosDia ?? [];
+    return lista.filter(item => item.diaId === diaId);
+  }
+
+  getBloquesDia(diaId: number): BloqueDia[] {
+    const lista = this.detalle?.bloquesDia ?? [];
+    return lista
+      .filter(item => item.diaId === diaId)
+      .sort((a, b) => this.toSafeNumber(a.orden) - this.toSafeNumber(b.orden));
+  }
+
+  getBloquesCount(diaId: number): number {
+    return this.getBloquesDia(diaId).length;
+  }
+
+  getRangoHorasDia(diaId: number): { inicio: string; fin: string } | null {
+    const bloques = this.getBloquesDia(diaId);
+    if (!bloques.length) return null;
+    const tiempos = bloques
+      .map(b => this.toMinutes(b.hora))
+      .filter(n => n !== null) as number[];
+    if (!tiempos.length) return null;
+    const min = Math.min(...tiempos);
+    const max = Math.max(...tiempos);
+    return {
+      inicio: this.formatHora12(this.fromMinutes(min)),
+      fin: this.formatHora12(this.fromMinutes(max))
+    };
+  }
+
+  get totalDias(): number {
+    return this.detalle?.dias?.length ?? 0;
+  }
+
+  get totalServiciosDia(): number {
+    return this.detalle?.serviciosDia?.length ?? 0;
+  }
+
+  get totalEmpleadosDia(): number {
+    return this.detalle?.empleadosDia?.length ?? 0;
+  }
+
+  get totalEquiposDia(): number {
+    return this.detalle?.equiposDia?.length ?? 0;
+  }
+
+  toggleSoloPendientes(): void {
+    this.soloPendientes = !this.soloPendientes;
+    const dias = [...(this.detalle?.dias ?? [])]
+      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    const filtrados = this.soloPendientes
+      ? dias.filter(d => (d.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'pendiente')
+      : dias;
+    this.openDiaId = filtrados[0]?.diaId ?? null;
+  }
+
+  onToggleDia(diaId: number, event: Event): void {
+    const target = event.target as HTMLDetailsElement | null;
+    if (!target) return;
+    this.openDiaId = target.open ? diaId : (this.openDiaId === diaId ? null : this.openDiaId);
+  }
+
+  getPendientesDia(diaId: number): { personal: number; equipos: number } {
+    const reqPersonal = (this.detalle?.requerimientosPersonalDia ?? [])
+      .filter(r => r.diaId === diaId)
+      .reduce((sum, r) => sum + this.toSafeNumber(r.cantidad), 0);
+    const reqEquipos = (this.detalle?.requerimientosEquipoDia ?? [])
+      .filter(r => r.diaId === diaId)
+      .reduce((sum, r) => sum + this.toSafeNumber(r.cantidad), 0);
+
+    const asignPersonal = (this.detalle?.empleadosDia ?? []).filter(r => r.diaId === diaId).length;
+    const asignEquipos = (this.detalle?.equiposDia ?? []).filter(r => r.diaId === diaId).length;
+
+    return {
+      personal: Math.max(this.toSafeNumber(reqPersonal) - asignPersonal, 0),
+      equipos: Math.max(this.toSafeNumber(reqEquipos) - asignEquipos, 0)
+    };
+  }
+
+  getServiciosCountDia(diaId: number): number {
+    return (this.detalle?.serviciosDia ?? []).filter(item => item.diaId === diaId).length;
+  }
+
+  getReqPersonalCountDia(diaId: number): number {
+    return (this.detalle?.requerimientosPersonalDia ?? [])
+      .filter(r => r.diaId === diaId)
+      .reduce((sum, r) => sum + this.toSafeNumber(r.cantidad), 0);
+  }
+
+  getReqEquiposCountDia(diaId: number): number {
+    return (this.detalle?.requerimientosEquipoDia ?? [])
+      .filter(r => r.diaId === diaId)
+      .reduce((sum, r) => sum + this.toSafeNumber(r.cantidad), 0);
+  }
+
+  getAsignadosPersonalDia(diaId: number): number {
+    return (this.detalle?.empleadosDia ?? []).filter(r => r.diaId === diaId).length;
+  }
+
+  getAsignadosEquiposDia(diaId: number): number {
+    return (this.detalle?.equiposDia ?? []).filter(r => r.diaId === diaId).length;
+  }
+
+  getEstadoAsignacionDia(diaId: number): 'Sin asignar' | 'Pendiente' | 'Completo' | '—' {
+    const reqPersonal = this.getReqPersonalCountDia(diaId);
+    const reqEquipos = this.getReqEquiposCountDia(diaId);
+    const asignPersonal = this.getAsignadosPersonalDia(diaId);
+    const asignEquipos = this.getAsignadosEquiposDia(diaId);
+
+    if ((reqPersonal + reqEquipos) === 0) return '—';
+    if ((asignPersonal + asignEquipos) === 0) return 'Sin asignar';
+    const pendientes = this.getPendientesDia(diaId);
+    if (pendientes.personal > 0 || pendientes.equipos > 0) return 'Pendiente';
+    return 'Completo';
+  }
+
+  getPendientesPersonalPorRol(diaId: number): { rol: string; requerido: number; asignado: number; pendiente: number }[] {
+    const requeridos = (this.detalle?.requerimientosPersonalDia ?? [])
+      .filter(r => r.diaId === diaId)
+      .reduce<Record<string, number>>((acc, r) => {
+        const key = (r.rol ?? '').toString().trim() || 'Sin rol';
+        acc[key] = (acc[key] ?? 0) + this.toSafeNumber(r.cantidad);
+        return acc;
+      }, {});
+
+    const asignados = (this.detalle?.empleadosDia ?? [])
+      .filter(r => r.diaId === diaId && !!(r as { rol?: string }).rol)
+      .reduce<Record<string, number>>((acc, r) => {
+        const key = ((r as { rol?: string }).rol ?? '').toString().trim() || 'Sin rol';
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      }, {});
+
+    return Object.keys(requeridos).map(rol => {
+      const requerido = requeridos[rol] ?? 0;
+      const asignado = asignados[rol] ?? 0;
+      return {
+        rol,
+        requerido,
+        asignado,
+        pendiente: Math.max(requerido - asignado, 0)
+      };
+    }).sort((a, b) => b.pendiente - a.pendiente);
+  }
+
+  getPendientesEquiposPorTipo(diaId: number): { tipo: string; requerido: number; asignado: number; pendiente: number }[] {
+    const requeridos = (this.detalle?.requerimientosEquipoDia ?? [])
+      .filter(r => r.diaId === diaId)
+      .reduce<Record<string, number>>((acc, r) => {
+        const key = (r.tipoEquipoNombre ?? '').toString().trim() || 'Sin tipo';
+        acc[key] = (acc[key] ?? 0) + this.toSafeNumber(r.cantidad);
+        return acc;
+      }, {});
+
+    const asignados = (this.detalle?.equiposDia ?? [])
+      .filter(r => r.diaId === diaId)
+      .reduce<Record<string, number>>((acc, r) => {
+        const key = (r.tipoEquipo ?? '').toString().trim() || 'Sin tipo';
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      }, {});
+
+    return Object.keys(requeridos).map(tipo => {
+      const requerido = requeridos[tipo] ?? 0;
+      const asignado = asignados[tipo] ?? 0;
+      return {
+        tipo,
+        requerido,
+        asignado,
+        pendiente: Math.max(requerido - asignado, 0)
+      };
+    }).sort((a, b) => b.pendiente - a.pendiente);
+  }
+
+  isRolDataDisponible(diaId: number): boolean {
+    return (this.detalle?.empleadosDia ?? []).some(r => r.diaId === diaId && !!(r as { rol?: string }).rol);
+  }
+
+  getServiceColorClass(nombre: string | null | undefined): string {
+    const text = (nombre ?? '').toString();
+    let hash = 0;
+    for (let i = 0; i < text.length; i += 1) {
+      hash = (hash * 31 + text.charCodeAt(i)) | 0;
+    }
+    const idx = Math.abs(hash) % 4;
+    return ['chip-a', 'chip-b', 'chip-c', 'chip-d'][idx];
+  }
+
+  get pendientesTotales(): { personal: number; equipos: number } {
+    const dias = this.detalle?.dias ?? [];
+    return dias.reduce(
+      (acc, dia) => {
+        const p = this.getPendientesDia(dia.diaId);
+        acc.personal += p.personal;
+        acc.equipos += p.equipos;
+        return acc;
+      },
+      { personal: 0, equipos: 0 }
+    );
+  }
+
+  get diasTimeline(): ProyectoDetalleResponse['dias'] {
+    const dias = [...(this.detalle?.dias ?? [])].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    if (!this.soloPendientes) return dias;
+    return dias.filter(d => (d.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'pendiente');
+  }
+
   toDateInput(value: string | Date | null | undefined): string {
     if (!value) return '';
     if (value instanceof Date) {
@@ -860,88 +411,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const trimmed = value.trim();
     const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
     return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
-  }
-
-  private getEstadoNombre(id: number | null): string | null {
-    if (!id) return null;
-    const found = this.estados.find(e => e.estadoId === id);
-    return found?.estadoNombre ?? null;
-  }
-
-  private normalizeEstadoNombre(value: string | null): string {
-    if (!value) return '';
-    return value
-      .toString()
-      .trim()
-      .toLowerCase()
-      .replace(/á/g, 'a')
-      .replace(/é/g, 'e')
-      .replace(/í/g, 'i')
-      .replace(/ó/g, 'o')
-      .replace(/ú/g, 'u')
-      .replace(/ü/g, 'u');
-  }
-
-  private isEstadoPlanificado(id: number | null, nombre?: string | null): boolean {
-    const label = nombre ?? this.getEstadoNombre(id) ?? '';
-    return this.normalizeEstadoNombre(label) === 'planificado';
-  }
-
-  private isEstadoEjecucion(id: number | null, nombre?: string | null): boolean {
-    const label = nombre ?? this.getEstadoNombre(id) ?? '';
-    const norm = this.normalizeEstadoNombre(label);
-    return norm === 'ejecucion' || norm === 'en ejecucion';
-  }
-
-  private devolucionesCompletas(recursos: ProyectoRecurso[]): boolean {
-    if (!recursos.length) return true;
-    return recursos.every(r => !!(r.equipoEstadoDevolucion && r.equipoEstadoDevolucion.toString().trim()));
-  }
-
-  private tieneAsignaciones(): boolean {
-    return (this.proyecto?.recursos?.length ?? 0) > 0;
-  }
-
-  esPlanificadoActual(): boolean {
-    return this.isEstadoPlanificado(this.proyecto?.estadoId ?? null, this.proyecto?.estadoNombre ?? null);
-  }
-
-  esEjecucionActual(): boolean {
-    return this.isEstadoEjecucion(this.proyecto?.estadoId ?? null, this.proyecto?.estadoNombre ?? null);
-  }
-
-  puedeAsignarRecursos(): boolean {
-    return !this.esEjecucionActual();
-  }
-
-  puedeRegistrarDevolucion(): boolean {
-    return this.esEjecucionActual() && !this.devolucionesRegistradas;
-  }
-
-  setEstadoDevolucion(index: number, value: string): void {
-    if (!this.puedeRegistrarDevolucion()) return;
-    const control = this.devoluciones.at(index)?.get('estadoDevolucion');
-    if (!control) return;
-    control.setValue(value);
-    control.markAsDirty();
-    control.markAsTouched();
-  }
-
-  getEstadoLabel(value: string | null | undefined): string {
-    if (!value) return '';
-    return this.estadosDevolucion.find(e => e.value === value)?.label ?? value;
-  }
-
-  getEstadoClass(value: string | null | undefined): string {
-    const v = (value ?? '').toString();
-    if (v === 'daniado') return 'estado-pill pill-warn';
-    if (v === 'faltante') return 'estado-pill pill-danger';
-    if (v === 'devuelto') return 'estado-pill pill-success';
-    return 'estado-pill';
-  }
-
-  deshabilitarPlanificadoOption(id: number): boolean {
-    return !this.esPlanificadoActual() && this.isEstadoPlanificado(id, this.getEstadoNombre(id));
   }
 
   private normalizeValue(value: unknown, type: 'string' | 'number' | 'date'): string | number | null {
@@ -968,154 +437,31 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return isNaN(num) ? null : num;
   }
 
-  getEquipoAsignadoA(equipoId: number): string {
-    const recurso = this.proyecto?.recursos?.find(r => r.equipoId === equipoId);
-    if (!recurso) return '';
-    if (recurso.empleadoNombre) {
-      return `Asignado a ${recurso.empleadoNombre}`;
-    }
-    return 'Reserva / Repuesto';
+  private toSafeNumber(value: unknown): number {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
   }
 
-  async guardarDevoluciones(): Promise<void> {
-    if (!this.proyecto?.proyectoId) return;
-    if (this.devolucionesRegistradas) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Devoluciones ya registradas',
-        text: 'Las devoluciones de este proyecto ya fueron enviadas y no pueden volver a mandarse.'
-      });
-      return;
-    }
-    const items = this.devoluciones;
-    if (!items.length) return;
-
-    this.devolucionForm.markAllAsTouched();
-
-    const faltaEstado = items.controls.some(ctrl => !ctrl.get('estadoDevolucion')?.value);
-    if (faltaEstado) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Faltan estados',
-        text: 'Todos los equipos deben tener un estado de devolución.'
-      });
-      return;
-    }
-
-    const requiereNotas = items.controls.some(ctrl => {
-      const estado = ctrl.get('estadoDevolucion')?.value;
-      const notas = (ctrl.get('notas')?.value ?? '').trim();
-      return (estado === 'daniado' || estado === 'faltante') && !notas;
-    });
-
-    if (requiereNotas) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Agrega notas',
-        text: 'Para equipos dañados o faltantes agrega una nota.',
-        confirmButtonText: 'Entendido'
-      });
-      return;
-    }
-
-    if (!this.isEstadoEjecucion(this.proyecto?.estadoId ?? null, this.proyecto?.estadoNombre)) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Fuera de Ejecución',
-        text: 'Solo en estado Ejecución se pueden registrar devoluciones.'
-      });
-      return;
-    }
-
-    const confirm = await Swal.fire({
-      icon: 'warning',
-      title: 'Confirmar devoluciones',
-      text: '¿Confirmas que completaste todas las devoluciones? Después de enviarlas no podrás modificarlas.',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, registrar',
-      cancelButtonText: 'Revisar',
-      reverseButtons: true,
-      allowOutsideClick: false,
-      allowEscapeKey: false
-    });
-    if (!confirm.isConfirmed) return;
-
-    const formItems = items.value as {
-      equipoId: number;
-      estadoDevolucion: string;
-      notas?: string | null;
-    }[];
-    const payload = {
-      devoluciones: formItems.map(item => ({
-        equipoId: item.equipoId,
-        estadoDevolucion: item.estadoDevolucion,
-        notas: item.notas ?? ''
-      }))
-    };
-
-    this.guardandoDevoluciones = true;
-    this.proyectoService.registrarDevoluciones(this.proyecto.proyectoId, payload)
-      .pipe(finalize(() => { this.guardandoDevoluciones = false; }))
-      .subscribe({
-        next: () => {
-          Swal.fire({
-            icon: 'success',
-            title: 'Devoluciones registradas',
-            timer: 1800,
-            showConfirmButton: false
-          });
-          this.devolucionesRegistradas = true;
-          const recursosActualizados = (this.proyecto?.recursos ?? []).map(r => {
-            const dev = formItems.find(d => d.equipoId === r.equipoId);
-            if (!dev) return r;
-            return {
-              ...r,
-              equipoEstadoDevolucion: dev.estadoDevolucion,
-              equipoNotasDevolucion: dev.notas,
-              equipoFechaDevolucion: new Date().toISOString(),
-              equipoDevuelto: 1
-            } as ProyectoRecurso;
-          });
-          if (this.proyecto) {
-            this.proyecto = { ...this.proyecto, recursos: recursosActualizados };
-          }
-        },
-        error: (err) => {
-          console.error('[proyecto] devoluciones', err);
-          Swal.fire({
-            icon: 'error',
-            title: 'No se pudo registrar',
-            text: 'Intenta nuevamente más tarde.'
-          });
-        }
-      });
+  private toMinutes(value: string | null | undefined): number | null {
+    if (!value) return null;
+    const raw = String(value);
+    const parts = raw.split(':');
+    if (parts.length < 2) return null;
+    const h = Number(parts[0]);
+    const m = Number(parts[1]);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+    return (h * 60) + m;
   }
 
-  private buildDevolucionForm(recursos: ProyectoRecurso[]): void {
-    const arr = this.fb.array([]);
-    const vistos = new Set<number>();
-
-    (recursos ?? []).forEach(r => {
-      if (vistos.has(r.equipoId)) return;
-      vistos.add(r.equipoId);
-      const estadoInicial = r.equipoEstadoDevolucion && r.equipoEstadoDevolucion.toString().trim()
-        ? r.equipoEstadoDevolucion
-        : 'devuelto';
-      const notasInicial = r.equipoNotasDevolucion ?? '';
-      arr.push(this.fb.group({
-        equipoId: [r.equipoId],
-        estadoDevolucion: [estadoInicial, Validators.required],
-        notas: [notasInicial]
-      }));
-    });
-
-    this.devolucionForm.setControl('devoluciones', arr);
-    this.devolucionesRegistradas = this.devolucionesCompletas(recursos ?? []);
+  private fromMinutes(value: number): string {
+    const h = Math.floor(value / 60);
+    const m = value % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
   }
 
   private addIfChanged(
-    target: Partial<ProyectoDetalle>,
-    key: keyof ProyectoDetalle,
+    target: Partial<ProyectoPayload>,
+    key: keyof ProyectoPayload,
     formValue: unknown,
     currentValue: unknown,
     type: 'string' | 'number' | 'date'
@@ -1131,33 +477,11 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   private patchProyectoForm(data: ProyectoDetalle): void {
     this.proyectoForm.patchValue({
-      proyectoNombre: data.proyectoNombre,
-      fechaInicioEdicion: this.toDateInput(data.fechaInicioEdicion),
-      fechaFinEdicion: this.toDateInput(data.fechaFinEdicion),
-      estadoId: data.estadoId,
       responsableId: data.responsableId,
       notas: data.notas,
-      enlace: data.enlace,
-      multimedia: data.multimedia,
-      edicion: data.edicion
+      enlace: data.enlace
     });
   }
 
-  private loadEstados(): void {
-    this.proyectoService.getEstados()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (lista) => {
-          this.estados = Array.isArray(lista) ? lista : [];
-        },
-        error: (err) => {
-          console.error('[proyecto] estados', err);
-          this.estados = [];
-        }
-      });
-  }
 
-  private getArray(value: unknown): Record<string, unknown>[] {
-    return Array.isArray(value) ? (value as Record<string, unknown>[]) : [];
-  }
 }

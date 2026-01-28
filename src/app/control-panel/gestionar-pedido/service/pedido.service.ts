@@ -3,12 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Proyecto, DatosCliente, Eventos, Servi } from '../model/pedido.model';
 import { environment } from 'src/environments/environment';
+import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PedidoService {
   private readonly http = inject(HttpClient);
+  private readonly catalogos = inject(CatalogosService);
   selectProyecto: Proyecto = {
 
     ID: 0,
@@ -61,10 +63,6 @@ export class PedidoService {
     'https://tp2021database.herokuapp.com/cliente/consulta/getDataCliente/';
   private readonly apiClientes = `${environment.baseUrl}/clientes/by-doc`;
 
-  private readonly apiServicios =`${environment.baseUrl}/servicios`;
-
-  private readonly apiEventos =`${environment.baseUrl}/eventos`;
-
   // private API_SERVICIOSxEVENTOS =
   //   'https://tp2021database.herokuapp.com/eventos_servicios/consulta/getAllServiciosByEventoServ/';
 
@@ -82,10 +80,10 @@ export class PedidoService {
     return this.http.get(this.apiNumeroPedido);
   }
   public getServicios(): Observable<unknown> {
-    return this.http.get(this.apiServicios);
+    return this.catalogos.getServicios();
   }
   public getEventos(): Observable<unknown> {
-    return this.http.get(this.apiEventos);
+    return this.catalogos.getEventos();
   }
   public getContratoPdf(id: number): Observable<Blob> {
     return this.http.post(`${this.apiBase}/${id}/contrato/pdf`, null, { responseType: 'blob' });

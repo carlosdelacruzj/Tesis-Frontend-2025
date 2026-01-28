@@ -40,16 +40,10 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
 
   form: UntypedFormGroup = this.fb.group({
-    proyectoNombre: ['', Validators.required],
     pedidoId: [null, [Validators.required, Validators.min(1)]],
-    fechaInicioEdicion: [''],
-    fechaFinEdicion: [''],
-    estadoId: [1, [Validators.required, Validators.min(1)]],
     responsableId: [null],
     notas: [''],
-    enlace: [''],
-    multimedia: [null],
-    edicion: [null]
+    enlace: ['']
   });
 
   modal: ModalState = { open: false, guardando: false, titulo: '', editId: null };
@@ -69,35 +63,13 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
     this.searchTerm = term;
   }
 
-  abrirCrear(): void {
-    this.form.reset({
-      proyectoNombre: '',
-      pedidoId: null,
-      fechaInicioEdicion: '',
-      fechaFinEdicion: '',
-      estadoId: 1,
-      responsableId: null,
-      notas: '',
-      enlace: '',
-      multimedia: null,
-      edicion: null
-    });
-    this.modal = { open: true, guardando: false, titulo: 'Nuevo proyecto', editId: null };
-  }
-
   abrirEditar(row: Proyecto): void {
     this.modal = { open: true, guardando: false, titulo: 'Editar proyecto', editId: row.proyectoId };
     this.form.patchValue({
-      proyectoNombre: row.proyectoNombre,
       pedidoId: row.pedidoId,
-      fechaInicioEdicion: this.toDateInput(row.fechaInicioEdicion),
-      fechaFinEdicion: this.toDateInput(row.fechaFinEdicion),
-      estadoId: row.estadoId ?? 1,
       responsableId: row.responsableId,
       notas: row.notas,
-      enlace: row.enlace,
-      multimedia: row.multimedia,
-      edicion: row.edicion
+      enlace: row.enlace
     });
   }
 
@@ -119,15 +91,24 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
     const payload = this.form.value as ProyectoPayload;
     this.modal = { ...this.modal, guardando: true };
 
-    const peticion = this.modal.editId
-      ? this.proyectoService.actualizarProyecto(this.modal.editId, payload)
-      : this.proyectoService.crearProyecto(payload);
+    if (!this.modal.editId) {
+      this.modal = { ...this.modal, guardando: false };
+      void Swal.fire({
+        icon: 'info',
+        title: 'Creación automática',
+        text: 'Los proyectos se crean automáticamente desde el pedido.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+
+    const peticion = this.proyectoService.actualizarProyecto(this.modal.editId, payload);
 
     peticion.pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         void Swal.fire({
           icon: 'success',
-          title: this.modal.editId ? 'Proyecto actualizado' : 'Proyecto creado',
+          title: 'Proyecto actualizado',
           confirmButtonText: 'Entendido'
         });
         this.cerrarModal();
@@ -163,11 +144,6 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
           this.loading = false;
         }
       });
-  }
-
-  private toDateInput(valor: string | null): string {
-    if (!valor) return '';
-    return valor.toString().slice(0, 10);
   }
 
   getEstadoNombre(id: number | null | undefined): string {

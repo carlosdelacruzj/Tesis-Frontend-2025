@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { Empleado, EmpleadoUpdateDto } from '../model/personal.model';
+import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
 // ❗ Opcionales: déjalos si usas esos endpoints; si no, elimínalos.
 export interface Cargo {
@@ -30,6 +31,7 @@ export class PersonalService {
   private readonly baseOperativos = `${environment.baseUrl}/empleados/operativos`;
 
   private readonly http = inject(HttpClient);
+  private readonly catalogos = inject(CatalogosService);
 
   // POST /empleados
   createEmpleado(data: Partial<Empleado>): Observable<Empleado> {
@@ -53,7 +55,7 @@ export class PersonalService {
 
   // GET /empleados/cargos  (opcional)
   getCargos(): Observable<Cargo[]> {
-    return this.http.get<Cargo[]>(`${this.base}/cargos`);
+    return this.catalogos.getCargos();
   }
 
   // GET /empleados/operativos

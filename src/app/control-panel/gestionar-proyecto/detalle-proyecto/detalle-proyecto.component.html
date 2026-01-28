@@ -11,11 +11,12 @@
     </div>
   } @else {
     @if (proyecto) {
-      <section class="card">
+      <section class="card hero">
         <header class="card-header">
           <div>
             <p class="eyebrow">Proyecto #{{ proyecto.proyectoId }}</p>
-            <h2>{{ proyecto.proyectoNombre }}</h2>
+            <h2 class="title">{{ proyecto.proyectoNombre }}</h2>
+            <p class="muted small">Pedido #{{ proyecto.pedidoCodigo || proyecto.pedidoId }}</p>
           </div>
           <div class="estado">
             <span class="label">Estado</span>
@@ -32,56 +33,68 @@
           </div>
         </header>
 
-        <div class="info-grid">
-          <div>
-            <p class="label">Pedido</p>
-            <p class="value">#{{ proyecto.pedidoCodigo || proyecto.pedidoId }}</p>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <p class="stat-label">Responsable</p>
+            <p class="stat-value">{{ proyecto.responsableId || '—' }}</p>
           </div>
-          <div>
-            <p class="label">Responsable</p>
-            <p class="value">{{ proyecto.responsableNombre || '—' }}</p>
+          <div class="stat-card">
+            <p class="stat-label">Inicio edición</p>
+            <p class="stat-value">{{ formatFechaDisplay(proyecto.fechaInicioEdicion) }}</p>
           </div>
-          <div>
-            <p class="label">Inicio edición</p>
-            <p class="value">{{ formatFechaDisplay(proyecto.fechaInicioEdicion) }}</p>
+          <div class="stat-card">
+            <p class="stat-label">Fin edición</p>
+            <p class="stat-value">{{ formatFechaDisplay(proyecto.fechaFinEdicion) }}</p>
           </div>
-          <div>
-            <p class="label">Fin edición</p>
-            <p class="value">{{ formatFechaDisplay(proyecto.fechaFinEdicion) }}</p>
-          </div>
-          <div>
-            <p class="label">Enlace</p>
-            <p class="value">{{ proyecto.enlace || '—' }}</p>
-          </div>
-          <div>
-            <p class="label">Notas</p>
-            <p class="value">{{ proyecto.notas || '—' }}</p>
-          </div>
-          <div>
-            <p class="label">Edición</p>
-            <p class="value">{{ proyecto.edicion ?? '—' }}</p>
-          </div>
-          <div>
-            <p class="label">Multimedia</p>
-            <p class="value">{{ proyecto.multimedia ?? '—' }}</p>
-          </div>
-          <div>
-            <p class="label">Creado</p>
-            <p class="value">{{ formatFechaDisplay(proyecto.createdAt) }}</p>
-          </div>
-          <div>
-            <p class="label">Actualizado</p>
-            <p class="value">{{ formatFechaDisplay(proyecto.updatedAt) }}</p>
+          <div class="stat-card">
+            <p class="stat-label">Enlace</p>
+            <p class="stat-value">
+              @if (proyecto.enlace) {
+                <a class="link" [href]="proyecto.enlace" target="_blank" rel="noopener">Abrir enlace</a>
+              } @else {
+                —
+              }
+            </p>
           </div>
         </div>
+
+        <div class="ops-bar">
+          <div class="ops-chip">
+            <span>Días</span>
+            <strong>{{ totalDias }}</strong>
+          </div>
+          <div class="ops-chip">
+            <span>Servicios</span>
+            <strong>{{ totalServiciosDia }}</strong>
+          </div>
+          <div class="ops-chip">
+            <span>Personal</span>
+            <strong>{{ totalEmpleadosDia }}</strong>
+          </div>
+          <div class="ops-chip">
+            <span>Equipos</span>
+            <strong>{{ totalEquiposDia }}</strong>
+          </div>
+          <div class="ops-chip ops-alert">
+            <span>Pendientes</span>
+            <strong>{{ pendientesTotales.personal + pendientesTotales.equipos }}</strong>
+          </div>
+        </div>
+
+        @if (proyecto.notas) {
+          <div class="note-box">
+            <div class="note-title">Notas</div>
+            <p class="note-text">{{ proyecto.notas }}</p>
+          </div>
+        }
       </section>
 
-      <section class="card">
+      <section class="card section sticky-actions">
         <header class="card-header">
           <div>
             <p class="eyebrow">Edición rápida</p>
             <h3>Actualizar proyecto</h3>
-            <p class="muted small">Cambia el estado, fechas o campos básicos y guarda con PATCH.</p>
+            <p class="muted small">Actualiza responsable, enlace o notas.</p>
           </div>
           <button mat-flat-button color="primary" type="button" (click)="guardarProyecto()" [disabled]="guardandoProyecto">
             Guardar cambios
@@ -90,43 +103,12 @@
         <form class="edit-form" [formGroup]="proyectoForm" (ngSubmit)="guardarProyecto()">
           <div class="edit-form-grid">
             <label class="form-field">
-              <span class="label">Nombre</span>
-              <input class="form-control" type="text" formControlName="proyectoNombre" placeholder="Nombre del proyecto">
-            </label>
-            <label class="form-field">
-              <span class="label">Estado</span>
-              <select class="form-select" formControlName="estadoId">
-                <option [ngValue]="null" disabled>Selecciona estado</option>
-                @for (est of estados; track est.estadoId) {
-                  <option [ngValue]="est.estadoId" [disabled]="deshabilitarPlanificadoOption(est.estadoId)">
-                    {{ est.estadoNombre }}
-                  </option>
-                }
-              </select>
-            </label>
-            <label class="form-field">
               <span class="label">Responsable (ID)</span>
               <input class="form-control" type="number" formControlName="responsableId" placeholder="ID o deja vacío">
             </label>
             <label class="form-field">
-              <span class="label">Inicio edición</span>
-              <input class="form-control" type="date" formControlName="fechaInicioEdicion">
-            </label>
-            <label class="form-field">
-              <span class="label">Fin edición</span>
-              <input class="form-control" type="date" formControlName="fechaFinEdicion">
-            </label>
-            <label class="form-field">
               <span class="label">Enlace</span>
               <input class="form-control" type="url" formControlName="enlace" placeholder="https://">
-            </label>
-            <label class="form-field">
-              <span class="label">Multimedia</span>
-              <input class="form-control" type="number" formControlName="multimedia" placeholder="Ej. 3">
-            </label>
-            <label class="form-field">
-              <span class="label">Edición</span>
-              <input class="form-control" type="number" formControlName="edicion" placeholder="Ej. 2">
             </label>
           </div>
           <label class="form-field">
@@ -141,180 +123,239 @@
         </form>
       </section>
 
-      @if (getEventosPedido().length) {
-      <section class="card">
+      @if (detalle && detalle.dias?.length) {
+      <section class="card section">
         <header class="card-header">
           <div>
-            <p class="eyebrow">Locaciones</p>
-            <h3>Locaciones ({{ getEventosPedido().length }})</h3>
-            @if (getPedidoRangoFechas(); as rango) {
-              <p class="muted small">
-                Fechas: {{ formatFechaDisplay(rango.inicio) }} → {{ formatFechaDisplay(rango.fin) }}
-              </p>
-            }
+            <p class="eyebrow">Agenda</p>
+            <h3>Días de proyecto ({{ detalle.dias.length }})</h3>
+            <p class="muted small">Ordenado por fecha</p>
           </div>
+          <button class="toggle-btn" type="button" (click)="toggleSoloPendientes()">
+            @if (soloPendientes) { Ver todos } @else { Solo con pendientes }
+          </button>
         </header>
-        <div class="locaciones-grid">
-          @for (grupo of getEventosAgrupados(); track grupo.fecha) {
-            <div class="locacion-day">
-              <div class="locacion-day__header">
-                <span class="locacion-day__date">{{ grupo.fechaLabel }}</span>
-                <span class="locacion-day__count">{{ grupo.items.length }} locaciones</span>
-              </div>
-              <div class="locacion-list">
-                @for (item of grupo.items; track $index) {
-                  <div class="locacion-card">
-                    <div class="locacion-card__time">{{ item.hora || '—' }}</div>
-                    <div class="locacion-card__body">
-                      <div class="locacion-card__title">{{ item.ubicacion || '—' }}</div>
-                      <div class="locacion-card__meta">{{ item.direccion || '—' }}</div>
-                      @if (item.notas) {
-                        <div class="locacion-card__notes">{{ item.notas }}</div>
+        <div class="timeline">
+          @for (dia of diasTimeline; track dia.diaId) {
+            <details
+              class="timeline-item"
+              [open]="openDiaId === dia.diaId"
+              (toggle)="onToggleDia(dia.diaId, $event)">
+              <summary class="timeline-summary">
+                <div class="timeline-date">
+                  <div class="timeline-date__title">{{ formatFechaLarga(dia.fecha) }}</div>
+                  <div class="timeline-date__meta">
+                    Bloques: {{ getBloquesCount(dia.diaId) }}
+                    · Servicios: {{ getServiciosCountDia(dia.diaId) }}
+                    · Personal: {{ getAsignadosPersonalDia(dia.diaId) }}/{{ getReqPersonalCountDia(dia.diaId) }}
+                    · Equipos: {{ getAsignadosEquiposDia(dia.diaId) }}/{{ getReqEquiposCountDia(dia.diaId) }}
+                  </div>
+                  @if (getRangoHorasDia(dia.diaId); as rango) {
+                    <div class="timeline-date__range">{{ rango.inicio }} – {{ rango.fin }}</div>
+                  }
+                  <div class="timeline-badges">
+                    <app-estado-badge
+                      [estado]="dia.estadoDiaNombre || '—'"
+                      [mapaColores]="{
+                        'planificado': 'info',
+                        'en ejecucion': 'warning',
+                        'en ejecución': 'warning',
+                        'pendiente': 'warning',
+                        'entregado': 'success-light',
+                        'cerrado': 'success'
+                      }"
+                    ></app-estado-badge>
+                    @if (getEstadoAsignacionDia(dia.diaId) !== '—') {
+                      <span
+                        class="badge"
+                        [ngClass]="{
+                          'badge-warning': getEstadoAsignacionDia(dia.diaId) === 'Pendiente',
+                          'badge-success': getEstadoAsignacionDia(dia.diaId) === 'Completo',
+                          'badge-muted': getEstadoAsignacionDia(dia.diaId) === 'Sin asignar'
+                        }">
+                        {{ getEstadoAsignacionDia(dia.diaId) }}
+                      </span>
+                    }
+                  </div>
+                  <div class="timeline-summary__hint">Ver detalle</div>
+                </div>
+                <div class="timeline-dot"></div>
+              </summary>
+              <div class="timeline-content">
+                <div class="locacion-list">
+                  @for (bloque of getBloquesDia(dia.diaId); track bloque.bloqueId) {
+                    <div class="locacion-card">
+                      <div class="locacion-card__time">{{ formatHora12(bloque.hora) }}</div>
+                      <div class="locacion-card__body">
+                        <div class="locacion-card__title">{{ bloque.ubicacion || '—' }}</div>
+                        <div class="locacion-card__meta">{{ bloque.direccion || '—' }}</div>
+                        @if (bloque.notas) {
+                          <div class="locacion-card__notes">{{ bloque.notas }}</div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+                <div class="servicios-dia">
+                  <div class="servicios-dia__header">
+                    <span class="label">Servicios contratados</span>
+                    <span class="muted small">{{ getServiciosDia(dia.diaId).length }} ítem(s)</span>
+                  </div>
+                  @if (getServiciosDia(dia.diaId).length) {
+                    <div class="servicios-dia__list">
+                      @for (serv of getServiciosDia(dia.diaId); track serv.id) {
+                        <div class="servicio-chip" [ngClass]="getServiceColorClass(serv.nombre)">
+                          <div class="servicio-chip__title">{{ serv.nombre || '—' }}</div>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="muted">Sin servicios asignados a este día.</p>
+                  }
+                  <div class="pendientes-dia">
+                    <span class="muted small">Pendientes</span>
+                    <span class="pill pill-muted">Personal: {{ getPendientesDia(dia.diaId).personal }}</span>
+                    <span class="pill pill-muted">Equipos: {{ getPendientesDia(dia.diaId).equipos }}</span>
+                  </div>
+                  <div class="pendientes-detalle">
+                    <div class="pendientes-col">
+                      <div class="pendientes-title">Personal por rol</div>
+                      @if (!isRolDataDisponible(dia.diaId)) {
+                        <div class="muted small">Sin roles en asignaciones aún.</div>
+                      }
+                      @for (row of getPendientesPersonalPorRol(dia.diaId); track row.rol) {
+                        <div class="pendiente-row">
+                          <span>{{ row.rol }}</span>
+                          <strong>{{ row.pendiente }}</strong>
+                        </div>
+                      }
+                    </div>
+                    <div class="pendientes-col">
+                      <div class="pendientes-title">Equipos por tipo</div>
+                      @for (row of getPendientesEquiposPorTipo(dia.diaId); track row.tipo) {
+                        <div class="pendiente-row">
+                          <span>{{ row.tipo }}</span>
+                          <strong>{{ row.pendiente }}</strong>
+                        </div>
                       }
                     </div>
                   </div>
-                }
+                </div>
               </div>
-            </div>
+            </details>
           }
         </div>
       </section>
       }
 
-      @if (getServiciosContratados().length) {
-      <section class="card">
-        <header class="card-header">
-          <div>
-            <p class="eyebrow">Servicios contratados</p>
-            <h3>Servicios ({{ getServiciosContratados().length }})</h3>
+      @if ((detalle?.empleadosDia?.length || detalle?.equiposDia?.length) || (detalle?.requerimientosPersonalDia?.length || detalle?.requerimientosEquipoDia?.length)) {
+      <section class="card section">
+        <details class="collapsible" open>
+          <summary class="collapsible__summary">
+            <div>
+              <p class="eyebrow">Asignaciones</p>
+              <h3>Personal y equipos</h3>
+              <p class="muted small">Vista actual desde el servicio /proyecto/:id.</p>
+            </div>
+            <div class="collapsible__actions">
+              <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
+                Ver/gestionar asignaciones
+              </button>
+              <span class="collapsible__caret">▾</span>
+            </div>
+          </summary>
+
+          <div class="asignaciones-grid">
+            <div class="asignaciones-panel">
+              <h4>Personal por día</h4>
+              @if (detalle.empleadosDia?.length) {
+                <div class="asignaciones-list">
+                  @for (item of detalle.empleadosDia; track item.asignacionId) {
+                    <div class="asignacion-card">
+                      <div class="asignacion-meta">
+                        <div class="asignacion-title">{{ item.empleadoNombre || '—' }}</div>
+                        <div class="muted small">{{ formatFechaLarga(item.fecha) }}</div>
+                      </div>
+                      <div class="asignacion-body">
+                        <div class="muted small">Estado: {{ item.estado || '—' }}</div>
+                        @if (item.notas) {
+                          <div class="asignacion-notas">{{ item.notas }}</div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="muted">Sin personal asignado.</p>
+                <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
+                  Asignar ahora
+                </button>
+              }
+            </div>
+
+            <div class="asignaciones-panel">
+              <h4>Equipos por día</h4>
+              @if (detalle.equiposDia?.length) {
+                <div class="asignaciones-list">
+                  @for (eq of detalle.equiposDia; track eq.asignacionId) {
+                    <div class="asignacion-card">
+                      <div class="asignacion-meta">
+                        <div class="asignacion-title">{{ eq.modelo || '—' }} ({{ eq.equipoSerie || '—' }})</div>
+                        <div class="muted small">{{ formatFechaLarga(eq.fecha) }}</div>
+                      </div>
+                      <div class="asignacion-body">
+                        <div class="muted small">Tipo: {{ eq.tipoEquipo || '—' }}</div>
+                        <div class="muted small">Estado: {{ eq.estado || '—' }}</div>
+                        @if (eq.notas) {
+                          <div class="asignacion-notas">{{ eq.notas }}</div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="muted">Sin equipos asignados.</p>
+                <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
+                  Asignar ahora
+                </button>
+              }
+            </div>
           </div>
-        </header>
-        <app-table-base
-          [data]="getServiciosContratados()"
-          [columns]="serviciosColumns"
-          [showCreateButton]="false"
-          [showSearch]="false"
-          [showPagination]="false"
-          [showFooterInfo]="false">
-          <ng-template appCell="precio" let-row>
-            {{ row.precio | usd:'1.2-2' }}
-          </ng-template>
-        </app-table-base>
+        </details>
       </section>
       }
 
-      <section class="card">
-        <header class="card-header">
-          <div>
-            <p class="eyebrow">Recursos y staff</p>
-            <h3>Asignaciones ({{ proyecto.recursos?.length || 0 }})</h3>
-          </div>
-          @if (esPlanificadoActual()) {
-            <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
-              Asignar recursos
-            </button>
-          }
-        </header>
-        @if (!esPlanificadoActual()) {
-          <p class="muted small">Las asignaciones solo se gestionan en estado Planificado.</p>
-        }
-
-        @if (proyecto.recursos?.length) {
-          <app-table-base
-            [data]="proyecto.recursos | orderByEmpleado"
-            [columns]="recursosColumns"
-            [pageSize]="10"
-            [pageSizeOptions]="[5,10,20]"
-            [showCreateButton]="false"
-            [showFooterInfo]="true"
-            [showSearch]="false"
-            [showPagination]="false">
-            <ng-template appCell="empleadoNombre" let-row>
-              @if (row.empleadoNombre) {
-                {{ row.empleadoNombre }}
-              } @else {
-                <span class="pill pill-muted">Reserva / Repuesto</span>
-              }
-            </ng-template>
-          </app-table-base>
-        } @else {
-          <p class="muted">Sin recursos asignados.</p>
-        }
-      </section>
-
-      @if (proyecto.recursos?.length && !esPlanificadoActual()) {
-      <section class="card">
-        <header class="card-header">
-          <div>
-            <p class="eyebrow">Seguimiento</p>
-            <h3>Devolución de equipos</h3>
-            <p class="muted small">Marca el estado al cierre del proyecto y agrega notas si falta o está dañado.</p>
-          </div>
-        </header>
-        @if (devolucionesRegistradas) {
-          <div class="alert alert-info">
-            Las devoluciones ya fueron registradas y no se pueden volver a enviar.
-          </div>
-        }
-        @if (!devolucionesRegistradas && !esEjecucionActual()) {
-          <p class="muted small">Solo lectura: la devolución se gestiona en estado Ejecución.</p>
-        }
-        <form class="devolucion-form" [formGroup]="devolucionForm" (ngSubmit)="guardarDevoluciones()">
-          <div class="devolucion-grid" formArrayName="devoluciones">
-            @for (devolucion of devoluciones.controls; track $index; let i = $index) {
-              <div
-                class="devolucion-card"
-                [formGroupName]="i"
-                [class.dev-disabled]="!puedeRegistrarDevolucion()">
-                <div class="dev-card-header">
+      @if (detalle?.equiposDia?.length) {
+      <section class="card section">
+        <details class="collapsible" open>
+          <summary class="collapsible__summary">
+            <div>
+              <p class="eyebrow">Devoluciones</p>
+              <h3>Estado de equipos</h3>
+            </div>
+            <span class="collapsible__caret">▾</span>
+          </summary>
+          <div class="devoluciones-grid">
+            @for (eq of detalle.equiposDia; track eq.asignacionId) {
+              <div class="devolucion-card">
+                <div class="devolucion-header">
                   <div>
-                    <div class="dev-title">{{ getEquipoLabel(devolucion.get('equipoId')?.value) }}</div>
-                    <div class="muted small">{{ getEquipoAsignadoA(devolucion.get('equipoId')?.value) }}</div>
+                    <div class="fw-semibold">{{ eq.modelo || '—' }}</div>
+                    <div class="muted small">Serie: {{ eq.equipoSerie || '—' }}</div>
                   </div>
-                  @if (devolucionesRegistradas || !puedeRegistrarDevolucion()) {
-                    <span [ngClass]="getEstadoClass(devolucion.get('estadoDevolucion')?.value)">
-                      {{ getEstadoLabel(devolucion.get('estadoDevolucion')?.value) || 'Sin estado' }}
-                    </span>
-                  }
+                  <span class="pill pill-muted">{{ eq.estadoDevolucion || 'Sin devolución' }}</span>
                 </div>
-                <div class="dev-card-body">
-                  @if (puedeRegistrarDevolucion()) {
-                    <div class="estado-pills" role="group">
-                      @for (estado of estadosDevolucion; track estado.value) {
-                        <button
-                          type="button"
-                          class="estado-pill"
-                          [class.active]="devolucion.get('estadoDevolucion')?.value === estado.value"
-                          [disabled]="!puedeRegistrarDevolucion()"
-                          (click)="setEstadoDevolucion(i, estado.value)">
-                          {{ estado.label }}
-                        </button>
-                      }
-                    </div>
-                  }
-                  <div class="form-field">
-                    <label class="label" [attr.for]="'devolucionNotas-' + i">
-                      Notas <span class="muted">(obligatorio si está dañado o faltante)</span>
-                    </label>
-                    <textarea
-                      [id]="'devolucionNotas-' + i"
-                      class="form-control"
-                      rows="2"
-                      formControlName="notas"
-                      [readonly]="!puedeRegistrarDevolucion()"></textarea>
-                  </div>
-                </div>
+                <div class="muted small">Fecha devolución: {{ eq.fechaDevolucion || '—' }}</div>
+                @if (eq.notasDevolucion) {
+                  <div class="devolucion-notas">{{ eq.notasDevolucion }}</div>
+                }
               </div>
             }
           </div>
-          <div class="acciones">
-            <button mat-flat-button color="primary" type="submit" [disabled]="guardandoDevoluciones || !puedeRegistrarDevolucion()">
-              Registrar devoluciones
-            </button>
-          </div>
-        </form>
+        </details>
       </section>
       }
+
     } @else {
       <p class="estado-centro">{{ error }}</p>
     }
@@ -323,243 +364,54 @@
 
 <app-modal-base
   [open]="modalAsignarAbierto"
-  title="Asignar personal y equipos"
+  title="Asignaciones (vista previa)"
   [useDefaultFooter]="false"
   size="xl"
   (closed)="cerrarModalAsignar()">
 
-  <div class="stepper">
-    <button type="button" class="step" [class.active]="stepIndex === 0" (click)="irAlPaso(0)">1. Personal</button>
-    <button type="button" class="step" [class.active]="stepIndex === 1" (click)="irAlPaso(1)">2. Equipos</button>
-    <button type="button" class="step" [class.active]="stepIndex === 2" (click)="irAlPaso(2)">3. Asignación</button>
+  <div class="modal-section">
+    <h4>Requerimientos por día (personal)</h4>
+    @if (detalle?.requerimientosPersonalDia?.length) {
+      <div class="req-grid">
+        @for (req of detalle.requerimientosPersonalDia; track req.diaId + '-' + req.rol) {
+          <div class="req-card">
+            <div class="fw-semibold">{{ req.rol || '—' }}</div>
+            <div class="muted small">{{ formatFechaDisplay(req.fecha) }}</div>
+            <div class="muted small">Cantidad: {{ req.cantidad }}</div>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="muted">Sin requerimientos de personal.</p>
+    }
   </div>
 
-  <div class="modal-content-grid">
-    @if (stepIndex === 0) {
-      <p class="eyebrow">Personal operativo</p>
-      @if (requerimientos?.totales?.personal?.length) {
-        <div class="req-resumen">
-          @for (req of requerimientos.totales.personal; track req.rol) {
-            <div class="req-pill" [class.req-completo]="getSeleccionadosPorRol(req.rol) >= req.cantidad">
-              <div class="fw-semibold">{{ req.rol }}</div>
-              <div class="muted small">{{ getSeleccionadosPorRol(req.rol) }}/{{ req.cantidad }} requeridos</div>
-            </div>
-          }
-        </div>
-      }
-      <div class="dual-panel">
-        <div class="panel">
-            <div class="panel-header">
-              <div>
-                <span class="label d-block">Disponibles</span>
-              </div>
-              <select class="form-select form-select-sm" [(ngModel)]="filtroRol">
-                <option [ngValue]="null">Todos los roles</option>
-                @for (rol of rolesOperativos; track rol) {
-                  <option [ngValue]="rol">
-                    {{ rol }}
-                  </option>
-                }
-              </select>
-            </div>
-          <div class="lista">
-            @for (p of getPersonalFiltrado(); track p.empleadoId) {
-              <label class="item-selectable">
-                <input type="checkbox" [checked]="seleccionados.includes(p.empleadoId)" (change)="toggleSeleccionEmpleado(p.empleadoId)" [disabled]="isEmpleadoDisabled(p)">
-                <div>
-                  <div class="fw-semibold">{{ p.nombre }} {{ p.apellido }}</div>
-                  <div class="text-muted small">{{ p.cargo }}</div>
-                </div>
-              </label>
-            }
+  <div class="modal-section">
+    <h4>Requerimientos por día (equipos)</h4>
+    @if (detalle?.requerimientosEquipoDia?.length) {
+      <div class="req-grid">
+        @for (req of detalle.requerimientosEquipoDia; track req.diaId + '-' + req.tipoEquipoId) {
+          <div class="req-card">
+            <div class="fw-semibold">{{ req.tipoEquipoNombre || '—' }}</div>
+            <div class="muted small">{{ formatFechaDisplay(req.fecha) }}</div>
+            <div class="muted small">Cantidad: {{ req.cantidad }}</div>
           </div>
-        </div>
-        <div class="panel">
-            <div class="panel-header">
-              <div>
-                <span class="label d-block">Seleccionados</span>
-                <span class="muted small">Total: {{ seleccionados.length }}</span>
-              </div>
-          </div>
-          <div class="lista">
-            @for (id of seleccionados; track id) {
-              <div class="item-selectable selected-item">
-                <div>
-                  <div class="fw-semibold">{{ getNombreEmpleado(id) }}</div>
-                  <div class="text-muted small">
-                    {{ getCargoEmpleado(id) }}
-                  </div>
-                </div>
-                <button type="button" class="remove-btn" (click)="quitarSeleccion(id)">Quitar</button>
-              </div>
-            }
-            @if (!seleccionados.length) {
-              <p class="muted">Aún no seleccionas personal.</p>
-            }
-          </div>
-        </div>
+        }
       </div>
+    } @else {
+      <p class="muted">Sin requerimientos de equipos.</p>
     }
-
-    @if (stepIndex === 1) {
-      <p class="eyebrow">Equipos requeridos</p>
-      @if (requerimientos?.totales?.equipos?.length) {
-        <div class="req-resumen">
-          @for (req of requerimientos.totales.equipos; track req.tipoEquipoId) {
-            <div class="req-pill" [class.req-completo]="getSeleccionadosEquipoPorTipo(req.tipoEquipoId) >= req.cantidad">
-              <div class="fw-semibold">{{ req.tipoEquipo }}</div>
-              <div class="muted small">{{ getSeleccionadosEquipoPorTipo(req.tipoEquipoId) }}/{{ req.cantidad }} requeridos</div>
-            </div>
-          }
-        </div>
-      }
-
-      <div class="dual-panel">
-        <div class="panel">
-          <div class="panel-header">
-            <div>
-              <span class="label d-block">Disponibles</span>
-            </div>
-            <select class="form-select form-select-sm" [(ngModel)]="filtroTipoEquipoId">
-              <option [ngValue]="null">Todos los tipos</option>
-              @for (tipo of tiposEquipo; track tipo.idTipoEquipo) {
-                <option [ngValue]="tipo.idTipoEquipo">
-                  {{ tipo.nombre }}
-                </option>
-              }
-            </select>
-          </div>
-          <div class="lista">
-            @for (e of getEquiposFiltrados(); track e.idEquipo) {
-              <label class="item-selectable">
-                <input type="checkbox" [checked]="selectedEquipos.includes(e.idEquipo)" (change)="toggleSeleccionEquipo(e.idEquipo)" [disabled]="isEquipoDisabled(e)">
-                <div>
-                  <div class="fw-semibold">{{ e.nombreModelo }} ({{ e.nombreTipoEquipo }})</div>
-                  <div class="text-muted small">Serie: {{ e.serie }}</div>
-                </div>
-              </label>
-            }
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-header">
-            <div>
-              <span class="label d-block">Seleccionados</span>
-              <span class="muted small">Total: {{ selectedEquipos.length }}</span>
-            </div>
-          </div>
-          <div class="lista">
-            @for (id of selectedEquipos; track id) {
-              <div class="item-selectable selected-item">
-                <div>
-                  <div class="fw-semibold">{{ getEquipoLabel(id) }}</div>
-                  <div class="text-muted small">
-                    {{ getTipoEquipoNombre(id) }}
-                  </div>
-                </div>
-                <button type="button" class="remove-btn" (click)="toggleSeleccionEquipo(id)">Quitar</button>
-              </div>
-            }
-            @if (!selectedEquipos.length) {
-              <p class="muted">Aún no seleccionas equipos.</p>
-            }
-          </div>
-        </div>
-      </div>
-    }
-
-    @if (stepIndex === 2) {
-      <p class="eyebrow">Asignar equipos (Drag & Drop)</p>
-      <div class="kanban-layout">
-        <div class="kanban-column kanban-reserva">
-          <div class="kanban-header">
-            <div class="fw-semibold">Sin asignar / Reserva</div>
-            <div class="muted small">{{ getListaReserva().length }} equipo(s)</div>
-          </div>
-          <div
-            cdkDropList
-            id="reserva"
-            [cdkDropListConnectedTo]="getDropConnections('reserva')"
-            [cdkDropListData]="getListaReserva()"
-            class="kanban-dropzone"
-            (cdkDropListDropped)="dropEquipo($event, 'reserva')">
-            @for (eqId of getListaReserva(); track eqId) {
-              <div class="kanban-card" cdkDrag>
-                <div class="fw-semibold">{{ getEquipoLabel(eqId) }}</div>
-                <div class="muted small">{{ getTipoEquipoNombre(eqId) }}</div>
-              </div>
-            }
-            @if (!getListaReserva().length) {
-              <p class="muted">Arrastra equipos aquí para dejarlos en reserva.</p>
-            }
-          </div>
-        </div>
-
-        <div class="kanban-empleados-grid">
-          @for (id of seleccionados; track id) {
-          <div class="kanban-column">
-            <div class="kanban-header">
-              <div class="fw-semibold">{{ getNombreEmpleado(id) }}</div>
-              <div class="muted small">{{ getCargoEmpleado(id) }}</div>
-              <div class="muted small">{{ getListaEmpleado(id).length }} equipo(s)</div>
-            </div>
-            <div
-              cdkDropList
-              [id]="'emp-' + id"
-              [cdkDropListConnectedTo]="getDropConnections('emp-' + id)"
-              [cdkDropListData]="getListaEmpleado(id)"
-              class="kanban-dropzone"
-              (cdkDropListDropped)="dropEquipo($event, id)">
-              @for (eqId of getListaEmpleado(id); track eqId) {
-                <div class="kanban-card" cdkDrag>
-                  <div class="fw-semibold">{{ getEquipoLabel(eqId) }}</div>
-                  <div class="muted small">{{ getTipoEquipoNombre(eqId) }}</div>
-                </div>
-              }
-              @if (!getListaEmpleado(id).length) {
-                <p class="muted">Arrastra equipos aquí para asignarlos.</p>
-              }
-            </div>
-          </div>
-          }
-        </div>
-      </div>
-
-      @if (faltanAsignaciones()) {
-        <div class="alert alert-warning mt-2">
-          Asigna al menos un equipo a cada empleado; los demás pueden quedar en reserva.
-        </div>
-      }
-    }
-
   </div>
 
   <div class="modal-footer-actions">
-    <button mat-button type="button" (click)="cerrarModalAsignar()">Cancelar</button>
-    @if (stepIndex > 0) {
-      <button mat-button type="button" (click)="retrocederPaso()">Atrás</button>
-    }
-    @if (stepIndex < 2) {
-      <button mat-flat-button color="primary" type="button" (click)="avanzarPaso()" [disabled]="(stepIndex === 0 && !seleccionados.length) || (stepIndex === 1 && !selectedEquipos.length)">
-        Siguiente
-      </button>
-    }
-    @if (stepIndex === 2) {
-      <button mat-flat-button color="primary" type="button" (click)="guardarAsignacionesEnModal()" [disabled]="faltanAsignaciones()">
-        Guardar
-      </button>
-    }
+    <button mat-button type="button" (click)="cerrarModalAsignar()">Cerrar</button>
+    <button mat-flat-button color="primary" type="button" disabled>
+      Guardar (pendiente de API)
+    </button>
   </div>
 </app-modal-base>
 
 <ng-template #loadingState>
   <mat-spinner diameter="40"></mat-spinner>
   <p>Cargando proyecto…</p>
-</ng-template>
-
-<ng-template #devolucionBloqueada>
-  <div>
-    <p class="muted">La devolución solo está disponible cuando el proyecto está en Ejecución.</p>
-  </div>
 </ng-template>

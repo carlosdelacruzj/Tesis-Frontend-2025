@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { MetodoPago } from '../model/metodopago.model';
+import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
 export interface PedidoLite {
   IdPed: number;
@@ -29,6 +30,7 @@ export class RegistrarPagoService {
   private readonly API = environment.baseUrl;
 
   private readonly http = inject(HttpClient);
+  private readonly catalogos = inject(CatalogosService);
 
   // === Tabs por estado de pago ===
   getPedidosPendientes(): Observable<PedidoLite[]> {
@@ -64,7 +66,7 @@ export class RegistrarPagoService {
 
   // === Métodos de pago ===
   getMetodosPago(): Observable<MetodoPago[]> {
-    return this.http.get<MetodoPago[]>(`${this.API}/pagos/metodos`);
+    return this.catalogos.getMetodosPago();
   }
 
   // === Registrar pago (multipart) ===
@@ -94,11 +96,7 @@ export class RegistrarPagoService {
   }
 
   crearProyecto(payload: {
-    proyectoNombre: string;
     pedidoId: number;
-    fechaInicioEdicion?: string;
-    fechaFinEdicion?: string;
-    estadoId?: number;
     responsableId?: number;
     notas?: string;
     enlace?: string;

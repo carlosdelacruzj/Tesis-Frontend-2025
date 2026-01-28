@@ -280,12 +280,9 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
       });
 
       if (esPrimerPago) {
-        const proyectoNombre = `Pedido ${this.modal.pedido?.codigo ?? id} - ${this.modal.pedido?.cliente ?? ''}`.trim();
         try {
           await this.pagoService.crearProyecto({
-            proyectoNombre,
-            pedidoId: id,
-            estadoId: 1
+            pedidoId: id
           });
         } catch (error) {
           console.error('[proyecto] crear', error);

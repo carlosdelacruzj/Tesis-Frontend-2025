@@ -4,10 +4,12 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { Cliente, ClienteUpdate, EstadoCliente } from '../model/cliente.model';
+import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
 @Injectable({ providedIn: 'root' })
 export class ClienteService {
   private readonly http = inject(HttpClient);
+  private readonly catalogos = inject(CatalogosService);
 
   // Mantengo tu objeto seleccionado tal cual
   selectCliente: Cliente = {
@@ -56,7 +58,7 @@ export class ClienteService {
 
   // GET /clientes/estados
   public getEstadosCliente(): Observable<EstadoCliente[]> {
-    return this.http.get<EstadoCliente[]>(`${this.apiBase}/estados`);
+    return this.catalogos.getEstadosCliente();
   }
 
   // PATCH /clientes/{id}/estado

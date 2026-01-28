@@ -2,9 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Proyecto, ProyectoDetalle, ProyectoPayload, ProyectoRecurso } from '../model/proyecto.model';
+import { Proyecto, ProyectoDetalleResponse, ProyectoPayload } from '../model/proyecto.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { ProyectoDisponibilidad } from '../model/proyecto-disponibilidad.model';
+import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
 export interface ProyectoEstado {
   estadoId: number;
@@ -16,13 +17,14 @@ export class ProyectoService {
   private readonly API = `${environment.baseUrl}/proyecto`;
 
   private readonly http = inject(HttpClient);
+  private readonly catalogos = inject(CatalogosService);
 
   getProyectos(): Observable<Proyecto[]> {
     return this.http.get<Proyecto[]>(this.API);
   }
 
-  getProyecto(id: number): Observable<ProyectoDetalle> {
-    return this.http.get<ProyectoDetalle>(`${this.API}/${id}`);
+  getProyecto(id: number): Observable<ProyectoDetalleResponse> {
+    return this.http.get<ProyectoDetalleResponse>(`${this.API}/${id}`);
   }
 
   getPedidoRequerimientos(pedidoId: number): Observable<PedidoRequerimientos> {
@@ -45,7 +47,7 @@ export class ProyectoService {
   }
 
   getEstados(): Observable<ProyectoEstado[]> {
-    return this.http.get<ProyectoEstado[]>(`${this.API}/estados`);
+    return this.catalogos.getEstadosProyecto();
   }
 
   getDisponibilidad(params: { fechaInicio: string; fechaFin: string; proyectoId?: number | null }): Observable<ProyectoDisponibilidad> {
@@ -58,29 +60,5 @@ export class ProyectoService {
     }
 
     return this.http.get<ProyectoDisponibilidad>(`${this.API}/disponibilidad`, { params: queryParams });
-  }
-
-  guardarRecursos(payload: {
-    proyectoId: number;
-    asignaciones: {
-      empleadoId: number | null;
-      equipoId: number;
-      fechaInicio: string;
-      fechaFin: string;
-      notas: string;
-    }[];
-  }): Observable<void> {
-    return this.http.post<void>(`${this.API}/recursos`, payload);
-  }
-
-  getAsignaciones(proyectoId: number): Observable<ProyectoRecurso[]> {
-    return this.http.get<ProyectoRecurso[]>(`${this.API}/${proyectoId}/asignaciones`);
-  }
-
-  registrarDevoluciones(
-    proyectoId: number,
-    payload: { devoluciones: { equipoId: number; estadoDevolucion: string; notas: string }[] }
-  ): Observable<void> {
-    return this.http.post<void>(`${this.API}/${proyectoId}/devolucion`, payload);
   }
 }

@@ -1,18 +1,21 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { Evento, EventoServicioDetalle, EventoServicioCategoria, Servicio, CrearEventoServicioRequest, ActualizarEventoServicioRequest, EstadoEventoServicio, ActualizarEstadoEventoServicioResponse } from '../model/evento-servicio.model';
 import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
+import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
 @Injectable({ providedIn: 'root' })
 export class EventoServicioDataService {
   private readonly baseUrl = environment.baseUrl;
 
   private readonly http = inject(HttpClient);
+  private readonly catalogos = inject(CatalogosService);
 
   getEventos(): Observable<Evento[]> {
-    return this.http.get<Evento[]>(`${this.baseUrl}/eventos`);
+    return this.catalogos.getEventos();
   }
 
   getEventoPorId(id: number): Observable<Evento> {
@@ -24,7 +27,9 @@ export class EventoServicioDataService {
     if (iconUrl !== undefined) {
       body['iconUrl'] = iconUrl;
     }
-    return this.http.post<Evento>(`${this.baseUrl}/eventos`, body);
+    return this.http.post<Evento>(`${this.baseUrl}/eventos`, body).pipe(
+      tap(() => this.catalogos.invalidate('eventos'))
+    );
   }
 
   actualizarEvento(id: number, nombre?: string, iconUrl?: string | null): Observable<Evento> {
@@ -35,11 +40,13 @@ export class EventoServicioDataService {
     if (iconUrl !== undefined) {
       body['iconUrl'] = iconUrl;
     }
-    return this.http.put<Evento>(`${this.baseUrl}/eventos/${id}`, body);
+    return this.http.put<Evento>(`${this.baseUrl}/eventos/${id}`, body).pipe(
+      tap(() => this.catalogos.invalidate('eventos'))
+    );
   }
 
   getServicios(): Observable<Servicio[]> {
-    return this.http.get<Servicio[]>(`${this.baseUrl}/servicios`);
+    return this.catalogos.getServicios();
   }
 
   getServicioPorId(id: number): Observable<Servicio> {
@@ -55,7 +62,7 @@ export class EventoServicioDataService {
   }
 
   getEstadosEventoServicio(): Observable<EstadoEventoServicio[]> {
-    return this.http.get<EstadoEventoServicio[]>(`${this.baseUrl}/eventos_servicios/estados`);
+    return this.catalogos.getEstadosEventoServicio();
   }
 
   getEventoServiciosFiltrado(eventoId?: number, servicioId?: number): Observable<EventoServicioDetalle[]> {
@@ -87,18 +94,22 @@ export class EventoServicioDataService {
   }
 
   getCategoriasEventoServicio(): Observable<EventoServicioCategoria[]> {
-    return this.http.get<EventoServicioCategoria[]>(`${this.baseUrl}/eventos_servicios/categorias`);
+    return this.catalogos.getCategoriasEventoServicio();
   }
 
   getTiposEquipo(): Observable<TipoEquipo[]> {
-    return this.http.get<TipoEquipo[]>(`${this.baseUrl}/inventario/tipos-equipo`);
+    return this.catalogos.getTiposEquipo();
   }
 
   crearServicio(nombre: string): Observable<Servicio> {
-    return this.http.post<Servicio>(`${this.baseUrl}/servicios`, { nombre });
+    return this.http.post<Servicio>(`${this.baseUrl}/servicios`, { nombre }).pipe(
+      tap(() => this.catalogos.invalidate('servicios'))
+    );
   }
 
   actualizarServicio(id: number, nombre: string): Observable<Servicio> {
-    return this.http.put<Servicio>(`${this.baseUrl}/servicios/${id}`, { nombre });
+    return this.http.put<Servicio>(`${this.baseUrl}/servicios/${id}`, { nombre }).pipe(
+      tap(() => this.catalogos.invalidate('servicios'))
+    );
   }
 }

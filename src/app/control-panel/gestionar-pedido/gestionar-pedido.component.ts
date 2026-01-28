@@ -348,16 +348,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       });
 
       if (esPrimerPago) {
-        const pedidoRecord = this.asRecord(this.modalPago.pedido);
-        const proyectoNombre =
-          this.toOptionalString(pedidoRecord['Nombre'] ?? pedidoRecord['NombrePedido']) ??
-          this.modalPago.pedido?.Cliente ??
-          `Pedido ${this.modalPago.pedido?.ID ?? ''}`;
         try {
           await this.registrarPagoService.crearProyecto({
-            proyectoNombre,
-            pedidoId: id,
-            estadoId: 1
+            pedidoId: id
           });
         } catch (err) {
           console.error('[proyecto] crear', err);
