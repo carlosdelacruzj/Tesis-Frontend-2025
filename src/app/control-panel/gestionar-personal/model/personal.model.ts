@@ -23,3 +23,15 @@ export type EmpleadoUpdateDto = Pick<
   Empleado,
   'idEmpleado' | 'correo' | 'celular' | 'direccion' | 'idEstado'
 >;
+
+export interface EmpleadoOperativo {
+  empleadoId: number;
+  usuarioId: number;
+  nombre: string;
+  apellido: string;
+  cargoId: number;
+  cargo: string;
+  estadoId: number;
+  estado: string;
+  operativoCampo: boolean;
+}

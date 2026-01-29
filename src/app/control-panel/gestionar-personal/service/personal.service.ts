@@ -3,26 +3,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Empleado, EmpleadoUpdateDto } from '../model/personal.model';
+import { Empleado, EmpleadoOperativo, EmpleadoUpdateDto } from '../model/personal.model';
 import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
-// ❗ Opcionales: déjalos si usas esos endpoints; si no, elimínalos.
 export interface Cargo {
   idCargo: number;
   cargoNombre: string;
   esOperativoCampo: 0 | 1;
-}
-
-export interface EmpleadoOperativo {
-  empleadoId: number;
-  usuarioId: number;
-  nombre: string;
-  apellido: string;
-  cargoId: number;
-  cargo: string;
-  estadoId: number;
-  estado: string;
-  operativoCampo: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

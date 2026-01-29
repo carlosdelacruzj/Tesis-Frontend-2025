@@ -63,3 +63,7 @@ span.mat-radio-outer-circle{
   gap: 24px;
   padding-bottom: 32px;
 }
+/* Ensure Angular Material overlays appear above custom modals */
+.cdk-overlay-container {
+  z-index: 10000;
+}

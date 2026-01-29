@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Proyecto, ProyectoDetalleResponse, ProyectoPayload } from '../model/proyecto.model';
+import { Proyecto, ProyectoAsignacionesDisponiblesResponse, ProyectoAsignacionesPayload, ProyectoDetalleResponse, ProyectoPayload } from '../model/proyecto.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { ProyectoDisponibilidad } from '../model/proyecto-disponibilidad.model';
 import { CatalogosService } from 'src/app/shared/services/catalogos.service';
@@ -44,6 +44,40 @@ export class ProyectoService {
     payload: Partial<ProyectoPayload>
   ): Observable<{ status: string; proyectoId: number }> {
     return this.http.patch<{ status: string; proyectoId: number }>(`${this.API}/${id}`, payload);
+  }
+
+  upsertAsignaciones(payload: ProyectoAsignacionesPayload): Observable<{ status: string }> {
+    return this.http.post<{ status: string }>(`${this.API}/asignaciones`, payload);
+  }
+
+  getAsignacionesDisponibles(params: {
+    fecha?: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+    proyectoId?: number;
+    cargoId?: number;
+    tipoEquipoId?: number;
+  }): Observable<ProyectoAsignacionesDisponiblesResponse> {
+    let queryParams = new HttpParams();
+    if (params.fecha) {
+      queryParams = queryParams.set('fecha', params.fecha);
+    }
+    if (params.fechaInicio) {
+      queryParams = queryParams.set('fechaInicio', params.fechaInicio);
+    }
+    if (params.fechaFin) {
+      queryParams = queryParams.set('fechaFin', params.fechaFin);
+    }
+    if (params.proyectoId !== undefined && params.proyectoId !== null) {
+      queryParams = queryParams.set('proyectoId', String(params.proyectoId));
+    }
+    if (params.cargoId !== undefined && params.cargoId !== null) {
+      queryParams = queryParams.set('cargoId', String(params.cargoId));
+    }
+    if (params.tipoEquipoId !== undefined && params.tipoEquipoId !== null) {
+      queryParams = queryParams.set('tipoEquipoId', String(params.tipoEquipoId));
+    }
+    return this.http.get<ProyectoAsignacionesDisponiblesResponse>(`${this.API}/asignaciones/disponibles`, { params: queryParams });
   }
 
   getEstados(): Observable<ProyectoEstado[]> {

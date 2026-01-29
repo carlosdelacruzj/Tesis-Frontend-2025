@@ -10,6 +10,7 @@ import { LandingHeaderComponent } from './components/landing-header/landing-head
 import { LandingClientCotizacionesComponent } from './portal/landing-client-cotizaciones.component';
 import { LandingClientPedidosComponent } from './portal/landing-client-pedidos.component';
 import { UsdPipe } from '../pipes/usd.pipe';
+import { EstadoBadgeComponent } from '../components/estado-badge/estado-badge.component';
 
 @NgModule({
   declarations: [
@@ -26,6 +27,7 @@ import { UsdPipe } from '../pipes/usd.pipe';
     RouterModule,
     AngularMaterialModule,
     UsdPipe,
+    EstadoBadgeComponent,
     LandingRoutingModule
   ]
 })

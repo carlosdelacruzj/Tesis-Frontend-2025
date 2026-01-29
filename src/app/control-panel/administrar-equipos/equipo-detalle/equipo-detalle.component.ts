@@ -207,11 +207,15 @@ export class EquipoDetalleComponent implements OnInit, OnDestroy {
     this.error = false;
     this.equipos = [];
 
+    const tipoParam = this.filtros.tipo ? Number(this.filtros.tipo) : undefined;
+    const marcaParam = this.filtros.marca ? Number(this.filtros.marca) : undefined;
+    const modeloParam = this.filtros.modelo ? Number(this.filtros.modelo) : undefined;
+
     this.administrarEquiposService
       .getEquipos({
-        tipo: this.filtros.tipo,
-        marca: this.filtros.marca,
-        modelo: this.filtros.modelo
+        tipo: Number.isFinite(tipoParam) ? tipoParam : undefined,
+        marca: Number.isFinite(marcaParam) ? marcaParam : undefined,
+        modelo: Number.isFinite(modeloParam) ? modeloParam : undefined
       })
       .subscribe({
         next: (equipos) => {

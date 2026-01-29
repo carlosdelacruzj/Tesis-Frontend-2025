@@ -25,19 +25,19 @@ export class AdministrarEquiposService {
     return this.http.get<EquipoResumen[]>(this.resumenUrl);
   }
 
-  getEquipos(params?: { tipo?: string; marca?: string; modelo?: string }): Observable<EquipoInventario[]> {
+  getEquipos(params?: { tipo?: number; marca?: number; modelo?: number }): Observable<EquipoInventario[]> {
     let queryParams = new HttpParams();
 
-    if (params?.tipo) {
-      queryParams = queryParams.set('tipo', params.tipo);
+    if (params?.tipo !== undefined && params?.tipo !== null) {
+      queryParams = queryParams.set('tipo', String(params.tipo));
     }
 
-    if (params?.marca) {
-      queryParams = queryParams.set('marca', params.marca);
+    if (params?.marca !== undefined && params?.marca !== null) {
+      queryParams = queryParams.set('marca', String(params.marca));
     }
 
-    if (params?.modelo) {
-      queryParams = queryParams.set('modelo', params.modelo);
+    if (params?.modelo !== undefined && params?.modelo !== null) {
+      queryParams = queryParams.set('modelo', String(params.modelo));
     }
 
     return this.http.get<EquipoInventario[]>(this.inventarioUrl, { params: queryParams });

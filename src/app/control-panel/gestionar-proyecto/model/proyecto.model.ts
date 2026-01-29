@@ -97,7 +97,6 @@ export interface EmpleadoDia {
   fecha: string;
   empleadoId: number;
   empleadoNombre: string;
-  estado: string;
   notas: string;
   rol?: string | null;
 }
@@ -111,7 +110,8 @@ export interface EquipoDia {
   modelo: string;
   tipoEquipo: string;
   estadoEquipoId: number;
-  estado: string;
+  responsableId: number | null;
+  responsableNombre: string | null;
   notas: string;
   devuelto: number;
   fechaDevolucion: string;
@@ -144,6 +144,50 @@ export interface ProyectoDetalleResponse {
   equiposDia: EquipoDia[];
   requerimientosPersonalDia: RequerimientoPersonalDia[];
   requerimientosEquipoDia: RequerimientoEquipoDia[];
+}
+
+export interface ProyectoAsignacionEmpleadoPayload {
+  empleadoId: number;
+  notas?: string | null;
+}
+
+export interface ProyectoAsignacionEquipoPayload {
+  equipoId: number;
+  responsableId?: number | null;
+}
+
+export interface ProyectoAsignacionDiaPayload {
+  diaId: number;
+  empleados: ProyectoAsignacionEmpleadoPayload[];
+  equipos: ProyectoAsignacionEquipoPayload[];
+}
+
+export interface ProyectoAsignacionesPayload {
+  proyectoId: number;
+  dias: ProyectoAsignacionDiaPayload[];
+}
+
+export interface ProyectoAsignacionesDisponiblesEmpleado {
+  empleadoId: number;
+  usuarioId: number;
+  nombre: string;
+  apellido: string;
+  cargoId: number;
+  cargo: string;
+}
+
+export interface ProyectoAsignacionesDisponiblesEquipo {
+  equipoId: number;
+  serie: string;
+  idModelo: number;
+  nombreModelo: string;
+  idTipoEquipo: number;
+  nombreTipoEquipo: string;
+}
+
+export interface ProyectoAsignacionesDisponiblesResponse {
+  empleados: ProyectoAsignacionesDisponiblesEmpleado[];
+  equipos: ProyectoAsignacionesDisponiblesEquipo[];
 }
 
 export type ProyectoPayload = {

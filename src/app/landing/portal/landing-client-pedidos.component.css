@@ -95,15 +95,8 @@
 }
 
 .client-data-card__badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: rgba(35, 99, 235, 0.12);
-  color: #1d4ed8;
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  font-weight: 600;
-  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
 }
 
 .client-data-card__details {

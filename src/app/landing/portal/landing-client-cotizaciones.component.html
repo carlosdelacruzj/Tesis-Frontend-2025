@@ -28,7 +28,9 @@
       @for (cotizacion of cotizaciones; track cotizacion.idCotizacion) {
         <article class="client-data-card">
       <header class="client-data-card__header">
-        <span class="client-data-card__badge">{{ cotizacion.estado }}</span>
+        <span class="client-data-card__badge">
+          <app-estado-badge [estado]="cotizacion.estado || 'Sin estado'"></app-estado-badge>
+        </span>
         <h3>{{ cotizacion.tipoEvento }}</h3>
         <p>{{ cotizacion.lugar }}</p>
       </header>
