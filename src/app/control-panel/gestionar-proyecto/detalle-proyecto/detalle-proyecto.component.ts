@@ -344,6 +344,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return `${found.nombreTipoEquipo} · ${found.nombreModelo} (${found.serie})`;
   }
 
+  getDisponibleEquipoLabelSinTipo(equipoId: number): string {
+    const found = this.disponiblesEquipos.find(item => item.equipoId === equipoId);
+    if (!found) return `Equipo #${equipoId}`;
+    return `${found.nombreModelo} (${found.serie})`;
+  }
+
   isAsignacionDiaDirty(diaId: number | null): boolean {
     if (!diaId) return false;
     const actual = {
@@ -437,6 +443,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     });
   }
 
+  private getEquipoTipo(equipoId: number): string {
+    const found = this.disponiblesEquipos.find(item => item.equipoId === equipoId);
+    const tipo = (found?.nombreTipoEquipo ?? '').toString().trim();
+    return tipo || 'Sin tipo';
+  }
+
   isAsignacionDiaDirtyFor(diaId: number): boolean {
     if (this.asignacionDiaId === diaId) {
       return this.isAsignacionDiaDirty(diaId);
@@ -474,6 +486,20 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return this.asignacionEquipos.filter(item => !item.responsableId);
   }
 
+  getEquiposReservaPorTipo(): { tipo: string; items: ProyectoAsignacionEquipoPayload[] }[] {
+    const mapa: Record<string, ProyectoAsignacionEquipoPayload[]> = {};
+    this.getEquiposReserva().forEach(item => {
+      const tipo = this.getEquipoTipo(item.equipoId);
+      if (!mapa[tipo]) {
+        mapa[tipo] = [];
+      }
+      mapa[tipo].push(item);
+    });
+    return Object.keys(mapa)
+      .sort((a, b) => a.localeCompare(b))
+      .map(tipo => ({ tipo, items: mapa[tipo] }));
+  }
+
   getEquiposPorResponsable(empleadoId: number): ProyectoAsignacionEquipoPayload[] {
     return this.asignacionEquipos.filter(item => item.responsableId === empleadoId);
   }
@@ -481,6 +507,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   getEquiposCountResponsable(empleadoId: number): number {
     return this.getEquiposPorResponsable(empleadoId).length;
   }
+
 
   get dropListIds(): string[] {
     const ids = this.asignacionEmpleados.map(emp => `emp-${emp.empleadoId}`);

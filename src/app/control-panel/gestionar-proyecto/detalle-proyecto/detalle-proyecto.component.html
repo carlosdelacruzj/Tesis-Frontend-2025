@@ -618,32 +618,12 @@
             } @else if (!asignacionEquipos.length) {
               <p class="muted">Primero selecciona equipos disponibles.</p>
             } @else {
+              <div class="asignaciones-meta">
+                <span class="meta-chip">Total: {{ asignacionEquipos.length }}</span>
+                <span class="meta-chip">Asignados: {{ asignacionEquipos.length - getEquiposReserva().length }}</span>
+                <span class="meta-chip">Reserva: {{ getEquiposReserva().length }}</span>
+              </div>
               <div class="drag-grid" cdkDropListGroup>
-                <div class="drag-col">
-                  <h6>Personal</h6>
-                  @for (emp of asignacionEmpleados; track emp.empleadoId) {
-                    <div class="drag-panel">
-                      <div class="drag-panel__title">
-                        <span>{{ getDisponibleEmpleadoLabel(emp.empleadoId) }}</span>
-                        <span class="drag-panel__count">{{ getEquiposCountResponsable(emp.empleadoId) }}</span>
-                      </div>
-                      <div
-                        class="drag-list"
-                        [class.drop-highlight]="ultimoDropDestino === emp.empleadoId"
-                        [id]="'emp-' + emp.empleadoId"
-                        [cdkDropListConnectedTo]="dropListIds"
-                        cdkDropList
-                        (cdkDropListDropped)="onEquipoDrop($event, emp.empleadoId)">
-                        @for (item of getEquiposPorResponsable(emp.empleadoId); track item.equipoId) {
-                          <div class="drag-item" cdkDrag [cdkDragData]="item">
-                            <span>{{ getDisponibleEquipoLabel(item.equipoId) }}</span>
-                            <mat-icon class="drag-handle">drag_indicator</mat-icon>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
                 <div class="drag-col">
                   <h6>Reserva</h6>
                   <div
@@ -653,13 +633,48 @@
                     id="reserva"
                     [cdkDropListConnectedTo]="dropListIds"
                     (cdkDropListDropped)="onEquipoDrop($event, null)">
-                    @for (item of getEquiposReserva(); track item.equipoId) {
-                      <div class="drag-item" cdkDrag [cdkDragData]="item">
-                        <span>{{ getDisponibleEquipoLabel(item.equipoId) }}</span>
-                        <mat-icon class="drag-handle">drag_indicator</mat-icon>
-                      </div>
+                    @for (grupo of getEquiposReservaPorTipo(); track grupo.tipo) {
+                      <details class="reserva-grupo" open>
+                        <summary class="reserva-grupo__header">
+                          <span>{{ grupo.tipo }}</span>
+                          <span class="meta-chip">{{ grupo.items.length }}</span>
+                        </summary>
+                        <div class="reserva-grupo__items">
+                          @for (item of grupo.items; track item.equipoId) {
+                            <div class="drag-item" cdkDrag [cdkDragData]="item" [title]="getDisponibleEquipoLabel(item.equipoId)">
+                              <span>{{ getDisponibleEquipoLabelSinTipo(item.equipoId) }}</span>
+                              <mat-icon class="drag-handle">drag_indicator</mat-icon>
+                            </div>
+                          }
+                        </div>
+                      </details>
                     }
                   </div>
+                </div>
+                <div class="drag-col">
+                  <h6>Personal</h6>
+                  @for (emp of asignacionEmpleados; track emp.empleadoId) {
+                    <div class="drag-panel">
+                      <div class="drag-panel__title">
+                        <span>{{ getDisponibleEmpleadoLabel(emp.empleadoId) }}</span>
+                        <span class="drag-panel__count">{{ getEquiposCountResponsable(emp.empleadoId) }}</span>
+                      </div>
+                      <div
+                        class="drag-list drag-list--scroll"
+                        [class.drop-highlight]="ultimoDropDestino === emp.empleadoId"
+                        [id]="'emp-' + emp.empleadoId"
+                        [cdkDropListConnectedTo]="dropListIds"
+                        cdkDropList
+                        (cdkDropListDropped)="onEquipoDrop($event, emp.empleadoId)">
+                        @for (item of getEquiposPorResponsable(emp.empleadoId); track item.equipoId) {
+                          <div class="drag-item" cdkDrag [cdkDragData]="item" [title]="getDisponibleEquipoLabel(item.equipoId)">
+                            <span>{{ getDisponibleEquipoLabelSinTipo(item.equipoId) }}</span>
+                            <mat-icon class="drag-handle">drag_indicator</mat-icon>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
                 </div>
               </div>
             }
