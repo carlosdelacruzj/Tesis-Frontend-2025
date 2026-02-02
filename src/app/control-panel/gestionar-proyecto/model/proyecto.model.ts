@@ -135,6 +135,20 @@ export interface RequerimientoEquipoDia {
   cantidad: string;
 }
 
+export interface IncidenciaDia {
+  incidenciaId: number;
+  diaId: number;
+  fecha: string;
+  tipo: string;
+  descripcion: string;
+  empleadoId: number | null;
+  empleadoReemplazoId: number | null;
+  equipoId: number | null;
+  equipoReemplazoId: number | null;
+  usuarioId: number | null;
+  createdAt: string;
+}
+
 export interface ProyectoDetalleResponse {
   proyecto: ProyectoDetalle;
   dias: ProyectoDia[];
@@ -144,6 +158,7 @@ export interface ProyectoDetalleResponse {
   equiposDia: EquipoDia[];
   requerimientosPersonalDia: RequerimientoPersonalDia[];
   requerimientosEquipoDia: RequerimientoEquipoDia[];
+  incidenciasDia: IncidenciaDia[];
 }
 
 export interface ProyectoAsignacionEmpleadoPayload {
@@ -188,6 +203,36 @@ export interface ProyectoAsignacionesDisponiblesEquipo {
 export interface ProyectoAsignacionesDisponiblesResponse {
   empleados: ProyectoAsignacionesDisponiblesEmpleado[];
   equipos: ProyectoAsignacionesDisponiblesEquipo[];
+}
+
+export interface ProyectoEstadoItem {
+  id: number;
+  nombre: string;
+}
+
+export interface ProyectoEstadoResponse {
+  ok: boolean;
+  data: ProyectoEstadoItem[];
+}
+
+export interface ProyectoDiaEstadoItem {
+  id: number;
+  nombre: string;
+}
+
+export interface ProyectoDiaEstadoResponse {
+  ok: boolean;
+  data: ProyectoDiaEstadoItem[];
+}
+
+export interface ProyectoIncidenciaPayload {
+  tipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'OTROS';
+  descripcion: string;
+  empleadoId?: number | null;
+  empleadoReemplazoId?: number | null;
+  equipoId?: number | null;
+  equipoReemplazoId?: number | null;
+  usuarioId?: number | null;
 }
 
 export type ProyectoPayload = {

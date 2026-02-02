@@ -1,23 +1,27 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Proyecto, ProyectoAsignacionesDisponiblesResponse, ProyectoAsignacionesPayload, ProyectoDetalleResponse, ProyectoPayload } from '../model/proyecto.model';
+import {
+  Proyecto,
+  ProyectoAsignacionesDisponiblesResponse,
+  ProyectoAsignacionesPayload,
+  ProyectoDetalleResponse,
+  ProyectoDiaEstadoResponse,
+  ProyectoEstadoResponse,
+  ProyectoIncidenciaPayload,
+  ProyectoPayload
+} from '../model/proyecto.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { ProyectoDisponibilidad } from '../model/proyecto-disponibilidad.model';
-import { CatalogosService } from 'src/app/shared/services/catalogos.service';
-
-export interface ProyectoEstado {
-  estadoId: number;
-  estadoNombre: string;
-}
 
 @Injectable({ providedIn: 'root' })
 export class ProyectoService {
   private readonly API = `${environment.baseUrl}/proyecto`;
 
   private readonly http = inject(HttpClient);
-  private readonly catalogos = inject(CatalogosService);
+  private estadosProyecto$: Observable<ProyectoEstadoResponse['data']> | null = null;
+  private estadosDias$: Observable<ProyectoDiaEstadoResponse['data']> | null = null;
 
   getProyectos(): Observable<Proyecto[]> {
     return this.http.get<Proyecto[]>(this.API);
@@ -50,6 +54,10 @@ export class ProyectoService {
     return this.http.post<{ status: string }>(`${this.API}/asignaciones`, payload);
   }
 
+  crearIncidencia(diaId: number, payload: ProyectoIncidenciaPayload): Observable<{ status: string }> {
+    return this.http.post<{ status: string }>(`${this.API}/dias/${diaId}/incidencias`, payload);
+  }
+
   getAsignacionesDisponibles(params: {
     fecha?: string;
     fechaInicio?: string;
@@ -80,8 +88,30 @@ export class ProyectoService {
     return this.http.get<ProyectoAsignacionesDisponiblesResponse>(`${this.API}/asignaciones/disponibles`, { params: queryParams });
   }
 
-  getEstados(): Observable<ProyectoEstado[]> {
-    return this.catalogos.getEstadosProyecto();
+  getEstadosProyecto(): Observable<ProyectoEstadoResponse['data']> {
+    if (!this.estadosProyecto$) {
+      this.estadosProyecto$ = this.http
+        .get<ProyectoEstadoResponse>(`${this.API}/estados`)
+        .pipe(
+          map(response => Array.isArray(response?.data) ? response.data : []),
+          catchError(() => of([])),
+          shareReplay(1)
+        );
+    }
+    return this.estadosProyecto$;
+  }
+
+  getEstadosDias(): Observable<ProyectoDiaEstadoResponse['data']> {
+    if (!this.estadosDias$) {
+      this.estadosDias$ = this.http
+        .get<ProyectoDiaEstadoResponse>(`${this.API}/dias/estados`)
+        .pipe(
+          map(response => Array.isArray(response?.data) ? response.data : []),
+          catchError(() => of([])),
+          shareReplay(1)
+        );
+    }
+    return this.estadosDias$;
   }
 
   getDisponibilidad(params: { fechaInicio: string; fechaFin: string; proyectoId?: number | null }): Observable<ProyectoDisponibilidad> {

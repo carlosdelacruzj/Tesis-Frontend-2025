@@ -1,13 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, forkJoin, firstValueFrom } from 'rxjs';
-import { catchError, shareReplay, tap } from 'rxjs/operators';
+import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { Evento, EventoServicioCategoria, EstadoEventoServicio, Servicio } from 'src/app/control-panel/administrar-paquete-servicio/model/evento-servicio.model';
 import { TipoEquipo } from 'src/app/control-panel/administrar-equipos/models/tipo-equipo.model';
 import { Cargo } from 'src/app/control-panel/gestionar-personal/service/personal.service';
 import { EstadoCliente } from 'src/app/control-panel/gestionar-cliente/model/cliente.model';
-import { ProyectoEstado } from 'src/app/control-panel/gestionar-proyecto/service/proyecto.service';
+import { ProyectoDiaEstadoItem, ProyectoDiaEstadoResponse, ProyectoEstadoItem, ProyectoEstadoResponse } from 'src/app/control-panel/gestionar-proyecto/model/proyecto.model';
 import { MetodoPago } from 'src/app/control-panel/registrar-pago/model/metodopago.model';
 
 export type CatalogoKey =
@@ -15,6 +15,7 @@ export type CatalogoKey =
   | 'servicios'
   | 'cargos'
   | 'estadosProyecto'
+  | 'estadosDiasProyecto'
   | 'estadosCliente'
   | 'metodosPago'
   | 'estadosEventoServicio'
@@ -58,6 +59,7 @@ export class CatalogosService {
         this.getEventos(),
         this.getServicios(),
         this.getEstadosProyecto(),
+        this.getEstadosDiasProyecto(),
         this.getEstadosCliente(),
         this.getCargos(),
         this.getMetodosPago(),
@@ -89,8 +91,50 @@ export class CatalogosService {
     return this.getOrLoad<Cargo>('cargos', `${this.baseUrl}/empleados/cargos`);
   }
 
-  getEstadosProyecto(): Observable<ProyectoEstado[]> {
-    return this.getOrLoad<ProyectoEstado>('estadosProyecto', `${this.baseUrl}/proyecto/estados`);
+  getEstadosProyecto(): Observable<ProyectoEstadoItem[]> {
+    const cached = this.cache.get('estadosProyecto') as Observable<ProyectoEstadoItem[]> | undefined;
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = this.http.get<ProyectoEstadoResponse>(`${this.baseUrl}/proyecto/estados`).pipe(
+      map((response) => (Array.isArray(response?.data) ? response.data : [])),
+      tap((data) => {
+        this.values.set('estadosProyecto', data);
+      }),
+      catchError((err) => {
+        console.error('[catalogos] estadosProyecto', err);
+        this.values.set('estadosProyecto', []);
+        return of([] as ProyectoEstadoItem[]);
+      }),
+      shareReplay(1)
+    );
+
+    this.cache.set('estadosProyecto', request$ as Observable<unknown[]>);
+    return request$;
+  }
+
+  getEstadosDiasProyecto(): Observable<ProyectoDiaEstadoItem[]> {
+    const cached = this.cache.get('estadosDiasProyecto') as Observable<ProyectoDiaEstadoItem[]> | undefined;
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = this.http.get<ProyectoDiaEstadoResponse>(`${this.baseUrl}/proyecto/dias/estados`).pipe(
+      map((response) => (Array.isArray(response?.data) ? response.data : [])),
+      tap((data) => {
+        this.values.set('estadosDiasProyecto', data);
+      }),
+      catchError((err) => {
+        console.error('[catalogos] estadosDiasProyecto', err);
+        this.values.set('estadosDiasProyecto', []);
+        return of([] as ProyectoDiaEstadoItem[]);
+      }),
+      shareReplay(1)
+    );
+
+    this.cache.set('estadosDiasProyecto', request$ as Observable<unknown[]>);
+    return request$;
   }
 
   getEstadosCliente(): Observable<EstadoCliente[]> {

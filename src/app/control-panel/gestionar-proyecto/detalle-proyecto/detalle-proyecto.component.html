@@ -35,10 +35,6 @@
 
         <div class="stat-grid">
           <div class="stat-card">
-            <p class="stat-label">Responsable</p>
-            <p class="stat-value">{{ proyecto.responsableId || '—' }}</p>
-          </div>
-          <div class="stat-card">
             <p class="stat-label">Inicio edición</p>
             <p class="stat-value">{{ formatFechaDisplay(proyecto.fechaInicioEdicion) }}</p>
           </div>
@@ -87,39 +83,6 @@
             <p class="note-text">{{ proyecto.notas }}</p>
           </div>
         }
-      </section>
-
-      <section class="card section sticky-actions">
-        <header class="card-header">
-          <div>
-            <p class="eyebrow">Edición rápida</p>
-            <h3>Actualizar proyecto</h3>
-          </div>
-          <button mat-flat-button color="primary" type="button" (click)="guardarProyecto()" [disabled]="guardandoProyecto">
-            Guardar cambios
-          </button>
-        </header>
-        <form class="edit-form" [formGroup]="proyectoForm" (ngSubmit)="guardarProyecto()">
-          <div class="edit-form-grid">
-            <label class="form-field">
-              <span class="label">Responsable (ID)</span>
-              <input class="form-control" type="number" formControlName="responsableId" placeholder="ID o deja vacío">
-            </label>
-            <label class="form-field">
-              <span class="label">Enlace</span>
-              <input class="form-control" type="url" formControlName="enlace" placeholder="https://">
-            </label>
-          </div>
-          <label class="form-field">
-            <span class="label">Notas</span>
-            <textarea class="form-control" rows="2" formControlName="notas" placeholder="Observaciones"></textarea>
-          </label>
-          <div class="acciones">
-            <button mat-flat-button color="primary" type="submit" [disabled]="guardandoProyecto">
-              Guardar cambios
-            </button>
-          </div>
-        </form>
       </section>
 
       @if (detalle && detalle.dias?.length) {
@@ -246,62 +209,79 @@
             </div>
           </summary>
 
-          <div class="asignaciones-grid">
-            <div class="asignaciones-panel">
-              <h4>Personal por día</h4>
-              @if (detalle.empleadosDia?.length) {
-                <div class="asignaciones-list">
-                  @for (item of detalle.empleadosDia; track item.asignacionId) {
-                    <div class="asignacion-card">
-                      <div class="asignacion-meta">
-                        <div class="asignacion-title">{{ item.empleadoNombre || '—' }}</div>
-                        <div class="muted small">{{ formatFechaLarga(item.fecha) }}</div>
-                      </div>
-                      <div class="asignacion-body">
-                        @if (item.notas) {
-                          <div class="asignacion-notas">{{ item.notas }}</div>
-                        }
-                      </div>
+          <div class="asignaciones-resumen">
+            @for (dia of detalle?.dias ?? []; track dia.diaId) {
+              <div class="asignaciones-resumen__card">
+                <div class="asignaciones-resumen__header">
+                  <div>
+                    <div class="asignaciones-resumen__title">{{ formatFechaLarga(dia.fecha) }}</div>
+                    <div class="asignaciones-resumen__meta">
+                      Personal: {{ getAsignadosPersonalDia(dia.diaId) }}/{{ getReqPersonalCountDia(dia.diaId) }}
+                      · Equipos: {{ getAsignadosEquiposDia(dia.diaId) }}/{{ getReqEquiposCountDia(dia.diaId) }}
                     </div>
-                  }
+                  </div>
+                  <app-estado-badge
+                    [estado]="getEstadoAsignacionDia(dia.diaId)"
+                    [mapaColores]="{
+                      'pendiente': 'warning',
+                      'sin asignar': 'neutral',
+                      'completo': 'success'
+                    }"
+                  ></app-estado-badge>
                 </div>
-              } @else {
-                <p class="muted">Sin personal asignado.</p>
-                <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
-                  Asignar ahora
-                </button>
-              }
-            </div>
-
-            <div class="asignaciones-panel">
-              <h4>Equipos por día</h4>
-              @if (detalle.equiposDia?.length) {
-                <div class="asignaciones-list">
-                  @for (eq of detalle.equiposDia; track eq.asignacionId) {
-                    <div class="asignacion-card">
-                      <div class="asignacion-meta">
-                        <div class="asignacion-title">{{ eq.modelo || '—' }} ({{ eq.equipoSerie || '—' }})</div>
-                        <div class="muted small">{{ formatFechaLarga(eq.fecha) }}</div>
-                      </div>
-                      <div class="asignacion-body">
-                        @if (eq.notas) {
-                          <div class="asignacion-notas">{{ eq.notas }}</div>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <p class="muted">Sin equipos asignados.</p>
-                <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
-                  Asignar ahora
-                </button>
-              }
-            </div>
+              </div>
+            }
           </div>
         </details>
       </section>
       }
+
+      <section class="card section">
+        <details class="collapsible" open>
+          <summary class="collapsible__summary">
+            <div>
+              <p class="eyebrow">Incidencias</p>
+              <h3>Registro del día</h3>
+            </div>
+            <div class="collapsible__actions">
+              <button mat-stroked-button color="primary" type="button" (click)="abrirModalIncidencia()">
+                Registrar incidencia
+              </button>
+              <span class="collapsible__caret">▾</span>
+            </div>
+          </summary>
+          <div class="incidencias-resumen">
+            @for (dia of detalle?.dias ?? []; track dia.diaId) {
+              <div class="incidencias-resumen__card">
+                <div class="incidencias-resumen__header">
+                  <div>
+                    <div class="incidencias-resumen__title">{{ formatFechaLarga(dia.fecha) }}</div>
+                    <div class="incidencias-resumen__meta">{{ getIncidenciasCountDia(dia.diaId) }} incidencia(s)</div>
+                  </div>
+                  <button mat-button type="button" (click)="abrirModalIncidencia(dia.diaId)">Agregar</button>
+                </div>
+                <div class="incidencias-resumen__list">
+                  @for (inc of getIncidenciasDia(dia.diaId); track inc.incidenciaId) {
+                    <div class="incidencia-item">
+                      <div class="incidencia-item__tipo">
+                        @switch (inc.tipo) {
+                          @case ('PERSONAL_NO_ASISTE') { Personal no asiste }
+                          @case ('EQUIPO_FALLA_EN_EVENTO') { Equipo falla en evento }
+                          @default { Otros }
+                        }
+                      </div>
+                      <div class="incidencia-item__desc">{{ inc.descripcion }}</div>
+                    </div>
+                  }
+                  @if (!getIncidenciasCountDia(dia.diaId)) {
+                    <div class="muted small">Sin incidencias.</div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </details>
+      </section>
 
       @if (detalle?.equiposDia?.length) {
       <section class="card section">
@@ -690,6 +670,113 @@
     <button mat-flat-button color="primary" type="button" (click)="guardarAsignacionesDia()"
       [disabled]="guardandoAsignaciones || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId) || !isAsignacionDiaDirty(asignacionDiaId)">
       {{ guardandoAsignaciones ? 'Guardando…' : 'Guardar asignaciones' }}
+    </button>
+  </div>
+</app-modal-base>
+
+<app-modal-base
+  [open]="modalIncidenciaAbierto"
+  title="Registrar incidencia"
+  [useDefaultFooter]="false"
+  size="lg"
+  (closed)="cerrarModalIncidencia()">
+
+  <div class="modal-section">
+    <div class="asignaciones-editor">
+      <label class="form-field">
+        <span class="label">Día</span>
+        <select
+          class="form-control"
+          [(ngModel)]="incidenciaDiaId"
+          name="incidenciaDiaId">
+          <option [ngValue]="null">Selecciona un día</option>
+          @for (dia of detalle?.dias ?? []; track dia.diaId) {
+            <option [ngValue]="dia.diaId">{{ formatFechaLarga(dia.fecha) }}</option>
+          }
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="label">Tipo</span>
+        <select
+          class="form-control"
+          [ngModel]="incidenciaTipo"
+          (ngModelChange)="onIncidenciaTipoChange($event)"
+          name="incidenciaTipo">
+          <option value="">Selecciona un tipo</option>
+          <option value="PERSONAL_NO_ASISTE">Personal no asiste</option>
+          <option value="EQUIPO_FALLA_EN_EVENTO">Equipo falla en evento</option>
+          <option value="OTROS">Otros</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="form-field">
+      <span class="label">Descripción</span>
+      <textarea
+        class="form-control"
+        rows="3"
+        [(ngModel)]="incidenciaDescripcion"
+        name="incidenciaDescripcion"
+        placeholder="Describe la incidencia"></textarea>
+    </label>
+
+    @if (incidenciaTipo === 'PERSONAL_NO_ASISTE') {
+      <div class="edit-form-grid">
+        <label class="form-field">
+          <span class="label">Personal afectado</span>
+          <select class="form-control" [(ngModel)]="incidenciaEmpleadoId" name="incidenciaEmpleadoId">
+            <option [ngValue]="null">Selecciona</option>
+            @for (emp of getEmpleadosDiaOptions(incidenciaDiaId || 0); track emp.empleadoId) {
+              <option [ngValue]="emp.empleadoId">{{ emp.empleadoNombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="label">Reemplazo</span>
+          <select class="form-control" [(ngModel)]="incidenciaEmpleadoReemplazoId" name="incidenciaEmpleadoReemplazoId">
+            <option [ngValue]="null">Selecciona</option>
+            @for (emp of getEmpleadosDiaOptions(incidenciaDiaId || 0); track emp.empleadoId) {
+              <option [ngValue]="emp.empleadoId">{{ emp.empleadoNombre }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+
+    @if (incidenciaTipo === 'EQUIPO_FALLA_EN_EVENTO') {
+      <div class="edit-form-grid">
+        <label class="form-field">
+          <span class="label">Equipo afectado</span>
+          <select class="form-control" [(ngModel)]="incidenciaEquipoId" name="incidenciaEquipoId">
+            <option [ngValue]="null">Selecciona</option>
+            @for (eq of getEquiposDiaOptions(incidenciaDiaId || 0); track eq.equipoId) {
+              <option [ngValue]="eq.equipoId">{{ eq.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="label">Reemplazo</span>
+          <select class="form-control" [(ngModel)]="incidenciaEquipoReemplazoId" name="incidenciaEquipoReemplazoId">
+            <option [ngValue]="null">Selecciona</option>
+            @for (eq of getEquiposDiaOptions(incidenciaDiaId || 0); track eq.equipoId) {
+              <option [ngValue]="eq.equipoId">{{ eq.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+
+    <label class="form-field">
+      <span class="label">Usuario (opcional)</span>
+      <input class="form-control" type="number" [(ngModel)]="incidenciaUsuarioId" name="incidenciaUsuarioId" placeholder="ID usuario">
+    </label>
+  </div>
+
+  <div class="modal-footer-actions">
+    <button mat-button type="button" (click)="cerrarModalIncidencia()">Cancelar</button>
+    <button mat-flat-button color="primary" type="button" (click)="guardarIncidencia()"
+      [disabled]="guardandoIncidencia || !canGuardarIncidencia()">
+      {{ guardandoIncidencia ? 'Guardando…' : 'Registrar incidencia' }}
     </button>
   </div>
 </app-modal-base>

@@ -4,6 +4,7 @@ import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms
 import { Subject, takeUntil } from 'rxjs';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
+import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 import { Proyecto, ProyectoPayload } from './model/proyecto.model';
 import { ProyectoService } from './service/proyecto.service';
 
@@ -30,13 +31,14 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
   ];
 
   proyectos: Proyecto[] = [];
-  estados: { estadoId: number; estadoNombre: string }[] = [];
+  estados: { id: number; nombre: string }[] = [];
   loading = false;
   error: string | null = null;
   searchTerm = '';
 
   private readonly fb = inject(UntypedFormBuilder);
   private readonly proyectoService = inject(ProyectoService);
+  private readonly catalogos = inject(CatalogosService);
   private readonly router = inject(Router);
 
   form: UntypedFormGroup = this.fb.group({
@@ -148,12 +150,12 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
 
   getEstadoNombre(id: number | null | undefined): string {
     if (id == null) return '—';
-    const found = this.estados.find(e => e.estadoId === id);
-    return found?.estadoNombre ?? String(id);
+    const found = this.estados.find(e => e.id === id);
+    return found?.nombre ?? String(id);
   }
 
   private loadEstados(): void {
-    this.proyectoService.getEstados()
+    this.catalogos.getEstadosProyecto()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: lista => {

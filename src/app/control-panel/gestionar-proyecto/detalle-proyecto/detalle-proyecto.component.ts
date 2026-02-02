@@ -1,7 +1,6 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
-import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import Swal from 'sweetalert2';
 import {
@@ -12,8 +11,7 @@ import {
   ProyectoAsignacionesDisponiblesEmpleado,
   ProyectoAsignacionesPayload,
   ProyectoDetalle,
-  ProyectoDetalleResponse,
-  ProyectoPayload
+  ProyectoDetalleResponse
 } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
 
@@ -25,14 +23,13 @@ import { ProyectoService } from '../service/proyecto.service';
 export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly proyectoService = inject(ProyectoService);
-  private readonly fb = inject(UntypedFormBuilder);
 
   loading = true;
   error: string | null = null;
   detalle: ProyectoDetalleResponse | null = null;
   proyecto: ProyectoDetalle | null = null;
-  guardandoProyecto = false;
   modalAsignarAbierto = false;
+  modalIncidenciaAbierto = false;
   soloPendientes = false;
   openDiaId: number | null = null;
   asignacionDiaId: number | null = null;
@@ -49,6 +46,15 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   copiarDesdeDiaId: number | null = null;
   nuevoEmpleadoId: number | null = null;
   nuevoEquipoId: number | null = null;
+  incidenciaDiaId: number | null = null;
+  incidenciaTipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'OTROS' | '' = '';
+  incidenciaDescripcion = '';
+  incidenciaEmpleadoId: number | null = null;
+  incidenciaEmpleadoReemplazoId: number | null = null;
+  incidenciaEquipoId: number | null = null;
+  incidenciaEquipoReemplazoId: number | null = null;
+  incidenciaUsuarioId: number | null = null;
+  guardandoIncidencia = false;
   ultimoDropDestino: number | 'reserva' | null = null;
   private dropHighlightTimer: number | null = null;
   tiposDetalleAbiertos: string[] = [];
@@ -66,11 +72,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     tiposDetalleAbiertos: string[];
   }> = {};
 
-  proyectoForm: UntypedFormGroup = this.fb.group({
-    responsableId: [null],
-    notas: [''],
-    enlace: ['']
-  });
   eventosColumns = [
     { key: 'fecha', header: 'Fecha', sortable: true },
     { key: 'hora', header: 'Hora', sortable: true },
@@ -105,9 +106,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
               .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))[0];
             this.openDiaId = diaInicial?.diaId ?? null;
           }
-          if (this.proyecto) {
-            this.patchProyectoForm(this.proyecto);
-          }
         },
         error: (err) => {
           console.error('[proyecto] detalle', err);
@@ -131,6 +129,17 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.saveAsignacionDraft();
     this.saveFiltrosDraft();
     this.modalAsignarAbierto = false;
+  }
+
+  abrirModalIncidencia(diaId?: number): void {
+    this.modalIncidenciaAbierto = true;
+    const selected = diaId ?? this.openDiaId ?? this.detalle?.dias?.[0]?.diaId ?? null;
+    this.incidenciaDiaId = selected;
+    this.resetIncidenciaForm(false);
+  }
+
+  cerrarModalIncidencia(): void {
+    this.modalIncidenciaAbierto = false;
   }
 
   setAsignacionDia(
@@ -204,6 +213,86 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   toggleFiltroTipo(tipo: string): void {
     this.filtroTipoEquipo = this.filtroTipoEquipo === tipo ? null : tipo;
+  }
+
+  onIncidenciaTipoChange(tipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'OTROS' | ''): void {
+    this.incidenciaTipo = tipo;
+    this.incidenciaEmpleadoId = null;
+    this.incidenciaEmpleadoReemplazoId = null;
+    this.incidenciaEquipoId = null;
+    this.incidenciaEquipoReemplazoId = null;
+  }
+
+  resetIncidenciaForm(resetDia = true): void {
+    if (resetDia) this.incidenciaDiaId = null;
+    this.incidenciaTipo = '';
+    this.incidenciaDescripcion = '';
+    this.incidenciaEmpleadoId = null;
+    this.incidenciaEmpleadoReemplazoId = null;
+    this.incidenciaEquipoId = null;
+    this.incidenciaEquipoReemplazoId = null;
+    this.incidenciaUsuarioId = null;
+  }
+
+  canGuardarIncidencia(): boolean {
+    if (!this.incidenciaDiaId) return false;
+    if (!this.incidenciaTipo || !this.incidenciaDescripcion.trim()) return false;
+    if (this.incidenciaTipo === 'PERSONAL_NO_ASISTE') {
+      if (!this.incidenciaEmpleadoId || !this.incidenciaEmpleadoReemplazoId) return false;
+      if (this.incidenciaEmpleadoId === this.incidenciaEmpleadoReemplazoId) return false;
+    }
+    if (this.incidenciaTipo === 'EQUIPO_FALLA_EN_EVENTO') {
+      if (!this.incidenciaEquipoId || !this.incidenciaEquipoReemplazoId) return false;
+      if (this.incidenciaEquipoId === this.incidenciaEquipoReemplazoId) return false;
+    }
+    return true;
+  }
+
+  guardarIncidencia(): void {
+    if (!this.incidenciaDiaId || !this.canGuardarIncidencia()) return;
+    const payload = {
+      tipo: this.incidenciaTipo as 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'OTROS',
+      descripcion: this.incidenciaDescripcion.trim(),
+      empleadoId: this.incidenciaEmpleadoId ?? null,
+      empleadoReemplazoId: this.incidenciaEmpleadoReemplazoId ?? null,
+      equipoId: this.incidenciaEquipoId ?? null,
+      equipoReemplazoId: this.incidenciaEquipoReemplazoId ?? null,
+      usuarioId: this.incidenciaUsuarioId ?? null
+    };
+    this.guardandoIncidencia = true;
+    this.proyectoService.crearIncidencia(this.incidenciaDiaId, payload)
+      .pipe(finalize(() => { this.guardandoIncidencia = false; }))
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Incidencia registrada',
+            timer: 1600,
+            showConfirmButton: false
+          });
+          if (!this.proyecto?.proyectoId) return;
+          this.proyectoService.getProyecto(this.proyecto.proyectoId)
+            .subscribe({
+              next: data => {
+                this.detalle = data;
+                this.proyecto = data?.proyecto ?? null;
+              },
+              error: err => {
+                console.error('[proyecto] incidencias', err);
+              }
+            });
+          this.resetIncidenciaForm();
+          this.modalIncidenciaAbierto = false;
+        },
+        error: (err) => {
+          console.error('[proyecto] incidencia', err);
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo registrar',
+            text: 'Intenta nuevamente.'
+          });
+        }
+      });
   }
 
   agregarEmpleado(): void {
@@ -498,6 +587,43 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return Object.keys(mapa)
       .sort((a, b) => a.localeCompare(b))
       .map(tipo => ({ tipo, items: mapa[tipo] }));
+  }
+
+  getIncidenciasDia(diaId: number): { tipo: string; descripcion: string; incidenciaId: number; createdAt: string }[] {
+    return (this.detalle?.incidenciasDia ?? [])
+      .filter(item => item.diaId === diaId)
+      .map(item => ({
+        incidenciaId: item.incidenciaId,
+        tipo: item.tipo,
+        descripcion: item.descripcion,
+        createdAt: item.createdAt
+      }));
+  }
+
+  getIncidenciasCountDia(diaId: number): number {
+    return (this.detalle?.incidenciasDia ?? []).filter(item => item.diaId === diaId).length;
+  }
+
+  getEmpleadosDiaOptions(diaId: number): { empleadoId: number; empleadoNombre: string }[] {
+    const items = (this.detalle?.empleadosDia ?? []).filter(item => item.diaId === diaId);
+    const mapa = new Map<number, string>();
+    items.forEach(item => {
+      if (!mapa.has(item.empleadoId)) {
+        mapa.set(item.empleadoId, item.empleadoNombre || `Empleado #${item.empleadoId}`);
+      }
+    });
+    return Array.from(mapa.entries()).map(([empleadoId, empleadoNombre]) => ({ empleadoId, empleadoNombre }));
+  }
+
+  getEquiposDiaOptions(diaId: number): { equipoId: number; label: string }[] {
+    const items = (this.detalle?.equiposDia ?? []).filter(item => item.diaId === diaId);
+    const mapa = new Map<number, string>();
+    items.forEach(item => {
+      if (!mapa.has(item.equipoId)) {
+        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || '—'})`);
+      }
+    });
+    return Array.from(mapa.entries()).map(([equipoId, label]) => ({ equipoId, label }));
   }
 
   getEquiposPorResponsable(empleadoId: number): ProyectoAsignacionEquipoPayload[] {
@@ -919,56 +1045,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
   }
 
-  guardarProyecto(): void {
-    if (!this.proyecto?.proyectoId) return;
-    if (this.proyectoForm.invalid) {
-      this.proyectoForm.markAllAsTouched();
-      return;
-    }
-
-    const raw = this.proyectoForm.value;
-    const cambios: Partial<ProyectoPayload> = {};
-    this.addIfChanged(cambios, 'responsableId', raw.responsableId, this.proyecto?.responsableId, 'number');
-    this.addIfChanged(cambios, 'enlace', raw.enlace, this.proyecto?.enlace, 'string');
-    this.addIfChanged(cambios, 'notas', raw.notas, this.proyecto?.notas, 'string');
-
-    const keysCambios = Object.keys(cambios);
-    if (!keysCambios.length) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Sin cambios',
-        text: 'No hay campos modificados para enviar.'
-      });
-      return;
-    }
-
-    this.guardandoProyecto = true;
-    this.proyectoService.actualizarProyectoParcial(this.proyecto.proyectoId, cambios)
-      .pipe(finalize(() => { this.guardandoProyecto = false; }))
-      .subscribe({
-        next: () => {
-          Swal.fire({
-            icon: 'success',
-            title: 'Proyecto actualizado',
-            timer: 1600,
-            showConfirmButton: false
-          });
-          this.proyecto = {
-            ...this.proyecto,
-            ...cambios
-          } as ProyectoDetalle;
-        },
-        error: (err) => {
-          console.error('[proyecto] actualizar parcial', err);
-          Swal.fire({
-            icon: 'error',
-            title: 'No se pudo actualizar',
-            text: 'Intenta nuevamente.'
-          });
-        }
-      });
-  }
-
   formatFechaDisplay(value: string | Date | null | undefined): string {
     if (!value) return '—';
     if (typeof value === 'string') {
@@ -1233,41 +1309,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return dias.filter(d => (d.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'pendiente');
   }
 
-  toDateInput(value: string | Date | null | undefined): string {
-    if (!value) return '';
-    if (value instanceof Date) {
-      const iso = value.toISOString();
-      return iso.split('T')[0];
-    }
-    const trimmed = value.trim();
-    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
-  }
-
-  private normalizeValue(value: unknown, type: 'string' | 'number' | 'date'): string | number | null {
-    if (type === 'number') return this.toNumberOrNull(value);
-    if (type === 'date') {
-      if (value === null || value === undefined) return null;
-      if (value instanceof Date || typeof value === 'string') {
-        return this.toDateInput(value);
-      }
-      return null;
-    }
-    if (value === undefined || value === null) return null;
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      return trimmed === '' ? null : trimmed;
-    }
-    const coerced = String(value).trim();
-    return coerced === '' ? null : coerced;
-  }
-
-  private toNumberOrNull(value: unknown): number | null {
-    if (value === null || value === undefined || value === '') return null;
-    const num = Number(value);
-    return isNaN(num) ? null : num;
-  }
-
   private toSafeNumber(value: unknown): number {
     const num = Number(value);
     return Number.isFinite(num) ? num : 0;
@@ -1288,30 +1329,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const h = Math.floor(value / 60);
     const m = value % 60;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
-  }
-
-  private addIfChanged(
-    target: Partial<ProyectoPayload>,
-    key: keyof ProyectoPayload,
-    formValue: unknown,
-    currentValue: unknown,
-    type: 'string' | 'number' | 'date'
-  ): void {
-    const control = this.proyectoForm.get(key as string);
-    if (!control || !control.dirty) return;
-    const normalizedForm = this.normalizeValue(formValue, type);
-    const normalizedCurrent = this.normalizeValue(currentValue, type);
-    if (normalizedForm !== normalizedCurrent) {
-      (target as Record<string, unknown>)[key as string] = normalizedForm;
-    }
-  }
-
-  private patchProyectoForm(data: ProyectoDetalle): void {
-    this.proyectoForm.patchValue({
-      responsableId: data.responsableId,
-      notas: data.notas,
-      enlace: data.enlace
-    });
   }
 
 
