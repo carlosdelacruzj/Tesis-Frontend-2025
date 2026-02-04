@@ -122,6 +122,30 @@ export interface EquipoDia {
   usuarioDevolucion: number;
 }
 
+export type ProyectoEstadoDevolucion = 'DEVUELTO' | 'DANADO' | 'PERDIDO' | 'ROBADO';
+
+export interface ProyectoDevolucionEquipoItem {
+  equipoId: number;
+  devuelto: 0 | 1;
+  estadoDevolucion?: ProyectoEstadoDevolucion | null;
+  notasDevolucion?: string | null;
+  fechaDevolucion?: string | null;
+}
+
+export interface ProyectoDevolucionEquiposPayload {
+  usuarioId?: number | null;
+  fechaDevolucion?: string | null;
+  equipos: ProyectoDevolucionEquipoItem[];
+}
+
+export interface ProyectoDevolucionEquipoParcialPayload {
+  devuelto: 0 | 1;
+  estadoDevolucion?: ProyectoEstadoDevolucion | null;
+  notasDevolucion?: string | null;
+  fechaDevolucion?: string | null;
+  usuarioId?: number | null;
+}
+
 export interface RequerimientoPersonalDia {
   diaId: number;
   fecha: string;

@@ -10,7 +10,9 @@ import {
   ProyectoDiaEstadoResponse,
   ProyectoEstadoResponse,
   ProyectoIncidenciaPayload,
-  ProyectoPayload
+  ProyectoPayload,
+  ProyectoDevolucionEquiposPayload,
+  ProyectoDevolucionEquipoParcialPayload
 } from '../model/proyecto.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { ProyectoDisponibilidad } from '../model/proyecto-disponibilidad.model';
@@ -56,6 +58,24 @@ export class ProyectoService {
 
   crearIncidencia(diaId: number, payload: ProyectoIncidenciaPayload): Observable<{ status: string }> {
     return this.http.post<{ status: string }>(`${this.API}/dias/${diaId}/incidencias`, payload);
+  }
+
+  registrarDevolucionesDia(diaId: number, payload: ProyectoDevolucionEquiposPayload): Observable<{ status: string; diaId: number; equiposActualizados: number }> {
+    return this.http.post<{ status: string; diaId: number; equiposActualizados: number }>(
+      `${this.API}/dias/${diaId}/equipos/devolucion`,
+      payload
+    );
+  }
+
+  registrarDevolucionEquipo(
+    diaId: number,
+    equipoId: number,
+    payload: ProyectoDevolucionEquipoParcialPayload
+  ): Observable<{ status: string; diaId: number; equiposActualizados: number }> {
+    return this.http.patch<{ status: string; diaId: number; equiposActualizados: number }>(
+      `${this.API}/dias/${diaId}/equipos/${equipoId}/devolucion`,
+      payload
+    );
   }
 
   getAsignacionesDisponibles(params: {
