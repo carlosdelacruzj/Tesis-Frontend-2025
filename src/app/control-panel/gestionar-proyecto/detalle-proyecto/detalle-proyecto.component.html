@@ -258,7 +258,10 @@
                     <div class="incidencias-resumen__title">{{ formatFechaLarga(dia.fecha) }}</div>
                     <div class="incidencias-resumen__meta">{{ getIncidenciasCountDia(dia.diaId) }} incidencia(s)</div>
                   </div>
-                  <button mat-button type="button" (click)="abrirModalIncidencia(dia.diaId)">Agregar</button>
+                  <div class="incidencias-resumen__actions">
+                    <button mat-stroked-button type="button" (click)="abrirModalDevolucion(dia.diaId)">Devoluciones</button>
+                    <button mat-button type="button" (click)="abrirModalIncidencia(dia.diaId)">Agregar</button>
+                  </div>
                 </div>
                 <div class="incidencias-resumen__list">
                   @for (inc of getIncidenciasDia(dia.diaId); track inc.incidenciaId) {
@@ -762,7 +765,10 @@
             }
           </select>
           @if (!getReemplazoEquipoOptions().length && incidenciaEquipoId) {
-            <div class="muted small">No hay equipos disponibles del mismo tipo para este dÃ­a.</div>
+            <div class="muted small">No hay equipos disponibles del mismo tipo para este día.</div>
+          }
+          @if (incidenciaTipo === 'EQUIPO_ROBO_PERDIDA') {
+            <div class="muted small">El reemplazo es opcional en robo/pérdida.</div>
           }
         </label>
       </div>
@@ -784,6 +790,64 @@
     <button mat-flat-button color="primary" type="button" (click)="guardarIncidencia()"
       [disabled]="guardandoIncidencia || !canGuardarIncidencia()">
       {{ guardandoIncidencia ? 'Guardando…' : 'Registrar incidencia' }}
+    </button>
+  </div>
+</app-modal-base>
+
+<app-modal-base
+  [open]="modalDevolucionAbierto"
+  title="Registrar devoluciones"
+  [useDefaultFooter]="false"
+  size="lg"
+  (closed)="cerrarModalDevolucion()">
+
+  <div class="modal-section">
+    @if (devolucionDiaId) {
+      <div class="devolucion-grid">
+        @for (eq of getEquiposDevolucionDia(devolucionDiaId); track eq.equipoId) {
+          <div class="devolucion-row">
+            <div class="devolucion-info">
+              <div class="devolucion-title">{{ eq.modelo || 'Equipo' }} ({{ eq.equipoSerie || '—' }})</div>
+              <div class="muted small">{{ eq.tipoEquipo }}</div>
+              @if (eq.responsableNombre) {
+                <div class="muted small">Responsable: {{ eq.responsableNombre }}</div>
+              }
+            </div>
+            <div class="devolucion-form">
+              <label class="form-field small">
+                <span class="label">Estado</span>
+                <select class="form-control" [ngModel]="devolucionDraft[eq.equipoId]?.estado || ''" (ngModelChange)="onDevolucionEstadoChange(eq.equipoId, $event)">
+                  <option value="">Selecciona</option>
+                  <option value="DEVUELTO">Devuelto</option>
+                  <option value="DANADO">Dañado</option>
+                  <option value="PERDIDO">Perdido</option>
+                  <option value="ROBADO">Robado</option>
+                </select>
+              </label>
+              <label class="form-field small">
+                <span class="label">Fecha</span>
+                <input class="form-control" type="datetime-local" [ngModel]="devolucionDraft[eq.equipoId]?.fecha || ''" (ngModelChange)="onDevolucionFechaChange(eq.equipoId, $event)">
+                <div class="muted micro">Vacío = ahora</div>
+              </label>
+              <label class="form-field small">
+                <span class="label">Notas</span>
+                <textarea class="form-control" rows="2" [ngModel]="devolucionDraft[eq.equipoId]?.notas || ''" (ngModelChange)="onDevolucionNotasChange(eq.equipoId, $event)" placeholder="Opcional"></textarea>
+              </label>
+            </div>
+          </div>
+        }
+        @if (!getEquiposDevolucionDia(devolucionDiaId).length) {
+          <div class="muted">No hay equipos asignados en este día.</div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="modal-footer-actions">
+    <button mat-button type="button" (click)="cerrarModalDevolucion()">Cerrar</button>
+    <button mat-flat-button color="primary" type="button" (click)="guardarDevoluciones()"
+      [disabled]="guardandoDevolucion || !canGuardarDevoluciones()">
+      {{ guardandoDevolucion ? 'Guardando…' : 'Guardar devoluciones' }}
     </button>
   </div>
 </app-modal-base>

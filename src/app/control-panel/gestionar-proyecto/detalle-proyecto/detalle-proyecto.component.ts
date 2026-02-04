@@ -11,7 +11,10 @@ import {
   ProyectoAsignacionesDisponiblesEmpleado,
   ProyectoAsignacionesPayload,
   ProyectoDetalle,
-  ProyectoDetalleResponse
+  ProyectoDetalleResponse,
+  ProyectoEstadoDevolucion,
+  ProyectoDevolucionEquiposPayload,
+  ProyectoDevolucionEquipoItem
 } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
 
@@ -57,6 +60,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   cargandoDisponiblesIncidencia = false;
   disponiblesIncidenciaEmpleados: ProyectoAsignacionesDisponiblesEmpleado[] = [];
   disponiblesIncidenciaEquipos: ProyectoAsignacionesDisponiblesEquipo[] = [];
+  modalDevolucionAbierto = false;
+  devolucionDiaId: number | null = null;
+  devolucionDraft: Record<number, { estado: ProyectoEstadoDevolucion | ''; notas: string; fecha: string | null }> = {};
+  guardandoDevolucion = false;
   ultimoDropDestino: number | 'reserva' | null = null;
   private dropHighlightTimer: number | null = null;
   tiposDetalleAbiertos: string[] = [];
@@ -1130,6 +1137,142 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           console.error('[proyecto] disponibles incidencia', err);
           this.disponiblesIncidenciaEmpleados = [];
           this.disponiblesIncidenciaEquipos = [];
+        }
+      });
+  }
+
+  abrirModalDevolucion(diaId?: number): void {
+    const selected = diaId ?? this.openDiaId ?? this.detalle?.dias?.[0]?.diaId ?? null;
+    if (!selected) return;
+    this.devolucionDiaId = selected;
+    this.modalDevolucionAbierto = true;
+    this.cargarDevolucionDraft(selected);
+  }
+
+  cerrarModalDevolucion(): void {
+    this.modalDevolucionAbierto = false;
+    this.devolucionDiaId = null;
+    this.devolucionDraft = {};
+  }
+
+  private cargarDevolucionDraft(diaId: number): void {
+    const equipos = (this.detalle?.equiposDia ?? []).filter(item => item.diaId === diaId);
+    const draft: Record<number, { estado: ProyectoEstadoDevolucion | ''; notas: string; fecha: string | null }> = {};
+    equipos.forEach(eq => {
+      draft[eq.equipoId] = {
+        estado: (eq.estadoDevolucion as ProyectoEstadoDevolucion) ?? '',
+        notas: eq.notasDevolucion ?? '',
+        fecha: eq.fechaDevolucion || null
+      };
+    });
+    this.devolucionDraft = draft;
+  }
+
+  onDevolucionEstadoChange(equipoId: number, estado: ProyectoEstadoDevolucion | ''): void {
+    const current = this.devolucionDraft[equipoId] || { estado: '', notas: '', fecha: null };
+    this.devolucionDraft[equipoId] = { ...current, estado };
+  }
+
+  onDevolucionNotasChange(equipoId: number, notas: string): void {
+    const current = this.devolucionDraft[equipoId] || { estado: '', notas: '', fecha: null };
+    this.devolucionDraft[equipoId] = { ...current, notas };
+  }
+
+  onDevolucionFechaChange(equipoId: number, fecha: string): void {
+    const current = this.devolucionDraft[equipoId] || { estado: '', notas: '', fecha: null };
+    this.devolucionDraft[equipoId] = { ...current, fecha: fecha || null };
+  }
+
+  getEquiposDevolucionDia(diaId: number | null): typeof this.detalle.equiposDia {
+    if (!diaId) return [];
+    return (this.detalle?.equiposDia ?? []).filter(item => item.diaId === diaId);
+  }
+
+  private isDevolucionChanged(eq: { equipoId: number; estadoDevolucion: string; notasDevolucion: string; fechaDevolucion: string }): boolean {
+    const draft = this.devolucionDraft[eq.equipoId];
+    if (!draft) return false;
+    const estadoOrig = (eq.estadoDevolucion ?? '').toString();
+    const notasOrig = eq.notasDevolucion ?? '';
+    const fechaOrig = eq.fechaDevolucion ?? null;
+    return (
+      (draft.estado ?? '') !== estadoOrig ||
+      (draft.notas ?? '') !== notasOrig ||
+      (draft.fecha ?? null) !== fechaOrig
+    );
+  }
+
+  private buildDevolucionPayload(): ProyectoDevolucionEquiposPayload {
+    const equipos = this.getEquiposDevolucionDia(this.devolucionDiaId)
+      .filter(eq => this.isDevolucionChanged(eq))
+      .map(eq => {
+        const draft = this.devolucionDraft[eq.equipoId];
+        const estado = draft?.estado ?? '';
+        const devuelto: 0 | 1 = estado === 'DEVUELTO' || estado === 'DANADO' ? 1 : 0;
+        const item: ProyectoDevolucionEquipoItem = {
+          equipoId: eq.equipoId,
+          devuelto,
+          estadoDevolucion: estado || null,
+          notasDevolucion: draft?.notas ?? ''
+        };
+        if (draft?.fecha) {
+          item.fechaDevolucion = draft.fecha;
+        }
+        return item;
+      });
+
+    return {
+      equipos
+    };
+  }
+
+  canGuardarDevoluciones(): boolean {
+    if (!this.devolucionDiaId) return false;
+    const equipos = this.getEquiposDevolucionDia(this.devolucionDiaId);
+    const cambios = equipos.filter(eq => this.isDevolucionChanged(eq));
+    if (!cambios.length) return false;
+    const validEstados: ProyectoEstadoDevolucion[] = ['DEVUELTO', 'DANADO', 'PERDIDO', 'ROBADO'];
+    return cambios.every(eq => {
+      const draft = this.devolucionDraft[eq.equipoId];
+      if (!draft?.estado) return false;
+      return validEstados.includes(draft.estado);
+    });
+  }
+
+  guardarDevoluciones(): void {
+    if (!this.devolucionDiaId || !this.canGuardarDevoluciones()) return;
+    const payload = this.buildDevolucionPayload();
+    if (!payload.equipos.length) return;
+    this.guardandoDevolucion = true;
+    this.proyectoService.registrarDevolucionesDia(this.devolucionDiaId, payload)
+      .pipe(finalize(() => { this.guardandoDevolucion = false; }))
+      .subscribe({
+        next: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Devoluciones registradas',
+            timer: 1400,
+            showConfirmButton: false
+          });
+          if (!this.proyecto?.proyectoId) return;
+          this.proyectoService.getProyecto(this.proyecto.proyectoId)
+            .subscribe({
+              next: data => {
+                this.detalle = data;
+                this.proyecto = data?.proyecto ?? null;
+                this.cargarDevolucionDraft(this.devolucionDiaId!);
+              },
+              error: err => {
+                console.error('[proyecto] devolucion refresh', err);
+              }
+            });
+        },
+        error: err => {
+          console.error('[proyecto] devoluciones', err);
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo registrar',
+            text: 'Revisa los datos e intenta nuevamente.'
+          });
         }
       });
   }

@@ -1044,6 +1044,11 @@
   margin-top: 4px;
 }
 
+.incidencias-resumen__actions {
+  display: flex;
+  gap: 8px;
+}
+
 .incidencias-resumen__list {
   display: flex;
   flex-direction: column;
@@ -1079,6 +1084,52 @@
 .chip-light {
   background: #f9fafb;
   border-color: #e5e7eb;
+}
+
+.devolucion-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.devolucion-row {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+  display: grid;
+  grid-template-columns: 1.2fr 2fr;
+  gap: 12px;
+}
+
+.devolucion-info .devolucion-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.devolucion-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.form-field.small .form-control,
+.form-field.small textarea,
+.form-field.small select {
+  font-size: 0.9rem;
+}
+
+.muted.micro {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  .devolucion-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
