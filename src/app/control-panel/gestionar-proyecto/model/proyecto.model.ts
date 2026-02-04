@@ -167,6 +167,7 @@ export interface IncidenciaDia {
   fecha: string;
   tipo: string;
   descripcion: string;
+  fechaHoraEvento?: string | null;
   empleadoId: number | null;
   empleadoReemplazoId: number | null;
   equipoId: number | null;
@@ -261,6 +262,7 @@ export interface ProyectoDiaEstadoResponse {
 export interface ProyectoIncidenciaPayload {
   tipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS';
   descripcion: string;
+  fechaHoraEvento?: string | null;
   empleadoId?: number | null;
   empleadoReemplazoId?: number | null;
   equipoId?: number | null;

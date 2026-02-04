@@ -56,8 +56,8 @@ export class ProyectoService {
     return this.http.post<{ status: string }>(`${this.API}/asignaciones`, payload);
   }
 
-  crearIncidencia(diaId: number, payload: ProyectoIncidenciaPayload): Observable<{ status: string }> {
-    return this.http.post<{ status: string }>(`${this.API}/dias/${diaId}/incidencias`, payload);
+  crearIncidencia(diaId: number, payload: ProyectoIncidenciaPayload): Observable<{ status: string; incidenciaId?: number; diaId?: number; fechaHoraEvento?: string | null }> {
+    return this.http.post<{ status: string; incidenciaId?: number; diaId?: number; fechaHoraEvento?: string | null }>(`${this.API}/dias/${diaId}/incidencias`, payload);
   }
 
   registrarDevolucionesDia(diaId: number, payload: ProyectoDevolucionEquiposPayload): Observable<{ status: string; diaId: number; equiposActualizados: number }> {

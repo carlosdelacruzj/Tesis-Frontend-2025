@@ -5,6 +5,7 @@ import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import Swal from 'sweetalert2';
 import {
   BloqueDia,
+  EquipoDia,
   IncidenciaDia,
   ProyectoAsignacionEmpleadoPayload,
   ProyectoAsignacionEquipoPayload,
@@ -27,6 +28,7 @@ type IncidenciaResumen = {
   tipo: string;
   descripcion: string;
   incidenciaId: number;
+  fechaHoraEvento?: string | null;
   createdAt: string;
   empleadoNombre?: string | null;
   empleadoCargo?: string | null;
@@ -64,6 +66,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   proyecto: ProyectoDetalle | null = null;
   modalAsignarAbierto = false;
   modalIncidenciaAbierto = false;
+  modalIncidenciasListaAbierto = false;
   soloPendientes = false;
   openDiaId: number | null = null;
   asignacionDiaId: number | null = null;
@@ -81,8 +84,17 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   nuevoEmpleadoId: number | null = null;
   nuevoEquipoId: number | null = null;
   incidenciaDiaId: number | null = null;
+  incidenciaListaDiaId: number | null = null;
+  incidenciaFiltroTipo: '' | 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS' = '';
+  incidenciaFiltroTexto = '';
+  incidenciasVisibleCount = 20;
   incidenciaTipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS' | '' = '';
   incidenciaDescripcion = '';
+  incidenciaHora12 = '12';
+  incidenciaMinuto = '00';
+  incidenciaAmPm: 'AM' | 'PM' = 'AM';
+  readonly incidenciaHoraOptions = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+  readonly incidenciaMinutoOptions = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
   incidenciaEmpleadoId: number | null = null;
   incidenciaEmpleadoReemplazoId: number | null = null;
   incidenciaEquipoId: number | null = null;
@@ -93,6 +105,11 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   disponiblesIncidenciaEquipos: ProyectoAsignacionesDisponiblesEquipo[] = [];
   modalDevolucionAbierto = false;
   devolucionDiaId: number | null = null;
+  mostrarSoloExcepcionesEstado = true;
+  mostrarSoloExcepcionesDevolucion = false;
+  devolucionFiltroResponsable = '';
+  devolucionBusqueda = '';
+  devolucionGruposAbiertos: Record<string, boolean> = {};
   devolucionDraft: Record<number, { estado: ProyectoEstadoDevolucion | ''; notas: string; fecha: string | null }> = {};
   guardandoDevolucion = false;
   stepperOrientation: 'horizontal' | 'vertical' = 'horizontal';
@@ -201,6 +218,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.modalIncidenciaAbierto = false;
   }
 
+  abrirModalIncidenciasDia(diaId: number): void {
+    this.incidenciaListaDiaId = diaId;
+    this.incidenciaFiltroTipo = '';
+    this.incidenciaFiltroTexto = '';
+    this.incidenciasVisibleCount = 20;
+    this.modalIncidenciasListaAbierto = true;
+  }
+
+  cerrarModalIncidenciasDia(): void {
+    this.modalIncidenciasListaAbierto = false;
+    this.incidenciaListaDiaId = null;
+  }
+
   setAsignacionDia(
     diaId: number | null,
     options?: { skipDraftSave?: boolean; forceDetalle?: boolean }
@@ -286,6 +316,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     if (resetDia) this.incidenciaDiaId = null;
     this.incidenciaTipo = '';
     this.incidenciaDescripcion = '';
+    this.setIncidenciaHoraActual();
     this.incidenciaEmpleadoId = null;
     this.incidenciaEmpleadoReemplazoId = null;
     this.incidenciaEquipoId = null;
@@ -311,9 +342,27 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   guardarIncidencia(): void {
     if (!this.incidenciaDiaId || !this.canGuardarIncidencia()) return;
+    const fechaDiaRaw = this.detalle?.dias?.find(d => d.diaId === this.incidenciaDiaId)?.fecha ?? '';
+    const fechaDia = String(fechaDiaRaw).slice(0, 10);
+    const now = new Date();
+    const horaActual = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const horaNum = Number(this.incidenciaHora12);
+    const minNum = Number(this.incidenciaMinuto);
+    let horaEvento = horaActual;
+    if (Number.isFinite(horaNum) && horaNum >= 1 && horaNum <= 12 && Number.isFinite(minNum) && minNum >= 0 && minNum <= 59) {
+      let hours24 = horaNum % 12;
+      if (this.incidenciaAmPm === 'PM') {
+        hours24 += 12;
+      }
+      horaEvento = `${String(hours24).padStart(2, '0')}:${String(minNum).padStart(2, '0')}`;
+    }
+    const fechaBase = /^\d{4}-\d{2}-\d{2}$/.test(fechaDia)
+      ? fechaDia
+      : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const payload = {
       tipo: this.incidenciaTipo as 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS',
       descripcion: this.incidenciaDescripcion.trim(),
+      fechaHoraEvento: `${fechaBase} ${horaEvento}:00`,
       empleadoId: this.incidenciaEmpleadoId ?? null,
       empleadoReemplazoId: this.incidenciaEmpleadoReemplazoId ?? null,
       equipoId: this.incidenciaEquipoId ?? null,
@@ -422,6 +471,28 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       responsableId: e.responsableId && empleadosAsignadosSet.has(e.responsableId) ? e.responsableId : null
     }));
     this.asignacionEquipos = this.limitarEquiposPorRequerimiento(equiposAjustados, this.asignacionDiaId);
+  }
+
+  getDiaAnteriorId(diaId: number | null): number | null {
+    if (!diaId) return null;
+    const index = this.diasOrdenadosCache.findIndex(d => d.diaId === diaId);
+    if (index <= 0) return null;
+    return this.diasOrdenadosCache[index - 1]?.diaId ?? null;
+  }
+
+  copiarAsignacionesDiaAnterior(): void {
+    const anteriorId = this.getDiaAnteriorId(this.asignacionDiaId);
+    if (!anteriorId) return;
+    this.copiarAsignacionesDesde(anteriorId);
+  }
+
+  irADiaConPendientesAsignacion(): void {
+    const diaPendiente = this.diasOrdenadosCache.find(d => {
+      const pendientes = this.getPendientesDia(d.diaId);
+      return pendientes.personal > 0 || pendientes.equipos > 0;
+    });
+    if (!diaPendiente) return;
+    this.setAsignacionDia(diaPendiente.diaId);
   }
 
   limpiarAsignacionesDia(): void {
@@ -664,8 +735,60 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return this.incidenciasDiaMap.get(diaId) ?? [];
   }
 
+  getIncidenciasRecientesDia(diaId: number, limit = 3): IncidenciaResumen[] {
+    return this.getIncidenciasDia(diaId).slice(0, limit);
+  }
+
   getIncidenciasCountDia(diaId: number): number {
     return this.getDiaResumen(diaId).incidenciasCount;
+  }
+
+  getIncidenciaTipoLabel(tipo: string): string {
+    switch ((tipo ?? '').toString().trim().toUpperCase()) {
+      case 'PERSONAL_NO_ASISTE':
+        return 'Personal no asiste';
+      case 'EQUIPO_FALLA_EN_EVENTO':
+        return 'Equipo falla en evento';
+      case 'EQUIPO_ROBO_PERDIDA':
+        return 'Equipo robo/pérdida';
+      default:
+        return 'Otros';
+    }
+  }
+
+  getIncidenciaSeveridad(inc: IncidenciaResumen): 'alta' | 'media' | 'baja' {
+    const tipo = (inc.tipo ?? '').toString().trim().toUpperCase();
+    if (tipo === 'EQUIPO_ROBO_PERDIDA' || tipo === 'EQUIPO_FALLA_EN_EVENTO') return 'alta';
+    if (tipo === 'PERSONAL_NO_ASISTE') return 'media';
+    return 'baja';
+  }
+
+  getIncidenciasModalFiltradas(): IncidenciaResumen[] {
+    const diaId = this.incidenciaListaDiaId;
+    if (!diaId) return [];
+    let lista = [...this.getIncidenciasDia(diaId)];
+    if (this.incidenciaFiltroTipo) {
+      lista = lista.filter(item => (item.tipo ?? '').toString().trim().toUpperCase() === this.incidenciaFiltroTipo);
+    }
+    const query = this.incidenciaFiltroTexto.trim().toLowerCase();
+    if (query) {
+      lista = lista.filter(item => {
+        const target = `${this.getIncidenciaTipoLabel(item.tipo)} ${item.descripcion} ${item.fechaHoraEvento ?? ''} ${item.createdAt ?? ''} ${item.empleadoNombre ?? ''} ${item.empleadoReemplazoNombre ?? ''}`.toLowerCase();
+        return target.includes(query);
+      });
+    }
+    return lista.slice(0, this.incidenciasVisibleCount);
+  }
+
+  canCargarMasIncidenciasModal(): boolean {
+    const diaId = this.incidenciaListaDiaId;
+    if (!diaId) return false;
+    const total = this.getIncidenciasDia(diaId).length;
+    return this.incidenciasVisibleCount < total;
+  }
+
+  cargarMasIncidenciasModal(): void {
+    this.incidenciasVisibleCount += 20;
   }
 
   getEmpleadosDiaOptions(diaId: number): { empleadoId: number; empleadoNombre: string }[] {
@@ -1180,6 +1303,34 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.cargarDevolucionDraft(selected);
   }
 
+  onDevolucionDiaChange(diaId: number | null): void {
+    if (!diaId) {
+      this.devolucionDiaId = null;
+      this.devolucionDraft = {};
+      this.devolucionGruposAbiertos = {};
+      return;
+    }
+    this.devolucionDiaId = diaId;
+    this.mostrarSoloExcepcionesDevolucion = false;
+    this.devolucionFiltroResponsable = '';
+    this.devolucionBusqueda = '';
+    this.devolucionGruposAbiertos = {};
+    this.cargarDevolucionDraft(diaId);
+  }
+
+  marcarTodosDevueltos(): void {
+    if (!this.devolucionDiaId) return;
+    const nowIso = new Date().toISOString().slice(0, 16);
+    this.getEquiposDevolucionDia(this.devolucionDiaId).forEach(eq => {
+      this.devolucionDraft[eq.equipoId] = {
+        estado: 'DEVUELTO',
+        notas: this.devolucionDraft[eq.equipoId]?.notas ?? '',
+        fecha: this.devolucionDraft[eq.equipoId]?.fecha ?? nowIso
+      };
+    });
+    this.devolucionDraft = { ...this.devolucionDraft };
+  }
+
   cerrarModalDevolucion(): void {
     this.modalDevolucionAbierto = false;
     this.devolucionDiaId = null;
@@ -1190,10 +1341,15 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const equipos = (this.detalle?.equiposDia ?? []).filter(item => item.diaId === diaId);
     const draft: Record<number, { estado: ProyectoEstadoDevolucion | ''; notas: string; fecha: string | null }> = {};
     equipos.forEach(eq => {
+      const estadoRaw = (eq.estadoDevolucion ?? '').toString().trim().toUpperCase();
+      const estado =
+        estadoRaw === 'DEVUELTO' || estadoRaw === 'DANADO' || estadoRaw === 'PERDIDO' || estadoRaw === 'ROBADO'
+          ? (estadoRaw as ProyectoEstadoDevolucion)
+          : 'DEVUELTO';
       draft[eq.equipoId] = {
-        estado: (eq.estadoDevolucion as ProyectoEstadoDevolucion) ?? '',
+        estado,
         notas: eq.notasDevolucion ?? '',
-        fecha: eq.fechaDevolucion || null
+        fecha: this.toDateTimeLocalValue(eq.fechaDevolucion) ?? this.toDateTimeLocalValue(new Date().toISOString())
       };
     });
     this.devolucionDraft = draft;
@@ -1216,7 +1372,182 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   getEquiposDevolucionDia(diaId: number | null): typeof this.detalle.equiposDia {
     if (!diaId) return [];
-    return (this.detalle?.equiposDia ?? []).filter(item => item.diaId === diaId);
+    const items = (this.detalle?.equiposDia ?? []).filter(item => item.diaId === diaId);
+    if (!this.mostrarSoloExcepcionesDevolucion) return items;
+    return items.filter(item => this.getEstadoDevolucionActual(item.equipoId) !== 'DEVUELTO');
+  }
+
+  toggleSoloExcepcionesEstado(): void {
+    this.mostrarSoloExcepcionesEstado = !this.mostrarSoloExcepcionesEstado;
+  }
+
+  getResumenEstadoDia(diaId: number): { total: number; devueltos: number; excepciones: number } {
+    const items = this.getEquiposEstadoPorDia(diaId);
+    const total = items.length;
+    const devueltos = items.filter(item => this.normalizarEstadoDevolucion(item.estadoDevolucion) === 'DEVUELTO').length;
+    return { total, devueltos, excepciones: Math.max(total - devueltos, 0) };
+  }
+
+  getEquiposEstadoPorDia(diaId: number): EquipoDia[] {
+    return (this.detalle?.equiposDia ?? [])
+      .filter(item => item.diaId === diaId)
+      .sort((a, b) => {
+        const ra = (a.responsableNombre ?? 'Sin responsable').toString();
+        const rb = (b.responsableNombre ?? 'Sin responsable').toString();
+        const byResp = ra.localeCompare(rb);
+        if (byResp !== 0) return byResp;
+        return `${a.modelo ?? ''}${a.equipoSerie ?? ''}`.localeCompare(`${b.modelo ?? ''}${b.equipoSerie ?? ''}`);
+      });
+  }
+
+  getGruposEstadoDia(diaId: number): { responsable: string; items: EquipoDia[]; total: number; devueltos: number; excepciones: number }[] {
+    const source = this.getEquiposEstadoPorDia(diaId);
+    const map = new Map<string, EquipoDia[]>();
+    source.forEach(item => {
+      const key = (item.responsableNombre ?? 'Sin responsable').toString().trim() || 'Sin responsable';
+      if (!map.has(key)) {
+        map.set(key, []);
+      }
+      map.get(key)!.push(item);
+    });
+
+    const grupos = Array.from(map.entries()).map(([responsable, items]) => {
+      const visibles = this.mostrarSoloExcepcionesEstado
+        ? items.filter(item => this.normalizarEstadoDevolucion(item.estadoDevolucion) !== 'DEVUELTO')
+        : items;
+      const total = items.length;
+      const devueltos = items.filter(item => this.normalizarEstadoDevolucion(item.estadoDevolucion) === 'DEVUELTO').length;
+      return {
+        responsable,
+        items: visibles,
+        total,
+        devueltos,
+        excepciones: Math.max(total - devueltos, 0)
+      };
+    });
+
+    return grupos
+      .filter(grupo => !this.mostrarSoloExcepcionesEstado || grupo.excepciones > 0)
+      .sort((a, b) => a.responsable.localeCompare(b.responsable));
+  }
+
+  getEstadoDevolucionDisplay(estado: string | null | undefined): string {
+    const normalized = this.normalizarEstadoDevolucion(estado);
+    if (normalized === 'DEVUELTO') return 'Devuelto';
+    if (normalized === 'DANADO') return 'Dañado';
+    if (normalized === 'PERDIDO') return 'Perdido';
+    if (normalized === 'ROBADO') return 'Robado';
+    return 'Pendiente';
+  }
+
+  getEstadoDevolucionClass(estado: string | null | undefined): string {
+    const normalized = this.normalizarEstadoDevolucion(estado);
+    if (normalized === 'DEVUELTO') return 'estado-equipo-row--ok';
+    if (normalized === 'DANADO') return 'estado-equipo-row--warn';
+    if (normalized === 'PERDIDO' || normalized === 'ROBADO') return 'estado-equipo-row--danger';
+    return 'estado-equipo-row--pending';
+  }
+
+  private normalizarEstadoDevolucion(estado: string | null | undefined): 'DEVUELTO' | 'DANADO' | 'PERDIDO' | 'ROBADO' | 'PENDIENTE' {
+    const value = (estado ?? '').toString().trim().toUpperCase();
+    if (value === 'DEVUELTO' || value === 'DANADO' || value === 'PERDIDO' || value === 'ROBADO') {
+      return value;
+    }
+    return 'PENDIENTE';
+  }
+
+  getResponsablesDevolucionOptions(diaId: number | null): string[] {
+    const set = new Set<string>();
+    this.getEquiposDevolucionDia(diaId).forEach(item => {
+      set.add((item.responsableNombre ?? 'Sin responsable').toString().trim() || 'Sin responsable');
+    });
+    return Array.from(set.values()).sort((a, b) => a.localeCompare(b));
+  }
+
+  getEquiposDevolucionFiltrados(diaId: number | null): typeof this.detalle.equiposDia {
+    let items = this.getEquiposDevolucionDia(diaId);
+    if (this.devolucionFiltroResponsable) {
+      items = items.filter(item => (item.responsableNombre ?? 'Sin responsable') === this.devolucionFiltroResponsable);
+    }
+    const q = this.devolucionBusqueda.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(item => {
+      const target = `${item.modelo ?? ''} ${item.equipoSerie ?? ''} ${item.tipoEquipo ?? ''} ${item.responsableNombre ?? ''}`.toLowerCase();
+      return target.includes(q);
+    });
+  }
+
+  getGruposDevolucion(diaId: number | null): { key: string; responsable: string; items: (typeof this.detalle.equiposDia[number])[] }[] {
+    const map = new Map<string, (typeof this.detalle.equiposDia[number])[]>();
+    this.getEquiposDevolucionFiltrados(diaId).forEach(item => {
+      const responsable = (item.responsableNombre ?? 'Sin responsable').toString().trim() || 'Sin responsable';
+      if (!map.has(responsable)) {
+        map.set(responsable, []);
+      }
+      map.get(responsable)!.push(item);
+    });
+    return Array.from(map.entries())
+      .map(([responsable, items]) => ({
+        key: responsable,
+        responsable,
+        items: [...items].sort((a, b) => `${a.modelo ?? ''}${a.equipoSerie ?? ''}`.localeCompare(`${b.modelo ?? ''}${b.equipoSerie ?? ''}`))
+      }))
+      .sort((a, b) => a.responsable.localeCompare(b.responsable));
+  }
+
+  isGrupoDevolucionAbierto(key: string): boolean {
+    if (this.devolucionGruposAbiertos[key] !== undefined) return this.devolucionGruposAbiertos[key];
+    return true;
+  }
+
+  onToggleGrupoDevolucion(key: string, event: Event): void {
+    const target = event.target as HTMLDetailsElement | null;
+    if (!target) return;
+    this.devolucionGruposAbiertos[key] = target.open;
+  }
+
+  getResumenGrupoDevolucion(items: (typeof this.detalle.equiposDia[number])[]): { total: number; excepciones: number } {
+    const total = items.length;
+    let excepciones = 0;
+    items.forEach(item => {
+      if (this.getEstadoDevolucionActual(item.equipoId) !== 'DEVUELTO') {
+        excepciones += 1;
+      }
+    });
+    return { total, excepciones };
+  }
+
+  marcarGrupoDevuelto(items: (typeof this.detalle.equiposDia[number])[]): void {
+    const nowIso = new Date().toISOString().slice(0, 16);
+    items.forEach(item => {
+      this.devolucionDraft[item.equipoId] = {
+        estado: 'DEVUELTO',
+        notas: this.devolucionDraft[item.equipoId]?.notas ?? '',
+        fecha: this.devolucionDraft[item.equipoId]?.fecha ?? nowIso
+      };
+    });
+    this.devolucionDraft = { ...this.devolucionDraft };
+  }
+
+  getEstadoDevolucionActual(equipoId: number): ProyectoEstadoDevolucion | '' {
+    const estado = this.devolucionDraft[equipoId]?.estado ?? '';
+    return estado;
+  }
+
+  getResumenDevolucionDia(diaId: number | null): { total: number; devueltos: number; excepciones: number } {
+    const items = (this.detalle?.equiposDia ?? []).filter(item => diaId && item.diaId === diaId);
+    const total = items.length;
+    let devueltos = 0;
+    items.forEach(item => {
+      if (this.getEstadoDevolucionActual(item.equipoId) === 'DEVUELTO') {
+        devueltos += 1;
+      }
+    });
+    return { total, devueltos, excepciones: Math.max(total - devueltos, 0) };
+  }
+
+  toggleSoloExcepcionesDevolucion(): void {
+    this.mostrarSoloExcepcionesDevolucion = !this.mostrarSoloExcepcionesDevolucion;
   }
 
   private isDevolucionChanged(eq: { equipoId: number; estadoDevolucion: string; notasDevolucion: string; fechaDevolucion: string }): boolean {
@@ -1450,6 +1781,60 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return this.detalle?.equiposDia?.length ?? 0;
   }
 
+  get totalIncidencias(): number {
+    return this.detalle?.incidenciasDia?.length ?? 0;
+  }
+
+  get totalDiasConPendientes(): number {
+    return this.diasOrdenadosCache.filter(dia => {
+      const p = this.getPendientesDia(dia.diaId);
+      return p.personal > 0 || p.equipos > 0;
+    }).length;
+  }
+
+  get totalEquiposPendientesDevolucion(): number {
+    return (this.detalle?.equiposDia ?? []).filter(eq => {
+      const estado = (eq.estadoDevolucion ?? '').toString().trim().toLowerCase();
+      return !estado || estado === 'pendiente' || estado === 'sin devolución' || estado === 'sin devolucion';
+    }).length;
+  }
+
+  get avanceAsignacionGeneral(): number {
+    const resumenes = Array.from(this.diaResumenMap.values());
+    const totalRequerido = resumenes.reduce((acc, item) => acc + item.reqPersonal + item.reqEquipos, 0);
+    if (!totalRequerido) return 100;
+    const totalAsignado = resumenes.reduce(
+      (acc, item) => acc + Math.min(item.asignPersonal, item.reqPersonal) + Math.min(item.asignEquipos, item.reqEquipos),
+      0
+    );
+    return Math.max(0, Math.min(100, Math.round((totalAsignado / totalRequerido) * 100)));
+  }
+
+  get totalDiasRiesgoAlto(): number {
+    return this.diasOrdenadosCache.filter(dia => this.getNivelRiesgoDia(dia.diaId) === 'alto').length;
+  }
+
+  getNivelRiesgoDia(diaId: number): 'alto' | 'medio' | 'bajo' {
+    const resumen = this.getDiaResumen(diaId);
+    const pendientes = resumen.pendientesPersonal + resumen.pendientesEquipos;
+    if (resumen.estadoAsignacion === 'Sin asignar' || pendientes >= 3) return 'alto';
+    if (pendientes > 0 || resumen.incidenciasCount > 0) return 'medio';
+    return 'bajo';
+  }
+
+  getRiesgoDiaLabel(diaId: number): string {
+    const nivel = this.getNivelRiesgoDia(diaId);
+    if (nivel === 'alto') return 'Riesgo alto';
+    if (nivel === 'medio') return 'Riesgo medio';
+    return 'Riesgo bajo';
+  }
+
+  getRiesgoGeneralClass(): 'control-kpi--danger' | 'control-kpi--warning' | 'control-kpi--neutral' {
+    if (this.totalDiasRiesgoAlto > 0) return 'control-kpi--danger';
+    if ((this.pendientesTotales.personal + this.pendientesTotales.equipos) > 0) return 'control-kpi--warning';
+    return 'control-kpi--neutral';
+  }
+
   toggleSoloPendientes(): void {
     this.soloPendientes = !this.soloPendientes;
     const dias = [...this.diasOrdenadosCache];
@@ -1457,6 +1842,23 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       ? dias.filter(d => (d.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'pendiente')
       : dias;
     this.openDiaId = filtrados[0]?.diaId ?? null;
+  }
+
+  irAPrimerPendiente(): void {
+    const pendiente = this.diasOrdenadosCache.find(d => {
+      const p = this.getPendientesDia(d.diaId);
+      return p.personal > 0 || p.equipos > 0;
+    });
+    if (!pendiente) return;
+    this.soloPendientes = true;
+    this.openDiaId = pendiente.diaId;
+    this.irASeccion('agenda-proyecto');
+  }
+
+  getOpenDiaLabel(): string {
+    if (!this.openDiaId) return 'Día seleccionado';
+    const dia = this.diasOrdenadosCache.find(item => item.diaId === this.openDiaId);
+    return dia ? this.formatFechaLarga(dia.fecha) : 'Día seleccionado';
   }
 
   onToggleDia(diaId: number, event: Event): void {
@@ -1651,12 +2053,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
         incidenciaId: row.incidenciaId,
         tipo: row.tipo,
         descripcion: row.descripcion,
+        fechaHoraEvento: row.fechaHoraEvento ?? null,
         createdAt: row.createdAt,
         empleadoNombre: row.empleadoNombre ?? null,
         empleadoCargo: row.empleadoCargo ?? null,
         empleadoReemplazoNombre: row.empleadoReemplazoNombre ?? null,
         empleadoReemplazoCargo: row.empleadoReemplazoCargo ?? null
       });
+    });
+    this.incidenciasDiaMap.forEach((rows, diaId) => {
+      this.incidenciasDiaMap.set(
+        diaId,
+        [...rows].sort((a, b) => String(b.fechaHoraEvento ?? b.createdAt).localeCompare(String(a.fechaHoraEvento ?? a.createdAt)))
+      );
     });
 
     this.diasOrdenadosCache.forEach(dia => {
@@ -1739,6 +2148,28 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const h = Math.floor(value / 60);
     const m = value % 60;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+  }
+
+  private toDateTimeLocalValue(value: string | null | undefined): string | null {
+    if (!value) return null;
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return null;
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  }
+
+  private setIncidenciaHoraActual(): void {
+    const now = new Date();
+    const hours24 = now.getHours();
+    const h12 = hours24 % 12 || 12;
+    const roundedMin = Math.floor(now.getMinutes() / 5) * 5;
+    this.incidenciaHora12 = String(h12).padStart(2, '0');
+    this.incidenciaMinuto = String(roundedMin).padStart(2, '0');
+    this.incidenciaAmPm = hours24 >= 12 ? 'PM' : 'AM';
   }
 
 

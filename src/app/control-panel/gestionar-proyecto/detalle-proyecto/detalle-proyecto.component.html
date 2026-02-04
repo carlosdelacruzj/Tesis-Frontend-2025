@@ -1,4 +1,4 @@
-﻿<div class="dashboard-content">
+﻿<div class="dashboard-content operativo-mode">
   <app-list-toolbar
     [title]="proyecto?.proyectoNombre || 'Proyecto'"
     [showSearch]="false"
@@ -54,29 +54,59 @@
           </div>
         </div>
 
-        <div class="ops-bar">
-          <button class="ops-chip ops-chip--action" type="button" (click)="irASeccion('agenda-proyecto')">
-            <span>Días</span>
-            <strong>{{ totalDias }}</strong>
+        <div class="workflow-lane" aria-label="Flujo de trabajo del proyecto">
+          <button class="workflow-item" type="button" (click)="irASeccion('agenda-proyecto')">
+            <span class="workflow-item__step">1</span>
+            <span class="workflow-item__text">
+              <strong>Agenda</strong>
+              <small>Revisa días y pendientes</small>
+            </span>
           </button>
-          <button class="ops-chip ops-chip--action" type="button" (click)="irASeccion('agenda-proyecto')">
-            <span>Servicios</span>
-            <strong>{{ totalServiciosDia }}</strong>
+          <button class="workflow-item" type="button" (click)="irASeccion('asignaciones-proyecto')">
+            <span class="workflow-item__step">2</span>
+            <span class="workflow-item__text">
+              <strong>Asignaciones</strong>
+              <small>Define personal y equipos</small>
+            </span>
           </button>
-          <button class="ops-chip ops-chip--action" type="button" (click)="irASeccion('asignaciones-proyecto')">
-            <span>Personal</span>
-            <strong>{{ totalEmpleadosDia }}</strong>
+          <button class="workflow-item" type="button" (click)="irASeccion('incidencias-proyecto')">
+            <span class="workflow-item__step">3</span>
+            <span class="workflow-item__text">
+              <strong>Incidencias</strong>
+              <small>Registra eventos del día</small>
+            </span>
           </button>
-          <button class="ops-chip ops-chip--action" type="button" (click)="irASeccion('devoluciones-proyecto')">
-            <span>Equipos</span>
-            <strong>{{ totalEquiposDia }}</strong>
-          </button>
-          <button class="ops-chip ops-alert ops-chip--action" type="button" (click)="irASeccion('asignaciones-proyecto')">
-            <span>Pendientes</span>
-            <strong>{{ pendientesTotales.personal + pendientesTotales.equipos }}</strong>
+          <button class="workflow-item" type="button" (click)="irASeccion('devoluciones-proyecto')">
+            <span class="workflow-item__step">4</span>
+            <span class="workflow-item__text">
+              <strong>Devoluciones</strong>
+              <small>Confirma estado de equipos</small>
+            </span>
           </button>
         </div>
 
+        <div class="control-kpis" aria-label="Indicadores de control operativo">
+          <article class="control-kpi control-kpi--primary">
+            <p class="control-kpi__label">Avance de asignación</p>
+            <div class="control-kpi__value">{{ avanceAsignacionGeneral }}%</div>
+            <p class="control-kpi__meta">{{ totalDiasConPendientes }} día(s) con pendientes · {{ totalDias }} día(s) totales</p>
+          </article>
+          <article class="control-kpi" [ngClass]="getRiesgoGeneralClass()">
+            <p class="control-kpi__label">Pendientes activos</p>
+            <div class="control-kpi__value">{{ pendientesTotales.personal + pendientesTotales.equipos }}</div>
+            <p class="control-kpi__meta">Personal: {{ pendientesTotales.personal }} · Equipos: {{ pendientesTotales.equipos }} · Riesgo alto: {{ totalDiasRiesgoAlto }}</p>
+          </article>
+          <article class="control-kpi control-kpi--neutral">
+            <p class="control-kpi__label">Incidencias registradas</p>
+            <div class="control-kpi__value">{{ totalIncidencias }}</div>
+            <p class="control-kpi__meta">Monitoreo diario del proyecto</p>
+          </article>
+          <article class="control-kpi control-kpi--danger">
+            <p class="control-kpi__label">Equipos por devolver</p>
+            <div class="control-kpi__value">{{ totalEquiposPendientesDevolucion }}</div>
+            <p class="control-kpi__meta">Revisar cierre de jornada</p>
+          </article>
+        </div>
         @if (proyecto.notas) {
           <div class="note-box">
             <div class="note-title">Notas</div>
@@ -89,18 +119,35 @@
       <section class="card section agenda-section" id="agenda-proyecto">
         <header class="card-header">
           <div class="section-heading">
+            <span class="flow-step">Paso 1</span>
             <p class="eyebrow">Agenda</p>
             <h3>Días de proyecto ({{ detalle.dias.length }})</h3>
             <p class="muted small section-help">Explora cada día para revisar bloques, servicios y pendientes.</p>
           </div>
-          <button class="toggle-btn" type="button" (click)="toggleSoloPendientes()">
-            @if (soloPendientes) { Ver todos } @else { Solo con pendientes }
-          </button>
+          <div class="agenda-actions">
+            <button class="toggle-btn" type="button" (click)="toggleSoloPendientes()">
+              @if (soloPendientes) { Ver todos } @else { Solo pendientes }
+            </button>
+            <button class="toggle-btn" type="button" (click)="irAPrimerPendiente()">Ir a pendiente</button>
+          </div>
         </header>
+        @if (openDiaId) {
+          <div class="agenda-sticky-bar">
+            <div>
+              <div class="agenda-sticky-bar__title">{{ getOpenDiaLabel() }}</div>
+              <div class="agenda-sticky-bar__meta">
+                Pendientes: personal {{ getPendientesDia(openDiaId).personal }} · equipos {{ getPendientesDia(openDiaId).equipos }}
+              </div>
+            </div>
+            <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">Asignar ahora</button>
+          </div>
+        }
         <div class="timeline">
           @for (dia of diasTimeline; track dia.diaId) {
             <details
               class="timeline-item"
+              [class.timeline-item--pending]="getEstadoAsignacionDia(dia.diaId) === 'Pendiente' || getEstadoAsignacionDia(dia.diaId) === 'Sin asignar'"
+              [class.timeline-item--done]="getEstadoAsignacionDia(dia.diaId) === 'Completo'"
               [open]="openDiaId === dia.diaId"
               (toggle)="onToggleDia(dia.diaId, $event)">
               <summary class="timeline-summary">
@@ -137,12 +184,23 @@
                         }"
                       ></app-estado-badge>
                     }
+                    <app-estado-badge
+                      [estado]="getRiesgoDiaLabel(dia.diaId)"
+                      [mapaColores]="{
+                        'riesgo alto': 'danger',
+                        'riesgo medio': 'warning',
+                        'riesgo bajo': 'success-light'
+                      }"
+                    ></app-estado-badge>
                     @if (isAsignacionDiaDirtyFor(dia.diaId)) {
                       <app-estado-badge [estado]="'Cambios'" [mapaColores]="{ 'cambios': 'warning' }"></app-estado-badge>
                     }
                   </div>
                 </div>
-                <div class="timeline-dot"></div>
+                <div class="timeline-side">
+                  <div class="timeline-dot"></div>
+                  <span class="timeline-expand">{{ openDiaId === dia.diaId ? 'Ocultar' : 'Ver detalle' }}</span>
+                </div>
               </summary>
               <div class="timeline-content">
                 <div class="dia-grid">
@@ -205,16 +263,17 @@
       }
 
       @if ((detalle?.empleadosDia?.length || detalle?.equiposDia?.length) || (detalle?.requerimientosPersonalDia?.length || detalle?.requerimientosEquipoDia?.length)) {
-      <section class="card section" id="asignaciones-proyecto">
+      <section class="card section section--flow" id="asignaciones-proyecto">
         <details class="collapsible" open>
           <summary class="collapsible__summary">
-            <div>
+            <div class="section-heading">
+              <span class="flow-step">Paso 2</span>
               <p class="eyebrow">Asignaciones</p>
               <h3>Personal y equipos</h3>
             </div>
             <div class="collapsible__actions">
               <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalAsignar()">
-                Ver/gestionar asignaciones
+                Gestionar asignaciones
               </button>
               <span class="collapsible__caret">▾</span>
             </div>
@@ -247,16 +306,17 @@
       </section>
       }
 
-      <section class="card section" id="incidencias-proyecto">
+      <section class="card section section--flow" id="incidencias-proyecto">
         <details class="collapsible" open>
           <summary class="collapsible__summary">
-            <div>
+            <div class="section-heading">
+              <span class="flow-step">Paso 3</span>
               <p class="eyebrow">Incidencias</p>
               <h3>Registro del día</h3>
             </div>
             <div class="collapsible__actions">
               <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalIncidencia()">
-                Registrar incidencia
+                Agregar incidencia
               </button>
               <span class="collapsible__caret">▾</span>
             </div>
@@ -270,26 +330,36 @@
                     <div class="incidencias-resumen__meta">{{ getIncidenciasCountDia(dia.diaId) }} incidencia(s)</div>
                   </div>
                   <div class="incidencias-resumen__actions">
-                    <button mat-stroked-button type="button" (click)="abrirModalDevolucion(dia.diaId)">Devoluciones</button>
                     <button mat-button type="button" (click)="abrirModalIncidencia(dia.diaId)">Agregar</button>
+                    <button mat-stroked-button type="button" (click)="abrirModalIncidenciasDia(dia.diaId)" [disabled]="!getIncidenciasCountDia(dia.diaId)">
+                      Ver todas
+                    </button>
                   </div>
                 </div>
                 <div class="incidencias-resumen__list">
-                  @for (inc of getIncidenciasDia(dia.diaId); track inc.incidenciaId) {
+                  @for (inc of getIncidenciasRecientesDia(dia.diaId); track inc.incidenciaId) {
                     <div class="incidencia-item">
-                      <div class="incidencia-item__tipo">
-                        @switch (inc.tipo) {
-                          @case ('PERSONAL_NO_ASISTE') { Personal no asiste }
-                          @case ('EQUIPO_FALLA_EN_EVENTO') { Equipo falla en evento }
-                          @default { Otros }
-                        }
+                      <div class="incidencia-item__header">
+                        <div class="incidencia-item__tipo">{{ getIncidenciaTipoLabel(inc.tipo) }}</div>
+                        <span class="incidencia-severity" [ngClass]="'incidencia-severity--' + getIncidenciaSeveridad(inc)">
+                          {{ getIncidenciaSeveridad(inc) }}
+                        </span>
                       </div>
                       <div class="incidencia-item__meta" *ngIf="inc.empleadoNombre">
                         <span class="chip chip-light">Afectado: {{ inc.empleadoNombre }}<span class="muted" *ngIf="inc.empleadoCargo"> · {{ inc.empleadoCargo }}</span></span>
                         <span class="chip chip-light" *ngIf="inc.empleadoReemplazoNombre">Reemplazo: {{ inc.empleadoReemplazoNombre }}<span class="muted" *ngIf="inc.empleadoReemplazoCargo"> · {{ inc.empleadoReemplazoCargo }}</span></span>
                       </div>
+                      <div class="incidencia-item__time">
+                        <span>Hora del incidente: {{ inc.fechaHoraEvento || 'No registrada' }}</span>
+                        <span>Registrado el: {{ inc.createdAt || '—' }}</span>
+                      </div>
                       <div class="incidencia-item__desc">{{ inc.descripcion }}</div>
                     </div>
+                  }
+                  @if (getIncidenciasCountDia(dia.diaId) > 3) {
+                    <button class="incidencia-more" type="button" (click)="abrirModalIncidenciasDia(dia.diaId)">
+                      Ver {{ getIncidenciasCountDia(dia.diaId) - 3 }} incidencia(s) más
+                    </button>
                   }
                   @if (!getIncidenciasCountDia(dia.diaId)) {
                     <div class="muted small">Sin incidencias.</div>
@@ -302,38 +372,76 @@
       </section>
 
       @if (detalle?.equiposDia?.length) {
-      <section class="card section" id="devoluciones-proyecto">
+      <section class="card section section--flow" id="devoluciones-proyecto">
         <details class="collapsible" open>
           <summary class="collapsible__summary">
-            <div>
+            <div class="section-heading">
+              <span class="flow-step">Paso 4</span>
               <p class="eyebrow">Devoluciones</p>
               <h3>Estado de equipos</h3>
             </div>
-            <span class="collapsible__caret">▾</span>
+            <div class="collapsible__actions">
+              <button mat-button type="button" (click)="$event.stopPropagation(); toggleSoloExcepcionesEstado()">
+                @if (mostrarSoloExcepcionesEstado) { Ver todo } @else { Solo excepciones }
+              </button>
+              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalDevolucion(openDiaId || undefined)">
+                Registrar devoluciones del día
+              </button>
+              <span class="collapsible__caret">▾</span>
+            </div>
           </summary>
-          <div class="devoluciones-grid">
-            @for (eq of detalle.equiposDia; track eq.asignacionId) {
-              <div class="devolucion-card">
-                <div class="devolucion-header">
-                  <div>
-                    <div class="fw-semibold">{{ eq.modelo || '—' }}</div>
-                    <div class="muted small">Serie: {{ eq.equipoSerie || '—' }}</div>
+          <div class="estado-equipos-view">
+            @for (dia of detalle?.dias ?? []; track dia.diaId) {
+              @if (getResumenEstadoDia(dia.diaId).total) {
+                <details class="estado-dia-card" [open]="openDiaId === dia.diaId">
+                  <summary class="estado-dia-card__summary">
+                    <div>
+                      <div class="estado-dia-card__title">{{ formatFechaLarga(dia.fecha) }}</div>
+                      <div class="estado-dia-card__meta">
+                        Total: {{ getResumenEstadoDia(dia.diaId).total }} ·
+                        Devueltos: {{ getResumenEstadoDia(dia.diaId).devueltos }} ·
+                        Excepciones: {{ getResumenEstadoDia(dia.diaId).excepciones }}
+                      </div>
+                    </div>
+                  </summary>
+
+                  <div class="estado-dia-card__body">
+                    @for (grupo of getGruposEstadoDia(dia.diaId); track grupo.responsable) {
+                      <details class="estado-responsable-card">
+                        <summary class="estado-responsable-card__summary">
+                          <div class="estado-responsable-card__title">{{ grupo.responsable }}</div>
+                          <div class="estado-responsable-card__meta">
+                            {{ grupo.total }} equipo(s) · Excepciones: {{ grupo.excepciones }}
+                          </div>
+                        </summary>
+                        <div class="estado-equipos-list">
+                          @for (eq of grupo.items; track eq.asignacionId) {
+                            <div class="estado-equipo-row" [ngClass]="getEstadoDevolucionClass(eq.estadoDevolucion)">
+                              <div class="estado-equipo-row__main">
+                                <div class="estado-equipo-row__name">{{ eq.modelo || '—' }} · {{ eq.equipoSerie || '—' }}</div>
+                                <div class="estado-equipo-row__meta">{{ eq.tipoEquipo || '—' }}</div>
+                              </div>
+                              <app-estado-badge
+                                [estado]="getEstadoDevolucionDisplay(eq.estadoDevolucion)"
+                                [mapaColores]="{
+                                  'pendiente': 'warning',
+                                  'devuelto': 'success',
+                                  'dañado': 'warning',
+                                  'perdido': 'danger',
+                                  'robado': 'danger'
+                                }"
+                              ></app-estado-badge>
+                            </div>
+                          }
+                        </div>
+                      </details>
+                    }
+                    @if (!getGruposEstadoDia(dia.diaId).length && mostrarSoloExcepcionesEstado) {
+                      <div class="muted small">Sin excepciones para este día.</div>
+                    }
                   </div>
-                  <app-estado-badge
-                    [estado]="eq.estadoDevolucion || 'Sin devolución'"
-                    [mapaColores]="{
-                      'sin devolución': 'neutral',
-                      'pendiente': 'warning',
-                      'devuelto': 'success',
-                      'entregado': 'success-light'
-                    }"
-                  ></app-estado-badge>
-                </div>
-                <div class="muted small">Fecha devolución: {{ eq.fechaDevolucion || '—' }}</div>
-                @if (eq.notasDevolucion) {
-                  <div class="devolucion-notas">{{ eq.notasDevolucion }}</div>
-                }
-              </div>
+                </details>
+              }
             }
           </div>
         </details>
@@ -386,6 +494,13 @@
       <button mat-stroked-button color="primary" type="button" (click)="copiarAsignacionesDesde(copiarDesdeDiaId)"
         [disabled]="!copiarDesdeDiaId || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
         Copiar
+      </button>
+      <button mat-stroked-button type="button" (click)="copiarAsignacionesDiaAnterior()"
+        [disabled]="!getDiaAnteriorId(asignacionDiaId) || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
+        Copiar día anterior
+      </button>
+      <button mat-button type="button" (click)="irADiaConPendientesAsignacion()">
+        Ir a día pendiente
       </button>
       <button mat-stroked-button color="primary" type="button" (click)="limpiarAsignacionesDia()" [disabled]="!asignacionDiaId">
         Limpiar día
@@ -693,6 +808,68 @@
 </app-modal-base>
 
 <app-modal-base
+  [open]="modalIncidenciasListaAbierto"
+  title="Historial de incidencias"
+  [useDefaultFooter]="false"
+  size="lg"
+  (closed)="cerrarModalIncidenciasDia()">
+  <div class="modal-section">
+    <div class="asignaciones-editor">
+      <label class="form-field">
+        <span class="label">Tipo</span>
+        <select class="form-control" [(ngModel)]="incidenciaFiltroTipo" name="incidenciaFiltroTipo">
+          <option value="">Todos</option>
+          <option value="PERSONAL_NO_ASISTE">Personal no asiste</option>
+          <option value="EQUIPO_FALLA_EN_EVENTO">Equipo falla en evento</option>
+          <option value="EQUIPO_ROBO_PERDIDA">Equipo robo/pérdida</option>
+          <option value="OTROS">Otros</option>
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="label">Buscar</span>
+        <input class="form-control" type="text" [(ngModel)]="incidenciaFiltroTexto" name="incidenciaFiltroTexto"
+          placeholder="Tipo, descripción o afectado">
+      </label>
+    </div>
+
+    <div class="incidencias-modal-list">
+      @for (inc of getIncidenciasModalFiltradas(); track inc.incidenciaId) {
+        <div class="incidencia-item incidencia-item--modal">
+          <div class="incidencia-item__header">
+            <div class="incidencia-item__tipo">{{ getIncidenciaTipoLabel(inc.tipo) }}</div>
+            <span class="incidencia-severity" [ngClass]="'incidencia-severity--' + getIncidenciaSeveridad(inc)">
+              {{ getIncidenciaSeveridad(inc) }}
+            </span>
+          </div>
+          <div class="incidencia-item__meta" *ngIf="inc.empleadoNombre">
+            <span class="chip chip-light">Afectado: {{ inc.empleadoNombre }}<span class="muted" *ngIf="inc.empleadoCargo"> · {{ inc.empleadoCargo }}</span></span>
+            <span class="chip chip-light" *ngIf="inc.empleadoReemplazoNombre">Reemplazo: {{ inc.empleadoReemplazoNombre }}<span class="muted" *ngIf="inc.empleadoReemplazoCargo"> · {{ inc.empleadoReemplazoCargo }}</span></span>
+          </div>
+          <div class="incidencia-item__time">
+            <span>Hora del incidente: {{ inc.fechaHoraEvento || 'No registrada' }}</span>
+            <span>Registrado el: {{ inc.createdAt || '—' }}</span>
+          </div>
+          <div class="incidencia-item__desc">{{ inc.descripcion }}</div>
+        </div>
+      }
+      @if (!getIncidenciasModalFiltradas().length) {
+        <div class="muted">No hay incidencias para los filtros seleccionados.</div>
+      }
+    </div>
+  </div>
+
+  <div class="modal-footer-actions">
+    <button mat-button type="button" (click)="cerrarModalIncidenciasDia()">Cerrar</button>
+    @if (canCargarMasIncidenciasModal()) {
+      <button mat-stroked-button type="button" (click)="cargarMasIncidenciasModal()">Cargar más</button>
+    }
+    <button mat-flat-button color="primary" type="button" (click)="abrirModalIncidencia(incidenciaListaDiaId || undefined)">
+      Nueva incidencia
+    </button>
+  </div>
+</app-modal-base>
+
+<app-modal-base
   [open]="modalIncidenciaAbierto"
   title="Registrar incidencia"
   [useDefaultFooter]="false"
@@ -727,6 +904,27 @@
           <option value="EQUIPO_ROBO_PERDIDA">Equipo robo/pérdida</option>
           <option value="OTROS">Otros</option>
         </select>
+      </label>
+      <label class="form-field">
+        <span class="label">Hora del incidente (real)</span>
+        <div class="time-picker-row">
+          <select class="form-control" [(ngModel)]="incidenciaHora12" name="incidenciaHora12">
+            @for (hora of incidenciaHoraOptions; track hora) {
+              <option [value]="hora">{{ hora }}</option>
+            }
+          </select>
+          <span class="time-picker-sep">:</span>
+          <select class="form-control" [(ngModel)]="incidenciaMinuto" name="incidenciaMinuto">
+            @for (minuto of incidenciaMinutoOptions; track minuto) {
+              <option [value]="minuto">{{ minuto }}</option>
+            }
+          </select>
+          <select class="form-control" [(ngModel)]="incidenciaAmPm" name="incidenciaAmPm">
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </select>
+        </div>
+        <div class="muted micro">Preseleccionada con la hora actual.</div>
       </label>
     </div>
 
@@ -813,41 +1011,100 @@
   (closed)="cerrarModalDevolucion()">
 
   <div class="modal-section">
+    <div class="asignaciones-editor">
+      <label class="form-field">
+        <span class="label">Día del proyecto</span>
+        <select class="form-control" [ngModel]="devolucionDiaId" (ngModelChange)="onDevolucionDiaChange($event)">
+          <option [ngValue]="null">Selecciona un día</option>
+          @for (dia of detalle?.dias ?? []; track dia.diaId) {
+            <option [ngValue]="dia.diaId">{{ formatFechaLarga(dia.fecha) }}</option>
+          }
+        </select>
+      </label>
+      <p class="muted small">Se prellena como <strong>Devuelto</strong> para agilizar el cierre diario. Ajusta solo excepciones (dañado, perdido, robado).</p>
+    </div>
     @if (devolucionDiaId) {
+      <div class="devolucion-toolbar">
+        <div class="devolucion-kpis">
+          <span class="meta-chip">Total: {{ getResumenDevolucionDia(devolucionDiaId).total }}</span>
+          <span class="meta-chip">Devueltos: {{ getResumenDevolucionDia(devolucionDiaId).devueltos }}</span>
+          <span class="meta-chip meta-chip--warn">Excepciones: {{ getResumenDevolucionDia(devolucionDiaId).excepciones }}</span>
+        </div>
+        <button mat-button type="button" (click)="toggleSoloExcepcionesDevolucion()"
+          [disabled]="getResumenDevolucionDia(devolucionDiaId).excepciones === 0">
+          @if (mostrarSoloExcepcionesDevolucion) { Ver todos } @else { Solo excepciones }
+        </button>
+      </div>
+      <div class="asignaciones-editor">
+        <label class="form-field">
+          <span class="label">Responsable</span>
+          <select class="form-control" [(ngModel)]="devolucionFiltroResponsable">
+            <option value="">Todos</option>
+            @for (nombre of getResponsablesDevolucionOptions(devolucionDiaId); track nombre) {
+              <option [value]="nombre">{{ nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="label">Buscar equipo</span>
+          <input class="form-control" type="text" [(ngModel)]="devolucionBusqueda" placeholder="Modelo, serie o tipo">
+        </label>
+      </div>
       <div class="devolucion-grid">
-        @for (eq of getEquiposDevolucionDia(devolucionDiaId); track eq.equipoId) {
-          <div class="devolucion-row">
-            <div class="devolucion-info">
-              <div class="devolucion-title">{{ eq.modelo || 'Equipo' }} ({{ eq.equipoSerie || '—' }})</div>
-              <div class="muted small">{{ eq.tipoEquipo }}</div>
-              @if (eq.responsableNombre) {
-                <div class="muted small">Responsable: {{ eq.responsableNombre }}</div>
+        @for (grupo of getGruposDevolucion(devolucionDiaId); track grupo.key) {
+          <details class="devolucion-grupo" [open]="isGrupoDevolucionAbierto(grupo.key)" (toggle)="onToggleGrupoDevolucion(grupo.key, $event)">
+            <summary class="devolucion-grupo__header">
+              <div>
+                <div class="devolucion-grupo__title">{{ grupo.responsable }}</div>
+                <div class="muted small">Equipos: {{ getResumenGrupoDevolucion(grupo.items).total }} · Excepciones: {{ getResumenGrupoDevolucion(grupo.items).excepciones }}</div>
+              </div>
+              <div class="devolucion-grupo__actions">
+                <button mat-stroked-button type="button" (click)="$event.stopPropagation(); marcarGrupoDevuelto(grupo.items)">
+                  Marcar grupo devuelto
+                </button>
+              </div>
+            </summary>
+
+            <div class="devolucion-grupo__body">
+              @for (eq of grupo.items; track eq.equipoId) {
+              <div class="devolucion-row" [ngClass]="{
+                'devolucion-row--ok': getEstadoDevolucionActual(eq.equipoId) === 'DEVUELTO',
+                'devolucion-row--alert': getEstadoDevolucionActual(eq.equipoId) === 'DANADO' || getEstadoDevolucionActual(eq.equipoId) === 'PERDIDO' || getEstadoDevolucionActual(eq.equipoId) === 'ROBADO'
+              }">
+                <div class="devolucion-info">
+                  <div class="devolucion-title">{{ eq.modelo || 'Equipo' }} ({{ eq.equipoSerie || '—' }})</div>
+                  <div class="muted small">{{ eq.tipoEquipo }}</div>
+                </div>
+                <div class="devolucion-form">
+                  <label class="form-field small">
+                    <span class="label">Estado</span>
+                    <div class="estado-selector">
+                      <button type="button" class="estado-btn" [class.is-active]="getEstadoDevolucionActual(eq.equipoId) === 'DEVUELTO'"
+                        (click)="onDevolucionEstadoChange(eq.equipoId, 'DEVUELTO')">Devuelto</button>
+                      <button type="button" class="estado-btn estado-btn--warn" [class.is-active]="getEstadoDevolucionActual(eq.equipoId) === 'DANADO'"
+                        (click)="onDevolucionEstadoChange(eq.equipoId, 'DANADO')">Dañado</button>
+                      <button type="button" class="estado-btn estado-btn--danger" [class.is-active]="getEstadoDevolucionActual(eq.equipoId) === 'PERDIDO'"
+                        (click)="onDevolucionEstadoChange(eq.equipoId, 'PERDIDO')">Perdido</button>
+                      <button type="button" class="estado-btn estado-btn--danger" [class.is-active]="getEstadoDevolucionActual(eq.equipoId) === 'ROBADO'"
+                        (click)="onDevolucionEstadoChange(eq.equipoId, 'ROBADO')">Robado</button>
+                    </div>
+                  </label>
+                  <label class="form-field small">
+                    <span class="label">Fecha</span>
+                    <input class="form-control" type="datetime-local" [ngModel]="devolucionDraft[eq.equipoId]?.fecha || ''" (ngModelChange)="onDevolucionFechaChange(eq.equipoId, $event)">
+                    <div class="muted micro">Prellenado con fecha/hora actual.</div>
+                  </label>
+                  <label class="form-field small">
+                    <span class="label">Notas</span>
+                    <textarea class="form-control" rows="2" [ngModel]="devolucionDraft[eq.equipoId]?.notas || ''" (ngModelChange)="onDevolucionNotasChange(eq.equipoId, $event)" placeholder="Solo si hubo alguna incidencia en la devolución"></textarea>
+                  </label>
+                </div>
+              </div>
               }
             </div>
-            <div class="devolucion-form">
-              <label class="form-field small">
-                <span class="label">Estado</span>
-                <select class="form-control" [ngModel]="devolucionDraft[eq.equipoId]?.estado || ''" (ngModelChange)="onDevolucionEstadoChange(eq.equipoId, $event)">
-                  <option value="">Selecciona</option>
-                  <option value="DEVUELTO">Devuelto</option>
-                  <option value="DANADO">Dañado</option>
-                  <option value="PERDIDO">Perdido</option>
-                  <option value="ROBADO">Robado</option>
-                </select>
-              </label>
-              <label class="form-field small">
-                <span class="label">Fecha</span>
-                <input class="form-control" type="datetime-local" [ngModel]="devolucionDraft[eq.equipoId]?.fecha || ''" (ngModelChange)="onDevolucionFechaChange(eq.equipoId, $event)">
-                <div class="muted micro">Vacío = ahora</div>
-              </label>
-              <label class="form-field small">
-                <span class="label">Notas</span>
-                <textarea class="form-control" rows="2" [ngModel]="devolucionDraft[eq.equipoId]?.notas || ''" (ngModelChange)="onDevolucionNotasChange(eq.equipoId, $event)" placeholder="Opcional"></textarea>
-              </label>
-            </div>
-          </div>
+          </details>
         }
-        @if (!getEquiposDevolucionDia(devolucionDiaId).length) {
+        @if (!getGruposDevolucion(devolucionDiaId).length) {
           <div class="muted">No hay equipos asignados en este día.</div>
         }
       </div>
@@ -856,6 +1113,9 @@
 
   <div class="modal-footer-actions">
     <button mat-button type="button" (click)="cerrarModalDevolucion()">Cerrar</button>
+    <button mat-stroked-button type="button" (click)="marcarTodosDevueltos()" [disabled]="!devolucionDiaId || !getEquiposDevolucionDia(devolucionDiaId).length">
+      Marcar todo devuelto
+    </button>
     <button mat-flat-button color="primary" type="button" (click)="guardarDevoluciones()"
       [disabled]="guardandoDevolucion || !canGuardarDevoluciones()">
       {{ guardandoDevolucion ? 'Guardando…' : 'Guardar devoluciones' }}
