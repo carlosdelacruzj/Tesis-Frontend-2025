@@ -1,27 +1,58 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import Swal from 'sweetalert2';
 import {
   BloqueDia,
+  IncidenciaDia,
   ProyectoAsignacionEmpleadoPayload,
   ProyectoAsignacionEquipoPayload,
   ProyectoAsignacionesDisponiblesEquipo,
   ProyectoAsignacionesDisponiblesEmpleado,
   ProyectoAsignacionesPayload,
   ProyectoDetalle,
+  ProyectoDia,
   ProyectoDetalleResponse,
   ProyectoEstadoDevolucion,
   ProyectoDevolucionEquiposPayload,
-  ProyectoDevolucionEquipoItem
+  ProyectoDevolucionEquipoItem,
+  ServicioDia
 } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
+
+type EstadoAsignacionDia = 'Sin asignar' | 'Pendiente' | 'Completo' | '—';
+
+type IncidenciaResumen = {
+  tipo: string;
+  descripcion: string;
+  incidenciaId: number;
+  createdAt: string;
+  empleadoNombre?: string | null;
+  empleadoCargo?: string | null;
+  empleadoReemplazoNombre?: string | null;
+  empleadoReemplazoCargo?: string | null;
+};
+
+type DiaResumen = {
+  bloquesCount: number;
+  serviciosCount: number;
+  reqPersonal: number;
+  reqEquipos: number;
+  asignPersonal: number;
+  asignEquipos: number;
+  pendientesPersonal: number;
+  pendientesEquipos: number;
+  estadoAsignacion: EstadoAsignacionDia;
+  rangoHoras: { inicio: string; fin: string } | null;
+  incidenciasCount: number;
+};
 
 @Component({
   selector: 'app-detalle-proyecto',
   templateUrl: './detalle-proyecto.component.html',
-  styleUrls: ['./detalle-proyecto.component.css']
+  styleUrls: ['./detalle-proyecto.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
@@ -64,10 +95,16 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   devolucionDiaId: number | null = null;
   devolucionDraft: Record<number, { estado: ProyectoEstadoDevolucion | ''; notas: string; fecha: string | null }> = {};
   guardandoDevolucion = false;
+  stepperOrientation: 'horizontal' | 'vertical' = 'horizontal';
   ultimoDropDestino: number | 'reserva' | null = null;
   private dropHighlightTimer: number | null = null;
   tiposDetalleAbiertos: string[] = [];
   filtroModeloPorTipo: Record<string, string> = {};
+  private diasOrdenadosCache: ProyectoDia[] = [];
+  private bloquesDiaMap = new Map<number, BloqueDia[]>();
+  private serviciosDiaMap = new Map<number, ServicioDia[]>();
+  private incidenciasDiaMap = new Map<number, IncidenciaResumen[]>();
+  private diaResumenMap = new Map<number, DiaResumen>();
   private asignacionesDraft: Record<number, {
     empleados: ProyectoAsignacionEmpleadoPayload[];
     equipos: ProyectoAsignacionEquipoPayload[];
@@ -92,6 +129,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   ngOnInit(): void {
+    this.updateStepperOrientation();
     const idParam = this.route.snapshot.paramMap.get('id');
     const id = idParam ? +idParam : 0;
 
@@ -110,6 +148,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
         next: (data) => {
           this.detalle = data;
           this.proyecto = data?.proyecto ?? null;
+          this.rebuildDiaCaches();
           if (!this.openDiaId) {
             const diaInicial = [...(data?.dias ?? [])]
               .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))[0];
@@ -146,6 +185,16 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.incidenciaDiaId = selected;
     this.resetIncidenciaForm(false);
     this.cargarDisponiblesIncidencia(selected);
+  }
+
+  irASeccion(sectionId: string): void {
+    const section = typeof document !== 'undefined' ? document.getElementById(sectionId) : null;
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateStepperOrientation();
   }
 
   cerrarModalIncidencia(): void {
@@ -287,6 +336,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
               next: data => {
                 this.detalle = data;
                 this.proyecto = data?.proyecto ?? null;
+                this.rebuildDiaCaches();
               },
               error: err => {
                 console.error('[proyecto] incidencias', err);
@@ -417,6 +467,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
               next: data => {
                 this.detalle = data;
                 this.proyecto = data?.proyecto ?? null;
+                this.rebuildDiaCaches();
                 if (this.asignacionDiaId) {
                   delete this.asignacionesDraft[this.asignacionDiaId];
                 }
@@ -609,32 +660,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .map(tipo => ({ tipo, items: mapa[tipo] }));
   }
 
-  getIncidenciasDia(diaId: number): {
-    tipo: string;
-    descripcion: string;
-    incidenciaId: number;
-    createdAt: string;
-    empleadoNombre?: string | null;
-    empleadoCargo?: string | null;
-    empleadoReemplazoNombre?: string | null;
-    empleadoReemplazoCargo?: string | null;
-  }[] {
-    return (this.detalle?.incidenciasDia ?? [])
-      .filter(item => item.diaId === diaId)
-      .map(item => ({
-        incidenciaId: item.incidenciaId,
-        tipo: item.tipo,
-        descripcion: item.descripcion,
-        createdAt: item.createdAt,
-        empleadoNombre: item.empleadoNombre ?? null,
-        empleadoCargo: item.empleadoCargo ?? null,
-        empleadoReemplazoNombre: item.empleadoReemplazoNombre ?? null,
-        empleadoReemplazoCargo: item.empleadoReemplazoCargo ?? null
-      }));
+  getIncidenciasDia(diaId: number): IncidenciaResumen[] {
+    return this.incidenciasDiaMap.get(diaId) ?? [];
   }
 
   getIncidenciasCountDia(diaId: number): number {
-    return (this.detalle?.incidenciasDia ?? []).filter(item => item.diaId === diaId).length;
+    return this.getDiaResumen(diaId).incidenciasCount;
   }
 
   getEmpleadosDiaOptions(diaId: number): { empleadoId: number; empleadoNombre: string }[] {
@@ -1259,6 +1290,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
               next: data => {
                 this.detalle = data;
                 this.proyecto = data?.proyecto ?? null;
+                this.rebuildDiaCaches();
                 this.cargarDevolucionDraft(this.devolucionDiaId!);
               },
               error: err => {
@@ -1387,34 +1419,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   getServiciosDia(diaId: number): ProyectoDetalleResponse['serviciosDia'] {
-    const lista = this.detalle?.serviciosDia ?? [];
-    return lista.filter(item => item.diaId === diaId);
+    return this.serviciosDiaMap.get(diaId) ?? [];
   }
 
   getBloquesDia(diaId: number): BloqueDia[] {
-    const lista = this.detalle?.bloquesDia ?? [];
-    return lista
-      .filter(item => item.diaId === diaId)
-      .sort((a, b) => this.toSafeNumber(a.orden) - this.toSafeNumber(b.orden));
+    return this.bloquesDiaMap.get(diaId) ?? [];
   }
 
   getBloquesCount(diaId: number): number {
-    return this.getBloquesDia(diaId).length;
+    return this.getDiaResumen(diaId).bloquesCount;
   }
 
   getRangoHorasDia(diaId: number): { inicio: string; fin: string } | null {
-    const bloques = this.getBloquesDia(diaId);
-    if (!bloques.length) return null;
-    const tiempos = bloques
-      .map(b => this.toMinutes(b.hora))
-      .filter(n => n !== null) as number[];
-    if (!tiempos.length) return null;
-    const min = Math.min(...tiempos);
-    const max = Math.max(...tiempos);
-    return {
-      inicio: this.formatHora12(this.fromMinutes(min)),
-      fin: this.formatHora12(this.fromMinutes(max))
-    };
+    return this.getDiaResumen(diaId).rangoHoras;
   }
 
   get totalDias(): number {
@@ -1435,8 +1452,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   toggleSoloPendientes(): void {
     this.soloPendientes = !this.soloPendientes;
-    const dias = [...(this.detalle?.dias ?? [])]
-      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    const dias = [...this.diasOrdenadosCache];
     const filtrados = this.soloPendientes
       ? dias.filter(d => (d.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'pendiente')
       : dias;
@@ -1450,57 +1466,35 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   getPendientesDia(diaId: number): { personal: number; equipos: number } {
-    const reqPersonal = (this.detalle?.requerimientosPersonalDia ?? [])
-      .filter(r => r.diaId === diaId)
-      .reduce((sum, r) => sum + this.toSafeNumber(r.cantidad), 0);
-    const reqEquipos = (this.detalle?.requerimientosEquipoDia ?? [])
-      .filter(r => r.diaId === diaId)
-      .reduce((sum, r) => sum + this.toSafeNumber(r.cantidad), 0);
-
-    const asignPersonal = (this.detalle?.empleadosDia ?? []).filter(r => r.diaId === diaId).length;
-    const asignEquipos = (this.detalle?.equiposDia ?? []).filter(r => r.diaId === diaId).length;
-
+    const resumen = this.getDiaResumen(diaId);
     return {
-      personal: Math.max(this.toSafeNumber(reqPersonal) - asignPersonal, 0),
-      equipos: Math.max(this.toSafeNumber(reqEquipos) - asignEquipos, 0)
+      personal: resumen.pendientesPersonal,
+      equipos: resumen.pendientesEquipos
     };
   }
 
   getServiciosCountDia(diaId: number): number {
-    return (this.detalle?.serviciosDia ?? []).filter(item => item.diaId === diaId).length;
+    return this.getDiaResumen(diaId).serviciosCount;
   }
 
   getReqPersonalCountDia(diaId: number): number {
-    return (this.detalle?.requerimientosPersonalDia ?? [])
-      .filter(r => r.diaId === diaId)
-      .reduce((sum, r) => sum + this.toSafeNumber(r.cantidad), 0);
+    return this.getDiaResumen(diaId).reqPersonal;
   }
 
   getReqEquiposCountDia(diaId: number): number {
-    return (this.detalle?.requerimientosEquipoDia ?? [])
-      .filter(r => r.diaId === diaId)
-      .reduce((sum, r) => sum + this.toSafeNumber(r.cantidad), 0);
+    return this.getDiaResumen(diaId).reqEquipos;
   }
 
   getAsignadosPersonalDia(diaId: number): number {
-    return (this.detalle?.empleadosDia ?? []).filter(r => r.diaId === diaId).length;
+    return this.getDiaResumen(diaId).asignPersonal;
   }
 
   getAsignadosEquiposDia(diaId: number): number {
-    return (this.detalle?.equiposDia ?? []).filter(r => r.diaId === diaId).length;
+    return this.getDiaResumen(diaId).asignEquipos;
   }
 
-  getEstadoAsignacionDia(diaId: number): 'Sin asignar' | 'Pendiente' | 'Completo' | '—' {
-    const reqPersonal = this.getReqPersonalCountDia(diaId);
-    const reqEquipos = this.getReqEquiposCountDia(diaId);
-    const asignPersonal = this.getAsignadosPersonalDia(diaId);
-    const asignEquipos = this.getAsignadosEquiposDia(diaId);
-
-    if ((reqPersonal + reqEquipos) === 0) return '—';
-    if ((asignPersonal + asignEquipos) === 0) return 'Sin asignar';
-    const pendientes = this.getPendientesDia(diaId);
-    if (pendientes.personal > 0 || pendientes.equipos > 0) return 'Pendiente';
-    return 'Completo';
+  getEstadoAsignacionDia(diaId: number): EstadoAsignacionDia {
+    return this.getDiaResumen(diaId).estadoAsignacion;
   }
 
   getPendientesPersonalPorRol(diaId: number): { rol: string; requerido: number; asignado: number; pendiente: number }[] {
@@ -1589,9 +1583,140 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   get diasTimeline(): ProyectoDetalleResponse['dias'] {
-    const dias = [...(this.detalle?.dias ?? [])].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    const dias = [...this.diasOrdenadosCache];
     if (!this.soloPendientes) return dias;
     return dias.filter(d => (d.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'pendiente');
+  }
+
+  private updateStepperOrientation(): void {
+    if (typeof window === 'undefined') return;
+    this.stepperOrientation = window.innerWidth < 900 ? 'vertical' : 'horizontal';
+  }
+
+  private getDiaResumen(diaId: number): DiaResumen {
+    return this.diaResumenMap.get(diaId) ?? {
+      bloquesCount: 0,
+      serviciosCount: 0,
+      reqPersonal: 0,
+      reqEquipos: 0,
+      asignPersonal: 0,
+      asignEquipos: 0,
+      pendientesPersonal: 0,
+      pendientesEquipos: 0,
+      estadoAsignacion: '—',
+      rangoHoras: null,
+      incidenciasCount: 0
+    };
+  }
+
+  private rebuildDiaCaches(): void {
+    const detalle = this.detalle;
+    this.diasOrdenadosCache = [...(detalle?.dias ?? [])]
+      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    this.bloquesDiaMap.clear();
+    this.serviciosDiaMap.clear();
+    this.incidenciasDiaMap.clear();
+    this.diaResumenMap.clear();
+    if (!detalle) return;
+
+    const reqPersonalPorDia = new Map<number, number>();
+    (detalle.requerimientosPersonalDia ?? []).forEach(row => {
+      reqPersonalPorDia.set(row.diaId, (reqPersonalPorDia.get(row.diaId) ?? 0) + this.toSafeNumber(row.cantidad));
+    });
+
+    const reqEquiposPorDia = new Map<number, number>();
+    (detalle.requerimientosEquipoDia ?? []).forEach(row => {
+      reqEquiposPorDia.set(row.diaId, (reqEquiposPorDia.get(row.diaId) ?? 0) + this.toSafeNumber(row.cantidad));
+    });
+
+    const asignPersonalPorDia = new Map<number, number>();
+    (detalle.empleadosDia ?? []).forEach(row => {
+      asignPersonalPorDia.set(row.diaId, (asignPersonalPorDia.get(row.diaId) ?? 0) + 1);
+    });
+
+    const asignEquiposPorDia = new Map<number, number>();
+    (detalle.equiposDia ?? []).forEach(row => {
+      asignEquiposPorDia.set(row.diaId, (asignEquiposPorDia.get(row.diaId) ?? 0) + 1);
+    });
+
+    (detalle.bloquesDia ?? []).forEach(row => this.pushMapItem(this.bloquesDiaMap, row.diaId, row));
+    this.bloquesDiaMap.forEach((rows, diaId) => {
+      this.bloquesDiaMap.set(diaId, [...rows].sort((a, b) => this.toSafeNumber(a.orden) - this.toSafeNumber(b.orden)));
+    });
+
+    (detalle.serviciosDia ?? []).forEach(row => this.pushMapItem(this.serviciosDiaMap, row.diaId, row));
+
+    (detalle.incidenciasDia ?? []).forEach((row: IncidenciaDia) => {
+      this.pushMapItem(this.incidenciasDiaMap, row.diaId, {
+        incidenciaId: row.incidenciaId,
+        tipo: row.tipo,
+        descripcion: row.descripcion,
+        createdAt: row.createdAt,
+        empleadoNombre: row.empleadoNombre ?? null,
+        empleadoCargo: row.empleadoCargo ?? null,
+        empleadoReemplazoNombre: row.empleadoReemplazoNombre ?? null,
+        empleadoReemplazoCargo: row.empleadoReemplazoCargo ?? null
+      });
+    });
+
+    this.diasOrdenadosCache.forEach(dia => {
+      const diaId = dia.diaId;
+      const reqPersonal = reqPersonalPorDia.get(diaId) ?? 0;
+      const reqEquipos = reqEquiposPorDia.get(diaId) ?? 0;
+      const asignPersonal = asignPersonalPorDia.get(diaId) ?? 0;
+      const asignEquipos = asignEquiposPorDia.get(diaId) ?? 0;
+      const pendientesPersonal = Math.max(reqPersonal - asignPersonal, 0);
+      const pendientesEquipos = Math.max(reqEquipos - asignEquipos, 0);
+      const totalReq = reqPersonal + reqEquipos;
+      const totalAsign = asignPersonal + asignEquipos;
+
+      let estadoAsignacion: EstadoAsignacionDia = '—';
+      if (totalReq > 0) {
+        if (totalAsign === 0) {
+          estadoAsignacion = 'Sin asignar';
+        } else if (pendientesPersonal > 0 || pendientesEquipos > 0) {
+          estadoAsignacion = 'Pendiente';
+        } else {
+          estadoAsignacion = 'Completo';
+        }
+      }
+
+      this.diaResumenMap.set(diaId, {
+        bloquesCount: (this.bloquesDiaMap.get(diaId) ?? []).length,
+        serviciosCount: (this.serviciosDiaMap.get(diaId) ?? []).length,
+        reqPersonal,
+        reqEquipos,
+        asignPersonal,
+        asignEquipos,
+        pendientesPersonal,
+        pendientesEquipos,
+        estadoAsignacion,
+        rangoHoras: this.computeRangoHorasDia(diaId),
+        incidenciasCount: (this.incidenciasDiaMap.get(diaId) ?? []).length
+      });
+    });
+  }
+
+  private computeRangoHorasDia(diaId: number): { inicio: string; fin: string } | null {
+    const bloques = this.bloquesDiaMap.get(diaId) ?? [];
+    if (!bloques.length) return null;
+    const tiempos = bloques
+      .map(b => this.toMinutes(b.hora))
+      .filter((n): n is number => n !== null);
+    if (!tiempos.length) return null;
+    const min = Math.min(...tiempos);
+    const max = Math.max(...tiempos);
+    return {
+      inicio: this.formatHora12(this.fromMinutes(min)),
+      fin: this.formatHora12(this.fromMinutes(max))
+    };
+  }
+
+  private pushMapItem<T>(map: Map<number, T[]>, key: number, value: T): void {
+    if (!map.has(key)) {
+      map.set(key, []);
+    }
+    map.get(key)!.push(value);
   }
 
   private toSafeNumber(value: unknown): number {

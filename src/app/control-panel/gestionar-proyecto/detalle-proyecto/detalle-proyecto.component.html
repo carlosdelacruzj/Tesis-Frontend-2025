@@ -11,7 +11,7 @@
     </div>
   } @else {
     @if (proyecto) {
-      <section class="card hero">
+      <section class="card hero" id="resumen-proyecto">
         <header class="card-header">
           <div>
             <p class="eyebrow">Proyecto #{{ proyecto.proyectoId }}</p>
@@ -55,26 +55,26 @@
         </div>
 
         <div class="ops-bar">
-          <div class="ops-chip">
+          <button class="ops-chip ops-chip--action" type="button" (click)="irASeccion('agenda-proyecto')">
             <span>Días</span>
             <strong>{{ totalDias }}</strong>
-          </div>
-          <div class="ops-chip">
+          </button>
+          <button class="ops-chip ops-chip--action" type="button" (click)="irASeccion('agenda-proyecto')">
             <span>Servicios</span>
             <strong>{{ totalServiciosDia }}</strong>
-          </div>
-          <div class="ops-chip">
+          </button>
+          <button class="ops-chip ops-chip--action" type="button" (click)="irASeccion('asignaciones-proyecto')">
             <span>Personal</span>
             <strong>{{ totalEmpleadosDia }}</strong>
-          </div>
-          <div class="ops-chip">
+          </button>
+          <button class="ops-chip ops-chip--action" type="button" (click)="irASeccion('devoluciones-proyecto')">
             <span>Equipos</span>
             <strong>{{ totalEquiposDia }}</strong>
-          </div>
-          <div class="ops-chip ops-alert">
+          </button>
+          <button class="ops-chip ops-alert ops-chip--action" type="button" (click)="irASeccion('asignaciones-proyecto')">
             <span>Pendientes</span>
             <strong>{{ pendientesTotales.personal + pendientesTotales.equipos }}</strong>
-          </div>
+          </button>
         </div>
 
         @if (proyecto.notas) {
@@ -86,11 +86,12 @@
       </section>
 
       @if (detalle && detalle.dias?.length) {
-      <section class="card section agenda-section">
+      <section class="card section agenda-section" id="agenda-proyecto">
         <header class="card-header">
-          <div>
+          <div class="section-heading">
             <p class="eyebrow">Agenda</p>
             <h3>Días de proyecto ({{ detalle.dias.length }})</h3>
+            <p class="muted small section-help">Explora cada día para revisar bloques, servicios y pendientes.</p>
           </div>
           <button class="toggle-btn" type="button" (click)="toggleSoloPendientes()">
             @if (soloPendientes) { Ver todos } @else { Solo con pendientes }
@@ -105,11 +106,11 @@
               <summary class="timeline-summary">
                 <div class="timeline-date">
                   <div class="timeline-date__title">{{ formatFechaLarga(dia.fecha) }}</div>
-                  <div class="timeline-date__meta">
-                    Bloques: {{ getBloquesCount(dia.diaId) }}
-                    · Servicios: {{ getServiciosCountDia(dia.diaId) }}
-                    · Personal: {{ getAsignadosPersonalDia(dia.diaId) }}/{{ getReqPersonalCountDia(dia.diaId) }}
-                    · Equipos: {{ getAsignadosEquiposDia(dia.diaId) }}/{{ getReqEquiposCountDia(dia.diaId) }}
+                  <div class="timeline-date__metrics">
+                    <span class="metric-chip">Bloques {{ getBloquesCount(dia.diaId) }}</span>
+                    <span class="metric-chip">Servicios {{ getServiciosCountDia(dia.diaId) }}</span>
+                    <span class="metric-chip">Personal {{ getAsignadosPersonalDia(dia.diaId) }}/{{ getReqPersonalCountDia(dia.diaId) }}</span>
+                    <span class="metric-chip">Equipos {{ getAsignadosEquiposDia(dia.diaId) }}/{{ getReqEquiposCountDia(dia.diaId) }}</span>
                   </div>
                   @if (getRangoHorasDia(dia.diaId); as rango) {
                     <div class="timeline-date__range">{{ rango.inicio }} – {{ rango.fin }}</div>
@@ -159,6 +160,9 @@
                           </div>
                         </div>
                       }
+                      @if (!getBloquesDia(dia.diaId).length) {
+                        <div class="empty-inline">Sin bloques cargados para este día.</div>
+                      }
                     </div>
                   </div>
                   <div class="dia-col">
@@ -176,7 +180,7 @@
                           }
                         </div>
                       } @else {
-                        <p class="muted">Sin servicios asignados a este día.</p>
+                        <p class="muted">Sin servicios asignados. Revisa la configuración del pedido para este día.</p>
                       }
                       <div class="pendientes-dia">
                         <span class="muted small">Pendientes</span>
@@ -191,10 +195,17 @@
           }
         </div>
       </section>
+      } @else if (detalle) {
+      <section class="card section">
+        <div class="estado-centro">
+          <p class="muted">Este proyecto todavía no tiene días registrados.</p>
+          <p class="muted small">Cuando agregues días, aquí verás la agenda y sus pendientes.</p>
+        </div>
+      </section>
       }
 
       @if ((detalle?.empleadosDia?.length || detalle?.equiposDia?.length) || (detalle?.requerimientosPersonalDia?.length || detalle?.requerimientosEquipoDia?.length)) {
-      <section class="card section">
+      <section class="card section" id="asignaciones-proyecto">
         <details class="collapsible" open>
           <summary class="collapsible__summary">
             <div>
@@ -202,7 +213,7 @@
               <h3>Personal y equipos</h3>
             </div>
             <div class="collapsible__actions">
-              <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">
+              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalAsignar()">
                 Ver/gestionar asignaciones
               </button>
               <span class="collapsible__caret">▾</span>
@@ -236,7 +247,7 @@
       </section>
       }
 
-      <section class="card section">
+      <section class="card section" id="incidencias-proyecto">
         <details class="collapsible" open>
           <summary class="collapsible__summary">
             <div>
@@ -244,7 +255,7 @@
               <h3>Registro del día</h3>
             </div>
             <div class="collapsible__actions">
-              <button mat-stroked-button color="primary" type="button" (click)="abrirModalIncidencia()">
+              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalIncidencia()">
                 Registrar incidencia
               </button>
               <span class="collapsible__caret">▾</span>
@@ -291,7 +302,7 @@
       </section>
 
       @if (detalle?.equiposDia?.length) {
-      <section class="card section">
+      <section class="card section" id="devoluciones-proyecto">
         <details class="collapsible" open>
           <summary class="collapsible__summary">
             <div>
@@ -405,7 +416,7 @@
     } @else if (!hasRequerimientosDia(asignacionDiaId)) {
       <div class="muted small">Sin requerimientos para este día.</div>
     } @else {
-    <mat-horizontal-stepper class="asignaciones-stepper" [linear]="false">
+    <mat-stepper class="asignaciones-stepper" [orientation]="stepperOrientation" [linear]="false">
       <mat-step>
         <ng-template matStepLabel>
           Personal <span class="stepper-meta">{{ getProgresoPersonalLabel(asignacionDiaId) }}</span>
@@ -668,7 +679,7 @@
           </div>
         </div>
       </mat-step>
-    </mat-horizontal-stepper>
+    </mat-stepper>
     }
   </div>
 
@@ -739,7 +750,7 @@
             }
           </select>
           @if (!getReemplazoEmpleadoOptions().length && incidenciaEmpleadoId) {
-            <div class="muted small">No hay reemplazos disponibles con el mismo cargo para este dÃ­a.</div>
+            <div class="muted small">No hay reemplazos disponibles con el mismo cargo para este día.</div>
           }
         </label>
       </div>
