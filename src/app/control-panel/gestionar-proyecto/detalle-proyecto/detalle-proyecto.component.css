@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
 section[id] {
@@ -17,6 +18,7 @@ section[id] {
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  min-width: 0;
 }
 
 .hero {
@@ -1190,40 +1192,16 @@ section[id] {
   margin-top: 2px;
 }
 
-@media (max-width: 768px) {
-  .devolucion-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .locacion-card {
-    grid-template-columns: 1fr;
-  }
-
-  .timeline {
-    padding-left: 12px;
-  }
-
-  .timeline-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .dia-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .timeline-dot {
-    display: none;
-  }
-}
-
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.card-header > * {
+  min-width: 0;
 }
 
 .section-heading h3 {
@@ -1325,4 +1303,182 @@ section[id] {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
+}
+
+@media (max-width: 1200px) {
+  .dia-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .asignaciones-resumen,
+  .incidencias-resumen,
+  .devoluciones-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .card {
+    padding: 14px;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ops-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .ops-chip {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .timeline {
+    padding-left: 14px;
+  }
+
+  .timeline-item {
+    padding: 10px;
+  }
+
+  .asignaciones-editor {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .asignaciones-editor .form-field,
+  .asignaciones-editor button {
+    width: 100%;
+  }
+
+  .equipos-row {
+    grid-template-columns: 1fr;
+  }
+
+  .equipos-row__status,
+  .equipos-row__actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .collapsible__summary {
+    align-items: flex-start;
+  }
+
+  .collapsible__actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .collapsible__actions button {
+    flex: 1 1 100%;
+  }
+
+  .timeline-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-dot {
+    display: none;
+  }
+
+  .timeline-date__metrics {
+    gap: 4px;
+  }
+
+  .metric-chip {
+    font-size: 0.72rem;
+  }
+
+  .incidencias-resumen__header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .incidencias-resumen__actions {
+    width: 100%;
+  }
+
+  .incidencias-resumen__actions button {
+    flex: 1 1 0;
+  }
+
+  .asignaciones-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .transfer {
+    grid-template-columns: 1fr;
+  }
+
+  .asignaciones-editor-grid,
+  .drag-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .drag-list--scroll {
+    max-height: 180px;
+  }
+
+  .devolucion-row,
+  .devolucion-form {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-footer-actions {
+    bottom: 0;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    flex-wrap: wrap;
+  }
+
+  .modal-footer-actions button {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .title {
+    font-size: 1.2rem;
+  }
+
+  .locacion-card {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline {
+    padding-left: 10px;
+  }
+
+  .asignaciones-stepper {
+    padding: 8px;
+  }
+
+  .asignaciones-stepper ::ng-deep .mat-step-header {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .devolucion-row {
+    padding: 10px;
+  }
 }
