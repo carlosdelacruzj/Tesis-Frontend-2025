@@ -99,6 +99,8 @@ export interface EmpleadoDia {
   empleadoNombre: string;
   notas: string;
   rol?: string | null;
+  cargoId?: number | null;
+  cargo?: string | null;
 }
 
 export interface EquipoDia {
@@ -147,6 +149,13 @@ export interface IncidenciaDia {
   equipoReemplazoId: number | null;
   usuarioId: number | null;
   createdAt: string;
+  empleadoNombre?: string | null;
+  empleadoCargoId?: number | null;
+  empleadoCargo?: string | null;
+  empleadoReemplazoNombre?: string | null;
+  empleadoReemplazoCargoId?: number | null;
+  empleadoReemplazoCargo?: string | null;
+  proyectoId?: number | null;
 }
 
 export interface ProyectoDetalleResponse {
@@ -226,7 +235,7 @@ export interface ProyectoDiaEstadoResponse {
 }
 
 export interface ProyectoIncidenciaPayload {
-  tipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'OTROS';
+  tipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS';
   descripcion: string;
   empleadoId?: number | null;
   empleadoReemplazoId?: number | null;

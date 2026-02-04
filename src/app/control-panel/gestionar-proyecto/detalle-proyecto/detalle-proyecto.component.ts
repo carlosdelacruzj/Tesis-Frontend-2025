@@ -47,14 +47,16 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   nuevoEmpleadoId: number | null = null;
   nuevoEquipoId: number | null = null;
   incidenciaDiaId: number | null = null;
-  incidenciaTipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'OTROS' | '' = '';
+  incidenciaTipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS' | '' = '';
   incidenciaDescripcion = '';
   incidenciaEmpleadoId: number | null = null;
   incidenciaEmpleadoReemplazoId: number | null = null;
   incidenciaEquipoId: number | null = null;
   incidenciaEquipoReemplazoId: number | null = null;
-  incidenciaUsuarioId: number | null = null;
   guardandoIncidencia = false;
+  cargandoDisponiblesIncidencia = false;
+  disponiblesIncidenciaEmpleados: ProyectoAsignacionesDisponiblesEmpleado[] = [];
+  disponiblesIncidenciaEquipos: ProyectoAsignacionesDisponiblesEquipo[] = [];
   ultimoDropDestino: number | 'reserva' | null = null;
   private dropHighlightTimer: number | null = null;
   tiposDetalleAbiertos: string[] = [];
@@ -136,6 +138,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const selected = diaId ?? this.openDiaId ?? this.detalle?.dias?.[0]?.diaId ?? null;
     this.incidenciaDiaId = selected;
     this.resetIncidenciaForm(false);
+    this.cargarDisponiblesIncidencia(selected);
   }
 
   cerrarModalIncidencia(): void {
@@ -215,7 +218,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.filtroTipoEquipo = this.filtroTipoEquipo === tipo ? null : tipo;
   }
 
-  onIncidenciaTipoChange(tipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'OTROS' | ''): void {
+  onIncidenciaTipoChange(tipo: 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS' | ''): void {
     this.incidenciaTipo = tipo;
     this.incidenciaEmpleadoId = null;
     this.incidenciaEmpleadoReemplazoId = null;
@@ -231,7 +234,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.incidenciaEmpleadoReemplazoId = null;
     this.incidenciaEquipoId = null;
     this.incidenciaEquipoReemplazoId = null;
-    this.incidenciaUsuarioId = null;
   }
 
   canGuardarIncidencia(): boolean {
@@ -245,19 +247,21 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       if (!this.incidenciaEquipoId || !this.incidenciaEquipoReemplazoId) return false;
       if (this.incidenciaEquipoId === this.incidenciaEquipoReemplazoId) return false;
     }
+    if (this.incidenciaTipo === 'EQUIPO_ROBO_PERDIDA') {
+      if (!this.incidenciaEquipoId) return false;
+    }
     return true;
   }
 
   guardarIncidencia(): void {
     if (!this.incidenciaDiaId || !this.canGuardarIncidencia()) return;
     const payload = {
-      tipo: this.incidenciaTipo as 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'OTROS',
+      tipo: this.incidenciaTipo as 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS',
       descripcion: this.incidenciaDescripcion.trim(),
       empleadoId: this.incidenciaEmpleadoId ?? null,
       empleadoReemplazoId: this.incidenciaEmpleadoReemplazoId ?? null,
       equipoId: this.incidenciaEquipoId ?? null,
       equipoReemplazoId: this.incidenciaEquipoReemplazoId ?? null,
-      usuarioId: this.incidenciaUsuarioId ?? null
     };
     this.guardandoIncidencia = true;
     this.proyectoService.crearIncidencia(this.incidenciaDiaId, payload)
@@ -307,7 +311,14 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   eliminarEmpleado(index: number): void {
+    const removed = this.asignacionEmpleados[index]?.empleadoId ?? null;
     this.asignacionEmpleados = this.asignacionEmpleados.filter((_, i) => i !== index);
+    if (removed) {
+      // Limpia responsables de equipos que apuntaban al empleado removido.
+      this.asignacionEquipos = this.asignacionEquipos.map(eq =>
+        eq.responsableId === removed ? { ...eq, responsableId: null } : eq
+      );
+    }
   }
 
   agregarEquipo(): void {
@@ -364,6 +375,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   guardarAsignacionesDia(): void {
     if (!this.proyecto?.proyectoId || !this.asignacionDiaId) return;
+    const empleadosActuales = new Set(this.asignacionEmpleados.map(item => item.empleadoId));
     const payload: ProyectoAsignacionesPayload = {
       proyectoId: this.proyecto.proyectoId,
       dias: [
@@ -371,7 +383,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           diaId: this.asignacionDiaId,
           empleados: this.asignacionEmpleados.map(item => ({ empleadoId: item.empleadoId })),
           equipos: this.asignacionEquipos.map(item => {
-            if (item.responsableId) {
+            const responsableValido = item.responsableId && empleadosActuales.has(item.responsableId);
+            if (responsableValido) {
               return { equipoId: item.equipoId, responsableId: item.responsableId };
             }
             return { equipoId: item.equipoId };
@@ -589,14 +602,27 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .map(tipo => ({ tipo, items: mapa[tipo] }));
   }
 
-  getIncidenciasDia(diaId: number): { tipo: string; descripcion: string; incidenciaId: number; createdAt: string }[] {
+  getIncidenciasDia(diaId: number): {
+    tipo: string;
+    descripcion: string;
+    incidenciaId: number;
+    createdAt: string;
+    empleadoNombre?: string | null;
+    empleadoCargo?: string | null;
+    empleadoReemplazoNombre?: string | null;
+    empleadoReemplazoCargo?: string | null;
+  }[] {
     return (this.detalle?.incidenciasDia ?? [])
       .filter(item => item.diaId === diaId)
       .map(item => ({
         incidenciaId: item.incidenciaId,
         tipo: item.tipo,
         descripcion: item.descripcion,
-        createdAt: item.createdAt
+        createdAt: item.createdAt,
+        empleadoNombre: item.empleadoNombre ?? null,
+        empleadoCargo: item.empleadoCargo ?? null,
+        empleadoReemplazoNombre: item.empleadoReemplazoNombre ?? null,
+        empleadoReemplazoCargo: item.empleadoReemplazoCargo ?? null
       }));
   }
 
@@ -617,6 +643,20 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   getEquiposDiaOptions(diaId: number): { equipoId: number; label: string }[] {
     const items = (this.detalle?.equiposDia ?? []).filter(item => item.diaId === diaId);
+    const mapa = new Map<number, string>();
+    items.forEach(item => {
+      if (!mapa.has(item.equipoId)) {
+        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || '—'})`);
+      }
+    });
+    return Array.from(mapa.entries()).map(([equipoId, label]) => ({ equipoId, label }));
+  }
+
+  getEquiposAfectadosOptions(diaId: number): { equipoId: number; label: string }[] {
+    const items = (this.detalle?.equiposDia ?? [])
+      .filter(item => item.diaId === diaId)
+      .filter(item => item.responsableId !== null && item.responsableId !== undefined);
+
     const mapa = new Map<number, string>();
     items.forEach(item => {
       if (!mapa.has(item.equipoId)) {
@@ -1043,6 +1083,108 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           this.disponiblesEquipos = [];
         }
       });
+  }
+
+  onIncidenciaDiaChange(diaId: number | null): void {
+    this.incidenciaDiaId = diaId;
+    this.incidenciaEmpleadoId = null;
+    this.incidenciaEmpleadoReemplazoId = null;
+    this.incidenciaEquipoId = null;
+    this.incidenciaEquipoReemplazoId = null;
+    const fecha = this.detalle?.dias?.find(d => d.diaId === diaId)?.fecha ?? null;
+    this.cargarDisponiblesIncidencia(fecha ?? null);
+  }
+
+  onIncidenciaEmpleadoChange(empleadoId: number | null): void {
+    this.incidenciaEmpleadoId = empleadoId;
+    this.incidenciaEmpleadoReemplazoId = null;
+  }
+
+  onIncidenciaEquipoChange(equipoId: number | null): void {
+    this.incidenciaEquipoId = equipoId;
+    this.incidenciaEquipoReemplazoId = null;
+  }
+
+  private cargarDisponiblesIncidencia(diaIdOrFecha: number | string | null): void {
+    if (!this.proyecto?.proyectoId) return;
+    const fecha = typeof diaIdOrFecha === 'number'
+      ? this.detalle?.dias?.find(d => d.diaId === diaIdOrFecha)?.fecha ?? null
+      : diaIdOrFecha;
+    if (!fecha) {
+      this.disponiblesIncidenciaEmpleados = [];
+      this.disponiblesIncidenciaEquipos = [];
+      return;
+    }
+    this.cargandoDisponiblesIncidencia = true;
+    this.proyectoService.getAsignacionesDisponibles({
+      fecha,
+      proyectoId: this.proyecto.proyectoId
+    })
+      .pipe(finalize(() => { this.cargandoDisponiblesIncidencia = false; }))
+      .subscribe({
+        next: data => {
+          this.disponiblesIncidenciaEmpleados = Array.isArray(data?.empleados) ? data.empleados : [];
+          this.disponiblesIncidenciaEquipos = Array.isArray(data?.equipos) ? data.equipos : [];
+        },
+        error: err => {
+          console.error('[proyecto] disponibles incidencia', err);
+          this.disponiblesIncidenciaEmpleados = [];
+          this.disponiblesIncidenciaEquipos = [];
+        }
+      });
+  }
+
+  private getEmpleadoRolEnDia(empleadoId: number | null, diaId: number | null): string | null {
+    if (!empleadoId || !diaId) return null;
+    const empleado = (this.detalle?.empleadosDia ?? [])
+      .find(item => item.diaId === diaId && item.empleadoId === empleadoId);
+    if (!empleado) return null;
+    if (empleado.cargoId !== undefined && empleado.cargoId !== null) {
+      return `id:${empleado.cargoId}`;
+    }
+    const rol = (empleado.rol ?? empleado.cargo ?? '').toString().trim();
+    return rol ? rol.toLowerCase() : null;
+  }
+
+  getReemplazoEmpleadoOptions(): { empleadoId: number; empleadoNombre: string }[] {
+    const rolNorm = this.getEmpleadoRolEnDia(this.incidenciaEmpleadoId, this.incidenciaDiaId);
+    const asignadosDia = new Set(
+      (this.detalle?.empleadosDia ?? [])
+        .filter(item => item.diaId === this.incidenciaDiaId)
+        .map(item => item.empleadoId)
+    );
+    return this.disponiblesIncidenciaEmpleados
+      .filter(emp => emp.empleadoId !== this.incidenciaEmpleadoId)
+      .filter(emp => !asignadosDia.has(emp.empleadoId)) // solo libres (no ya asignados al día)
+      .filter(emp => {
+        if (!rolNorm) return true;
+        const key = emp.cargoId !== undefined && emp.cargoId !== null
+          ? `id:${emp.cargoId}`
+          : (emp.cargo ?? '').toString().trim().toLowerCase();
+        return key === rolNorm;
+      })
+      .map(emp => ({
+        empleadoId: emp.empleadoId,
+        empleadoNombre: `${emp.nombre} ${emp.apellido}`.trim() || `Empleado #${emp.empleadoId}`
+      }));
+  }
+
+  getReemplazoEquipoOptions(): { equipoId: number; label: string }[] {
+    if (!this.incidenciaDiaId) return [];
+    const affected = (this.detalle?.equiposDia ?? [])
+      .find(item => item.diaId === this.incidenciaDiaId && item.equipoId === this.incidenciaEquipoId);
+    const affectedTipo = affected?.tipoEquipo ? affected.tipoEquipo.toString().trim().toLowerCase() : null;
+
+    const reservaDia = (this.detalle?.equiposDia ?? [])
+      .filter(item => item.diaId === this.incidenciaDiaId && (!item.responsableId || item.responsableId === null));
+
+    return reservaDia
+      .filter(eq => eq.equipoId !== this.incidenciaEquipoId)
+      .filter(eq => !affectedTipo || (eq.tipoEquipo ?? '').toString().trim().toLowerCase() === affectedTipo)
+      .map(eq => ({
+        equipoId: eq.equipoId,
+        label: `${eq.modelo || 'Equipo'} (${eq.equipoSerie || '—'})`
+      }));
   }
 
   formatFechaDisplay(value: string | Date | null | undefined): string {

@@ -1,4 +1,4 @@
-<div class="dashboard-content">
+﻿<div class="dashboard-content">
   <app-list-toolbar
     [title]="proyecto?.proyectoNombre || 'Proyecto'"
     [showSearch]="false"
@@ -269,6 +269,10 @@
                           @case ('EQUIPO_FALLA_EN_EVENTO') { Equipo falla en evento }
                           @default { Otros }
                         }
+                      </div>
+                      <div class="incidencia-item__meta" *ngIf="inc.empleadoNombre">
+                        <span class="chip chip-light">Afectado: {{ inc.empleadoNombre }}<span class="muted" *ngIf="inc.empleadoCargo"> · {{ inc.empleadoCargo }}</span></span>
+                        <span class="chip chip-light" *ngIf="inc.empleadoReemplazoNombre">Reemplazo: {{ inc.empleadoReemplazoNombre }}<span class="muted" *ngIf="inc.empleadoReemplazoCargo"> · {{ inc.empleadoReemplazoCargo }}</span></span>
                       </div>
                       <div class="incidencia-item__desc">{{ inc.descripcion }}</div>
                     </div>
@@ -687,7 +691,8 @@
         <span class="label">Día</span>
         <select
           class="form-control"
-          [(ngModel)]="incidenciaDiaId"
+          [ngModel]="incidenciaDiaId"
+          (ngModelChange)="onIncidenciaDiaChange($event)"
           name="incidenciaDiaId">
           <option [ngValue]="null">Selecciona un día</option>
           @for (dia of detalle?.dias ?? []; track dia.diaId) {
@@ -705,10 +710,63 @@
           <option value="">Selecciona un tipo</option>
           <option value="PERSONAL_NO_ASISTE">Personal no asiste</option>
           <option value="EQUIPO_FALLA_EN_EVENTO">Equipo falla en evento</option>
+          <option value="EQUIPO_ROBO_PERDIDA">Equipo robo/pérdida</option>
           <option value="OTROS">Otros</option>
         </select>
       </label>
     </div>
+
+    @if (incidenciaTipo === 'PERSONAL_NO_ASISTE') {
+      <div class="edit-form-grid">
+        <label class="form-field">
+          <span class="label">Personal afectado</span>
+          <select class="form-control" [ngModel]="incidenciaEmpleadoId" (ngModelChange)="onIncidenciaEmpleadoChange($event)" name="incidenciaEmpleadoId">
+            <option [ngValue]="null">Selecciona</option>
+            @for (emp of getEmpleadosDiaOptions(incidenciaDiaId || 0); track emp.empleadoId) {
+              <option [ngValue]="emp.empleadoId">{{ emp.empleadoNombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="label">Reemplazo</span>
+          <select class="form-control" [(ngModel)]="incidenciaEmpleadoReemplazoId" name="incidenciaEmpleadoReemplazoId" [disabled]="!incidenciaEmpleadoId || cargandoDisponiblesIncidencia">
+            <option [ngValue]="null">Selecciona</option>
+            @for (emp of getReemplazoEmpleadoOptions(); track emp.empleadoId) {
+              <option [ngValue]="emp.empleadoId">{{ emp.empleadoNombre }}</option>
+            }
+          </select>
+          @if (!getReemplazoEmpleadoOptions().length && incidenciaEmpleadoId) {
+            <div class="muted small">No hay reemplazos disponibles con el mismo cargo para este dÃ­a.</div>
+          }
+        </label>
+      </div>
+    }
+
+    @if (incidenciaTipo === 'EQUIPO_FALLA_EN_EVENTO' || incidenciaTipo === 'EQUIPO_ROBO_PERDIDA') {
+      <div class="edit-form-grid">
+        <label class="form-field">
+          <span class="label">Equipo afectado</span>
+          <select class="form-control" [ngModel]="incidenciaEquipoId" (ngModelChange)="onIncidenciaEquipoChange($event)" name="incidenciaEquipoId">
+            <option [ngValue]="null">Selecciona</option>
+            @for (eq of getEquiposAfectadosOptions(incidenciaDiaId || 0); track eq.equipoId) {
+              <option [ngValue]="eq.equipoId">{{ eq.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="label">Reemplazo</span>
+          <select class="form-control" [(ngModel)]="incidenciaEquipoReemplazoId" name="incidenciaEquipoReemplazoId" [disabled]="!incidenciaEquipoId || cargandoDisponiblesIncidencia">
+            <option [ngValue]="null">Selecciona</option>
+            @for (eq of getReemplazoEquipoOptions(); track eq.equipoId) {
+              <option [ngValue]="eq.equipoId">{{ eq.label }}</option>
+            }
+          </select>
+          @if (!getReemplazoEquipoOptions().length && incidenciaEquipoId) {
+            <div class="muted small">No hay equipos disponibles del mismo tipo para este dÃ­a.</div>
+          }
+        </label>
+      </div>
+    }
 
     <label class="form-field">
       <span class="label">Descripción</span>
@@ -718,57 +776,6 @@
         [(ngModel)]="incidenciaDescripcion"
         name="incidenciaDescripcion"
         placeholder="Describe la incidencia"></textarea>
-    </label>
-
-    @if (incidenciaTipo === 'PERSONAL_NO_ASISTE') {
-      <div class="edit-form-grid">
-        <label class="form-field">
-          <span class="label">Personal afectado</span>
-          <select class="form-control" [(ngModel)]="incidenciaEmpleadoId" name="incidenciaEmpleadoId">
-            <option [ngValue]="null">Selecciona</option>
-            @for (emp of getEmpleadosDiaOptions(incidenciaDiaId || 0); track emp.empleadoId) {
-              <option [ngValue]="emp.empleadoId">{{ emp.empleadoNombre }}</option>
-            }
-          </select>
-        </label>
-        <label class="form-field">
-          <span class="label">Reemplazo</span>
-          <select class="form-control" [(ngModel)]="incidenciaEmpleadoReemplazoId" name="incidenciaEmpleadoReemplazoId">
-            <option [ngValue]="null">Selecciona</option>
-            @for (emp of getEmpleadosDiaOptions(incidenciaDiaId || 0); track emp.empleadoId) {
-              <option [ngValue]="emp.empleadoId">{{ emp.empleadoNombre }}</option>
-            }
-          </select>
-        </label>
-      </div>
-    }
-
-    @if (incidenciaTipo === 'EQUIPO_FALLA_EN_EVENTO') {
-      <div class="edit-form-grid">
-        <label class="form-field">
-          <span class="label">Equipo afectado</span>
-          <select class="form-control" [(ngModel)]="incidenciaEquipoId" name="incidenciaEquipoId">
-            <option [ngValue]="null">Selecciona</option>
-            @for (eq of getEquiposDiaOptions(incidenciaDiaId || 0); track eq.equipoId) {
-              <option [ngValue]="eq.equipoId">{{ eq.label }}</option>
-            }
-          </select>
-        </label>
-        <label class="form-field">
-          <span class="label">Reemplazo</span>
-          <select class="form-control" [(ngModel)]="incidenciaEquipoReemplazoId" name="incidenciaEquipoReemplazoId">
-            <option [ngValue]="null">Selecciona</option>
-            @for (eq of getEquiposDiaOptions(incidenciaDiaId || 0); track eq.equipoId) {
-              <option [ngValue]="eq.equipoId">{{ eq.label }}</option>
-            }
-          </select>
-        </label>
-      </div>
-    }
-
-    <label class="form-field">
-      <span class="label">Usuario (opcional)</span>
-      <input class="form-control" type="number" [(ngModel)]="incidenciaUsuarioId" name="incidenciaUsuarioId" placeholder="ID usuario">
     </label>
   </div>
 

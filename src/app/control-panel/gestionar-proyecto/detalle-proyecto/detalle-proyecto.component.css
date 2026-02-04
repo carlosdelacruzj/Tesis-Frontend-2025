@@ -1069,6 +1069,18 @@
   color: #4b5563;
 }
 
+.incidencia-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 2px;
+}
+
+.chip-light {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
 @media (max-width: 640px) {
   .locacion-card {
     grid-template-columns: 1fr;
