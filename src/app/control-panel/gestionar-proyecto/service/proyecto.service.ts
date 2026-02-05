@@ -7,7 +7,6 @@ import {
   ProyectoAsignacionesDisponiblesResponse,
   ProyectoAsignacionesPayload,
   ProyectoDetalleResponse,
-  ProyectoDiaEstadoResponse,
   ProyectoEstadoResponse,
   ProyectoIncidenciaPayload,
   ProyectoPayload,
@@ -23,7 +22,6 @@ export class ProyectoService {
 
   private readonly http = inject(HttpClient);
   private estadosProyecto$: Observable<ProyectoEstadoResponse['data']> | null = null;
-  private estadosDias$: Observable<ProyectoDiaEstadoResponse['data']> | null = null;
 
   getProyectos(): Observable<Proyecto[]> {
     return this.http.get<Proyecto[]>(this.API);
@@ -121,17 +119,11 @@ export class ProyectoService {
     return this.estadosProyecto$;
   }
 
-  getEstadosDias(): Observable<ProyectoDiaEstadoResponse['data']> {
-    if (!this.estadosDias$) {
-      this.estadosDias$ = this.http
-        .get<ProyectoDiaEstadoResponse>(`${this.API}/dias/estados`)
-        .pipe(
-          map(response => Array.isArray(response?.data) ? response.data : []),
-          catchError(() => of([])),
-          shareReplay(1)
-        );
-    }
-    return this.estadosDias$;
+  actualizarEstadoDia(diaId: number, estadoDiaId: number): Observable<{ status: string; diaId: number; estadoDiaId: number }> {
+    return this.http.patch<{ status: string; diaId: number; estadoDiaId: number }>(
+      `${this.API}/dias/${diaId}/estado`,
+      { estadoDiaId }
+    );
   }
 
   getDisponibilidad(params: { fechaInicio: string; fechaFin: string; proyectoId?: number | null }): Observable<ProyectoDisponibilidad> {

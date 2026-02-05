@@ -306,7 +306,7 @@ section[id] {
 .timeline-side {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 6px;
 }
 
@@ -548,11 +548,81 @@ section[id] {
   gap: 6px;
   margin-top: 6px;
   align-items: center;
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .timeline-badges app-estado-badge {
   display: inline-flex;
   align-items: center;
+}
+
+.timeline-badges__group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.estado-dia-action-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.estado-dia-action-wrap--right {
+  align-self: center;
+  margin-top: 28px;
+}
+
+.estado-dia-action {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.estado-dia-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.estado-dia-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  min-width: 180px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  padding: 6px;
+}
+
+.estado-dia-menu__item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #111827;
+  cursor: pointer;
+}
+
+.estado-dia-menu__item:hover {
+  background: #f3f4f6;
+}
+
+.estado-dia-menu__item.is-active {
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 600;
 }
 
 .timeline-item[open] {
@@ -774,6 +844,10 @@ section[id] {
   grid-template-columns: minmax(84px, 120px) auto minmax(84px, 120px) minmax(84px, 120px);
   gap: 6px;
   align-items: center;
+}
+
+.time-picker-row select {
+  max-height: 40px;
 }
 
 .time-picker-sep {

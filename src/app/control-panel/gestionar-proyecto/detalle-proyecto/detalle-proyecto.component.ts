@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
@@ -15,14 +15,16 @@ import {
   ProyectoDetalle,
   ProyectoDia,
   ProyectoDetalleResponse,
+  ProyectoDiaEstadoItem,
   ProyectoEstadoDevolucion,
   ProyectoDevolucionEquiposPayload,
   ProyectoDevolucionEquipoItem,
   ServicioDia
 } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
+import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
-type EstadoAsignacionDia = 'Sin asignar' | 'Pendiente' | 'Completo' | '—';
+type EstadoAsignacionDia = 'Sin asignar' | 'Pendiente' | 'Asignaciones completas' | 'â€”';
 
 type IncidenciaResumen = {
   tipo: string;
@@ -59,6 +61,7 @@ type DiaResumen = {
 export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly proyectoService = inject(ProyectoService);
+  private readonly catalogos = inject(CatalogosService);
 
   loading = true;
   error: string | null = null;
@@ -76,6 +79,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   disponiblesEquipos: ProyectoAsignacionesDisponiblesEquipo[] = [];
   cargandoDisponibles = false;
   guardandoAsignaciones = false;
+  asignacionSoloLectura = false;
   filtroRol: string | null = null;
   filtroTipoEquipo: string | null = null;
   searchEmpleado = '';
@@ -84,6 +88,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   nuevoEmpleadoId: number | null = null;
   nuevoEquipoId: number | null = null;
   incidenciaDiaId: number | null = null;
+  incidenciaDiaLocked = false;
   incidenciaListaDiaId: number | null = null;
   incidenciaFiltroTipo: '' | 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS' = '';
   incidenciaFiltroTexto = '';
@@ -94,7 +99,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   incidenciaMinuto = '00';
   incidenciaAmPm: 'AM' | 'PM' = 'AM';
   readonly incidenciaHoraOptions = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
-  readonly incidenciaMinutoOptions = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
+  readonly incidenciaMinutoOptions = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
   incidenciaEmpleadoId: number | null = null;
   incidenciaEmpleadoReemplazoId: number | null = null;
   incidenciaEquipoId: number | null = null;
@@ -105,7 +110,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   disponiblesIncidenciaEquipos: ProyectoAsignacionesDisponiblesEquipo[] = [];
   modalDevolucionAbierto = false;
   devolucionDiaId: number | null = null;
-  mostrarSoloExcepcionesEstado = true;
+  mostrarSoloExcepcionesEstado = false;
   mostrarSoloExcepcionesDevolucion = false;
   devolucionFiltroResponsable = '';
   devolucionBusqueda = '';
@@ -117,6 +122,9 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private dropHighlightTimer: number | null = null;
   tiposDetalleAbiertos: string[] = [];
   filtroModeloPorTipo: Record<string, string> = {};
+  estadosDiaCatalogo: ProyectoDiaEstadoItem[] = [];
+  estadoDiaLoading: Record<number, boolean> = {};
+  estadoDiaMenuOpenId: number | null = null;
   private diasOrdenadosCache: ProyectoDia[] = [];
   private bloquesDiaMap = new Map<number, BloqueDia[]>();
   private serviciosDiaMap = new Map<number, ServicioDia[]>();
@@ -138,8 +146,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   eventosColumns = [
     { key: 'fecha', header: 'Fecha', sortable: true },
     { key: 'hora', header: 'Hora', sortable: true },
-    { key: 'ubicacion', header: 'Locación', sortable: true },
-    { key: 'direccion', header: 'Dirección', sortable: true },
+    { key: 'ubicacion', header: 'LocaciÃ³n', sortable: true },
+    { key: 'direccion', header: 'DirecciÃ³n', sortable: true },
     { key: 'notas', header: 'Notas', sortable: false }
   ];
 
@@ -147,6 +155,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.updateStepperOrientation();
+    this.estadosDiaCatalogo = this.catalogos
+      .getSnapshot<ProyectoDiaEstadoItem>('estadosDiasProyecto')
+      .filter(item => item.activo === 1)
+      .sort((a, b) => a.orden - b.orden);
     const idParam = this.route.snapshot.paramMap.get('id');
     const id = idParam ? +idParam : 0;
 
@@ -197,9 +209,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   abrirModalIncidencia(diaId?: number): void {
-    this.modalIncidenciaAbierto = true;
     const selected = diaId ?? this.openDiaId ?? this.detalle?.dias?.[0]?.diaId ?? null;
+    if (!this.isDiaEnCurso(selected)) {
+      void Swal.fire({
+        icon: 'info',
+        title: 'Incidencias solo en ejecución',
+        text: 'Puedes registrar incidencias cuando el día está En curso.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    this.modalIncidenciaAbierto = true;
     this.incidenciaDiaId = selected;
+    this.incidenciaDiaLocked = !!diaId;
     this.resetIncidenciaForm(false);
     this.cargarDisponiblesIncidencia(selected);
   }
@@ -214,8 +236,15 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.updateStepperOrientation();
   }
 
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.estadoDiaMenuOpenId = null;
+  }
+
+
   cerrarModalIncidencia(): void {
     this.modalIncidenciaAbierto = false;
+    this.incidenciaDiaLocked = false;
   }
 
   abrirModalIncidenciasDia(diaId: number): void {
@@ -229,6 +258,81 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   cerrarModalIncidenciasDia(): void {
     this.modalIncidenciasListaAbierto = false;
     this.incidenciaListaDiaId = null;
+  }
+
+  toggleEstadoDiaMenu(diaId: number, event?: Event): void {
+    event?.stopPropagation();
+    if (!this.estadosDiaCatalogo.length) return;
+    this.estadoDiaMenuOpenId = this.estadoDiaMenuOpenId === diaId ? null : diaId;
+  }
+
+  onEstadoDiaSelect(dia: ProyectoDia, estadoDiaId: number | null): void {
+    this.estadoDiaMenuOpenId = null;
+    if (!estadoDiaId || this.estadoDiaLoading[dia.diaId]) {
+      return;
+    }
+    const estadoActual = (dia.estadoDiaNombre ?? '').toString().trim().toLowerCase();
+    const estadoNuevo = (this.getEstadoDiaNombre(estadoDiaId) ?? '').toString().trim().toLowerCase();
+    if (!estadoNuevo) {
+      return;
+    }
+    const estadoAsignacion = this.getEstadoAsignacionDia(dia.diaId);
+    if (estadoActual === 'pendiente' && estadoNuevo === 'en curso' && estadoAsignacion !== 'Asignaciones completas' && estadoAsignacion !== 'â€”') {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Asignaciones incompletas',
+        text: 'Completa las asignaciones del día antes de iniciar.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    const confirmConfig = this.getConfirmacionEstadoDia(estadoActual, estadoNuevo);
+    if (!confirmConfig) {
+      return;
+    }
+    const prevId = dia.estadoDiaId;
+    const prevNombre = dia.estadoDiaNombre;
+    this.estadoDiaLoading[dia.diaId] = true;
+
+    void Swal.fire({
+      icon: 'warning',
+      title: confirmConfig.title,
+      text: confirmConfig.text,
+      showCancelButton: true,
+      confirmButtonText: confirmConfig.confirmText,
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(result => {
+      if (!result.isConfirmed) {
+        this.estadoDiaLoading[dia.diaId] = false;
+        return;
+      }
+
+      this.proyectoService.actualizarEstadoDia(dia.diaId, estadoDiaId)
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => {
+            this.estadoDiaLoading[dia.diaId] = false;
+          })
+        )
+        .subscribe({
+          next: () => {
+            dia.estadoDiaId = estadoDiaId;
+            dia.estadoDiaNombre = this.getEstadoDiaNombre(estadoDiaId);
+          },
+          error: (err) => {
+            console.error('[proyecto] estado dia', err);
+            dia.estadoDiaId = prevId;
+            dia.estadoDiaNombre = prevNombre;
+            void Swal.fire({
+              icon: 'error',
+              title: 'No se pudo actualizar',
+              text: 'Intenta nuevamente.',
+              confirmButtonText: 'Entendido'
+            });
+          }
+        });
+    });
   }
 
   setAsignacionDia(
@@ -254,8 +358,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.filtroModeloPorTipo = {};
     this.tiposDetalleAbiertos = [];
     if (!diaId || !this.detalle) {
+      this.asignacionSoloLectura = false;
       return;
     }
+    const dia = this.detalle.dias?.find(d => d.diaId === diaId);
+    const estado = (dia?.estadoDiaNombre ?? '').toString().trim().toLowerCase();
+    this.asignacionSoloLectura = estado !== 'pendiente';
     const fuente = this.getAsignacionesDia(diaId, options?.forceDetalle);
     this.asignacionEmpleados = fuente.empleados;
     this.asignacionEquipos = fuente.equipos;
@@ -271,6 +379,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   onEmpleadoSeleccionado(empleadoId: number | null): void {
+    if (this.asignacionSoloLectura) return;
     if (!empleadoId) return;
     if (!this.puedeAgregarEmpleado(empleadoId)) return;
     this.nuevoEmpleadoId = empleadoId;
@@ -278,6 +387,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   onEquipoSeleccionado(equipoId: number | null): void {
+    if (this.asignacionSoloLectura) return;
     if (!equipoId) return;
     if (!this.puedeAgregarEquipo(equipoId)) return;
     this.nuevoEquipoId = equipoId;
@@ -406,6 +516,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   agregarEmpleado(): void {
+    if (this.asignacionSoloLectura) return;
     if (!this.nuevoEmpleadoId) return;
     const exists = this.asignacionEmpleados.some(e => e.empleadoId === this.nuevoEmpleadoId);
     if (exists) return;
@@ -417,6 +528,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   eliminarEmpleado(index: number): void {
+    if (this.asignacionSoloLectura) return;
     const removed = this.asignacionEmpleados[index]?.empleadoId ?? null;
     this.asignacionEmpleados = this.asignacionEmpleados.filter((_, i) => i !== index);
     if (removed) {
@@ -428,6 +540,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   agregarEquipo(): void {
+    if (this.asignacionSoloLectura) return;
     if (!this.nuevoEquipoId) return;
     const exists = this.asignacionEquipos.some(e => e.equipoId === this.nuevoEquipoId);
     if (exists) return;
@@ -439,10 +552,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   eliminarEquipo(index: number): void {
+    if (this.asignacionSoloLectura) return;
     this.asignacionEquipos = this.asignacionEquipos.filter((_, i) => i !== index);
   }
 
   onEquipoDrop(event: CdkDragDrop<unknown>, responsableId: number | null): void {
+    if (this.asignacionSoloLectura) return;
     const item = event.item?.data as ProyectoAsignacionEquipoPayload | undefined;
     if (!item) return;
     const target = responsableId ?? null;
@@ -453,6 +568,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   copiarAsignacionesDesde(diaId: number | null): void {
+    if (this.asignacionSoloLectura) return;
     if (!diaId || !this.asignacionDiaId || !this.detalle) return;
     const fuente = this.getAsignacionesDia(diaId);
     const empleadosSource = fuente.empleados;
@@ -481,6 +597,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   copiarAsignacionesDiaAnterior(): void {
+    if (this.asignacionSoloLectura) return;
     const anteriorId = this.getDiaAnteriorId(this.asignacionDiaId);
     if (!anteriorId) return;
     this.copiarAsignacionesDesde(anteriorId);
@@ -496,12 +613,14 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   limpiarAsignacionesDia(): void {
+    if (this.asignacionSoloLectura) return;
     this.asignacionEmpleados = [];
     this.asignacionEquipos = [];
     this.saveAsignacionDraft();
   }
 
   guardarAsignacionesDia(): void {
+    if (this.asignacionSoloLectura) return;
     if (!this.proyecto?.proyectoId || !this.asignacionDiaId) return;
     const empleadosActuales = new Set(this.asignacionEmpleados.map(item => item.empleadoId));
     const payload: ProyectoAsignacionesPayload = {
@@ -566,13 +685,13 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   getDisponibleEmpleadoLabel(empleadoId: number): string {
     const found = this.disponiblesEmpleados.find(item => item.empleadoId === empleadoId);
     if (!found) return `Empleado #${empleadoId}`;
-    return `${found.nombre} ${found.apellido} · ${found.cargo}`;
+    return `${found.nombre} ${found.apellido} Â· ${found.cargo}`;
   }
 
   getDisponibleEquipoLabel(equipoId: number): string {
     const found = this.disponiblesEquipos.find(item => item.equipoId === equipoId);
     if (!found) return `Equipo #${equipoId}`;
-    return `${found.nombreTipoEquipo} · ${found.nombreModelo} (${found.serie})`;
+    return `${found.nombreTipoEquipo} Â· ${found.nombreModelo} (${found.serie})`;
   }
 
   getDisponibleEquipoLabelSinTipo(equipoId: number): string {
@@ -600,7 +719,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     Swal.fire({
       icon: 'warning',
       title: 'Descartar cambios',
-      text: 'Perderás los cambios no guardados de este día.',
+      text: 'PerderÃ¡s los cambios no guardados de este dÃ­a.',
       showCancelButton: true,
       confirmButtonText: 'Descartar',
       cancelButtonText: 'Cancelar'
@@ -750,7 +869,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       case 'EQUIPO_FALLA_EN_EVENTO':
         return 'Equipo falla en evento';
       case 'EQUIPO_ROBO_PERDIDA':
-        return 'Equipo robo/pérdida';
+        return 'Equipo robo/pÃ©rdida';
       default:
         return 'Otros';
     }
@@ -807,7 +926,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const mapa = new Map<number, string>();
     items.forEach(item => {
       if (!mapa.has(item.equipoId)) {
-        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || '—'})`);
+        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || 'â€”'})`);
       }
     });
     return Array.from(mapa.entries()).map(([equipoId, label]) => ({ equipoId, label }));
@@ -821,7 +940,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const mapa = new Map<number, string>();
     items.forEach(item => {
       if (!mapa.has(item.equipoId)) {
-        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || '—'})`);
+        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || 'â€”'})`);
       }
     });
     return Array.from(mapa.entries()).map(([equipoId, label]) => ({ equipoId, label }));
@@ -919,6 +1038,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   agregarEquipoPorTipo(tipo: string, requerido: number): void {
+    if (this.asignacionSoloLectura) return;
     if (this.tieneMultiplesModelos(tipo)) return;
     const asignados = this.getEquiposAsignadosPorTipo(tipo).length;
     if (asignados >= requerido) return;
@@ -932,6 +1052,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   completarEquiposPorTipo(tipo: string, requerido: number): void {
+    if (this.asignacionSoloLectura) return;
     if (this.tieneMultiplesModelos(tipo)) return;
     let asignados = this.getEquiposAsignadosPorTipo(tipo).length;
     if (asignados >= requerido) return;
@@ -944,6 +1065,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   quitarEquipoPorTipo(tipo: string): void {
+    if (this.asignacionSoloLectura) return;
     const asignados = this.getEquiposAsignadosPorTipo(tipo);
     const ultimo = asignados[asignados.length - 1];
     if (!ultimo) return;
@@ -992,6 +1114,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   toggleEquipoSeleccion(equipoId: number, tipo: string, requerido: number): void {
+    if (this.asignacionSoloLectura) return;
     const idx = this.asignacionEquipos.findIndex(item => item.equipoId === equipoId);
     if (idx >= 0) {
       this.asignacionEquipos = this.asignacionEquipos.filter((_, i) => i !== idx);
@@ -1298,7 +1421,17 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   abrirModalDevolucion(diaId?: number): void {
     const selected = diaId ?? this.openDiaId ?? this.detalle?.dias?.[0]?.diaId ?? null;
     if (!selected) return;
+    if (!this.isDiaFinalizado(selected)) {
+      void Swal.fire({
+        icon: 'info',
+        title: 'Devoluciones al cierre',
+        text: 'Solo puedes registrar devoluciones cuando el día está Terminado o Cancelado.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
     this.devolucionDiaId = selected;
+    this.mostrarSoloExcepcionesDevolucion = false;
     this.modalDevolucionAbierto = true;
     this.cargarDevolucionDraft(selected);
   }
@@ -1434,7 +1567,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   getEstadoDevolucionDisplay(estado: string | null | undefined): string {
     const normalized = this.normalizarEstadoDevolucion(estado);
     if (normalized === 'DEVUELTO') return 'Devuelto';
-    if (normalized === 'DANADO') return 'Dañado';
+    if (normalized === 'DANADO') return 'DaÃ±ado';
     if (normalized === 'PERDIDO') return 'Perdido';
     if (normalized === 'ROBADO') return 'Robado';
     return 'Pendiente';
@@ -1589,6 +1722,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   canGuardarDevoluciones(): boolean {
     if (!this.devolucionDiaId) return false;
+    if (!this.isDiaFinalizado(this.devolucionDiaId)) return false;
     const equipos = this.getEquiposDevolucionDia(this.devolucionDiaId);
     const cambios = equipos.filter(eq => this.isDevolucionChanged(eq));
     if (!cambios.length) return false;
@@ -1604,40 +1738,52 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     if (!this.devolucionDiaId || !this.canGuardarDevoluciones()) return;
     const payload = this.buildDevolucionPayload();
     if (!payload.equipos.length) return;
-    this.guardandoDevolucion = true;
-    this.proyectoService.registrarDevolucionesDia(this.devolucionDiaId, payload)
-      .pipe(finalize(() => { this.guardandoDevolucion = false; }))
-      .subscribe({
-        next: () => {
-          Swal.fire({
-            icon: 'success',
-            title: 'Devoluciones registradas',
-            timer: 1400,
-            showConfirmButton: false
-          });
-          if (!this.proyecto?.proyectoId) return;
-          this.proyectoService.getProyecto(this.proyecto.proyectoId)
-            .subscribe({
-              next: data => {
-                this.detalle = data;
-                this.proyecto = data?.proyecto ?? null;
-                this.rebuildDiaCaches();
-                this.cargarDevolucionDraft(this.devolucionDiaId!);
-              },
-              error: err => {
-                console.error('[proyecto] devolucion refresh', err);
-              }
+    void Swal.fire({
+      icon: 'warning',
+      title: '¿Confirmar devoluciones?',
+      text: 'Esta acción solo se puede registrar una vez. ¿Estás seguro de que no habrá más cambios?',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, registrar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.guardandoDevolucion = true;
+      this.proyectoService.registrarDevolucionesDia(this.devolucionDiaId!, payload)
+        .pipe(finalize(() => { this.guardandoDevolucion = false; }))
+        .subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Devoluciones registradas',
+              timer: 1400,
+              showConfirmButton: false
             });
-        },
-        error: err => {
-          console.error('[proyecto] devoluciones', err);
-          Swal.fire({
-            icon: 'error',
-            title: 'No se pudo registrar',
-            text: 'Revisa los datos e intenta nuevamente.'
-          });
-        }
-      });
+            if (!this.proyecto?.proyectoId) return;
+            this.proyectoService.getProyecto(this.proyecto.proyectoId)
+              .subscribe({
+                next: data => {
+                  this.detalle = data;
+                  this.proyecto = data?.proyecto ?? null;
+                  this.rebuildDiaCaches();
+                  this.mostrarSoloExcepcionesDevolucion = false;
+                  this.cargarDevolucionDraft(this.devolucionDiaId!);
+                },
+                error: err => {
+                  console.error('[proyecto] devolucion refresh', err);
+                }
+              });
+          },
+          error: err => {
+            console.error('[proyecto] devoluciones', err);
+            Swal.fire({
+              icon: 'error',
+              title: 'No se pudo registrar',
+              text: 'Revisa los datos e intenta nuevamente.'
+            });
+          }
+        });
+    });
   }
 
   private getEmpleadoRolEnDia(empleadoId: number | null, diaId: number | null): string | null {
@@ -1661,7 +1807,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     );
     return this.disponiblesIncidenciaEmpleados
       .filter(emp => emp.empleadoId !== this.incidenciaEmpleadoId)
-      .filter(emp => !asignadosDia.has(emp.empleadoId)) // solo libres (no ya asignados al día)
+      .filter(emp => !asignadosDia.has(emp.empleadoId)) // solo libres (no ya asignados al dÃ­a)
       .filter(emp => {
         if (!rolNorm) return true;
         const key = emp.cargoId !== undefined && emp.cargoId !== null
@@ -1689,14 +1835,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .filter(eq => !affectedTipo || (eq.tipoEquipo ?? '').toString().trim().toLowerCase() === affectedTipo)
       .map(eq => ({
         equipoId: eq.equipoId,
-        label: `${eq.modelo || 'Equipo'} (${eq.equipoSerie || '—'})`
+        label: `${eq.modelo || 'Equipo'} (${eq.equipoSerie || 'â€”'})`
       }));
   }
 
   formatFechaDisplay(value: string | Date | null | undefined): string {
-    if (!value) return '—';
+    if (!value) return 'â€”';
     if (typeof value === 'string') {
       const trimmed = value.trim();
+      const dateTimeMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T].*)?$/);
+      if (dateTimeMatch) {
+        const [, y, m, d] = dateTimeMatch;
+        return `${d}-${m}-${y}`;
+      }
       const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/); // YYYY-MM-DD
       if (match) {
         const [, y, m, d] = match;
@@ -1709,20 +1860,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
         const year = parsed.getUTCFullYear();
         return `${day}-${month}-${year}`;
       }
-      return '—';
+      return 'â€”';
     }
     const d = new Date(value);
-    if (isNaN(d.getTime())) return '—';
+    if (isNaN(d.getTime())) return 'â€”';
     const day = String(d.getUTCDate()).padStart(2, '0');
     const month = String(d.getUTCMonth() + 1).padStart(2, '0');
     const year = d.getUTCFullYear();
     return `${day}-${month}-${year}`;
   }
-
   formatFechaLarga(value: string | Date | null | undefined): string {
-    if (!value) return '—';
+    if (!value) return 'â€”';
     const parsed = value instanceof Date ? value : new Date(String(value));
-    if (isNaN(parsed.getTime())) return '—';
+    if (isNaN(parsed.getTime())) return 'â€”';
     return new Intl.DateTimeFormat('es-PE', {
       weekday: 'long',
       day: 'numeric',
@@ -1732,21 +1882,102 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   formatHora12(value: string | null | undefined): string {
-    if (!value) return '—';
+    if (!value) return 'â€”';
     const raw = String(value);
-    let date: Date;
-    if (raw.includes('T')) {
-      date = new Date(raw);
-    } else {
-      const base = '1970-01-01';
-      date = new Date(`${base}T${raw}`);
+    let hours: number | null = null;
+    let minutes: number | null = null;
+
+    const timePart = (() => {
+      if (raw.includes('T')) return raw.split('T')[1] ?? '';
+      if (raw.includes(' ')) return raw.split(' ')[1] ?? '';
+      if (/^\d{1,2}:\d{2}/.test(raw)) return raw;
+      return '';
+    })();
+
+    if (timePart) {
+      const match = timePart.match(/^(\d{1,2}):(\d{2})/);
+      if (match) {
+        hours = Number(match[1]);
+        minutes = Number(match[2]);
+      }
     }
-    if (isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('es-PE', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }).format(date);
+
+    if (hours === null || minutes === null || Number.isNaN(hours) || Number.isNaN(minutes)) {
+      const parsed = new Date(raw);
+      if (isNaN(parsed.getTime())) return 'â€”';
+      hours = parsed.getHours();
+      minutes = parsed.getMinutes();
+    }
+
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    return `${String(hour12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
+  }
+
+  getEstadoDiaNombre(estadoDiaId: number | null): string | null {
+    if (!estadoDiaId) return null;
+    const estado = this.estadosDiaCatalogo.find(item => item.estadoDiaId === estadoDiaId);
+    return estado?.estadoDiaNombre ?? null;
+  }
+
+  isDiaEnCurso(diaId: number | null): boolean {
+    if (!diaId || !this.detalle?.dias?.length) return false;
+    const dia = this.detalle.dias.find(d => d.diaId === diaId);
+    return (dia?.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'en curso';
+  }
+
+  isDiaFinalizado(diaId: number | null): boolean {
+    if (!diaId || !this.detalle?.dias?.length) return false;
+    const dia = this.detalle.dias.find(d => d.diaId === diaId);
+    const estado = (dia?.estadoDiaNombre ?? '').toString().trim().toLowerCase();
+    return estado === 'terminado' || estado === 'cancelado';
+  }
+
+  getEstadosDiaPermitidos(dia: ProyectoDia): ProyectoDiaEstadoItem[] {
+    const actual = (dia.estadoDiaNombre ?? '').toString().trim().toLowerCase();
+    const allowByState: Record<string, string[]> = {
+      'pendiente': ['en curso', 'suspendido', 'cancelado'],
+      'en curso': ['terminado', 'suspendido', 'cancelado'],
+      'suspendido': ['en curso', 'cancelado'],
+      'terminado': [],
+      'cancelado': []
+    };
+    const allowed = allowByState[actual] ?? [];
+    if (!allowed.length) return [];
+    return this.estadosDiaCatalogo.filter(item =>
+      allowed.includes((item.estadoDiaNombre ?? '').toString().trim().toLowerCase())
+    );
+  }
+
+  private getConfirmacionEstadoDia(
+    estadoActual: string,
+    estadoNuevo: string
+  ): { title: string; text: string; confirmText: string } | null {
+    if (estadoActual === 'pendiente' && estadoNuevo === 'en curso') {
+      return { title: '¿Iniciar día?', text: 'Esto marcará el día como En curso.', confirmText: 'Sí, iniciar' };
+    }
+    if (estadoActual === 'pendiente' && estadoNuevo === 'suspendido') {
+      return { title: '¿Suspender día?', text: 'El día quedará en pausa y podrá reanudarse luego.', confirmText: 'Sí, suspender' };
+    }
+    if (estadoActual === 'pendiente' && estadoNuevo === 'cancelado') {
+      return { title: '¿Cancelar día?', text: 'Esta acción es final y no se podrá reabrir.', confirmText: 'Sí, cancelar' };
+    }
+    if (estadoActual === 'en curso' && estadoNuevo === 'terminado') {
+      return { title: '¿Terminar día?', text: 'Se marcará como Terminado y no podrá reabrirse.', confirmText: 'Sí, terminar' };
+    }
+    if (estadoActual === 'en curso' && estadoNuevo === 'suspendido') {
+      return { title: '¿Suspender día en ejecución?', text: 'Podrás reanudarlo luego.', confirmText: 'Sí, suspender' };
+    }
+    if (estadoActual === 'en curso' && estadoNuevo === 'cancelado') {
+      return { title: '¿Cancelar día en ejecución?', text: 'Esta acción es final y no se podrá reabrir.', confirmText: 'Sí, cancelar' };
+    }
+    if (estadoActual === 'suspendido' && estadoNuevo === 'en curso') {
+      return { title: '¿Reanudar día?', text: 'El día volverá a En curso.', confirmText: 'Sí, reanudar' };
+    }
+    if (estadoActual === 'suspendido' && estadoNuevo === 'cancelado') {
+      return { title: '¿Cancelar día suspendido?', text: 'Esta acción es final y no se podrá reabrir.', confirmText: 'Sí, cancelar' };
+    }
+    return null;
   }
 
   getServiciosDia(diaId: number): ProyectoDetalleResponse['serviciosDia'] {
@@ -1795,7 +2026,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   get totalEquiposPendientesDevolucion(): number {
     return (this.detalle?.equiposDia ?? []).filter(eq => {
       const estado = (eq.estadoDevolucion ?? '').toString().trim().toLowerCase();
-      return !estado || estado === 'pendiente' || estado === 'sin devolución' || estado === 'sin devolucion';
+      return !estado || estado === 'pendiente' || estado === 'sin devoluciÃ³n' || estado === 'sin devolucion';
     }).length;
   }
 
@@ -1856,9 +2087,9 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   getOpenDiaLabel(): string {
-    if (!this.openDiaId) return 'Día seleccionado';
+    if (!this.openDiaId) return 'DÃ­a seleccionado';
     const dia = this.diasOrdenadosCache.find(item => item.diaId === this.openDiaId);
-    return dia ? this.formatFechaLarga(dia.fecha) : 'Día seleccionado';
+    return dia ? this.formatFechaLarga(dia.fecha) : 'DÃ­a seleccionado';
   }
 
   onToggleDia(diaId: number, event: Event): void {
@@ -2005,7 +2236,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       asignEquipos: 0,
       pendientesPersonal: 0,
       pendientesEquipos: 0,
-      estadoAsignacion: '—',
+      estadoAsignacion: 'â€”',
       rangoHoras: null,
       incidenciasCount: 0
     };
@@ -2079,14 +2310,14 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       const totalReq = reqPersonal + reqEquipos;
       const totalAsign = asignPersonal + asignEquipos;
 
-      let estadoAsignacion: EstadoAsignacionDia = '—';
+      let estadoAsignacion: EstadoAsignacionDia = 'â€”';
       if (totalReq > 0) {
         if (totalAsign === 0) {
           estadoAsignacion = 'Sin asignar';
         } else if (pendientesPersonal > 0 || pendientesEquipos > 0) {
           estadoAsignacion = 'Pendiente';
         } else {
-          estadoAsignacion = 'Completo';
+          estadoAsignacion = 'Asignaciones completas';
         }
       }
 
@@ -2166,11 +2397,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const now = new Date();
     const hours24 = now.getHours();
     const h12 = hours24 % 12 || 12;
-    const roundedMin = Math.floor(now.getMinutes() / 5) * 5;
+    const roundedMin = Math.round(now.getMinutes() / 5) * 5;
     this.incidenciaHora12 = String(h12).padStart(2, '0');
-    this.incidenciaMinuto = String(roundedMin).padStart(2, '0');
+    this.incidenciaMinuto = String(roundedMin >= 60 ? 55 : roundedMin).padStart(2, '0');
     this.incidenciaAmPm = hours24 >= 12 ? 'PM' : 'AM';
   }
 
 
 }
+

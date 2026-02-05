@@ -147,7 +147,7 @@
             <details
               class="timeline-item"
               [class.timeline-item--pending]="getEstadoAsignacionDia(dia.diaId) === 'Pendiente' || getEstadoAsignacionDia(dia.diaId) === 'Sin asignar'"
-              [class.timeline-item--done]="getEstadoAsignacionDia(dia.diaId) === 'Completo'"
+              [class.timeline-item--done]="getEstadoAsignacionDia(dia.diaId) === 'Asignaciones completas'"
               [open]="openDiaId === dia.diaId"
               (toggle)="onToggleDia(dia.diaId, $event)">
               <summary class="timeline-summary">
@@ -163,43 +163,62 @@
                     <div class="timeline-date__range">{{ rango.inicio }} – {{ rango.fin }}</div>
                   }
                   <div class="timeline-badges">
-                    <app-estado-badge
-                      [estado]="dia.estadoDiaNombre || '—'"
-                      [mapaColores]="{
-                        'planificado': 'info',
-                        'en ejecucion': 'warning',
-                        'en ejecución': 'warning',
-                        'pendiente': 'warning',
-                        'entregado': 'success-light',
-                        'cerrado': 'success'
-                      }"
-                    ></app-estado-badge>
-                    @if (getEstadoAsignacionDia(dia.diaId) !== '—') {
+                    <div class="timeline-badges__group">
                       <app-estado-badge
-                        [estado]="getEstadoAsignacionDia(dia.diaId)"
+                        [estado]="dia.estadoDiaNombre || '—'"
                         [mapaColores]="{
                           'pendiente': 'warning',
-                          'sin asignar': 'neutral',
-                          'completo': 'success'
+                          'en curso': 'info',
+                          'terminado': 'success',
+                          'suspendido': 'neutral',
+                          'cancelado': 'danger'
                         }"
                       ></app-estado-badge>
-                    }
-                    <app-estado-badge
-                      [estado]="getRiesgoDiaLabel(dia.diaId)"
-                      [mapaColores]="{
-                        'riesgo alto': 'danger',
-                        'riesgo medio': 'warning',
-                        'riesgo bajo': 'success-light'
-                      }"
-                    ></app-estado-badge>
-                    @if (isAsignacionDiaDirtyFor(dia.diaId)) {
-                      <app-estado-badge [estado]="'Cambios'" [mapaColores]="{ 'cambios': 'warning' }"></app-estado-badge>
-                    }
+                      @if (getEstadoAsignacionDia(dia.diaId) !== 'â€”') {
+                        <app-estado-badge
+                          [estado]="getEstadoAsignacionDia(dia.diaId)"
+                        [mapaColores]="{
+                            'pendiente': 'warning',
+                            'sin asignar': 'neutral',
+                            'asignaciones completas': 'success'
+                          }"
+                        ></app-estado-badge>
+                      }
+                      @if (isAsignacionDiaDirtyFor(dia.diaId)) {
+                        <app-estado-badge [estado]="'Cambios'" [mapaColores]="{ 'cambios': 'warning' }"></app-estado-badge>
+                      }
+                    </div>
                   </div>
                 </div>
                 <div class="timeline-side">
                   <div class="timeline-dot"></div>
                   <span class="timeline-expand">{{ openDiaId === dia.diaId ? 'Ocultar' : 'Ver detalle' }}</span>
+                  <div class="estado-dia-action-wrap estado-dia-action-wrap--right" (click)="$event.stopPropagation()">
+                    <button
+                      class="estado-dia-action"
+                      type="button"
+                      [disabled]="!getEstadosDiaPermitidos(dia).length || estadoDiaLoading[dia.diaId]"
+                      (click)="toggleEstadoDiaMenu(dia.diaId, $event)">
+                      <app-estado-badge
+                        [estado]="'Cambiar estado'"
+                        [mapaColores]="{ 'cambiar estado': 'info' }"
+                      ></app-estado-badge>
+                    </button>
+                    @if (estadoDiaMenuOpenId === dia.diaId) {
+                      <div class="estado-dia-menu" (click)="$event.stopPropagation()">
+                        @for (estado of getEstadosDiaPermitidos(dia); track estado.estadoDiaId) {
+                          <button
+                            class="estado-dia-menu__item"
+                            type="button"
+                            [class.is-active]="estado.estadoDiaId === dia.estadoDiaId"
+                            [disabled]="estadoDiaLoading[dia.diaId]"
+                            (click)="onEstadoDiaSelect(dia, estado.estadoDiaId)">
+                            <span>{{ estado.estadoDiaNombre }}</span>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
                 </div>
               </summary>
               <div class="timeline-content">
@@ -295,7 +314,7 @@
                     [mapaColores]="{
                       'pendiente': 'warning',
                       'sin asignar': 'neutral',
-                      'completo': 'success'
+                      'asignaciones completas': 'success'
                     }"
                   ></app-estado-badge>
                 </div>
@@ -315,7 +334,7 @@
               <h3>Registro del día</h3>
             </div>
             <div class="collapsible__actions">
-              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalIncidencia()">
+              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalIncidencia()" [disabled]="!isDiaEnCurso(openDiaId)">
                 Agregar incidencia
               </button>
               <span class="collapsible__caret">▾</span>
@@ -330,10 +349,7 @@
                     <div class="incidencias-resumen__meta">{{ getIncidenciasCountDia(dia.diaId) }} incidencia(s)</div>
                   </div>
                   <div class="incidencias-resumen__actions">
-                    <button mat-button type="button" (click)="abrirModalIncidencia(dia.diaId)">Agregar</button>
-                    <button mat-stroked-button type="button" (click)="abrirModalIncidenciasDia(dia.diaId)" [disabled]="!getIncidenciasCountDia(dia.diaId)">
-                      Ver todas
-                    </button>
+                    <button mat-button type="button" (click)="abrirModalIncidencia(dia.diaId)" [disabled]="!isDiaEnCurso(dia.diaId)">Agregar</button>
                   </div>
                 </div>
                 <div class="incidencias-resumen__list">
@@ -350,8 +366,7 @@
                         <span class="chip chip-light" *ngIf="inc.empleadoReemplazoNombre">Reemplazo: {{ inc.empleadoReemplazoNombre }}<span class="muted" *ngIf="inc.empleadoReemplazoCargo"> · {{ inc.empleadoReemplazoCargo }}</span></span>
                       </div>
                       <div class="incidencia-item__time">
-                        <span>Hora del incidente: {{ inc.fechaHoraEvento || 'No registrada' }}</span>
-                        <span>Registrado el: {{ inc.createdAt || '—' }}</span>
+                        <span>Hora del incidente: {{ inc.fechaHoraEvento ? formatHora12(inc.fechaHoraEvento) : 'No registrada' }}</span>
                       </div>
                       <div class="incidencia-item__desc">{{ inc.descripcion }}</div>
                     </div>
@@ -384,7 +399,7 @@
               <button mat-button type="button" (click)="$event.stopPropagation(); toggleSoloExcepcionesEstado()">
                 @if (mostrarSoloExcepcionesEstado) { Ver todo } @else { Solo excepciones }
               </button>
-              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalDevolucion(openDiaId || undefined)">
+              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalDevolucion(openDiaId || undefined)" [disabled]="!isDiaFinalizado(openDiaId)">
                 Registrar devoluciones del día
               </button>
               <span class="collapsible__caret">▾</span>
@@ -463,6 +478,9 @@
 
   <div class="modal-section">
     <h4>Asignaciones por día</h4>
+    @if (asignacionSoloLectura) {
+      <div class="muted small">Solo lectura: el día no está en Pendiente, las asignaciones no se pueden editar.</div>
+    }
     <div class="asignaciones-editor">
       <label class="form-field">
         <span class="label">Selecciona un día</span>
@@ -492,20 +510,20 @@
         </select>
       </label>
       <button mat-stroked-button color="primary" type="button" (click)="copiarAsignacionesDesde(copiarDesdeDiaId)"
-        [disabled]="!copiarDesdeDiaId || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
+        [disabled]="asignacionSoloLectura || !copiarDesdeDiaId || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
         Copiar
       </button>
       <button mat-stroked-button type="button" (click)="copiarAsignacionesDiaAnterior()"
-        [disabled]="!getDiaAnteriorId(asignacionDiaId) || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
+        [disabled]="asignacionSoloLectura || !getDiaAnteriorId(asignacionDiaId) || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
         Copiar día anterior
       </button>
       <button mat-button type="button" (click)="irADiaConPendientesAsignacion()">
         Ir a día pendiente
       </button>
-      <button mat-stroked-button color="primary" type="button" (click)="limpiarAsignacionesDia()" [disabled]="!asignacionDiaId">
+      <button mat-stroked-button color="primary" type="button" (click)="limpiarAsignacionesDia()" [disabled]="asignacionSoloLectura || !asignacionDiaId">
         Limpiar día
       </button>
-      <button mat-stroked-button type="button" (click)="descartarCambiosDia()" [disabled]="!isAsignacionDiaDirty(asignacionDiaId)">
+      <button mat-stroked-button type="button" (click)="descartarCambiosDia()" [disabled]="asignacionSoloLectura || !isAsignacionDiaDirty(asignacionDiaId)">
         Descartar cambios
       </button>
       @if (hasFiltrosActivos()) {
@@ -571,7 +589,7 @@
                   </div>
                   <div class="transfer__list">
                     @for (op of getEmpleadosDisponiblesFiltrados(); track op.empleadoId) {
-                      <button class="transfer__item" type="button" (click)="onEmpleadoSeleccionado(op.empleadoId)">
+                      <button class="transfer__item" type="button" (click)="onEmpleadoSeleccionado(op.empleadoId)" [disabled]="asignacionSoloLectura">
                         <span [innerHTML]="highlightMatch(op.nombre + ' ' + op.apellido, searchEmpleado)"></span>
                         <span class="transfer__meta">{{ op.cargo }}</span>
                       </button>
@@ -586,7 +604,7 @@
                     @for (item of asignacionEmpleados; track item.empleadoId; let i = $index) {
                       <div class="transfer__item is-selected">
                         <span>{{ getDisponibleEmpleadoLabel(item.empleadoId) }}</span>
-                        <button class="transfer__remove" type="button" (click)="eliminarEmpleado(i)">Quitar</button>
+                        <button class="transfer__remove" type="button" (click)="eliminarEmpleado(i)" [disabled]="asignacionSoloLectura">Quitar</button>
                       </div>
                     }
                   </div>
@@ -644,17 +662,17 @@
                         <app-estado-badge [estado]="row.asignado + '/' + row.requerido"></app-estado-badge>
                       </div>
                       <div class="equipos-row__actions">
-                        <button mat-stroked-button type="button" (click)="quitarEquipoPorTipo(row.tipo)" [disabled]="row.asignado === 0">
+                        <button mat-stroked-button type="button" (click)="quitarEquipoPorTipo(row.tipo)" [disabled]="asignacionSoloLectura || row.asignado === 0">
                           −
                         </button>
                         <button mat-stroked-button color="primary" type="button"
                           (click)="agregarEquipoPorTipo(row.tipo, row.requerido)"
-                          [disabled]="row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
+                          [disabled]="asignacionSoloLectura || row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
                           +
                         </button>
                         <button mat-button type="button"
                           (click)="completarEquiposPorTipo(row.tipo, row.requerido)"
-                          [disabled]="row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
+                          [disabled]="asignacionSoloLectura || row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
                           Completar
                         </button>
                         <button mat-button type="button" (click)="toggleTipoDetalle(row.tipo)">
@@ -691,7 +709,7 @@
                                 <input
                                   type="checkbox"
                                   [checked]="isEquipoSeleccionado(eq.equipoId)"
-                                  [disabled]="!isEquipoSeleccionado(eq.equipoId) && row.asignado >= row.requerido"
+                                  [disabled]="asignacionSoloLectura || (!isEquipoSeleccionado(eq.equipoId) && row.asignado >= row.requerido)"
                                   (change)="toggleEquipoSeleccion(eq.equipoId, row.tipo, row.requerido)">
                                 <span>{{ eq.nombreModelo }} · {{ eq.serie }}</span>
                               </label>
@@ -704,7 +722,7 @@
                             @for (item of getEquiposAsignadosPorTipo(row.tipo); track item.equipoId) {
                               <div class="chip">
                                 <span>{{ getDisponibleEquipoLabel(item.equipoId) }}</span>
-                                <button class="chip__close" type="button" (click)="eliminarEquipo(asignacionEquipos.indexOf(item))" aria-label="Quitar">
+                                <button class="chip__close" type="button" (click)="eliminarEquipo(asignacionEquipos.indexOf(item))" [disabled]="asignacionSoloLectura" aria-label="Quitar">
                                   <mat-icon>close</mat-icon>
                                 </button>
                               </div>
@@ -744,6 +762,7 @@
                     [class.drop-highlight]="ultimoDropDestino === 'reserva'"
                     cdkDropList
                     id="reserva"
+                    [cdkDropListDisabled]="asignacionSoloLectura"
                     [cdkDropListConnectedTo]="dropListIds"
                     (cdkDropListDropped)="onEquipoDrop($event, null)">
                     @for (grupo of getEquiposReservaPorTipo(); track grupo.tipo) {
@@ -754,7 +773,7 @@
                         </summary>
                         <div class="reserva-grupo__items">
                           @for (item of grupo.items; track item.equipoId) {
-                            <div class="drag-item" cdkDrag [cdkDragData]="item" [title]="getDisponibleEquipoLabel(item.equipoId)">
+                            <div class="drag-item" cdkDrag [cdkDragData]="item" [cdkDragDisabled]="asignacionSoloLectura" [title]="getDisponibleEquipoLabel(item.equipoId)">
                               <span>{{ getDisponibleEquipoLabelSinTipo(item.equipoId) }}</span>
                               <mat-icon class="drag-handle">drag_indicator</mat-icon>
                             </div>
@@ -778,9 +797,10 @@
                         [id]="'emp-' + emp.empleadoId"
                         [cdkDropListConnectedTo]="dropListIds"
                         cdkDropList
+                        [cdkDropListDisabled]="asignacionSoloLectura"
                         (cdkDropListDropped)="onEquipoDrop($event, emp.empleadoId)">
                         @for (item of getEquiposPorResponsable(emp.empleadoId); track item.equipoId) {
-                          <div class="drag-item" cdkDrag [cdkDragData]="item" [title]="getDisponibleEquipoLabel(item.equipoId)">
+                          <div class="drag-item" cdkDrag [cdkDragData]="item" [cdkDragDisabled]="asignacionSoloLectura" [title]="getDisponibleEquipoLabel(item.equipoId)">
                             <span>{{ getDisponibleEquipoLabelSinTipo(item.equipoId) }}</span>
                             <mat-icon class="drag-handle">drag_indicator</mat-icon>
                           </div>
@@ -801,7 +821,7 @@
   <div class="modal-footer-actions">
     <button mat-button type="button" (click)="cerrarModalAsignar()">Cerrar</button>
     <button mat-flat-button color="primary" type="button" (click)="guardarAsignacionesDia()"
-      [disabled]="guardandoAsignaciones || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId) || !isAsignacionDiaDirty(asignacionDiaId)">
+      [disabled]="asignacionSoloLectura || guardandoAsignaciones || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId) || !isAsignacionDiaDirty(asignacionDiaId)">
       {{ guardandoAsignaciones ? 'Guardando…' : 'Guardar asignaciones' }}
     </button>
   </div>
@@ -846,8 +866,7 @@
             <span class="chip chip-light" *ngIf="inc.empleadoReemplazoNombre">Reemplazo: {{ inc.empleadoReemplazoNombre }}<span class="muted" *ngIf="inc.empleadoReemplazoCargo"> · {{ inc.empleadoReemplazoCargo }}</span></span>
           </div>
           <div class="incidencia-item__time">
-            <span>Hora del incidente: {{ inc.fechaHoraEvento || 'No registrada' }}</span>
-            <span>Registrado el: {{ inc.createdAt || '—' }}</span>
+            <span>Hora del incidente: {{ inc.fechaHoraEvento ? formatHora12(inc.fechaHoraEvento) : 'No registrada' }}</span>
           </div>
           <div class="incidencia-item__desc">{{ inc.descripcion }}</div>
         </div>
@@ -863,7 +882,7 @@
     @if (canCargarMasIncidenciasModal()) {
       <button mat-stroked-button type="button" (click)="cargarMasIncidenciasModal()">Cargar más</button>
     }
-    <button mat-flat-button color="primary" type="button" (click)="abrirModalIncidencia(incidenciaListaDiaId || undefined)">
+    <button mat-flat-button color="primary" type="button" (click)="abrirModalIncidencia(incidenciaListaDiaId || undefined)" [disabled]="!isDiaEnCurso(incidenciaListaDiaId)">
       Nueva incidencia
     </button>
   </div>
@@ -884,7 +903,8 @@
           class="form-control"
           [ngModel]="incidenciaDiaId"
           (ngModelChange)="onIncidenciaDiaChange($event)"
-          name="incidenciaDiaId">
+          name="incidenciaDiaId"
+          [disabled]="incidenciaDiaLocked">
           <option [ngValue]="null">Selecciona un día</option>
           @for (dia of detalle?.dias ?? []; track dia.diaId) {
             <option [ngValue]="dia.diaId">{{ formatFechaLarga(dia.fecha) }}</option>
@@ -1113,7 +1133,7 @@
 
   <div class="modal-footer-actions">
     <button mat-button type="button" (click)="cerrarModalDevolucion()">Cerrar</button>
-    <button mat-stroked-button type="button" (click)="marcarTodosDevueltos()" [disabled]="!devolucionDiaId || !getEquiposDevolucionDia(devolucionDiaId).length">
+    <button mat-stroked-button type="button" (click)="marcarTodosDevueltos()" [disabled]="!isDiaFinalizado(devolucionDiaId) || !devolucionDiaId || !getEquiposDevolucionDia(devolucionDiaId).length">
       Marcar todo devuelto
     </button>
     <button mat-flat-button color="primary" type="button" (click)="guardarDevoluciones()"

@@ -7,7 +7,7 @@ import { Evento, EventoServicioCategoria, EstadoEventoServicio, Servicio } from 
 import { TipoEquipo } from 'src/app/control-panel/administrar-equipos/models/tipo-equipo.model';
 import { Cargo } from 'src/app/control-panel/gestionar-personal/service/personal.service';
 import { EstadoCliente } from 'src/app/control-panel/gestionar-cliente/model/cliente.model';
-import { ProyectoDiaEstadoItem, ProyectoDiaEstadoResponse, ProyectoEstadoItem, ProyectoEstadoResponse } from 'src/app/control-panel/gestionar-proyecto/model/proyecto.model';
+import { ProyectoDiaEstadoItem, ProyectoEstadoItem, ProyectoEstadoResponse } from 'src/app/control-panel/gestionar-proyecto/model/proyecto.model';
 import { MetodoPago } from 'src/app/control-panel/registrar-pago/model/metodopago.model';
 
 export type CatalogoKey =
@@ -120,8 +120,8 @@ export class CatalogosService {
       return cached;
     }
 
-    const request$ = this.http.get<ProyectoDiaEstadoResponse>(`${this.baseUrl}/proyecto/dias/estados`).pipe(
-      map((response) => (Array.isArray(response?.data) ? response.data : [])),
+    const request$ = this.http.get<ProyectoDiaEstadoItem[]>(`${this.baseUrl}/proyecto/dias/estados`).pipe(
+      map((response) => (Array.isArray(response) ? response : [])),
       tap((data) => {
         this.values.set('estadosDiasProyecto', data);
       }),

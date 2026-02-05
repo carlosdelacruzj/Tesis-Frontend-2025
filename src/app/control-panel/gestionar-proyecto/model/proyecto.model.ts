@@ -250,13 +250,10 @@ export interface ProyectoEstadoResponse {
 }
 
 export interface ProyectoDiaEstadoItem {
-  id: number;
-  nombre: string;
-}
-
-export interface ProyectoDiaEstadoResponse {
-  ok: boolean;
-  data: ProyectoDiaEstadoItem[];
+  estadoDiaId: number;
+  estadoDiaNombre: string;
+  orden: number;
+  activo: number;
 }
 
 export interface ProyectoIncidenciaPayload {
