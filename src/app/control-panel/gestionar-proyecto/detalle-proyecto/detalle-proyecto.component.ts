@@ -1,7 +1,8 @@
-﻿import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
+import { MatStepper } from '@angular/material/stepper';
 import Swal from 'sweetalert2';
 import {
   BloqueDia,
@@ -24,7 +25,7 @@ import {
 import { ProyectoService } from '../service/proyecto.service';
 import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
-type EstadoAsignacionDia = 'Sin asignar' | 'Pendiente' | 'Asignaciones completas' | 'â€”';
+type EstadoAsignacionDia = 'Sin asignar' | 'Pendiente' | 'Asignaciones completas' | '—';
 
 type IncidenciaResumen = {
   tipo: string;
@@ -73,6 +74,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   soloPendientes = false;
   openDiaId: number | null = null;
   asignacionDiaId: number | null = null;
+  asignacionDiaLocked = false;
   asignacionEmpleados: ProyectoAsignacionEmpleadoPayload[] = [];
   asignacionEquipos: ProyectoAsignacionEquipoPayload[] = [];
   disponiblesEmpleados: ProyectoAsignacionesDisponiblesEmpleado[] = [];
@@ -146,12 +148,13 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   eventosColumns = [
     { key: 'fecha', header: 'Fecha', sortable: true },
     { key: 'hora', header: 'Hora', sortable: true },
-    { key: 'ubicacion', header: 'LocaciÃ³n', sortable: true },
-    { key: 'direccion', header: 'DirecciÃ³n', sortable: true },
+    { key: 'ubicacion', header: 'Locación', sortable: true },
+    { key: 'direccion', header: 'Dirección', sortable: true },
     { key: 'notas', header: 'Notas', sortable: false }
   ];
 
   private readonly destroy$ = new Subject<void>();
+  @ViewChild('asignacionesStepper') asignacionesStepper?: MatStepper;
 
   ngOnInit(): void {
     this.updateStepperOrientation();
@@ -196,16 +199,18 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  abrirModalAsignar(): void {
+  abrirModalAsignar(diaId?: number): void {
     this.modalAsignarAbierto = true;
-    const diaId = this.openDiaId ?? this.detalle?.dias?.[0]?.diaId ?? null;
-    this.setAsignacionDia(diaId);
+    const selected = diaId ?? this.openDiaId ?? this.detalle?.dias?.[0]?.diaId ?? null;
+    this.asignacionDiaLocked = !!diaId;
+    this.setAsignacionDia(selected);
   }
 
   cerrarModalAsignar(): void {
     this.saveAsignacionDraft();
     this.saveFiltrosDraft();
     this.modalAsignarAbierto = false;
+    this.asignacionDiaLocked = false;
   }
 
   abrirModalIncidencia(diaId?: number): void {
@@ -277,7 +282,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       return;
     }
     const estadoAsignacion = this.getEstadoAsignacionDia(dia.diaId);
-    if (estadoActual === 'pendiente' && estadoNuevo === 'en curso' && estadoAsignacion !== 'Asignaciones completas' && estadoAsignacion !== 'â€”') {
+    if (estadoActual === 'pendiente' && estadoNuevo === 'en curso' && estadoAsignacion !== 'Asignaciones completas' && estadoAsignacion !== '—') {
       void Swal.fire({
         icon: 'warning',
         title: 'Asignaciones incompletas',
@@ -665,6 +670,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
                   skipDraftSave: true,
                   forceDetalle: true
                 });
+                this.cerrarModalAsignar();
               },
               error: err => {
                 console.error('[proyecto] refrescar asignaciones', err);
@@ -685,13 +691,13 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   getDisponibleEmpleadoLabel(empleadoId: number): string {
     const found = this.disponiblesEmpleados.find(item => item.empleadoId === empleadoId);
     if (!found) return `Empleado #${empleadoId}`;
-    return `${found.nombre} ${found.apellido} Â· ${found.cargo}`;
+    return `${found.nombre} ${found.apellido} · ${found.cargo}`;
   }
 
   getDisponibleEquipoLabel(equipoId: number): string {
     const found = this.disponiblesEquipos.find(item => item.equipoId === equipoId);
     if (!found) return `Equipo #${equipoId}`;
-    return `${found.nombreTipoEquipo} Â· ${found.nombreModelo} (${found.serie})`;
+    return `${found.nombreTipoEquipo} · ${found.nombreModelo} (${found.serie})`;
   }
 
   getDisponibleEquipoLabelSinTipo(equipoId: number): string {
@@ -719,7 +725,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     Swal.fire({
       icon: 'warning',
       title: 'Descartar cambios',
-      text: 'PerderÃ¡s los cambios no guardados de este dÃ­a.',
+      text: 'Perderás los cambios no guardados de este día.',
       showCancelButton: true,
       confirmButtonText: 'Descartar',
       cancelButtonText: 'Cancelar'
@@ -869,7 +875,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       case 'EQUIPO_FALLA_EN_EVENTO':
         return 'Equipo falla en evento';
       case 'EQUIPO_ROBO_PERDIDA':
-        return 'Equipo robo/pÃ©rdida';
+        return 'Equipo robo/pérdida';
       default:
         return 'Otros';
     }
@@ -926,7 +932,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const mapa = new Map<number, string>();
     items.forEach(item => {
       if (!mapa.has(item.equipoId)) {
-        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || 'â€”'})`);
+        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || '—'})`);
       }
     });
     return Array.from(mapa.entries()).map(([equipoId, label]) => ({ equipoId, label }));
@@ -940,7 +946,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const mapa = new Map<number, string>();
     items.forEach(item => {
       if (!mapa.has(item.equipoId)) {
-        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || 'â€”'})`);
+        mapa.set(item.equipoId, `${item.modelo || 'Equipo'} (${item.equipoSerie || '—'})`);
       }
     });
     return Array.from(mapa.entries()).map(([equipoId, label]) => ({ equipoId, label }));
@@ -1419,9 +1425,23 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   abrirModalDevolucion(diaId?: number): void {
-    const selected = diaId ?? this.openDiaId ?? this.detalle?.dias?.[0]?.diaId ?? null;
+    const diasPendientes = this.getDiasDevolucionPendientes();
+    if (!diasPendientes.length) {
+      void Swal.fire({
+        icon: 'info',
+        title: 'Sin devoluciones pendientes',
+        text: 'Todos los días ya tienen devoluciones registradas.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    const selected = diaId ?? this.openDiaId ?? diasPendientes[0]?.diaId ?? null;
     if (!selected) return;
-    if (!this.isDiaFinalizado(selected)) {
+    const targetDiaId = this.isDiaPendienteDevolucion(selected)
+      ? selected
+      : (diasPendientes[0]?.diaId ?? null);
+    if (!targetDiaId) return;
+    if (!this.isDiaFinalizado(targetDiaId)) {
       void Swal.fire({
         icon: 'info',
         title: 'Devoluciones al cierre',
@@ -1430,14 +1450,20 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    this.devolucionDiaId = selected;
+    this.devolucionDiaId = targetDiaId;
     this.mostrarSoloExcepcionesDevolucion = false;
     this.modalDevolucionAbierto = true;
-    this.cargarDevolucionDraft(selected);
+    this.cargarDevolucionDraft(targetDiaId);
   }
 
   onDevolucionDiaChange(diaId: number | null): void {
     if (!diaId) {
+      this.devolucionDiaId = null;
+      this.devolucionDraft = {};
+      this.devolucionGruposAbiertos = {};
+      return;
+    }
+    if (!this.isDiaPendienteDevolucion(diaId)) {
       this.devolucionDiaId = null;
       this.devolucionDraft = {};
       this.devolucionGruposAbiertos = {};
@@ -1510,6 +1536,18 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return items.filter(item => this.getEstadoDevolucionActual(item.equipoId) !== 'DEVUELTO');
   }
 
+  isDiaPendienteDevolucion(diaId: number): boolean {
+    const items = (this.detalle?.equiposDia ?? []).filter(item => item.diaId === diaId);
+    if (!items.length) return false;
+    return items.some(item => this.normalizarEstadoDevolucion(item.estadoDevolucion) === 'PENDIENTE');
+  }
+
+  getDiasDevolucionPendientes(): ProyectoDia[] {
+    return this.diasOrdenadosCache.filter(dia =>
+      this.isDiaFinalizado(dia.diaId) && this.isDiaPendienteDevolucion(dia.diaId)
+    );
+  }
+
   toggleSoloExcepcionesEstado(): void {
     this.mostrarSoloExcepcionesEstado = !this.mostrarSoloExcepcionesEstado;
   }
@@ -1567,7 +1605,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   getEstadoDevolucionDisplay(estado: string | null | undefined): string {
     const normalized = this.normalizarEstadoDevolucion(estado);
     if (normalized === 'DEVUELTO') return 'Devuelto';
-    if (normalized === 'DANADO') return 'DaÃ±ado';
+    if (normalized === 'DANADO') return 'Dañado';
     if (normalized === 'PERDIDO') return 'Perdido';
     if (normalized === 'ROBADO') return 'Robado';
     return 'Pendiente';
@@ -1723,6 +1761,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   canGuardarDevoluciones(): boolean {
     if (!this.devolucionDiaId) return false;
     if (!this.isDiaFinalizado(this.devolucionDiaId)) return false;
+    if (!this.isDiaPendienteDevolucion(this.devolucionDiaId)) return false;
     const equipos = this.getEquiposDevolucionDia(this.devolucionDiaId);
     const cambios = equipos.filter(eq => this.isDevolucionChanged(eq));
     if (!cambios.length) return false;
@@ -1768,6 +1807,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
                   this.rebuildDiaCaches();
                   this.mostrarSoloExcepcionesDevolucion = false;
                   this.cargarDevolucionDraft(this.devolucionDiaId!);
+                  this.cerrarModalDevolucion();
                 },
                 error: err => {
                   console.error('[proyecto] devolucion refresh', err);
@@ -1807,7 +1847,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     );
     return this.disponiblesIncidenciaEmpleados
       .filter(emp => emp.empleadoId !== this.incidenciaEmpleadoId)
-      .filter(emp => !asignadosDia.has(emp.empleadoId)) // solo libres (no ya asignados al dÃ­a)
+      .filter(emp => !asignadosDia.has(emp.empleadoId)) // solo libres (no ya asignados al día)
       .filter(emp => {
         if (!rolNorm) return true;
         const key = emp.cargoId !== undefined && emp.cargoId !== null
@@ -1835,12 +1875,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .filter(eq => !affectedTipo || (eq.tipoEquipo ?? '').toString().trim().toLowerCase() === affectedTipo)
       .map(eq => ({
         equipoId: eq.equipoId,
-        label: `${eq.modelo || 'Equipo'} (${eq.equipoSerie || 'â€”'})`
+        label: `${eq.modelo || 'Equipo'} (${eq.equipoSerie || '—'})`
       }));
   }
 
   formatFechaDisplay(value: string | Date | null | undefined): string {
-    if (!value) return 'â€”';
+    if (!value) return '—';
     if (typeof value === 'string') {
       const trimmed = value.trim();
       const dateTimeMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T].*)?$/);
@@ -1860,19 +1900,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
         const year = parsed.getUTCFullYear();
         return `${day}-${month}-${year}`;
       }
-      return 'â€”';
+      return '—';
     }
     const d = new Date(value);
-    if (isNaN(d.getTime())) return 'â€”';
+    if (isNaN(d.getTime())) return '—';
     const day = String(d.getUTCDate()).padStart(2, '0');
     const month = String(d.getUTCMonth() + 1).padStart(2, '0');
     const year = d.getUTCFullYear();
     return `${day}-${month}-${year}`;
   }
   formatFechaLarga(value: string | Date | null | undefined): string {
-    if (!value) return 'â€”';
+    if (!value) return '—';
     const parsed = value instanceof Date ? value : new Date(String(value));
-    if (isNaN(parsed.getTime())) return 'â€”';
+    if (isNaN(parsed.getTime())) return '—';
     return new Intl.DateTimeFormat('es-PE', {
       weekday: 'long',
       day: 'numeric',
@@ -1882,7 +1922,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   formatHora12(value: string | null | undefined): string {
-    if (!value) return 'â€”';
+    if (!value) return '—';
     const raw = String(value);
     let hours: number | null = null;
     let minutes: number | null = null;
@@ -1904,7 +1944,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
     if (hours === null || minutes === null || Number.isNaN(hours) || Number.isNaN(minutes)) {
       const parsed = new Date(raw);
-      if (isNaN(parsed.getTime())) return 'â€”';
+      if (isNaN(parsed.getTime())) return '—';
       hours = parsed.getHours();
       minutes = parsed.getMinutes();
     }
@@ -1924,6 +1964,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     if (!diaId || !this.detalle?.dias?.length) return false;
     const dia = this.detalle.dias.find(d => d.diaId === diaId);
     return (dia?.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'en curso';
+  }
+
+  isDiaPendienteEstado(diaId: number | null): boolean {
+    if (!diaId || !this.detalle?.dias?.length) return false;
+    const dia = this.detalle.dias.find(d => d.diaId === diaId);
+    return (dia?.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'pendiente';
   }
 
   isDiaFinalizado(diaId: number | null): boolean {
@@ -2026,7 +2072,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   get totalEquiposPendientesDevolucion(): number {
     return (this.detalle?.equiposDia ?? []).filter(eq => {
       const estado = (eq.estadoDevolucion ?? '').toString().trim().toLowerCase();
-      return !estado || estado === 'pendiente' || estado === 'sin devoluciÃ³n' || estado === 'sin devolucion';
+      return !estado || estado === 'pendiente' || estado === 'sin devolución' || estado === 'sin devolucion';
     }).length;
   }
 
@@ -2066,6 +2112,43 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return 'control-kpi--neutral';
   }
 
+  getAsignacionDiaLabel(): string {
+    if (!this.asignacionDiaId) return '—';
+    const dia = this.detalle?.dias?.find(d => d.diaId === this.asignacionDiaId);
+    return this.formatFechaLarga(dia?.fecha ?? '');
+  }
+
+  canGuardarAsignacionesFinal(): boolean {
+    if (this.asignacionSoloLectura) return false;
+    if (!this.asignacionDiaId) return false;
+    if (!this.hasRequerimientosDia(this.asignacionDiaId)) return false;
+    if (!this.isAsignacionDiaDirty(this.asignacionDiaId)) return false;
+    if (!this.asignacionEmpleados.length) return false;
+    return this.asignacionEmpleados.every(emp => this.getEquiposCountResponsable(emp.empleadoId) > 0);
+  }
+
+  canIrAnteriorAsignaciones(): boolean {
+    const idx = this.asignacionesStepper?.selectedIndex ?? 0;
+    return !!this.asignacionDiaId && idx > 0;
+  }
+
+  canIrSiguienteAsignaciones(): boolean {
+    const idx = this.asignacionesStepper?.selectedIndex ?? 0;
+    return !!this.asignacionDiaId && idx < 2;
+  }
+
+  esUltimoPasoAsignaciones(): boolean {
+    return (this.asignacionesStepper?.selectedIndex ?? 0) === 2;
+  }
+
+  asignacionesAnterior(): void {
+    this.asignacionesStepper?.previous();
+  }
+
+  asignacionesSiguiente(): void {
+    this.asignacionesStepper?.next();
+  }
+
   toggleSoloPendientes(): void {
     this.soloPendientes = !this.soloPendientes;
     const dias = [...this.diasOrdenadosCache];
@@ -2087,9 +2170,9 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   getOpenDiaLabel(): string {
-    if (!this.openDiaId) return 'DÃ­a seleccionado';
+    if (!this.openDiaId) return 'Día seleccionado';
     const dia = this.diasOrdenadosCache.find(item => item.diaId === this.openDiaId);
-    return dia ? this.formatFechaLarga(dia.fecha) : 'DÃ­a seleccionado';
+    return dia ? this.formatFechaLarga(dia.fecha) : 'Día seleccionado';
   }
 
   onToggleDia(diaId: number, event: Event): void {
@@ -2236,7 +2319,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       asignEquipos: 0,
       pendientesPersonal: 0,
       pendientesEquipos: 0,
-      estadoAsignacion: 'â€”',
+      estadoAsignacion: '—',
       rangoHoras: null,
       incidenciasCount: 0
     };
@@ -2310,7 +2393,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       const totalReq = reqPersonal + reqEquipos;
       const totalAsign = asignPersonal + asignEquipos;
 
-      let estadoAsignacion: EstadoAsignacionDia = 'â€”';
+      let estadoAsignacion: EstadoAsignacionDia = '—';
       if (totalReq > 0) {
         if (totalAsign === 0) {
           estadoAsignacion = 'Sin asignar';
@@ -2405,4 +2488,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
 
 }
+
+
+
+
 

@@ -33,9 +33,11 @@ export interface ClientePedido {
   estadoPago: string;
   empleadoId: number | null;
   empleadoNombre: string | null;
-  total: string;
-  montoAbonado: string;
-  saldoPendiente: string;
+  subtotal: number;
+  igv: number;
+  total: number;
+  montoAbonado: number;
+  saldoPendiente: number;
   primerEventoFecha: string | null;
   ultimoEventoFecha: string | null;
   cantidadEventos: number;

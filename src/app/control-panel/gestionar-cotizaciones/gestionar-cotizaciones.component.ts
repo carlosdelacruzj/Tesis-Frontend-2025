@@ -40,7 +40,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     { key: "evento", header: "Evento", sortable: true, width: "180px" },
     { key: "fecha", header: "Fecha del evento", sortable: true, width: "180px" },
     { key: "createdAt", header: "Fecha de creación", sortable: true, width: "160px" },
-    { key: "total", header: "Total", sortable: true, width: "140px", class: "text-center text-nowrap" },
     { key: "estado", header: "Estado", sortable: true, width: "140px", class: "text-center" },
     { key: "acciones", header: "Acciones", sortable: false, filterable: false, width: "160px", class: "text-center" }
   ];

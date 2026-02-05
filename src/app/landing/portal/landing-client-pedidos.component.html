@@ -46,7 +46,15 @@
           <dd>{{ pedido.primerEventoFecha ? (pedido.primerEventoFecha | date: 'dd/MM/yyyy') : 'Por programar' }}</dd>
         </div>
         <div>
-          <dt>Total</dt>
+          <dt>Subtotal</dt>
+          <dd>{{ pedido.subtotal | usd:'1.2-2' }}</dd>
+        </div>
+        <div>
+          <dt>IGV</dt>
+          <dd>{{ pedido.igv | usd:'1.2-2' }}</dd>
+        </div>
+        <div>
+          <dt>Total (con IGV)</dt>
           <dd>{{ pedido.total | usd:'1.2-2' }}</dd>
         </div>
         <div>

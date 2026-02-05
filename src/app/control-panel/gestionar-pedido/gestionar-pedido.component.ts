@@ -189,7 +189,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ({ resumen, metodos }) => {
-          const resumenValido = resumen ?? { CostoTotal: 0, MontoAbonado: 0, SaldoPendiente: 0 };
+          const resumenValido = resumen ?? { CostoBase: 0, Igv: 0, CostoTotal: 0, MontoAbonado: 0, SaldoPendiente: 0 };
           const total = this.parseMonto(resumenValido.CostoTotal);
           const abonado = this.parseMonto(resumenValido.MontoAbonado);
           const saldo = resumenValido.SaldoPendiente != null

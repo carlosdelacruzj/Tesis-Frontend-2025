@@ -12,6 +12,8 @@ export interface PedidoLite {
   FechaCreacion?: string; // YYYY-MM-DD
 }
 export interface ResumenPago {
+  CostoBase: number;
+  Igv: number;
   CostoTotal: number;
   MontoAbonado: number;
   SaldoPendiente: number;

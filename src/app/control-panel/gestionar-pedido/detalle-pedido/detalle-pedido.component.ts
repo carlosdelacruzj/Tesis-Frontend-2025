@@ -81,6 +81,9 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Pedido actual ======
   private pedidoId!: number;
+  pedidoSubtotal = 0;
+  pedidoIgv = 0;
+  pedidoTotal = 0;
   private readonly pedidoService = inject(PedidoService);
   readonly visualizarService = inject(VisualizarService);
   private readonly route = inject(ActivatedRoute);
@@ -245,6 +248,9 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
       }
 
       const { pedido, eventos, items } = data;
+      this.pedidoSubtotal = Number(pedido.subtotal ?? 0) || 0;
+      this.pedidoIgv = Number(pedido.igv ?? 0) || 0;
+      this.pedidoTotal = Number(pedido.total ?? 0) || 0;
       this.visualizarService.selectAgregarPedido.NombrePedido = pedido.nombrePedido ?? '';
       this.visualizarService.selectAgregarPedido.Observacion = pedido.observaciones ?? '';
       this.visualizarService.selectAgregarPedido.departamento = pedido.lugar ?? '';

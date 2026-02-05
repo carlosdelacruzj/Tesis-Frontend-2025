@@ -50,11 +50,6 @@
         <app-estado-badge [estado]="row.estado || 'Borrador'"></app-estado-badge>
       </ng-template>
 
-      <!-- total en USD -->
-      <ng-template appCell="total" let-row>
-        {{ row.total | usd:'1.2-2' }}
-      </ng-template>
-
       <!-- acciones: puedes mantener Angular Material si prefieres -->
       <ng-template appCell="acciones" let-row>
         <div class="d-flex justify-content-center gap-1">

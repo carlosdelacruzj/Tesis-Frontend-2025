@@ -108,6 +108,8 @@ export interface PedidoDetalle {
   viaticosMonto: number | null;
   viaticosCliente?: boolean;
   mensaje: string;
+  subtotal: number;
+  igv: number;
   total: number;
   cliente: PedidoCliente;
   empleado: PedidoEmpleado;

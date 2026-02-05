@@ -139,7 +139,9 @@
                 Pendientes: personal {{ getPendientesDia(openDiaId).personal }} · equipos {{ getPendientesDia(openDiaId).equipos }}
               </div>
             </div>
-            <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar()">Asignar ahora</button>
+            <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar(openDiaId)">
+              @if (isDiaPendienteEstado(openDiaId)) { Asignar ahora } @else { Ver asignaciones }
+            </button>
           </div>
         }
         <div class="timeline">
@@ -174,7 +176,7 @@
                           'cancelado': 'danger'
                         }"
                       ></app-estado-badge>
-                      @if (getEstadoAsignacionDia(dia.diaId) !== 'â€”') {
+                      @if (getEstadoAsignacionDia(dia.diaId) !== '—') {
                         <app-estado-badge
                           [estado]="getEstadoAsignacionDia(dia.diaId)"
                         [mapaColores]="{
@@ -291,9 +293,6 @@
               <h3>Personal y equipos</h3>
             </div>
             <div class="collapsible__actions">
-              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalAsignar()">
-                Gestionar asignaciones
-              </button>
               <span class="collapsible__caret">▾</span>
             </div>
           </summary>
@@ -309,14 +308,21 @@
                       · Equipos: {{ getAsignadosEquiposDia(dia.diaId) }}/{{ getReqEquiposCountDia(dia.diaId) }}
                     </div>
                   </div>
-                  <app-estado-badge
-                    [estado]="getEstadoAsignacionDia(dia.diaId)"
-                    [mapaColores]="{
-                      'pendiente': 'warning',
-                      'sin asignar': 'neutral',
-                      'asignaciones completas': 'success'
-                    }"
-                  ></app-estado-badge>
+                  <div class="asignaciones-resumen__right">
+                    <div class="asignaciones-resumen__actions">
+                      <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar(dia.diaId)">
+                        @if (isDiaPendienteEstado(dia.diaId)) { Asignar } @else { Ver }
+                      </button>
+                    </div>
+                    <app-estado-badge
+                      [estado]="getEstadoAsignacionDia(dia.diaId)"
+                      [mapaColores]="{
+                        'pendiente': 'warning',
+                        'sin asignar': 'neutral',
+                        'asignaciones completas': 'success'
+                      }"
+                    ></app-estado-badge>
+                  </div>
                 </div>
               </div>
             }
@@ -399,9 +405,15 @@
               <button mat-button type="button" (click)="$event.stopPropagation(); toggleSoloExcepcionesEstado()">
                 @if (mostrarSoloExcepcionesEstado) { Ver todo } @else { Solo excepciones }
               </button>
-              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalDevolucion(openDiaId || undefined)" [disabled]="!isDiaFinalizado(openDiaId)">
-                Registrar devoluciones del día
-              </button>
+              @if (getDiasDevolucionPendientes().length) {
+                <button mat-stroked-button color="primary" type="button"
+                  (click)="$event.stopPropagation(); abrirModalDevolucion(openDiaId || undefined)"
+                  [disabled]="!openDiaId || !isDiaFinalizado(openDiaId) || !isDiaPendienteDevolucion(openDiaId)">
+                  Registrar devoluciones del día
+                </button>
+              } @else {
+                <span class="muted small">Sin devoluciones pendientes.</span>
+              }
               <span class="collapsible__caret">▾</span>
             </div>
           </summary>
@@ -482,52 +494,62 @@
       <div class="muted small">Solo lectura: el día no está en Pendiente, las asignaciones no se pueden editar.</div>
     }
     <div class="asignaciones-editor">
-      <label class="form-field">
-        <span class="label">Selecciona un día</span>
-        <select
-          class="form-control"
-          [ngModel]="asignacionDiaId"
-          (ngModelChange)="cambiarDiaAsignacion($event)"
-          name="asignacionDiaId">
-          <option [ngValue]="null">Selecciona un día</option>
-          @for (dia of detalle?.dias ?? []; track dia.diaId) {
-            <option [ngValue]="dia.diaId">{{ formatFechaLarga(dia.fecha) }}</option>
-          }
-        </select>
-      </label>
-      <label class="form-field">
-        <span class="label">Copiar desde</span>
-        <select
-          class="form-control"
-          [(ngModel)]="copiarDesdeDiaId"
-          name="copiarDesdeDiaId">
-          <option [ngValue]="null">Selecciona un día</option>
-          @for (dia of detalle?.dias ?? []; track dia.diaId) {
-            @if (dia.diaId !== asignacionDiaId) {
+      @if (!asignacionDiaLocked) {
+        <label class="form-field">
+          <span class="label">Selecciona un día</span>
+          <select
+            class="form-control"
+            [ngModel]="asignacionDiaId"
+            (ngModelChange)="cambiarDiaAsignacion($event)"
+            name="asignacionDiaId">
+            <option [ngValue]="null">Selecciona un día</option>
+            @for (dia of detalle?.dias ?? []; track dia.diaId) {
               <option [ngValue]="dia.diaId">{{ formatFechaLarga(dia.fecha) }}</option>
             }
-          }
-        </select>
-      </label>
-      <button mat-stroked-button color="primary" type="button" (click)="copiarAsignacionesDesde(copiarDesdeDiaId)"
-        [disabled]="asignacionSoloLectura || !copiarDesdeDiaId || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
-        Copiar
-      </button>
-      <button mat-stroked-button type="button" (click)="copiarAsignacionesDiaAnterior()"
-        [disabled]="asignacionSoloLectura || !getDiaAnteriorId(asignacionDiaId) || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
-        Copiar día anterior
-      </button>
-      <button mat-button type="button" (click)="irADiaConPendientesAsignacion()">
-        Ir a día pendiente
-      </button>
-      <button mat-stroked-button color="primary" type="button" (click)="limpiarAsignacionesDia()" [disabled]="asignacionSoloLectura || !asignacionDiaId">
-        Limpiar día
-      </button>
-      <button mat-stroked-button type="button" (click)="descartarCambiosDia()" [disabled]="asignacionSoloLectura || !isAsignacionDiaDirty(asignacionDiaId)">
-        Descartar cambios
-      </button>
-      @if (hasFiltrosActivos()) {
-        <button mat-button type="button" (click)="limpiarFiltrosAsignacion()">Quitar filtros</button>
+          </select>
+        </label>
+      } @else {
+        <div class="form-field">
+          <span class="label">Día</span>
+          <div class="form-control form-control--static">
+            {{ getAsignacionDiaLabel() }}
+          </div>
+        </div>
+      }
+      @if (!asignacionSoloLectura) {
+        <label class="form-field">
+          <span class="label">Copiar desde</span>
+          <select
+            class="form-control"
+            [(ngModel)]="copiarDesdeDiaId"
+            name="copiarDesdeDiaId">
+            <option [ngValue]="null">Selecciona un día</option>
+            @for (dia of detalle?.dias ?? []; track dia.diaId) {
+              @if (dia.diaId !== asignacionDiaId) {
+                <option [ngValue]="dia.diaId">{{ formatFechaLarga(dia.fecha) }}</option>
+              }
+            }
+          </select>
+        </label>
+        <button mat-stroked-button color="primary" type="button" (click)="copiarAsignacionesDesde(copiarDesdeDiaId)"
+          [disabled]="!copiarDesdeDiaId || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
+          Copiar
+        </button>
+        @if (getDiaAnteriorId(asignacionDiaId)) {
+          <button mat-stroked-button type="button" (click)="copiarAsignacionesDiaAnterior()"
+            [disabled]="!asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
+            Copiar día anterior
+          </button>
+        }
+        <button mat-stroked-button color="primary" type="button" (click)="limpiarAsignacionesDia()" [disabled]="!asignacionDiaId">
+          Limpiar día
+        </button>
+        <button mat-stroked-button type="button" (click)="descartarCambiosDia()" [disabled]="!isAsignacionDiaDirty(asignacionDiaId)">
+          Descartar cambios
+        </button>
+        @if (hasFiltrosActivos()) {
+          <button mat-button type="button" (click)="limpiarFiltrosAsignacion()">Quitar filtros</button>
+        }
       }
     </div>
 
@@ -549,7 +571,7 @@
     } @else if (!hasRequerimientosDia(asignacionDiaId)) {
       <div class="muted small">Sin requerimientos para este día.</div>
     } @else {
-    <mat-stepper class="asignaciones-stepper" [orientation]="stepperOrientation" [linear]="false">
+    <mat-stepper #asignacionesStepper class="asignaciones-stepper" [orientation]="stepperOrientation" [linear]="false">
       <mat-step>
         <ng-template matStepLabel>
           Personal <span class="stepper-meta">{{ getProgresoPersonalLabel(asignacionDiaId) }}</span>
@@ -557,64 +579,79 @@
         <div class="asignaciones-editor-grid">
           <div class="asignaciones-editor-card">
             <h5>Selecciona personal operativo</h5>
-            @if (asignacionDiaId) {
-              <div class="asignaciones-badges">
-                @for (row of getRequeridosPersonalPorRol(asignacionDiaId); track row.rol) {
-                  <button class="badge-button" type="button" (click)="toggleFiltroRol(row.rol)">
-                    <app-estado-badge
-                      [estado]="row.rol + ': ' + row.asignado + '/' + row.requerido"
-                      [mapaColores]="getBadgeMapa(row.rol + ': ' + row.asignado + '/' + row.requerido, row.asignado, row.requerido)"
-                    ></app-estado-badge>
-                  </button>
+            @if (!asignacionSoloLectura) {
+              @if (asignacionDiaId) {
+                <div class="asignaciones-badges">
+                  @for (row of getRequeridosPersonalPorRol(asignacionDiaId); track row.rol) {
+                    <button class="badge-button" type="button" (click)="toggleFiltroRol(row.rol)">
+                      <app-estado-badge
+                        [estado]="row.rol + ': ' + row.asignado + '/' + row.requerido"
+                        [mapaColores]="getBadgeMapa(row.rol + ': ' + row.asignado + '/' + row.requerido, row.asignado, row.requerido)"
+                      ></app-estado-badge>
+                    </button>
+                  }
+                </div>
+              }
+              @if (filtroRol) {
+                <div class="filtro-activo">
+                  <span class="muted small">Filtro activo: {{ filtroRol }}</span>
+                  <button mat-button type="button" (click)="toggleFiltroRol(filtroRol)">Quitar</button>
+                </div>
+              }
+              <div class="asignaciones-editor-form">
+                <div class="transfer">
+                  <div class="transfer__col">
+                    <div class="transfer__header">
+                      <span>Disponibles</span>
+                      <input
+                        class="form-control form-control--compact"
+                        type="text"
+                        [(ngModel)]="searchEmpleado"
+                        name="searchEmpleado"
+                        placeholder="Buscar personal">
+                    </div>
+                    <div class="transfer__list">
+                      @for (op of getEmpleadosDisponiblesFiltrados(); track op.empleadoId) {
+                        <button class="transfer__item" type="button" (click)="onEmpleadoSeleccionado(op.empleadoId)">
+                          <span [innerHTML]="highlightMatch(op.nombre + ' ' + op.apellido, searchEmpleado)"></span>
+                          <span class="transfer__meta">{{ op.cargo }}</span>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  <div class="transfer__col">
+                    <div class="transfer__header">
+                      <span>Seleccionados ({{ asignacionEmpleados.length }})</span>
+                    </div>
+                    <div class="transfer__list">
+                      @for (item of asignacionEmpleados; track item.empleadoId; let i = $index) {
+                        <div class="transfer__item is-selected">
+                          <span>{{ getDisponibleEmpleadoLabel(item.empleadoId) }}</span>
+                          <button class="transfer__remove" type="button" (click)="eliminarEmpleado(i)">Quitar</button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <div class="chip-list">
+                @for (item of asignacionEmpleados; track item.empleadoId) {
+                  <div class="chip">
+                    <span>{{ getDisponibleEmpleadoLabel(item.empleadoId) }}</span>
+                  </div>
+                }
+                @if (!asignacionEmpleados.length) {
+                  <div class="muted small">Sin personal asignado.</div>
                 }
               </div>
             }
-            @if (filtroRol) {
-              <div class="filtro-activo">
-                <span class="muted small">Filtro activo: {{ filtroRol }}</span>
-                <button mat-button type="button" (click)="toggleFiltroRol(filtroRol)">Quitar</button>
-              </div>
-            }
-            <div class="asignaciones-editor-form">
-              <div class="transfer">
-                <div class="transfer__col">
-                  <div class="transfer__header">
-                    <span>Disponibles</span>
-                    <input
-                      class="form-control form-control--compact"
-                      type="text"
-                      [(ngModel)]="searchEmpleado"
-                      name="searchEmpleado"
-                      placeholder="Buscar personal">
-                  </div>
-                  <div class="transfer__list">
-                    @for (op of getEmpleadosDisponiblesFiltrados(); track op.empleadoId) {
-                      <button class="transfer__item" type="button" (click)="onEmpleadoSeleccionado(op.empleadoId)" [disabled]="asignacionSoloLectura">
-                        <span [innerHTML]="highlightMatch(op.nombre + ' ' + op.apellido, searchEmpleado)"></span>
-                        <span class="transfer__meta">{{ op.cargo }}</span>
-                      </button>
-                    }
-                  </div>
-                </div>
-                <div class="transfer__col">
-                  <div class="transfer__header">
-                    <span>Seleccionados ({{ asignacionEmpleados.length }})</span>
-                  </div>
-                  <div class="transfer__list">
-                    @for (item of asignacionEmpleados; track item.empleadoId; let i = $index) {
-                      <div class="transfer__item is-selected">
-                        <span>{{ getDisponibleEmpleadoLabel(item.empleadoId) }}</span>
-                        <button class="transfer__remove" type="button" (click)="eliminarEmpleado(i)" [disabled]="asignacionSoloLectura">Quitar</button>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-            @if (!disponiblesEmpleados.length) {
-              <div class="muted small">No hay personal disponible para este día.</div>
-            } @else if (!getEmpleadosDisponiblesFiltrados().length) {
-              <div class="muted small">Sin resultados.</div>
+            @if (!asignacionSoloLectura) {
+              @if (!disponiblesEmpleados.length) {
+                <div class="muted small">No hay personal disponible para este día.</div>
+              } @else if (!getEmpleadosDisponiblesFiltrados().length) {
+                <div class="muted small">Sin resultados.</div>
+              }
             }
           </div>
         </div>
@@ -627,114 +664,143 @@
         <div class="asignaciones-editor-grid">
           <div class="asignaciones-editor-card">
             <h5>Selecciona equipos disponibles</h5>
-            @if (asignacionDiaId) {
-              <div class="asignaciones-badges">
-                @for (row of getRequeridosEquiposPorTipo(asignacionDiaId); track row.tipo) {
-                  <button class="badge-button" type="button" (click)="toggleFiltroTipo(row.tipo)">
-                    <app-estado-badge
-                      [estado]="row.tipo + ': ' + row.asignado + '/' + row.requerido"
-                      [mapaColores]="getBadgeMapa(row.tipo + ': ' + row.asignado + '/' + row.requerido, row.asignado, row.requerido)"
-                    ></app-estado-badge>
-                  </button>
-                }
+            @if (!asignacionSoloLectura) {
+              @if (asignacionDiaId) {
+                <div class="asignaciones-badges">
+                  @for (row of getRequeridosEquiposPorTipo(asignacionDiaId); track row.tipo) {
+                    <button class="badge-button" type="button" (click)="toggleFiltroTipo(row.tipo)">
+                      <app-estado-badge
+                        [estado]="row.tipo + ': ' + row.asignado + '/' + row.requerido"
+                        [mapaColores]="getBadgeMapa(row.tipo + ': ' + row.asignado + '/' + row.requerido, row.asignado, row.requerido)"
+                      ></app-estado-badge>
+                    </button>
+                  }
+                </div>
+              }
+              @if (filtroTipoEquipo) {
+                <div class="filtro-activo">
+                  <span class="muted small">Filtro activo: {{ filtroTipoEquipo }}</span>
+                  <button mat-button type="button" (click)="toggleFiltroTipo(filtroTipoEquipo)">Quitar</button>
+                </div>
+              }
+              <div class="asignaciones-editor-form">
+                <div class="equipos-resumen">
+                  @for (row of getRequeridosEquiposPorTipo(asignacionDiaId); track row.tipo) {
+                    @if (!filtroTipoEquipo || row.tipo === filtroTipoEquipo) {
+                      <div class="equipos-row">
+                        <div class="equipos-row__main">
+                          <div class="equipos-row__title">{{ row.tipo }}</div>
+                        <div class="equipos-row__meta">
+                          <span class="meta-chip">Req: {{ row.requerido }}</span>
+                          <span class="meta-chip">Asig: {{ row.asignado }}</span>
+                          <span class="meta-chip">Disp: {{ getEquiposDisponiblesPorTipo(row.tipo).length }}</span>
+                        </div>
+                        </div>
+                        <div class="equipos-row__status">
+                          <app-estado-badge [estado]="row.asignado + '/' + row.requerido"></app-estado-badge>
+                        </div>
+                        <div class="equipos-row__actions">
+                          <button mat-stroked-button type="button" (click)="quitarEquipoPorTipo(row.tipo)" [disabled]="row.asignado === 0">
+                            −
+                          </button>
+                          <button mat-stroked-button color="primary" type="button"
+                            (click)="agregarEquipoPorTipo(row.tipo, row.requerido)"
+                            [disabled]="row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
+                            +
+                          </button>
+                          <button mat-button type="button"
+                            (click)="completarEquiposPorTipo(row.tipo, row.requerido)"
+                            [disabled]="row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
+                            Completar
+                          </button>
+                          <button mat-button type="button" (click)="toggleTipoDetalle(row.tipo)">
+                            {{ isTipoDetalleAbierto(row.tipo) ? 'Ocultar' : 'Detalle' }}
+                          </button>
+                        </div>
+                      </div>
+                      @if (isTipoDetalleAbierto(row.tipo)) {
+                        <div class="equipos-detalle equipos-detalle--open">
+                          <div>
+                            <div class="muted small">Disponibles</div>
+                            <div class="equipos-detalle__filters">
+                              <input
+                                class="form-control form-control--compact"
+                                type="text"
+                                [(ngModel)]="searchEquipo"
+                                name="searchEquipo-detalle"
+                                placeholder="Buscar serie o modelo">
+                              @if (getModelosPorTipo(row.tipo).length) {
+                                <select
+                                  class="form-control form-control--compact"
+                                  [ngModel]="getModeloFiltro(row.tipo)"
+                                  (ngModelChange)="setModeloFiltro(row.tipo, $event)">
+                                  <option value="">Todos los modelos</option>
+                                  @for (modelo of getModelosPorTipo(row.tipo); track modelo) {
+                                    <option [value]="modelo">{{ modelo }}</option>
+                                  }
+                                </select>
+                              }
+                            </div>
+                            <div class="equipos-disponibles">
+                              @for (eq of getEquiposDisponiblesPorTipoFiltrados(row.tipo); track eq.equipoId) {
+                                <label class="equipos-disponibles__item">
+                                  <input
+                                    type="checkbox"
+                                    [checked]="isEquipoSeleccionado(eq.equipoId)"
+                                    [disabled]="!isEquipoSeleccionado(eq.equipoId) && row.asignado >= row.requerido"
+                                    (change)="toggleEquipoSeleccion(eq.equipoId, row.tipo, row.requerido)">
+                                  <span>{{ eq.nombreModelo }} · {{ eq.serie }}</span>
+                                </label>
+                              }
+                            </div>
+                          </div>
+                          <div>
+                            <div class="muted small">Asignados</div>
+                            <div class="chip-list">
+                              @for (item of getEquiposAsignadosPorTipo(row.tipo); track item.equipoId) {
+                                <div class="chip">
+                                  <span>{{ getDisponibleEquipoLabel(item.equipoId) }}</span>
+                                  <button class="chip__close" type="button" (click)="eliminarEquipo(asignacionEquipos.indexOf(item))" [disabled]="asignacionSoloLectura" aria-label="Quitar">
+                                    <mat-icon>close</mat-icon>
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    }
+                  }
+                </div>
               </div>
-            }
-            @if (filtroTipoEquipo) {
-              <div class="filtro-activo">
-                <span class="muted small">Filtro activo: {{ filtroTipoEquipo }}</span>
-                <button mat-button type="button" (click)="toggleFiltroTipo(filtroTipoEquipo)">Quitar</button>
-              </div>
-            }
-            <div class="asignaciones-editor-form">
+            } @else {
               <div class="equipos-resumen">
                 @for (row of getRequeridosEquiposPorTipo(asignacionDiaId); track row.tipo) {
-                  @if (!filtroTipoEquipo || row.tipo === filtroTipoEquipo) {
-                    <div class="equipos-row">
-                      <div class="equipos-row__main">
-                        <div class="equipos-row__title">{{ row.tipo }}</div>
+                  <div class="equipos-row">
+                    <div class="equipos-row__main">
+                      <div class="equipos-row__title">{{ row.tipo }}</div>
                       <div class="equipos-row__meta">
                         <span class="meta-chip">Req: {{ row.requerido }}</span>
                         <span class="meta-chip">Asig: {{ row.asignado }}</span>
-                        <span class="meta-chip">Disp: {{ getEquiposDisponiblesPorTipo(row.tipo).length }}</span>
-                      </div>
-                      </div>
-                      <div class="equipos-row__status">
-                        <app-estado-badge [estado]="row.asignado + '/' + row.requerido"></app-estado-badge>
-                      </div>
-                      <div class="equipos-row__actions">
-                        <button mat-stroked-button type="button" (click)="quitarEquipoPorTipo(row.tipo)" [disabled]="asignacionSoloLectura || row.asignado === 0">
-                          −
-                        </button>
-                        <button mat-stroked-button color="primary" type="button"
-                          (click)="agregarEquipoPorTipo(row.tipo, row.requerido)"
-                          [disabled]="asignacionSoloLectura || row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
-                          +
-                        </button>
-                        <button mat-button type="button"
-                          (click)="completarEquiposPorTipo(row.tipo, row.requerido)"
-                          [disabled]="asignacionSoloLectura || row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
-                          Completar
-                        </button>
-                        <button mat-button type="button" (click)="toggleTipoDetalle(row.tipo)">
-                          {{ isTipoDetalleAbierto(row.tipo) ? 'Ocultar' : 'Detalle' }}
-                        </button>
                       </div>
                     </div>
-                    @if (isTipoDetalleAbierto(row.tipo)) {
-                      <div class="equipos-detalle equipos-detalle--open">
-                        <div>
-                          <div class="muted small">Disponibles</div>
-                          <div class="equipos-detalle__filters">
-                            <input
-                              class="form-control form-control--compact"
-                              type="text"
-                              [(ngModel)]="searchEquipo"
-                              name="searchEquipo-detalle"
-                              placeholder="Buscar serie o modelo">
-                            @if (getModelosPorTipo(row.tipo).length) {
-                              <select
-                                class="form-control form-control--compact"
-                                [ngModel]="getModeloFiltro(row.tipo)"
-                                (ngModelChange)="setModeloFiltro(row.tipo, $event)">
-                                <option value="">Todos los modelos</option>
-                                @for (modelo of getModelosPorTipo(row.tipo); track modelo) {
-                                  <option [value]="modelo">{{ modelo }}</option>
-                                }
-                              </select>
-                            }
-                          </div>
-                          <div class="equipos-disponibles">
-                            @for (eq of getEquiposDisponiblesPorTipoFiltrados(row.tipo); track eq.equipoId) {
-                              <label class="equipos-disponibles__item">
-                                <input
-                                  type="checkbox"
-                                  [checked]="isEquipoSeleccionado(eq.equipoId)"
-                                  [disabled]="asignacionSoloLectura || (!isEquipoSeleccionado(eq.equipoId) && row.asignado >= row.requerido)"
-                                  (change)="toggleEquipoSeleccion(eq.equipoId, row.tipo, row.requerido)">
-                                <span>{{ eq.nombreModelo }} · {{ eq.serie }}</span>
-                              </label>
-                            }
-                          </div>
-                        </div>
-                        <div>
-                          <div class="muted small">Asignados</div>
-                          <div class="chip-list">
-                            @for (item of getEquiposAsignadosPorTipo(row.tipo); track item.equipoId) {
-                              <div class="chip">
-                                <span>{{ getDisponibleEquipoLabel(item.equipoId) }}</span>
-                                <button class="chip__close" type="button" (click)="eliminarEquipo(asignacionEquipos.indexOf(item))" [disabled]="asignacionSoloLectura" aria-label="Quitar">
-                                  <mat-icon>close</mat-icon>
-                                </button>
-                              </div>
-                            }
-                          </div>
-                        </div>
+                    <div class="equipos-row__status">
+                      <app-estado-badge [estado]="row.asignado + '/' + row.requerido"></app-estado-badge>
+                    </div>
+                  </div>
+                  <div class="chip-list">
+                    @for (item of getEquiposAsignadosPorTipo(row.tipo); track item.equipoId) {
+                      <div class="chip">
+                        <span>{{ getDisponibleEquipoLabel(item.equipoId) }}</span>
                       </div>
                     }
-                  }
+                    @if (!getEquiposAsignadosPorTipo(row.tipo).length) {
+                      <div class="muted small">Sin equipos asignados.</div>
+                    }
+                  </div>
                 }
               </div>
-            </div>
+            }
           </div>
         </div>
       </mat-step>
@@ -749,67 +815,111 @@
             } @else if (!asignacionEquipos.length) {
               <p class="muted">Primero selecciona equipos disponibles.</p>
             } @else {
-              <div class="asignaciones-meta">
-                <span class="meta-chip">Total: {{ asignacionEquipos.length }}</span>
-                <span class="meta-chip">Asignados: {{ asignacionEquipos.length - getEquiposReserva().length }}</span>
-                <span class="meta-chip">Reserva: {{ getEquiposReserva().length }}</span>
-              </div>
-              <div class="drag-grid" cdkDropListGroup>
-                <div class="drag-col">
-                  <h6>Reserva</h6>
-                  <div
-                    class="drag-list drag-list--reserve"
-                    [class.drop-highlight]="ultimoDropDestino === 'reserva'"
-                    cdkDropList
-                    id="reserva"
-                    [cdkDropListDisabled]="asignacionSoloLectura"
-                    [cdkDropListConnectedTo]="dropListIds"
-                    (cdkDropListDropped)="onEquipoDrop($event, null)">
-                    @for (grupo of getEquiposReservaPorTipo(); track grupo.tipo) {
-                      <details class="reserva-grupo" open>
-                        <summary class="reserva-grupo__header">
-                          <span>{{ grupo.tipo }}</span>
-                          <span class="meta-chip">{{ grupo.items.length }}</span>
-                        </summary>
-                        <div class="reserva-grupo__items">
-                          @for (item of grupo.items; track item.equipoId) {
+              @if (asignacionSoloLectura) {
+                <div class="asignaciones-meta">
+                  <span class="meta-chip">Total: {{ asignacionEquipos.length }}</span>
+                  <span class="meta-chip">Asignados: {{ asignacionEquipos.length - getEquiposReserva().length }}</span>
+                  <span class="meta-chip">Reserva: {{ getEquiposReserva().length }}</span>
+                </div>
+                <div class="drag-grid">
+                  <div class="drag-col">
+                    <h6>Reserva</h6>
+                    <div class="chip-list">
+                      @for (item of getEquiposReserva(); track item.equipoId) {
+                        <div class="chip">
+                          <span>{{ getDisponibleEquipoLabel(item.equipoId) }}</span>
+                        </div>
+                      }
+                      @if (!getEquiposReserva().length) {
+                        <div class="muted small">Sin equipos en reserva.</div>
+                      }
+                    </div>
+                  </div>
+                  <div class="drag-col">
+                    <h6>Personal</h6>
+                    @for (emp of asignacionEmpleados; track emp.empleadoId) {
+                      <div class="drag-panel">
+                        <div class="drag-panel__title">
+                          <span>{{ getDisponibleEmpleadoLabel(emp.empleadoId) }}</span>
+                          <span class="drag-panel__count">{{ getEquiposCountResponsable(emp.empleadoId) }}</span>
+                        </div>
+                        <div class="chip-list">
+                          @for (item of getEquiposPorResponsable(emp.empleadoId); track item.equipoId) {
+                            <div class="chip">
+                              <span>{{ getDisponibleEquipoLabel(item.equipoId) }}</span>
+                            </div>
+                          }
+                          @if (!getEquiposPorResponsable(emp.empleadoId).length) {
+                            <div class="muted small">Sin equipos asignados.</div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              } @else {
+                <div class="asignaciones-meta">
+                  <span class="meta-chip">Total: {{ asignacionEquipos.length }}</span>
+                  <span class="meta-chip">Asignados: {{ asignacionEquipos.length - getEquiposReserva().length }}</span>
+                  <span class="meta-chip">Reserva: {{ getEquiposReserva().length }}</span>
+                </div>
+                <div class="drag-grid" cdkDropListGroup>
+                  <div class="drag-col">
+                    <h6>Reserva</h6>
+                    <div
+                      class="drag-list drag-list--reserve"
+                      [class.drop-highlight]="ultimoDropDestino === 'reserva'"
+                      cdkDropList
+                      id="reserva"
+                      [cdkDropListDisabled]="asignacionSoloLectura"
+                      [cdkDropListConnectedTo]="dropListIds"
+                      (cdkDropListDropped)="onEquipoDrop($event, null)">
+                      @for (grupo of getEquiposReservaPorTipo(); track grupo.tipo) {
+                        <details class="reserva-grupo" open>
+                          <summary class="reserva-grupo__header">
+                            <span>{{ grupo.tipo }}</span>
+                            <span class="meta-chip">{{ grupo.items.length }}</span>
+                          </summary>
+                          <div class="reserva-grupo__items">
+                            @for (item of grupo.items; track item.equipoId) {
+                              <div class="drag-item" cdkDrag [cdkDragData]="item" [cdkDragDisabled]="asignacionSoloLectura" [title]="getDisponibleEquipoLabel(item.equipoId)">
+                                <span>{{ getDisponibleEquipoLabelSinTipo(item.equipoId) }}</span>
+                                <mat-icon class="drag-handle">drag_indicator</mat-icon>
+                              </div>
+                            }
+                          </div>
+                        </details>
+                      }
+                    </div>
+                  </div>
+                  <div class="drag-col">
+                    <h6>Personal</h6>
+                    @for (emp of asignacionEmpleados; track emp.empleadoId) {
+                      <div class="drag-panel">
+                        <div class="drag-panel__title">
+                          <span>{{ getDisponibleEmpleadoLabel(emp.empleadoId) }}</span>
+                          <span class="drag-panel__count">{{ getEquiposCountResponsable(emp.empleadoId) }}</span>
+                        </div>
+                        <div
+                          class="drag-list drag-list--scroll"
+                          [class.drop-highlight]="ultimoDropDestino === emp.empleadoId"
+                          [id]="'emp-' + emp.empleadoId"
+                          [cdkDropListConnectedTo]="dropListIds"
+                          cdkDropList
+                          [cdkDropListDisabled]="asignacionSoloLectura"
+                          (cdkDropListDropped)="onEquipoDrop($event, emp.empleadoId)">
+                          @for (item of getEquiposPorResponsable(emp.empleadoId); track item.equipoId) {
                             <div class="drag-item" cdkDrag [cdkDragData]="item" [cdkDragDisabled]="asignacionSoloLectura" [title]="getDisponibleEquipoLabel(item.equipoId)">
                               <span>{{ getDisponibleEquipoLabelSinTipo(item.equipoId) }}</span>
                               <mat-icon class="drag-handle">drag_indicator</mat-icon>
                             </div>
                           }
                         </div>
-                      </details>
+                      </div>
                     }
                   </div>
                 </div>
-                <div class="drag-col">
-                  <h6>Personal</h6>
-                  @for (emp of asignacionEmpleados; track emp.empleadoId) {
-                    <div class="drag-panel">
-                      <div class="drag-panel__title">
-                        <span>{{ getDisponibleEmpleadoLabel(emp.empleadoId) }}</span>
-                        <span class="drag-panel__count">{{ getEquiposCountResponsable(emp.empleadoId) }}</span>
-                      </div>
-                      <div
-                        class="drag-list drag-list--scroll"
-                        [class.drop-highlight]="ultimoDropDestino === emp.empleadoId"
-                        [id]="'emp-' + emp.empleadoId"
-                        [cdkDropListConnectedTo]="dropListIds"
-                        cdkDropList
-                        [cdkDropListDisabled]="asignacionSoloLectura"
-                        (cdkDropListDropped)="onEquipoDrop($event, emp.empleadoId)">
-                        @for (item of getEquiposPorResponsable(emp.empleadoId); track item.equipoId) {
-                          <div class="drag-item" cdkDrag [cdkDragData]="item" [cdkDragDisabled]="asignacionSoloLectura" [title]="getDisponibleEquipoLabel(item.equipoId)">
-                            <span>{{ getDisponibleEquipoLabelSinTipo(item.equipoId) }}</span>
-                            <mat-icon class="drag-handle">drag_indicator</mat-icon>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
+              }
             }
           </div>
         </div>
@@ -820,10 +930,20 @@
 
   <div class="modal-footer-actions">
     <button mat-button type="button" (click)="cerrarModalAsignar()">Cerrar</button>
-    <button mat-flat-button color="primary" type="button" (click)="guardarAsignacionesDia()"
-      [disabled]="asignacionSoloLectura || guardandoAsignaciones || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId) || !isAsignacionDiaDirty(asignacionDiaId)">
-      {{ guardandoAsignaciones ? 'Guardando…' : 'Guardar asignaciones' }}
-    </button>
+    @if (!asignacionSoloLectura) {
+      <button mat-button type="button" (click)="asignacionesAnterior()"
+        [disabled]="!canIrAnteriorAsignaciones()">
+        Anterior
+      </button>
+      <button mat-stroked-button type="button" (click)="asignacionesSiguiente()"
+        [disabled]="!canIrSiguienteAsignaciones()">
+        Siguiente
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="guardarAsignacionesDia()"
+        [disabled]="guardandoAsignaciones || !canGuardarAsignacionesFinal() || !esUltimoPasoAsignaciones()">
+        {{ guardandoAsignaciones ? 'Guardando…' : 'Guardar asignaciones' }}
+      </button>
+    }
   </div>
 </app-modal-base>
 
@@ -1036,12 +1156,15 @@
         <span class="label">Día del proyecto</span>
         <select class="form-control" [ngModel]="devolucionDiaId" (ngModelChange)="onDevolucionDiaChange($event)">
           <option [ngValue]="null">Selecciona un día</option>
-          @for (dia of detalle?.dias ?? []; track dia.diaId) {
+          @for (dia of getDiasDevolucionPendientes(); track dia.diaId) {
             <option [ngValue]="dia.diaId">{{ formatFechaLarga(dia.fecha) }}</option>
           }
         </select>
       </label>
       <p class="muted small">Se prellena como <strong>Devuelto</strong> para agilizar el cierre diario. Ajusta solo excepciones (dañado, perdido, robado).</p>
+      @if (!getDiasDevolucionPendientes().length) {
+        <p class="muted small">No hay días pendientes de devolución.</p>
+      }
     </div>
     @if (devolucionDiaId) {
       <div class="devolucion-toolbar">
@@ -1133,7 +1256,8 @@
 
   <div class="modal-footer-actions">
     <button mat-button type="button" (click)="cerrarModalDevolucion()">Cerrar</button>
-    <button mat-stroked-button type="button" (click)="marcarTodosDevueltos()" [disabled]="!isDiaFinalizado(devolucionDiaId) || !devolucionDiaId || !getEquiposDevolucionDia(devolucionDiaId).length">
+    <button mat-stroked-button type="button" (click)="marcarTodosDevueltos()"
+      [disabled]="!isDiaFinalizado(devolucionDiaId) || !devolucionDiaId || !isDiaPendienteDevolucion(devolucionDiaId) || !getEquiposDevolucionDia(devolucionDiaId).length">
       Marcar todo devuelto
     </button>
     <button mat-flat-button color="primary" type="button" (click)="guardarDevoluciones()"
@@ -1147,3 +1271,4 @@
   <mat-spinner diameter="40"></mat-spinner>
   <p>Cargando proyecto…</p>
 </ng-template>
+

@@ -144,13 +144,14 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
 
     this.pagoService.getResumenPedido(row.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
-        const total = this.parseMonto(res?.CostoTotal ?? 0);
-        const abonado = this.parseMonto(res?.MontoAbonado ?? 0);
-        const saldo = res?.SaldoPendiente != null
-          ? this.parseMonto(res.SaldoPendiente)
+        const resumenValido = res ?? { CostoBase: 0, Igv: 0, CostoTotal: 0, MontoAbonado: 0, SaldoPendiente: 0 };
+        const total = this.parseMonto(resumenValido.CostoTotal);
+        const abonado = this.parseMonto(resumenValido.MontoAbonado);
+        const saldo = resumenValido.SaldoPendiente != null
+          ? this.parseMonto(resumenValido.SaldoPendiente)
           : Math.max(total - abonado, 0);
         const faltanteDeposito = Math.max(total * 0.5 - abonado, 0);
-        this.modal.resumen = { ...res, SaldoPendiente: saldo } as ResumenPago;
+        this.modal.resumen = { ...resumenValido, SaldoPendiente: saldo } as ResumenPago;
         this.modal.faltanteDeposito = faltanteDeposito;
         if (saldo <= 0) {
           this.modal.allowRegistro = false;
@@ -347,13 +348,14 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
       new Promise<void>((resolve) => {
         this.pagoService.getResumenPedido(pedidoId).pipe(takeUntil(this.destroy$)).subscribe({
           next: (res) => {
-            const total = this.parseMonto(res?.CostoTotal ?? 0);
-            const abonado = this.parseMonto(res?.MontoAbonado ?? 0);
-            const saldo = res?.SaldoPendiente != null
-              ? this.parseMonto(res.SaldoPendiente)
+            const resumenValido = res ?? { CostoBase: 0, Igv: 0, CostoTotal: 0, MontoAbonado: 0, SaldoPendiente: 0 };
+            const total = this.parseMonto(resumenValido.CostoTotal);
+            const abonado = this.parseMonto(resumenValido.MontoAbonado);
+            const saldo = resumenValido.SaldoPendiente != null
+              ? this.parseMonto(resumenValido.SaldoPendiente)
               : Math.max(total - abonado, 0);
             const faltanteDeposito = Math.max(total * 0.5 - abonado, 0);
-            this.modal.resumen = { ...res, SaldoPendiente: saldo } as ResumenPago;
+            this.modal.resumen = { ...resumenValido, SaldoPendiente: saldo } as ResumenPago;
             this.modal.faltanteDeposito = faltanteDeposito;
             this.modal.allowRegistro = saldo > 0;
             this.modal.pagadoCompleto = saldo <= 0;
