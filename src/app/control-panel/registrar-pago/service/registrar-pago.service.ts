@@ -27,6 +27,11 @@ export interface VoucherVM {
   Link: string;
 }
 
+export interface PostPagoResponse {
+  Status: string;
+  voucherId: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RegistrarPagoService {
   private readonly API = environment.baseUrl;
@@ -79,7 +84,7 @@ export class RegistrarPagoService {
     metodoPagoId: number;
     estadoVoucherId?: number; // default 2 = Aprobado
     fecha?: string;
-  }): Promise<unknown> {
+  }): Promise<PostPagoResponse> {
     const fd = new FormData();
 
     // ⬇️ Adjunta file SOLO si viene
@@ -94,7 +99,7 @@ export class RegistrarPagoService {
     if (params.fecha) fd.append('fecha', params.fecha);
 
     // Importante: NO seteas Content-Type; deja que el browser ponga el boundary del multipart
-    return this.http.post<unknown>(`${this.API}/pagos`, fd).toPromise();
+    return this.http.post<PostPagoResponse>(`${this.API}/pagos`, fd).toPromise();
   }
 
   crearProyecto(payload: {

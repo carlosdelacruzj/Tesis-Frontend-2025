@@ -123,10 +123,11 @@
 
 <app-modal-base
   [open]="modalPago.open"
-  title="Registrar pago"
+  [title]="modalPago.allowRegistro ? 'Registrar pago' : 'Pago completado'"
   [disableClose]="modalPago.guardando"
   [useDefaultFooter]="false"
   [loading]="modalPago.guardando"
+  size="md"
   (closed)="onModalPagoClosed()"
 >
   @if (modalPago.cargando) {
@@ -142,42 +143,46 @@
     }
 
     @if (modalPago.resumen) {
-      <form id="registrarPagoForm" class="row g-3" (ngSubmit)="registrarPago()">
-        <div class="col-12">
-          <div class="card border-0 shadow-sm">
-            <div class="card-body d-flex flex-column flex-md-row gap-3">
-                <div>
-                  <h6 class="text-muted mb-1">Subtotal</h6>
-                  <p class="fs-5 fw-semibold mb-0">
-                    {{ (modalPago.resumen.CostoBase || 0) | usd:'1.2-2' }}
-                  </p>
-                </div>
-                <div>
-                  <h6 class="text-muted mb-1">IGV</h6>
-                  <p class="fs-5 fw-semibold mb-0">
-                    {{ (modalPago.resumen.Igv || 0) | usd:'1.2-2' }}
-                  </p>
-                </div>
-                <div>
-                  <h6 class="text-muted mb-1">Total</h6>
-                  <p class="fs-5 fw-semibold mb-0">
-                    {{ (modalPago.resumen.CostoTotal || 0) | usd:'1.2-2' }}
-                  </p>
-                </div>
-                <div>
-                  <h6 class="text-muted mb-1">Abonado</h6>
-                  <p class="fs-5 fw-semibold mb-0">
-                    {{ (modalPago.resumen.MontoAbonado || 0) | usd:'1.2-2' }}
-                  </p>
-                </div>
-              <div>
-                <h6 class="text-muted mb-1">Saldo pendiente</h6>
-                <p class="fs-5 fw-semibold mb-0">{{ saldoPendienteTexto }}</p>
-              </div>
-            </div>
+      <div class="summary-card">
+        <div class="summary-grid" [class.summary-grid-3]="modalPago.pagadoCompleto">
+          <div class="summary-item">
+            <div class="summary-label">Subtotal</div>
+            <div class="summary-value">{{ (modalPago.resumen.CostoBase || 0) | usd:'1.2-2' }}</div>
           </div>
+          <div class="summary-item">
+            <div class="summary-label">IGV</div>
+            <div class="summary-value">{{ (modalPago.resumen.Igv || 0) | usd:'1.2-2' }}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Total</div>
+            <div class="summary-value">{{ (modalPago.resumen.CostoTotal || 0) | usd:'1.2-2' }}</div>
+          </div>
+          @if (!modalPago.pagadoCompleto) {
+            <div class="summary-item">
+              <div class="summary-label">Abonado</div>
+              <div class="summary-value">{{ (modalPago.resumen.MontoAbonado || 0) | usd:'1.2-2' }}</div>
+            </div>
+            <div class="summary-item summary-highlight">
+              <div class="summary-label">Saldo pendiente</div>
+              <div class="summary-value">{{ saldoPendienteTexto }}</div>
+            </div>
+          }
         </div>
+      </div>
+    }
 
+    @if (modalPago.pagadoCompleto) {
+      <div class="paid-banner">
+        <div class="paid-banner__icon">✓</div>
+        <div>
+          <div class="paid-banner__title">Pago completado</div>
+          <div class="paid-banner__subtitle">El saldo esta en 0 y no quedan pagos pendientes.</div>
+        </div>
+      </div>
+    }
+
+    @if (modalPago.resumen && modalPago.allowRegistro) {
+      <form id="registrarPagoForm" class="row g-4" (ngSubmit)="registrarPago()">
         <div class="col-12">
           @if (modalPago.faltanteDeposito > 0) {
             <div class="alert alert-warning" role="status">
@@ -186,27 +191,78 @@
           }
         </div>
 
-        <div class="col-12 col-md-6">
-          <label class="form-label" for="montoPago">Monto a pagar</label>
-          <input
-            id="montoPago"
-            name="montoPago"
-            type="number"
-            class="form-control"
-            min="0"
-            step="0.01"
-            [(ngModel)]="modalPago.monto"
-            (ngModelChange)="onMontoChange()"
-            required
-          />
+        <div class="col-12">
+          <label class="form-label">Selecciona el monto a pagar</label>
+          <div class="payment-options payment-options-2">
+            <input
+              class="btn-check"
+              type="radio"
+              name="opcionPago"
+              id="opcionPago50"
+              [value]="'50'"
+              [(ngModel)]="modalPago.opcionPago"
+              (ngModelChange)="onOpcionPagoChange($event)"
+              [disabled]="!opcionPago50Disponible"
+              [checked]="modalPago.opcionPago === '50' && opcionPago50Disponible"
+              required
+            />
+            <label class="payment-option" for="opcionPago50" [class.is-disabled]="!opcionPago50Disponible">
+              <div class="payment-option__body">
+                <div class="payment-title">Pagar 50% del total</div>
+                @if (!opcionPago50Disponible) {
+                  <div class="payment-sub">Ya completado</div>
+                } @else {
+                  <div class="payment-sub">Pago inicial recomendado</div>
+                }
+                @if (!opcionPago50Disponible) {
+                  <div class="payment-badge">No disponible</div>
+                }
+              </div>
+              <div class="payment-amount">
+                @if (modalPago.opcionPago === '50' && opcionPago50Disponible) {
+                  <span class="payment-selected">Seleccionado</span>
+                }
+                {{ opcionPago50Texto }}
+              </div>
+            </label>
+
+            <input
+              class="btn-check"
+              type="radio"
+              name="opcionPago"
+              id="opcionPago100"
+              [value]="'100'"
+              [(ngModel)]="modalPago.opcionPago"
+              (ngModelChange)="onOpcionPagoChange($event)"
+              [disabled]="!opcionPago100Disponible"
+              [checked]="modalPago.opcionPago === '100' && opcionPago100Disponible"
+              required
+            />
+            <label class="payment-option" for="opcionPago100" [class.is-disabled]="!opcionPago100Disponible">
+              <div class="payment-option__body">
+                <div class="payment-title">Pagar 100% del saldo restante</div>
+                <div class="payment-sub">Pago completo</div>
+                @if (!opcionPago100Disponible) {
+                  <div class="payment-badge">No disponible</div>
+                }
+              </div>
+              <div class="payment-amount">
+                @if (modalPago.opcionPago === '100' && opcionPago100Disponible) {
+                  <span class="payment-selected">Seleccionado</span>
+                }
+                {{ opcionPago100Texto }}
+              </div>
+            </label>
+          </div>
+
           @if (modalPago.montoError) {
-            <div class="text-danger small mt-1">{{ modalPago.montoError }}</div>
+            <div class="text-danger small mt-2">{{ modalPago.montoError }}</div>
           }
-          <div class="form-text">Saldo disponible: {{ saldoPendienteTexto }}</div>
+          <div class="payment-hint">Se registrara {{ montoSeleccionadoTexto }}. Saldo disponible {{ saldoPendienteTexto }}</div>
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label" for="metodoPagoSelect">Método de pago</label>
+          <label class="form-label" for="metodoPagoSelect">Metodo de pago</label>
           <select
             id="metodoPagoSelect"
             name="metodoPagoSelect"
@@ -215,7 +271,7 @@
             [(ngModel)]="modalPago.metodoId"
             (ngModelChange)="onMetodoPagoChange($event)"
           >
-            <option [ngValue]="null" disabled>Selecciona un método</option>
+            <option [ngValue]="null" disabled>Selecciona un metodo</option>
             @for (metodo of modalPago.metodos; track metodo.idMetodoPago) {
               <option [ngValue]="metodo.idMetodoPago">
                 {{ metodo.nombre }}
@@ -261,16 +317,22 @@
   }
 
   <div modal-footer class="d-flex justify-content-end gap-2">
-    <button class="btn btn-outline-secondary" type="button" (click)="onModalPagoClosed()" [disabled]="modalPago.guardando">
-      Cancelar
-    </button>
-    <button
-      class="btn btn-primary"
-      type="submit"
-      form="registrarPagoForm"
-      [disabled]="!puedeRegistrarPago"
-    >
-      Registrar pago
-    </button>
+    @if (modalPago.allowRegistro) {
+      <button class="btn btn-outline-secondary" type="button" (click)="onModalPagoClosed()" [disabled]="modalPago.guardando">
+        Cancelar
+      </button>
+      <button
+        class="btn btn-primary"
+        type="submit"
+        form="registrarPagoForm"
+        [disabled]="!puedeRegistrarPago"
+      >
+        Registrar pago
+      </button>
+    } @else {
+      <button class="btn btn-outline-secondary" type="button" (click)="onModalPagoClosed()" [disabled]="modalPago.guardando">
+        Cerrar
+      </button>
+    }
   </div>
 </app-modal-base>

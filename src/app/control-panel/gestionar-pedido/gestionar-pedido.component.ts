@@ -7,6 +7,8 @@ import { PedidoService } from './service/pedido.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { RegistrarPagoService, ResumenPago } from '../registrar-pago/service/registrar-pago.service';
 import { MetodoPago } from '../registrar-pago/model/metodopago.model';
+import { ComprobantesService } from '../comprobantes/service/comprobantes.service';
+import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 export interface PedidoRow {
@@ -29,10 +31,13 @@ interface ModalPagoState {
   open: boolean;
   cargando: boolean;
   guardando: boolean;
+  allowRegistro: boolean;
+  pagadoCompleto: boolean;
   pedido: PedidoRow | null;
   resumen: ResumenPago | null;
   metodos: MetodoPago[];
   monto: string;
+  opcionPago: '50' | '100' | null;
   montoError: string | null;
   metodoId: number | null;
   fecha: string;
@@ -74,6 +79,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   private readonly pedidoService = inject(PedidoService);
   private readonly router = inject(Router);
   private readonly registrarPagoService = inject(RegistrarPagoService);
+  private readonly comprobantesService = inject(ComprobantesService);
 
   ngOnInit(): void {
     this.loadPedidos();
@@ -204,8 +210,11 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
             resumen: { ...resumenValido, SaldoPendiente: saldo },
             metodos,
             faltanteDeposito,
-            esPrimerPago
+            esPrimerPago,
+            allowRegistro: saldo > 0,
+            pagadoCompleto: saldo <= 0
           };
+          this.configurarOpcionPagoInicial();
         },
         error: (err) => {
           console.error('[pagos] resumen', err);
@@ -248,6 +257,10 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   }
 
   onMontoChange(): void {
+    if (!this.modalPago.opcionPago) {
+      this.modalPago.montoError = 'Selecciona una opcion de pago.';
+      return;
+    }
     const monto = this.parseMonto(this.modalPago.monto);
     const saldo = this.obtenerSaldoPendiente();
 
@@ -269,8 +282,26 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     this.modalPago.montoError = null;
   }
 
+  onOpcionPagoChange(opcion: '50' | '100' | null): void {
+    this.modalPago.opcionPago = opcion;
+    if (!this.ajustarOpcionPagoSiInvalida()) {
+      return;
+    }
+    if (!opcion) {
+      this.modalPago.monto = '';
+      this.modalPago.montoError = 'Selecciona una opcion de pago.';
+      return;
+    }
+    const monto = this.calcularMontoPorOpcion(opcion);
+    this.modalPago.monto = monto > 0 ? monto.toFixed(2) : '';
+    this.onMontoChange();
+  }
+
   get puedeRegistrarPago(): boolean {
     if (this.modalPago.cargando || this.modalPago.guardando) {
+      return false;
+    }
+    if (!this.modalPago.opcionPago) {
       return false;
     }
     const monto = this.parseMonto(this.modalPago.monto);
@@ -339,7 +370,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     this.modalPago.guardando = true;
     this.modalPago.error = null;
     try {
-      await this.registrarPagoService.postPago({
+      const response = await this.registrarPagoService.postPago({
         file: this.modalPago.file ?? undefined,
         monto,
         pedidoId: id,
@@ -370,12 +401,14 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
         icon: 'success',
         title: 'Pago registrado',
         text: saldoRestante > 0
-          ? `El pago se registro correctamente. Saldo pendiente: ${this.formatearMoneda(saldoRestante)}`
-          : 'El pago se registro correctamente.',
+          ? `Pago registrado correctamente. Saldo pendiente: ${this.formatearMoneda(saldoRestante)}.`
+          : 'Pago registrado correctamente. Saldo pendiente: 0.',
         confirmButtonText: 'Aceptar',
         buttonsStyling: false,
         customClass: { confirmButton: 'btn btn-success' }
       });
+
+      this.descargarComprobante(response?.voucherId);
 
 
       this.modalPago.open = false;
@@ -451,10 +484,13 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       open: false,
       cargando: false,
       guardando: false,
+      allowRegistro: true,
+      pagadoCompleto: false,
       pedido: null,
       resumen: null,
       metodos: [],
       monto: '',
+      opcionPago: null,
       montoError: null,
       metodoId: null,
       fecha: '',
@@ -519,12 +555,114 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     return Math.max(this.parseMonto(resumen.SaldoPendiente), 0);
   }
 
+  private calcularMontoPorOpcion(opcion: '50' | '100'): number {
+    const resumen = this.modalPago.resumen;
+    if (!resumen) return 0;
+    const total = this.parseMonto(resumen.CostoTotal);
+    const abonado = this.parseMonto(resumen.MontoAbonado);
+    const saldo = this.obtenerSaldoPendiente();
+    if (opcion === '50') {
+      const objetivo = total * 0.5;
+      return this.redondearMonto(Math.max(objetivo - abonado, 0));
+    }
+    return this.redondearMonto(Math.max(saldo, 0));
+  }
+
+  private configurarOpcionPagoInicial(): void {
+    const saldo = this.obtenerSaldoPendiente();
+    if (saldo <= 0) {
+      this.modalPago.opcionPago = null;
+      this.modalPago.monto = '';
+      return;
+    }
+    const preferida: '50' | '100' = this.modalPago.faltanteDeposito > 0 ? '50' : '100';
+    const montoPreferido = this.calcularMontoPorOpcion(preferida);
+    const alternativa: '50' | '100' = preferida === '50' ? '100' : '50';
+    const montoAlternativo = this.calcularMontoPorOpcion(alternativa);
+
+    const opcion = montoPreferido > 0 ? preferida : montoAlternativo > 0 ? alternativa : null;
+    this.modalPago.opcionPago = opcion;
+    this.modalPago.monto = opcion ? this.calcularMontoPorOpcion(opcion).toFixed(2) : '';
+    this.ajustarOpcionPagoSiInvalida();
+    this.onMontoChange();
+  }
+
+  private ajustarOpcionPagoSiInvalida(): boolean {
+    if (this.modalPago.opcionPago === '50' && !this.opcionPago50Disponible) {
+      if (this.opcionPago100Disponible) {
+        this.modalPago.opcionPago = '100';
+        const monto = this.calcularMontoPorOpcion('100');
+        this.modalPago.monto = monto > 0 ? monto.toFixed(2) : '';
+        this.onMontoChange();
+        return false;
+      }
+      this.modalPago.opcionPago = null;
+      this.modalPago.monto = '';
+      this.modalPago.montoError = 'Selecciona una opcion de pago.';
+      return false;
+    }
+    if (this.modalPago.opcionPago === '100' && !this.opcionPago100Disponible) {
+      if (this.opcionPago50Disponible) {
+        this.modalPago.opcionPago = '50';
+        const monto = this.calcularMontoPorOpcion('50');
+        this.modalPago.monto = monto > 0 ? monto.toFixed(2) : '';
+        this.onMontoChange();
+        return false;
+      }
+      this.modalPago.opcionPago = null;
+      this.modalPago.monto = '';
+      this.modalPago.montoError = 'Selecciona una opcion de pago.';
+      return false;
+    }
+    return true;
+  }
+
+  private redondearMonto(valor: number): number {
+    return Math.round(valor * 100) / 100;
+  }
+
+  private async descargarComprobante(voucherId: number | undefined | null): Promise<void> {
+    if (!voucherId) {
+      return;
+    }
+    try {
+      void Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: 'Descargando comprobante...',
+        showConfirmButton: false,
+        timer: 2200,
+        timerProgressBar: true
+      });
+      const blob = await firstValueFrom(this.comprobantesService.getVoucherPdf(voucherId));
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `comprobante_${voucherId}.pdf`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error('[comprobantes] descargar', error);
+      void Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'warning',
+        title: 'No se pudo descargar el comprobante.',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+    }
+  }
+
   private formatearMoneda(valor: number): string {
-    const formatter = new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('es-PE', {
+      style: 'currency',
+      currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    });
-    return `US$ ${formatter.format(valor)}`;
+    }).format(valor);
   }
 
   esTransferenciaSeleccionada(): boolean {
@@ -545,6 +683,29 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
 
   get faltanteDepositoTexto(): string {
     return this.formatearMoneda(this.modalPago.faltanteDeposito);
+  }
+
+  get opcionPago50Disponible(): boolean {
+    const monto = this.calcularMontoPorOpcion('50');
+    return monto > 0 && monto <= this.obtenerSaldoPendiente() + 0.01;
+  }
+
+  get opcionPago100Disponible(): boolean {
+    const monto = this.calcularMontoPorOpcion('100');
+    return monto > 0;
+  }
+
+  get opcionPago50Texto(): string {
+    return this.formatearMoneda(this.calcularMontoPorOpcion('50'));
+  }
+
+  get opcionPago100Texto(): string {
+    return this.formatearMoneda(this.calcularMontoPorOpcion('100'));
+  }
+
+  get montoSeleccionadoTexto(): string {
+    const monto = this.parseMonto(this.modalPago.monto);
+    return monto > 0 ? this.formatearMoneda(monto) : '--';
   }
 
   getPagoPill(row: PedidoRow | null | undefined): { label: string; className: string } {
