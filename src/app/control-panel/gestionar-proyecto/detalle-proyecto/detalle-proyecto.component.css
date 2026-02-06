@@ -780,6 +780,27 @@ section[id] {
   padding-top: 14px;
 }
 
+.postprod-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.postprod-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.postprod-card textarea.form-control {
+  resize: vertical;
+}
+
 .asignaciones-stepper ::ng-deep .mat-stepper-vertical {
   background: transparent;
 }

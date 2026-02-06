@@ -119,6 +119,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   devolucionGruposAbiertos: Record<string, boolean> = {};
   devolucionDraft: Record<number, { estado: ProyectoEstadoDevolucion | ''; notas: string; fecha: string | null }> = {};
   guardandoDevolucion = false;
+  postFechaInicioEdicion: string | null = null;
+  postFechaFinEdicion: string | null = null;
+  postEnlacePreEntrega = '';
+  postEnlaceFinal = '';
+  postFechaPreEntrega: string | null = null;
+  postTipoPreEntrega: 'VIDEO' | 'FOTOS' | 'AMBOS' | '' = '';
+  postEstadoPreEntrega: 'PENDIENTE' | 'APROBADO' | 'CAMBIOS' | '' = '';
+  postFeedbackCliente = '';
+  postFechaEntregaFinal: string | null = null;
+  postFechaVencimientoEnlace: string | null = null;
+  postUbicacionRespaldo = '';
+  postNotasRespaldo = '';
+  postEntregaMarcada = false;
   stepperOrientation: 'horizontal' | 'vertical' = 'horizontal';
   ultimoDropDestino: number | 'reserva' | null = null;
   private dropHighlightTimer: number | null = null;
@@ -182,6 +195,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           this.detalle = data;
           this.proyecto = data?.proyecto ?? null;
           this.rebuildDiaCaches();
+          this.syncPostproduccionFromProyecto();
           if (!this.openDiaId) {
             const diaInicial = [...(data?.dias ?? [])]
               .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))[0];
@@ -1552,6 +1566,157 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.devolucionDraft = {};
   }
 
+  private syncPostproduccionFromProyecto(): void {
+    const proyecto = this.proyecto;
+    if (!proyecto) {
+      this.postFechaInicioEdicion = null;
+      this.postFechaFinEdicion = null;
+      this.postEnlacePreEntrega = '';
+      this.postEnlaceFinal = '';
+      this.postFechaPreEntrega = null;
+      this.postTipoPreEntrega = '';
+      this.postEstadoPreEntrega = '';
+      this.postFeedbackCliente = '';
+      this.postFechaEntregaFinal = null;
+      this.postFechaVencimientoEnlace = null;
+      this.postUbicacionRespaldo = '';
+      this.postNotasRespaldo = '';
+      this.postEntregaMarcada = false;
+      return;
+    }
+    this.postFechaInicioEdicion = proyecto.fechaInicioEdicion ?? null;
+    this.postFechaFinEdicion = proyecto.fechaFinEdicion ?? null;
+    this.postEnlaceFinal = proyecto.enlace ?? '';
+  }
+
+  iniciarEdicionPost(): void {
+    if (this.postFechaInicioEdicion) return;
+    this.postFechaInicioEdicion = new Date().toISOString().slice(0, 10);
+    void Swal.fire({
+      icon: 'success',
+      title: 'Edición iniciada',
+      text: `Inicio: ${this.postFechaInicioEdicion}`,
+      timer: 1400,
+      showConfirmButton: false
+    });
+  }
+
+  enviarPreEntregaPost(): void {
+    if (!this.postEnlacePreEntrega.trim()) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Falta el enlace',
+        text: 'Ingresa el enlace de pre-entrega.'
+      });
+      return;
+    }
+    if (!this.postTipoPreEntrega) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Selecciona el tipo',
+        text: 'Indica si es video, fotos o ambos.'
+      });
+      return;
+    }
+    this.postFechaPreEntrega = new Date().toISOString().slice(0, 10);
+    if (!this.postEstadoPreEntrega) {
+      this.postEstadoPreEntrega = 'PENDIENTE';
+    }
+    void Swal.fire({
+      icon: 'success',
+      title: 'Pre-entrega enviada',
+      text: `Fecha: ${this.postFechaPreEntrega}`,
+      timer: 1400,
+      showConfirmButton: false
+    });
+  }
+
+  cerrarEdicionPost(): void {
+    if (!this.postFechaInicioEdicion) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Inicia la edición',
+        text: 'Debes registrar la fecha de inicio de edición.'
+      });
+      return;
+    }
+    if (!this.postFechaFinEdicion) {
+      this.postFechaFinEdicion = new Date().toISOString().slice(0, 10);
+    }
+    void Swal.fire({
+      icon: 'success',
+      title: 'Edición cerrada',
+      text: `Fin: ${this.postFechaFinEdicion}`,
+      timer: 1400,
+      showConfirmButton: false
+    });
+  }
+
+  tienePagoCompletoMock(): boolean {
+    return false;
+  }
+
+  marcarEntregaPost(): void {
+    if (!this.postFechaFinEdicion) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Edición pendiente',
+        text: 'Debes cerrar la edición antes de entregar.'
+      });
+      return;
+    }
+    if (!this.tienePagoCompletoMock()) {
+      void Swal.fire({
+        icon: 'info',
+        title: 'Pago incompleto',
+        text: 'La entrega final requiere el pago completo.'
+      });
+      return;
+    }
+    if (!this.postEnlaceFinal.trim()) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Falta el enlace final',
+        text: 'Ingresa el enlace final para entregar.'
+      });
+      return;
+    }
+    if (!this.postFechaEntregaFinal) {
+      this.postFechaEntregaFinal = new Date().toISOString().slice(0, 10);
+    }
+    if (!this.postFechaVencimientoEnlace) {
+      const base = new Date(this.postFechaEntregaFinal);
+      base.setDate(base.getDate() + 60);
+      this.postFechaVencimientoEnlace = base.toISOString().slice(0, 10);
+    }
+    this.postEntregaMarcada = true;
+    void Swal.fire({
+      icon: 'success',
+      title: 'Entrega marcada',
+      text: `Entrega: ${this.postFechaEntregaFinal ?? this.postFechaFinEdicion}`,
+      timer: 1400,
+      showConfirmButton: false
+    });
+  }
+
+  guardarRespaldoPost(): void {
+    if (!this.postUbicacionRespaldo.trim()) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Falta ubicación',
+        text: 'Ingresa la ubicación física del respaldo.'
+      });
+      return;
+    }
+    void Swal.fire({
+      icon: 'success',
+      title: 'Ubicación guardada',
+      text: this.postUbicacionRespaldo,
+      timer: 1400,
+      showConfirmButton: false
+    });
+  }
+
   private cargarDevolucionDraft(diaId: number): void {
     const equipos = (this.detalle?.equiposDia ?? []).filter(item => item.diaId === diaId);
     const draft: Record<number, { estado: ProyectoEstadoDevolucion | ''; notas: string; fecha: string | null }> = {};
@@ -2033,7 +2198,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     if (!diaId || !this.detalle?.dias?.length) return false;
     const dia = this.detalle.dias.find(d => d.diaId === diaId);
     const estado = (dia?.estadoDiaNombre ?? '').toString().trim().toLowerCase();
-    return estado === 'terminado' || estado === 'cancelado';
+    return estado === 'terminado' || estado === 'cancelado' || estado === 'cerrado' || estado === 'finalizado';
   }
 
   getEstadosDiaPermitidos(dia: ProyectoDia): ProyectoDiaEstadoItem[] {

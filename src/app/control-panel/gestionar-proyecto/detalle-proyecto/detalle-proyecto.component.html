@@ -407,8 +407,7 @@
               </button>
               @if (getDiasDevolucionPendientes().length) {
                 <button mat-stroked-button color="primary" type="button"
-                  (click)="$event.stopPropagation(); abrirModalDevolucion(openDiaId || undefined)"
-                  [disabled]="!openDiaId || !isDiaFinalizado(openDiaId) || !isDiaPendienteDevolucion(openDiaId)">
+                  (click)="$event.stopPropagation(); abrirModalDevolucion(openDiaId || undefined)">
                   Registrar devoluciones del día
                 </button>
               } @else {
@@ -474,6 +473,115 @@
         </details>
       </section>
       }
+
+      <section class="card section section--flow" id="postproduccion-proyecto">
+        <details class="collapsible" open>
+          <summary class="collapsible__summary">
+            <div class="section-heading">
+              <span class="flow-step">Paso 5</span>
+              <p class="eyebrow">Postproducción</p>
+              <h3>Edición y entregas</h3>
+            </div>
+            <div class="collapsible__actions">
+              <span class="collapsible__caret">▾</span>
+            </div>
+          </summary>
+
+          <div class="postprod-grid">
+            <div class="postprod-card">
+              <h4>Inicio de edición</h4>
+              <label class="form-field">
+                <span class="label">Fecha inicio</span>
+                <input class="form-control" type="date" [(ngModel)]="postFechaInicioEdicion" [disabled]="!!postFechaInicioEdicion">
+              </label>
+              <button mat-stroked-button color="primary" type="button" (click)="iniciarEdicionPost()" [disabled]="!!postFechaInicioEdicion">
+                Iniciar edición
+              </button>
+            </div>
+
+            <div class="postprod-card">
+              <h4>Pre-entrega</h4>
+              <label class="form-field">
+                <span class="label">Enlace pre-entrega</span>
+                <input class="form-control" type="text" [(ngModel)]="postEnlacePreEntrega" placeholder="https://...">
+              </label>
+              <label class="form-field">
+                <span class="label">Tipo de pre-entrega</span>
+                <select class="form-control" [(ngModel)]="postTipoPreEntrega">
+                  <option value="">Selecciona</option>
+                  <option value="VIDEO">Video (trailer)</option>
+                  <option value="FOTOS">Fotos (selección)</option>
+                  <option value="AMBOS">Ambos</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span class="label">Feedback / Selección del cliente</span>
+                <textarea class="form-control" rows="3" [(ngModel)]="postFeedbackCliente" placeholder="Aprobado, cambios solicitados o fotos elegidas..."></textarea>
+              </label>
+              <label class="form-field">
+                <span class="label">Estado de pre-entrega</span>
+                <select class="form-control" [(ngModel)]="postEstadoPreEntrega">
+                  <option value="">Pendiente</option>
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="APROBADO">Aprobado</option>
+                  <option value="CAMBIOS">Requiere cambios</option>
+                </select>
+              </label>
+              <div class="muted small">Fecha de envío: {{ postFechaPreEntrega || '—' }}</div>
+              <button mat-stroked-button type="button" (click)="enviarPreEntregaPost()" [disabled]="!postFechaInicioEdicion">
+                Enviar pre-entrega
+              </button>
+            </div>
+
+            <div class="postprod-card">
+              <h4>Cierre de edición</h4>
+              <label class="form-field">
+                <span class="label">Fecha fin</span>
+                <input class="form-control" type="date" [(ngModel)]="postFechaFinEdicion">
+              </label>
+              <button mat-stroked-button type="button" (click)="cerrarEdicionPost()">
+                Cerrar edición
+              </button>
+            </div>
+
+            <div class="postprod-card">
+              <h4>Entrega final</h4>
+              <label class="form-field">
+                <span class="label">Enlace final</span>
+                <input class="form-control" type="text" [(ngModel)]="postEnlaceFinal" placeholder="https://...">
+              </label>
+              <label class="form-field">
+                <span class="label">Fecha de entrega final</span>
+                <input class="form-control" type="date" [(ngModel)]="postFechaEntregaFinal">
+              </label>
+              <label class="form-field">
+                <span class="label">Vencimiento enlace (60 días)</span>
+                <input class="form-control" type="date" [(ngModel)]="postFechaVencimientoEnlace">
+              </label>
+              <div class="muted small">Entrega solo con pago completo.</div>
+              <button mat-flat-button color="primary" type="button" (click)="marcarEntregaPost()"
+                [disabled]="!postFechaFinEdicion || !tienePagoCompletoMock()">
+                Marcar entrega
+              </button>
+            </div>
+
+            <div class="postprod-card">
+              <h4>Respaldo físico</h4>
+              <label class="form-field">
+                <span class="label">Ubicación de respaldo</span>
+                <input class="form-control" type="text" [(ngModel)]="postUbicacionRespaldo" placeholder="HDD 2026-A · Disco #3 · Carpeta PRO-000004">
+              </label>
+              <label class="form-field">
+                <span class="label">Notas de respaldo</span>
+                <textarea class="form-control" rows="2" [(ngModel)]="postNotasRespaldo" placeholder="Observaciones, claves, etc."></textarea>
+              </label>
+              <button mat-stroked-button type="button" (click)="guardarRespaldoPost()">
+                Guardar ubicación
+              </button>
+            </div>
+          </div>
+        </details>
+      </section>
 
     } @else {
       <p class="estado-centro">{{ error }}</p>
