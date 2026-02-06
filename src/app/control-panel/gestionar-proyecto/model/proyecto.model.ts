@@ -1,29 +1,37 @@
 export interface Proyecto {
   proyectoId: number;
+  codigo?: string | null;
   proyectoNombre: string;
   pedidoId: number;
   pedidoCodigo?: string | null;
   estadoId: number | null;
   estadoNombre: string | null;
-  responsableId: number | null;
-  notas: string | null;
-  enlace: string | null;
+  responsableId?: number | null;
+  responsableNombre?: string | null;
+  eventoFecha?: string | null;
+  diasParaEvento?: number | null;
+  lugar?: string | null;
+  ubicacion?: string | null;
+  estadoPagoId?: number | null;
+  estadoPagoNombre?: string | null;
+  saldoPendiente?: number | null;
+  pendientesDevolucion?: number | null;
+  tienePendientes?: number | null;
+  postproduccion?: ProyectoPostproduccion | null;
+  notas?: string | null;
+  enlace?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface ProyectoDetalle extends Proyecto {
-  codigo?: string | null;
-  pedidoCodigo?: string | null;
-  responsableNombre?: string | null;
   estadoId: number;
   estadoNombre: string;
   pedidoServicios?: PedidoServicio[];
   personalRequerido?: PersonalRequerido[];
   equiposRequeridos?: EquipoRequerido[];
-  responsableId: number | null;
-  notas: string | null;
-  enlace: string | null;
+  notas?: string | null;
+  enlace?: string | null;
 }
 
 export interface PedidoServicio {

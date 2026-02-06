@@ -2,7 +2,7 @@
   <app-list-toolbar
     [title]="'Proyectos'"
     [showSearch]="true"
-    [searchPlaceholder]="'Buscar: nombre, pedido, responsable...'"
+    [searchPlaceholder]="'Buscar: proyecto, pedido, estado...'"
     [searchValue]="searchTerm"
     (searchChange)="onSearchChange($event)"
     [showCreateButton]="false">
@@ -23,13 +23,34 @@
 
       <ng-template appCell="proyectoNombre" let-row>
         <div class="fw-semibold">{{ row.proyectoNombre || '-' }}</div>
-        @if (row.enlace) {
-          <div class="text-muted small">{{ row.enlace }}</div>
+        @if (row.codigo) {
+          <div class="text-muted small">{{ row.codigo }}</div>
         }
       </ng-template>
 
-      <ng-template appCell="pedidoId" let-row>
+      <ng-template appCell="pedidoCodigo" let-row>
         <div class="text-center">{{ row.pedidoCodigo || row.pedidoId || '-' }}</div>
+      </ng-template>
+
+      <ng-template appCell="evento" let-row>
+        <div class="d-flex flex-column">
+          <span>{{ row.eventoFecha ? (row.eventoFecha | date:'yyyy-MM-dd') : '-' }}</span>
+          <small class="text-muted">{{ row.ubicacion || row.lugar || '-' }}</small>
+          @if (row.diasParaEvento != null) {
+            <small class="text-muted">En {{ row.diasParaEvento }} dias</small>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template appCell="postproduccion" let-row>
+        @if (row.postproduccion?.fechaInicioEdicion || row.postproduccion?.fechaFinEdicion) {
+          <div class="d-flex flex-column">
+            <span>{{ row.postproduccion?.fechaInicioEdicion || '-' }}</span>
+            <small class="text-muted">Hasta {{ row.postproduccion?.fechaFinEdicion || '-' }}</small>
+          </div>
+        } @else {
+          <div class="text-muted">-</div>
+        }
       </ng-template>
 
       <ng-template appCell="estadoNombre" let-row>
@@ -44,20 +65,24 @@
         ></app-estado-badge>
       </ng-template>
 
-      <ng-template appCell="responsableId" let-row>
-        <div class="text-center">{{ row.responsableId ?? '-' }}</div>
+      <ng-template appCell="pago" let-row>
+        <div class="d-flex flex-column text-center">
+          <span>{{ row.estadoPagoNombre || '-' }}</span>
+          <small class="text-muted">{{ row.saldoPendiente != null ? (row.saldoPendiente | usd:'1.2-2') : '-' }}</small>
+        </div>
       </ng-template>
 
-      <ng-template appCell="fechas" let-row>
-        @if (row.createdAt) {
-          <div class="d-block">Creado: {{ row.createdAt | date:'yyyy-MM-dd' }}</div>
-        }
-        @if (row.updatedAt) {
-          <div class="d-block">Actualizado: {{ row.updatedAt | date:'yyyy-MM-dd' }}</div>
-        }
-        @if (!row.createdAt && !row.updatedAt) {
-          <div class="text-muted">-</div>
-        }
+      <ng-template appCell="pendientes" let-row>
+        <div class="text-center">
+          @if (row.tienePendientes) {
+            <span class="badge bg-warning text-dark">Si</span>
+          } @else {
+            <span class="badge bg-success">No</span>
+          }
+          @if (row.pendientesDevolucion != null) {
+            <div class="text-muted small">({{ row.pendientesDevolucion }})</div>
+          }
+        </div>
       </ng-template>
 
       <ng-template appCell="acciones" let-row>
