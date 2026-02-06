@@ -127,6 +127,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   estadosDiaCatalogo: ProyectoDiaEstadoItem[] = [];
   estadoDiaLoading: Record<number, boolean> = {};
   estadoDiaMenuOpenId: number | null = null;
+  iniciarEnCursoTrasAsignarDiaId: number | null = null;
   private diasOrdenadosCache: ProyectoDia[] = [];
   private bloquesDiaMap = new Map<number, BloqueDia[]>();
   private serviciosDiaMap = new Map<number, ServicioDia[]>();
@@ -207,10 +208,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   cerrarModalAsignar(): void {
+    if (!this.confirmCerrarAsignaciones()) return;
     this.saveAsignacionDraft();
     this.saveFiltrosDraft();
     this.modalAsignarAbierto = false;
     this.asignacionDiaLocked = false;
+    this.iniciarEnCursoTrasAsignarDiaId = null;
   }
 
   abrirModalIncidencia(diaId?: number): void {
@@ -287,7 +290,15 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
         icon: 'warning',
         title: 'Asignaciones incompletas',
         text: 'Completa las asignaciones del día antes de iniciar.',
-        confirmButtonText: 'Entendido'
+        showCancelButton: true,
+        confirmButtonText: 'Ir a asignar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+      }).then(result => {
+        if (result.isConfirmed) {
+          this.iniciarEnCursoTrasAsignarDiaId = dia.diaId;
+          this.abrirModalAsignar(dia.diaId);
+        }
       });
       return;
     }
@@ -320,12 +331,19 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
             this.estadoDiaLoading[dia.diaId] = false;
           })
         )
-        .subscribe({
-          next: () => {
-            dia.estadoDiaId = estadoDiaId;
-            dia.estadoDiaNombre = this.getEstadoDiaNombre(estadoDiaId);
-          },
-          error: (err) => {
+      .subscribe({
+        next: () => {
+          dia.estadoDiaId = estadoDiaId;
+          dia.estadoDiaNombre = this.getEstadoDiaNombre(estadoDiaId);
+          void Swal.fire({
+            icon: 'success',
+            title: this.getToastEstadoDiaTitle(estadoNuevo),
+            text: `Día: ${this.formatFechaLarga(dia.fecha)}`,
+            timer: 1500,
+            showConfirmButton: false
+          });
+        },
+        error: (err) => {
             console.error('[proyecto] estado dia', err);
             dia.estadoDiaId = prevId;
             dia.estadoDiaNombre = prevNombre;
@@ -670,6 +688,36 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
                   skipDraftSave: true,
                   forceDetalle: true
                 });
+                const targetDiaId = this.asignacionDiaId;
+                if (targetDiaId && this.iniciarEnCursoTrasAsignarDiaId === targetDiaId) {
+                  const estadoEnCursoId = this.estadosDiaCatalogo
+                    .find(item => (item.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'en curso')
+                    ?.estadoDiaId;
+                  if (estadoEnCursoId) {
+                    this.estadoDiaLoading[targetDiaId] = true;
+                    this.proyectoService.actualizarEstadoDia(targetDiaId, estadoEnCursoId)
+                      .pipe(finalize(() => { this.estadoDiaLoading[targetDiaId] = false; }))
+                      .subscribe({
+                        next: () => {
+                          const dia = this.detalle?.dias?.find(d => d.diaId === targetDiaId);
+                          if (dia) {
+                            dia.estadoDiaId = estadoEnCursoId;
+                            dia.estadoDiaNombre = this.getEstadoDiaNombre(estadoEnCursoId);
+                          }
+                          this.rebuildDiaCaches();
+                        },
+                        error: err => {
+                          console.error('[proyecto] estado dia auto en curso', err);
+                          Swal.fire({
+                            icon: 'error',
+                            title: 'No se pudo iniciar el día',
+                            text: 'Las asignaciones se guardaron, pero no se pudo cambiar a En curso.'
+                          });
+                        }
+                      });
+                  }
+                }
+                this.iniciarEnCursoTrasAsignarDiaId = null;
                 this.cerrarModalAsignar();
               },
               error: err => {
@@ -798,6 +846,14 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       forceDetalle: true
     });
   }
+
+  private confirmCerrarAsignaciones(): boolean {
+    if (this.asignacionSoloLectura) return true;
+    if (!this.asignacionDiaId) return true;
+    if (!this.isAsignacionDiaDirty(this.asignacionDiaId)) return true;
+    return window.confirm('Tienes cambios sin guardar. ¿Seguro que deseas cerrar?');
+  }
+
 
   private getEquipoTipo(equipoId: number): string {
     const found = this.disponiblesEquipos.find(item => item.equipoId === equipoId);
@@ -1543,9 +1599,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   getDiasDevolucionPendientes(): ProyectoDia[] {
-    return this.diasOrdenadosCache.filter(dia =>
-      this.isDiaFinalizado(dia.diaId) && this.isDiaPendienteDevolucion(dia.diaId)
-    );
+    return this.diasOrdenadosCache.filter(dia => {
+      const tieneEquipos = (this.detalle?.equiposDia ?? []).some(eq => eq.diaId === dia.diaId);
+      return this.isDiaFinalizado(dia.diaId) && this.isDiaPendienteDevolucion(dia.diaId) && tieneEquipos;
+    });
   }
 
   toggleSoloExcepcionesEstado(): void {
@@ -2112,6 +2169,15 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return 'control-kpi--neutral';
   }
 
+  private getToastEstadoDiaTitle(estadoNuevo: string): string {
+    if (estadoNuevo === 'en curso') return 'Día iniciado';
+    if (estadoNuevo === 'terminado') return 'Día terminado';
+    if (estadoNuevo === 'cancelado') return 'Día cancelado';
+    if (estadoNuevo === 'suspendido') return 'Día suspendido';
+    if (estadoNuevo === 'pendiente') return 'Día en pendiente';
+    return 'Estado actualizado';
+  }
+
   getAsignacionDiaLabel(): string {
     if (!this.asignacionDiaId) return '—';
     const dia = this.detalle?.dias?.find(d => d.diaId === this.asignacionDiaId);
@@ -2127,6 +2193,25 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return this.asignacionEmpleados.every(emp => this.getEquiposCountResponsable(emp.empleadoId) > 0);
   }
 
+  getResponsablesSinEquipoCount(): number {
+    if (!this.asignacionEmpleados.length) return 0;
+    return this.asignacionEmpleados
+      .filter(emp => this.getEquiposCountResponsable(emp.empleadoId) === 0)
+      .length;
+  }
+
+  canCompletarPasoPersonal(): boolean {
+    return this.asignacionEmpleados.length > 0;
+  }
+
+  canCompletarPasoEquipos(): boolean {
+    return this.asignacionEquipos.length > 0;
+  }
+
+  canCompletarPasoResponsables(): boolean {
+    return this.getResponsablesSinEquipoCount() === 0 && this.asignacionEmpleados.length > 0;
+  }
+
   canIrAnteriorAsignaciones(): boolean {
     const idx = this.asignacionesStepper?.selectedIndex ?? 0;
     return !!this.asignacionDiaId && idx > 0;
@@ -2134,7 +2219,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   canIrSiguienteAsignaciones(): boolean {
     const idx = this.asignacionesStepper?.selectedIndex ?? 0;
-    return !!this.asignacionDiaId && idx < 2;
+    if (!this.asignacionDiaId || idx >= 2) return false;
+    if (idx === 0) return this.canCompletarPasoPersonal();
+    if (idx === 1) return this.canCompletarPasoEquipos();
+    return false;
   }
 
   esUltimoPasoAsignaciones(): boolean {

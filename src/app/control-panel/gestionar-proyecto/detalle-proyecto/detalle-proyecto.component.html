@@ -531,25 +531,21 @@
             }
           </select>
         </label>
-        <button mat-stroked-button color="primary" type="button" (click)="copiarAsignacionesDesde(copiarDesdeDiaId)"
-          [disabled]="!copiarDesdeDiaId || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
-          Copiar
-        </button>
-        @if (getDiaAnteriorId(asignacionDiaId)) {
-          <button mat-stroked-button type="button" (click)="copiarAsignacionesDiaAnterior()"
-            [disabled]="!asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
-            Copiar día anterior
+        <div class="asignaciones-editor-actions">
+          <button mat-stroked-button color="primary" type="button" (click)="copiarAsignacionesDesde(copiarDesdeDiaId)"
+            [disabled]="!copiarDesdeDiaId || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
+            Copiar
           </button>
-        }
-        <button mat-stroked-button color="primary" type="button" (click)="limpiarAsignacionesDia()" [disabled]="!asignacionDiaId">
-          Limpiar día
-        </button>
-        <button mat-stroked-button type="button" (click)="descartarCambiosDia()" [disabled]="!isAsignacionDiaDirty(asignacionDiaId)">
-          Descartar cambios
-        </button>
-        @if (hasFiltrosActivos()) {
-          <button mat-button type="button" (click)="limpiarFiltrosAsignacion()">Quitar filtros</button>
-        }
+          <button mat-stroked-button color="primary" type="button" (click)="limpiarAsignacionesDia()" [disabled]="!asignacionDiaId">
+            Limpiar día
+          </button>
+          <button mat-stroked-button type="button" (click)="descartarCambiosDia()" [disabled]="!isAsignacionDiaDirty(asignacionDiaId)">
+            Descartar cambios
+          </button>
+          @if (hasFiltrosActivos()) {
+            <button mat-button type="button" (click)="limpiarFiltrosAsignacion()">Quitar filtros</button>
+          }
+        </div>
       }
     </div>
 
@@ -571,8 +567,8 @@
     } @else if (!hasRequerimientosDia(asignacionDiaId)) {
       <div class="muted small">Sin requerimientos para este día.</div>
     } @else {
-    <mat-stepper #asignacionesStepper class="asignaciones-stepper" [orientation]="stepperOrientation" [linear]="false">
-      <mat-step>
+    <mat-stepper #asignacionesStepper class="asignaciones-stepper" [orientation]="stepperOrientation" [linear]="!asignacionSoloLectura">
+      <mat-step [completed]="canCompletarPasoPersonal()">
         <ng-template matStepLabel>
           Personal <span class="stepper-meta">{{ getProgresoPersonalLabel(asignacionDiaId) }}</span>
         </ng-template>
@@ -657,7 +653,7 @@
         </div>
       </mat-step>
 
-      <mat-step>
+      <mat-step [completed]="canCompletarPasoEquipos()">
         <ng-template matStepLabel>
           Equipos <span class="stepper-meta">{{ getProgresoEquiposLabel(asignacionDiaId) }}</span>
         </ng-template>
@@ -696,27 +692,14 @@
                           <span class="meta-chip">Disp: {{ getEquiposDisponiblesPorTipo(row.tipo).length }}</span>
                         </div>
                         </div>
-                        <div class="equipos-row__status">
-                          <app-estado-badge [estado]="row.asignado + '/' + row.requerido"></app-estado-badge>
-                        </div>
-                        <div class="equipos-row__actions">
-                          <button mat-stroked-button type="button" (click)="quitarEquipoPorTipo(row.tipo)" [disabled]="row.asignado === 0">
-                            −
-                          </button>
-                          <button mat-stroked-button color="primary" type="button"
-                            (click)="agregarEquipoPorTipo(row.tipo, row.requerido)"
-                            [disabled]="row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
-                            +
-                          </button>
-                          <button mat-button type="button"
-                            (click)="completarEquiposPorTipo(row.tipo, row.requerido)"
-                            [disabled]="row.asignado >= row.requerido || getEquiposDisponiblesPorTipo(row.tipo).length === 0 || tieneMultiplesModelos(row.tipo)">
-                            Completar
-                          </button>
-                          <button mat-button type="button" (click)="toggleTipoDetalle(row.tipo)">
-                            {{ isTipoDetalleAbierto(row.tipo) ? 'Ocultar' : 'Detalle' }}
-                          </button>
-                        </div>
+                      <div class="equipos-row__status">
+                        <app-estado-badge [estado]="row.asignado + '/' + row.requerido"></app-estado-badge>
+                      </div>
+                      <div class="equipos-row__actions">
+                        <button mat-button type="button" (click)="toggleTipoDetalle(row.tipo)">
+                          {{ isTipoDetalleAbierto(row.tipo) ? 'Ocultar' : 'Detalle' }}
+                        </button>
+                      </div>
                       </div>
                       @if (isTipoDetalleAbierto(row.tipo)) {
                         <div class="equipos-detalle equipos-detalle--open">
@@ -805,7 +788,7 @@
         </div>
       </mat-step>
 
-      <mat-step>
+      <mat-step [completed]="canCompletarPasoResponsables()">
         <ng-template matStepLabel>Responsables</ng-template>
         <div class="asignaciones-editor-grid">
           <div class="asignaciones-editor-card">
@@ -862,6 +845,7 @@
                   <span class="meta-chip">Total: {{ asignacionEquipos.length }}</span>
                   <span class="meta-chip">Asignados: {{ asignacionEquipos.length - getEquiposReserva().length }}</span>
                   <span class="meta-chip">Reserva: {{ getEquiposReserva().length }}</span>
+                  <span class="meta-chip meta-chip--warn">Sin equipo: {{ getResponsablesSinEquipoCount() }}</span>
                 </div>
                 <div class="drag-grid" cdkDropListGroup>
                   <div class="drag-col">
@@ -1173,10 +1157,19 @@
           <span class="meta-chip">Devueltos: {{ getResumenDevolucionDia(devolucionDiaId).devueltos }}</span>
           <span class="meta-chip meta-chip--warn">Excepciones: {{ getResumenDevolucionDia(devolucionDiaId).excepciones }}</span>
         </div>
-        <button mat-button type="button" (click)="toggleSoloExcepcionesDevolucion()"
-          [disabled]="getResumenDevolucionDia(devolucionDiaId).excepciones === 0">
-          @if (mostrarSoloExcepcionesDevolucion) { Ver todos } @else { Solo excepciones }
-        </button>
+        <div class="chip-toggle-group">
+          <button type="button" class="chip-toggle"
+            [class.is-active]="!mostrarSoloExcepcionesDevolucion"
+            (click)="mostrarSoloExcepcionesDevolucion = false">
+            Todas
+          </button>
+          <button type="button" class="chip-toggle"
+            [class.is-active]="mostrarSoloExcepcionesDevolucion"
+            [disabled]="getResumenDevolucionDia(devolucionDiaId).excepciones === 0"
+            (click)="mostrarSoloExcepcionesDevolucion = true">
+            Excepciones
+          </button>
+        </div>
       </div>
       <div class="asignaciones-editor">
         <label class="form-field">
