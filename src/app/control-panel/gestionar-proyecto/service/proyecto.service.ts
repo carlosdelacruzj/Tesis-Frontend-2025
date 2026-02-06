@@ -10,6 +10,7 @@ import {
   ProyectoEstadoResponse,
   ProyectoIncidenciaPayload,
   ProyectoPayload,
+  ProyectoPostproduccionPayload,
   ProyectoDevolucionEquiposPayload,
   ProyectoDevolucionEquipoParcialPayload
 } from '../model/proyecto.model';
@@ -48,6 +49,13 @@ export class ProyectoService {
     payload: Partial<ProyectoPayload>
   ): Observable<{ status: string; proyectoId: number }> {
     return this.http.patch<{ status: string; proyectoId: number }>(`${this.API}/${id}`, payload);
+  }
+
+  actualizarPostproduccion(
+    id: number,
+    payload: ProyectoPostproduccionPayload
+  ): Observable<{ status: string; proyectoId: number }> {
+    return this.http.patch<{ status: string; proyectoId: number }>(`${this.API}/${id}/postproduccion`, payload);
   }
 
   upsertAsignaciones(payload: ProyectoAsignacionesPayload): Observable<{ status: string }> {

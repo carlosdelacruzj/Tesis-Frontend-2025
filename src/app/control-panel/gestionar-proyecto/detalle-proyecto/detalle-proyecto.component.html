@@ -36,17 +36,17 @@
         <div class="stat-grid">
           <div class="stat-card">
             <p class="stat-label">Inicio edición</p>
-            <p class="stat-value">{{ formatFechaDisplay(proyecto.fechaInicioEdicion) }}</p>
+            <p class="stat-value">{{ formatFechaDisplay(postproduccion.fechaInicioEdicion) }}</p>
           </div>
           <div class="stat-card">
             <p class="stat-label">Fin edición</p>
-            <p class="stat-value">{{ formatFechaDisplay(proyecto.fechaFinEdicion) }}</p>
+            <p class="stat-value">{{ formatFechaDisplay(postproduccion.fechaFinEdicion) }}</p>
           </div>
           <div class="stat-card">
             <p class="stat-label">Enlace</p>
             <p class="stat-value">
-              @if (proyecto.enlace) {
-                <a class="link" [href]="proyecto.enlace" target="_blank" rel="noopener">Abrir enlace</a>
+              @if (postproduccion.entregaFinalEnlace) {
+                <a class="link" [href]="postproduccion.entregaFinalEnlace" target="_blank" rel="noopener">Abrir enlace</a>
               } @else {
                 —
               }
@@ -81,6 +81,13 @@
             <span class="workflow-item__text">
               <strong>Devoluciones</strong>
               <small>Confirma estado de equipos</small>
+            </span>
+          </button>
+          <button class="workflow-item" type="button" (click)="irASeccion('postproduccion-proyecto')">
+            <span class="workflow-item__step">5</span>
+            <span class="workflow-item__text">
+              <strong>Postproducción</strong>
+              <small>Edición y entregas</small>
             </span>
           </button>
         </div>
@@ -492,9 +499,9 @@
               <h4>Inicio de edición</h4>
               <label class="form-field">
                 <span class="label">Fecha inicio</span>
-                <input class="form-control" type="date" [(ngModel)]="postFechaInicioEdicion" [disabled]="!!postFechaInicioEdicion">
+                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaInicioEdicion" [disabled]="!!postproduccion.fechaInicioEdicion">
               </label>
-              <button mat-stroked-button color="primary" type="button" (click)="iniciarEdicionPost()" [disabled]="!!postFechaInicioEdicion">
+              <button mat-stroked-button color="primary" type="button" (click)="iniciarEdicionPost()" [disabled]="guardandoPostproduccion || !!postproduccion.fechaInicioEdicion">
                 Iniciar edición
               </button>
             </div>
@@ -503,32 +510,23 @@
               <h4>Pre-entrega</h4>
               <label class="form-field">
                 <span class="label">Enlace pre-entrega</span>
-                <input class="form-control" type="text" [(ngModel)]="postEnlacePreEntrega" placeholder="https://...">
+                <input class="form-control" type="text" [(ngModel)]="postproduccion.preEntregaEnlace" placeholder="https://...">
               </label>
               <label class="form-field">
                 <span class="label">Tipo de pre-entrega</span>
-                <select class="form-control" [(ngModel)]="postTipoPreEntrega">
-                  <option value="">Selecciona</option>
-                  <option value="VIDEO">Video (trailer)</option>
-                  <option value="FOTOS">Fotos (selección)</option>
-                  <option value="AMBOS">Ambos</option>
+                <select class="form-control" [(ngModel)]="postproduccion.preEntregaTipo">
+                  <option [ngValue]="null">Selecciona</option>
+                  <option [ngValue]="'VIDEO'">Video (trailer)</option>
+                  <option [ngValue]="'FOTOS'">Fotos (selección)</option>
+                  <option [ngValue]="'AMBOS'">Ambos</option>
                 </select>
               </label>
               <label class="form-field">
                 <span class="label">Feedback / Selección del cliente</span>
-                <textarea class="form-control" rows="3" [(ngModel)]="postFeedbackCliente" placeholder="Aprobado, cambios solicitados o fotos elegidas..."></textarea>
+                <textarea class="form-control" rows="3" [(ngModel)]="postproduccion.preEntregaFeedback" placeholder="Aprobado, cambios solicitados o fotos elegidas..."></textarea>
               </label>
-              <label class="form-field">
-                <span class="label">Estado de pre-entrega</span>
-                <select class="form-control" [(ngModel)]="postEstadoPreEntrega">
-                  <option value="">Pendiente</option>
-                  <option value="PENDIENTE">Pendiente</option>
-                  <option value="APROBADO">Aprobado</option>
-                  <option value="CAMBIOS">Requiere cambios</option>
-                </select>
-              </label>
-              <div class="muted small">Fecha de envío: {{ postFechaPreEntrega || '—' }}</div>
-              <button mat-stroked-button type="button" (click)="enviarPreEntregaPost()" [disabled]="!postFechaInicioEdicion">
+              <div class="muted small">Fecha de envío: {{ postproduccion.preEntregaFecha || '—' }}</div>
+              <button mat-stroked-button type="button" (click)="enviarPreEntregaPost()" [disabled]="guardandoPostproduccion || !postproduccion.fechaInicioEdicion">
                 Enviar pre-entrega
               </button>
             </div>
@@ -537,9 +535,20 @@
               <h4>Cierre de edición</h4>
               <label class="form-field">
                 <span class="label">Fecha fin</span>
-                <input class="form-control" type="date" [(ngModel)]="postFechaFinEdicion">
+                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaFinEdicion">
               </label>
-              <button mat-stroked-button type="button" (click)="cerrarEdicionPost()">
+              <label class="form-field">
+                <span class="label">Ubicación de respaldo</span>
+                <input class="form-control" type="text" [(ngModel)]="postproduccion.respaldoUbicacion" placeholder="HDD 2026-A · Disco #3 · Carpeta PRO-000004">
+              </label>
+              <label class="form-field">
+                <span class="label">Notas de respaldo</span>
+                <textarea class="form-control" rows="2" [(ngModel)]="postproduccion.respaldoNotas" placeholder="Observaciones, claves, etc."></textarea>
+              </label>
+              <button mat-stroked-button type="button" (click)="guardarRespaldoPost()" [disabled]="guardandoPostproduccion">
+                Guardar ubicación
+              </button>
+              <button mat-stroked-button type="button" (click)="cerrarEdicionPost()" [disabled]="guardandoPostproduccion">
                 Cerrar edición
               </button>
             </div>
@@ -548,35 +557,41 @@
               <h4>Entrega final</h4>
               <label class="form-field">
                 <span class="label">Enlace final</span>
-                <input class="form-control" type="text" [(ngModel)]="postEnlaceFinal" placeholder="https://...">
+                <input class="form-control" type="text" [(ngModel)]="postproduccion.entregaFinalEnlace" placeholder="https://...">
               </label>
               <label class="form-field">
                 <span class="label">Fecha de entrega final</span>
-                <input class="form-control" type="date" [(ngModel)]="postFechaEntregaFinal">
+                <input class="form-control" type="date" [(ngModel)]="postproduccion.entregaFinalFecha">
               </label>
               <label class="form-field">
-                <span class="label">Vencimiento enlace (60 días)</span>
-                <input class="form-control" type="date" [(ngModel)]="postFechaVencimientoEnlace">
+                <span class="label">Entrega física requerida</span>
+                <select class="form-control" [(ngModel)]="postEntregaFisicaRequerida">
+                  <option [ngValue]="false">No</option>
+                  <option [ngValue]="true">Sí</option>
+                </select>
               </label>
+              @if (postEntregaFisicaRequerida) {
+                <label class="form-field">
+                  <span class="label">Tipo de entrega física</span>
+                  <input class="form-control" type="text" [(ngModel)]="postTipoEntregaFisica" placeholder="Impresiones, photobook, USB, etc.">
+                </label>
+                <label class="form-field">
+                  <span class="label">Fecha de entrega física</span>
+                  <input class="form-control" type="date" [(ngModel)]="postFechaEntregaFisica">
+                </label>
+                <label class="form-field">
+                  <span class="label">Responsable de entrega</span>
+                  <input class="form-control" type="text" [(ngModel)]="postResponsableEntregaFisica" placeholder="Nombre y apellido">
+                </label>
+                <label class="form-field">
+                  <span class="label">Observaciones</span>
+                  <textarea class="form-control" rows="2" [(ngModel)]="postObservacionesEntregaFisica" placeholder="Notas sobre la entrega física"></textarea>
+                </label>
+              }
               <div class="muted small">Entrega solo con pago completo.</div>
               <button mat-flat-button color="primary" type="button" (click)="marcarEntregaPost()"
-                [disabled]="!postFechaFinEdicion || !tienePagoCompletoMock()">
+                [disabled]="guardandoPostproduccion || !postproduccion.fechaFinEdicion || !tienePagoCompletoMock()">
                 Marcar entrega
-              </button>
-            </div>
-
-            <div class="postprod-card">
-              <h4>Respaldo físico</h4>
-              <label class="form-field">
-                <span class="label">Ubicación de respaldo</span>
-                <input class="form-control" type="text" [(ngModel)]="postUbicacionRespaldo" placeholder="HDD 2026-A · Disco #3 · Carpeta PRO-000004">
-              </label>
-              <label class="form-field">
-                <span class="label">Notas de respaldo</span>
-                <textarea class="form-control" rows="2" [(ngModel)]="postNotasRespaldo" placeholder="Observaciones, claves, etc."></textarea>
-              </label>
-              <button mat-stroked-button type="button" (click)="guardarRespaldoPost()">
-                Guardar ubicación
               </button>
             </div>
           </div>

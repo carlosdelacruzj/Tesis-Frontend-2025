@@ -18,6 +18,8 @@ import {
   ProyectoDetalleResponse,
   ProyectoDiaEstadoItem,
   ProyectoEstadoDevolucion,
+  ProyectoPostproduccion,
+  ProyectoPostproduccionPayload,
   ProyectoDevolucionEquiposPayload,
   ProyectoDevolucionEquipoItem,
   ServicioDia
@@ -119,19 +121,37 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   devolucionGruposAbiertos: Record<string, boolean> = {};
   devolucionDraft: Record<number, { estado: ProyectoEstadoDevolucion | ''; notas: string; fecha: string | null }> = {};
   guardandoDevolucion = false;
-  postFechaInicioEdicion: string | null = null;
-  postFechaFinEdicion: string | null = null;
-  postEnlacePreEntrega = '';
-  postEnlaceFinal = '';
-  postFechaPreEntrega: string | null = null;
-  postTipoPreEntrega: 'VIDEO' | 'FOTOS' | 'AMBOS' | '' = '';
-  postEstadoPreEntrega: 'PENDIENTE' | 'APROBADO' | 'CAMBIOS' | '' = '';
-  postFeedbackCliente = '';
-  postFechaEntregaFinal: string | null = null;
-  postFechaVencimientoEnlace: string | null = null;
-  postUbicacionRespaldo = '';
-  postNotasRespaldo = '';
+  postproduccion: ProyectoPostproduccion = {
+    fechaInicioEdicion: null,
+    fechaFinEdicion: null,
+    preEntregaEnlace: null,
+    preEntregaTipo: null,
+    preEntregaFeedback: null,
+    preEntregaFecha: null,
+    respaldoUbicacion: null,
+    respaldoNotas: null,
+    entregaFinalEnlace: null,
+    entregaFinalFecha: null
+  };
+  postproduccionOriginal: ProyectoPostproduccion = {
+    fechaInicioEdicion: null,
+    fechaFinEdicion: null,
+    preEntregaEnlace: null,
+    preEntregaTipo: null,
+    preEntregaFeedback: null,
+    preEntregaFecha: null,
+    respaldoUbicacion: null,
+    respaldoNotas: null,
+    entregaFinalEnlace: null,
+    entregaFinalFecha: null
+  };
+  guardandoPostproduccion = false;
   postEntregaMarcada = false;
+  postEntregaFisicaRequerida = false;
+  postTipoEntregaFisica = '';
+  postFechaEntregaFisica: string | null = null;
+  postResponsableEntregaFisica = '';
+  postObservacionesEntregaFisica = '';
   stepperOrientation: 'horizontal' | 'vertical' = 'horizontal';
   ultimoDropDestino: number | 'reserva' | null = null;
   private dropHighlightTimer: number | null = null;
@@ -1567,42 +1587,57 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   private syncPostproduccionFromProyecto(): void {
-    const proyecto = this.proyecto;
-    if (!proyecto) {
-      this.postFechaInicioEdicion = null;
-      this.postFechaFinEdicion = null;
-      this.postEnlacePreEntrega = '';
-      this.postEnlaceFinal = '';
-      this.postFechaPreEntrega = null;
-      this.postTipoPreEntrega = '';
-      this.postEstadoPreEntrega = '';
-      this.postFeedbackCliente = '';
-      this.postFechaEntregaFinal = null;
-      this.postFechaVencimientoEnlace = null;
-      this.postUbicacionRespaldo = '';
-      this.postNotasRespaldo = '';
+    const data = this.detalle?.postproduccion ?? null;
+    if (!data) {
+      const vacio: ProyectoPostproduccion = {
+        fechaInicioEdicion: null,
+        fechaFinEdicion: null,
+        preEntregaEnlace: null,
+        preEntregaTipo: null,
+        preEntregaFeedback: null,
+        preEntregaFecha: null,
+        respaldoUbicacion: null,
+        respaldoNotas: null,
+        entregaFinalEnlace: null,
+        entregaFinalFecha: null
+      };
+      this.postproduccion = { ...vacio };
+      this.postproduccionOriginal = { ...vacio };
       this.postEntregaMarcada = false;
-      return;
+    } else {
+      const actual: ProyectoPostproduccion = {
+        fechaInicioEdicion: data.fechaInicioEdicion ?? null,
+        fechaFinEdicion: data.fechaFinEdicion ?? null,
+        preEntregaEnlace: data.preEntregaEnlace ?? null,
+        preEntregaTipo: data.preEntregaTipo ?? null,
+        preEntregaFeedback: data.preEntregaFeedback ?? null,
+        preEntregaFecha: data.preEntregaFecha ?? null,
+        respaldoUbicacion: data.respaldoUbicacion ?? null,
+        respaldoNotas: data.respaldoNotas ?? null,
+        entregaFinalEnlace: data.entregaFinalEnlace ?? null,
+        entregaFinalFecha: data.entregaFinalFecha ?? null
+      };
+      this.postproduccion = { ...actual };
+      this.postproduccionOriginal = { ...actual };
+      this.postEntregaMarcada = !!data.entregaFinalFecha;
     }
-    this.postFechaInicioEdicion = proyecto.fechaInicioEdicion ?? null;
-    this.postFechaFinEdicion = proyecto.fechaFinEdicion ?? null;
-    this.postEnlaceFinal = proyecto.enlace ?? '';
+    this.postEntregaFisicaRequerida = false;
+    this.postTipoEntregaFisica = '';
+    this.postFechaEntregaFisica = null;
+    this.postResponsableEntregaFisica = '';
+    this.postObservacionesEntregaFisica = '';
   }
 
   iniciarEdicionPost(): void {
-    if (this.postFechaInicioEdicion) return;
-    this.postFechaInicioEdicion = new Date().toISOString().slice(0, 10);
-    void Swal.fire({
-      icon: 'success',
-      title: 'Edición iniciada',
-      text: `Inicio: ${this.postFechaInicioEdicion}`,
-      timer: 1400,
-      showConfirmButton: false
-    });
+    if (this.postproduccion.fechaInicioEdicion) return;
+    const fecha = new Date().toISOString().slice(0, 10);
+    this.postproduccion = { ...this.postproduccion, fechaInicioEdicion: fecha };
+    this.guardarPostproduccionCambios('Edición iniciada', `Inicio: ${fecha}`);
   }
 
   enviarPreEntregaPost(): void {
-    if (!this.postEnlacePreEntrega.trim()) {
+    const enlace = (this.postproduccion.preEntregaEnlace ?? '').trim();
+    if (!enlace) {
       void Swal.fire({
         icon: 'warning',
         title: 'Falta el enlace',
@@ -1610,7 +1645,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    if (!this.postTipoPreEntrega) {
+    if (!this.postproduccion.preEntregaTipo) {
       void Swal.fire({
         icon: 'warning',
         title: 'Selecciona el tipo',
@@ -1618,21 +1653,13 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    this.postFechaPreEntrega = new Date().toISOString().slice(0, 10);
-    if (!this.postEstadoPreEntrega) {
-      this.postEstadoPreEntrega = 'PENDIENTE';
-    }
-    void Swal.fire({
-      icon: 'success',
-      title: 'Pre-entrega enviada',
-      text: `Fecha: ${this.postFechaPreEntrega}`,
-      timer: 1400,
-      showConfirmButton: false
-    });
+    const fecha = new Date().toISOString().slice(0, 10);
+    this.postproduccion = { ...this.postproduccion, preEntregaFecha: fecha };
+    this.guardarPostproduccionCambios('Pre-entrega enviada', `Fecha: ${fecha}`);
   }
 
   cerrarEdicionPost(): void {
-    if (!this.postFechaInicioEdicion) {
+    if (!this.postproduccion.fechaInicioEdicion) {
       void Swal.fire({
         icon: 'warning',
         title: 'Inicia la edición',
@@ -1640,16 +1667,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    if (!this.postFechaFinEdicion) {
-      this.postFechaFinEdicion = new Date().toISOString().slice(0, 10);
+    let fechaFin = this.postproduccion.fechaFinEdicion;
+    if (!fechaFin) {
+      fechaFin = new Date().toISOString().slice(0, 10);
+      this.postproduccion = { ...this.postproduccion, fechaFinEdicion: fechaFin };
     }
-    void Swal.fire({
-      icon: 'success',
-      title: 'Edición cerrada',
-      text: `Fin: ${this.postFechaFinEdicion}`,
-      timer: 1400,
-      showConfirmButton: false
-    });
+    this.guardarPostproduccionCambios('Edición cerrada', `Fin: ${fechaFin}`);
   }
 
   tienePagoCompletoMock(): boolean {
@@ -1657,7 +1680,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   marcarEntregaPost(): void {
-    if (!this.postFechaFinEdicion) {
+    if (!this.postproduccion.fechaFinEdicion) {
       void Swal.fire({
         icon: 'warning',
         title: 'Edición pendiente',
@@ -1673,7 +1696,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    if (!this.postEnlaceFinal.trim()) {
+    const enlaceFinal = (this.postproduccion.entregaFinalEnlace ?? '').trim();
+    if (!enlaceFinal) {
       void Swal.fire({
         icon: 'warning',
         title: 'Falta el enlace final',
@@ -1681,26 +1705,29 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    if (!this.postFechaEntregaFinal) {
-      this.postFechaEntregaFinal = new Date().toISOString().slice(0, 10);
+    if (this.postEntregaFisicaRequerida && !this.postFechaEntregaFisica) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Entrega física pendiente',
+        text: 'Registra la fecha de entrega física.'
+      });
+      return;
     }
-    if (!this.postFechaVencimientoEnlace) {
-      const base = new Date(this.postFechaEntregaFinal);
-      base.setDate(base.getDate() + 60);
-      this.postFechaVencimientoEnlace = base.toISOString().slice(0, 10);
+    let fechaEntrega = this.postproduccion.entregaFinalFecha;
+    if (!fechaEntrega) {
+      fechaEntrega = new Date().toISOString().slice(0, 10);
+      this.postproduccion = { ...this.postproduccion, entregaFinalFecha: fechaEntrega };
     }
     this.postEntregaMarcada = true;
-    void Swal.fire({
-      icon: 'success',
-      title: 'Entrega marcada',
-      text: `Entrega: ${this.postFechaEntregaFinal ?? this.postFechaFinEdicion}`,
-      timer: 1400,
-      showConfirmButton: false
-    });
+    this.guardarPostproduccionCambios(
+      'Entrega marcada',
+      `Entrega: ${fechaEntrega ?? this.postproduccion.fechaFinEdicion ?? ''}`
+    );
   }
 
   guardarRespaldoPost(): void {
-    if (!this.postUbicacionRespaldo.trim()) {
+    const ubicacion = (this.postproduccion.respaldoUbicacion ?? '').trim();
+    if (!ubicacion) {
       void Swal.fire({
         icon: 'warning',
         title: 'Falta ubicación',
@@ -1708,13 +1735,63 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    void Swal.fire({
-      icon: 'success',
-      title: 'Ubicación guardada',
-      text: this.postUbicacionRespaldo,
-      timer: 1400,
-      showConfirmButton: false
-    });
+    this.guardarPostproduccionCambios('Ubicación guardada', ubicacion);
+  }
+
+  private getPostproduccionCambios(): ProyectoPostproduccionPayload {
+    const cambios: ProyectoPostproduccionPayload = {};
+    const actual = this.postproduccion;
+    const original = this.postproduccionOriginal;
+    if (actual.fechaInicioEdicion !== original.fechaInicioEdicion) cambios.fechaInicioEdicion = actual.fechaInicioEdicion;
+    if (actual.fechaFinEdicion !== original.fechaFinEdicion) cambios.fechaFinEdicion = actual.fechaFinEdicion;
+    if (actual.preEntregaEnlace !== original.preEntregaEnlace) cambios.preEntregaEnlace = actual.preEntregaEnlace;
+    if (actual.preEntregaTipo !== original.preEntregaTipo) cambios.preEntregaTipo = actual.preEntregaTipo;
+    if (actual.preEntregaFeedback !== original.preEntregaFeedback) cambios.preEntregaFeedback = actual.preEntregaFeedback;
+    if (actual.preEntregaFecha !== original.preEntregaFecha) cambios.preEntregaFecha = actual.preEntregaFecha;
+    if (actual.respaldoUbicacion !== original.respaldoUbicacion) cambios.respaldoUbicacion = actual.respaldoUbicacion;
+    if (actual.respaldoNotas !== original.respaldoNotas) cambios.respaldoNotas = actual.respaldoNotas;
+    if (actual.entregaFinalEnlace !== original.entregaFinalEnlace) cambios.entregaFinalEnlace = actual.entregaFinalEnlace;
+    if (actual.entregaFinalFecha !== original.entregaFinalFecha) cambios.entregaFinalFecha = actual.entregaFinalFecha;
+    return cambios;
+  }
+
+  private guardarPostproduccionCambios(titulo: string, texto?: string): void {
+    const proyectoId = this.proyecto?.proyectoId;
+    if (!proyectoId) return;
+    const cambios = this.getPostproduccionCambios();
+    if (!Object.keys(cambios).length) {
+      void Swal.fire({
+        icon: 'info',
+        title: 'Sin cambios',
+        text: 'No hay actualizaciones pendientes en postproducción.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+    this.guardandoPostproduccion = true;
+    this.proyectoService.actualizarPostproduccion(proyectoId, cambios)
+      .pipe(finalize(() => { this.guardandoPostproduccion = false; }))
+      .subscribe({
+        next: () => {
+          this.postproduccionOriginal = { ...this.postproduccion };
+          void Swal.fire({
+            icon: 'success',
+            title: titulo,
+            text: texto,
+            timer: 1400,
+            showConfirmButton: false
+          });
+        },
+        error: (err) => {
+          console.error('[postproduccion] guardar', err);
+          void Swal.fire({
+            icon: 'error',
+            title: 'No se pudo guardar',
+            text: 'Intenta nuevamente.',
+            confirmButtonText: 'Entendido'
+          });
+        }
+      });
   }
 
   private cargarDevolucionDraft(diaId: number): void {

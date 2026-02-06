@@ -97,8 +97,8 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
       this.modal = { ...this.modal, guardando: false };
       void Swal.fire({
         icon: 'info',
-        title: 'Creación automática',
-        text: 'Los proyectos se crean automáticamente desde el pedido.',
+        title: 'Creacion automatica',
+        text: 'Los proyectos se crean automaticamente desde el pedido.',
         confirmButtonText: 'Entendido'
       });
       return;
@@ -149,7 +149,7 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
   }
 
   getEstadoNombre(id: number | null | undefined): string {
-    if (id == null) return '—';
+    if (id == null) return '-';
     const found = this.estados.find(e => e.id === id);
     return found?.nombre ?? String(id);
   }
@@ -168,3 +168,4 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
       });
   }
 }
+

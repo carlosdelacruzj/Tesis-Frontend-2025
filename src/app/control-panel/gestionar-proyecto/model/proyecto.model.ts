@@ -5,13 +5,9 @@ export interface Proyecto {
   pedidoCodigo?: string | null;
   estadoId: number | null;
   estadoNombre: string | null;
-  fechaInicioEdicion: string | null;
-  fechaFinEdicion: string | null;
   responsableId: number | null;
   notas: string | null;
   enlace: string | null;
-  multimedia?: number | null;
-  edicion?: number | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -20,16 +16,14 @@ export interface ProyectoDetalle extends Proyecto {
   codigo?: string | null;
   pedidoCodigo?: string | null;
   responsableNombre?: string | null;
-  fechaInicioEdicion: string;
-  fechaFinEdicion: string;
   estadoId: number;
   estadoNombre: string;
   pedidoServicios?: PedidoServicio[];
   personalRequerido?: PersonalRequerido[];
   equiposRequeridos?: EquipoRequerido[];
-  responsableId: number;
-  notas: string;
-  enlace: string;
+  responsableId: number | null;
+  notas: string | null;
+  enlace: string | null;
 }
 
 export interface PedidoServicio {
@@ -114,12 +108,12 @@ export interface EquipoDia {
   estadoEquipoId: number;
   responsableId: number | null;
   responsableNombre: string | null;
-  notas: string;
+  notas: string | null;
   devuelto: number;
-  fechaDevolucion: string;
-  estadoDevolucion: string;
-  notasDevolucion: string;
-  usuarioDevolucion: number;
+  fechaDevolucion: string | null;
+  estadoDevolucion: string | null;
+  notasDevolucion: string | null;
+  usuarioDevolucion: number | null;
 }
 
 export type ProyectoEstadoDevolucion = 'DEVUELTO' | 'DANADO' | 'PERDIDO' | 'ROBADO';
@@ -185,6 +179,7 @@ export interface IncidenciaDia {
 
 export interface ProyectoDetalleResponse {
   proyecto: ProyectoDetalle;
+  postproduccion?: ProyectoPostproduccion | null;
   dias: ProyectoDia[];
   bloquesDia: BloqueDia[];
   serviciosDia: ServicioDia[];
@@ -193,6 +188,32 @@ export interface ProyectoDetalleResponse {
   requerimientosPersonalDia: RequerimientoPersonalDia[];
   requerimientosEquipoDia: RequerimientoEquipoDia[];
   incidenciasDia: IncidenciaDia[];
+}
+
+export interface ProyectoPostproduccion {
+  fechaInicioEdicion: string | null;
+  fechaFinEdicion: string | null;
+  preEntregaEnlace: string | null;
+  preEntregaTipo: string | null;
+  preEntregaFeedback: string | null;
+  preEntregaFecha: string | null;
+  respaldoUbicacion: string | null;
+  respaldoNotas: string | null;
+  entregaFinalEnlace: string | null;
+  entregaFinalFecha: string | null;
+}
+
+export interface ProyectoPostproduccionPayload {
+  fechaInicioEdicion?: string | null;
+  fechaFinEdicion?: string | null;
+  preEntregaEnlace?: string | null;
+  preEntregaTipo?: string | null;
+  preEntregaFeedback?: string | null;
+  preEntregaFecha?: string | null;
+  respaldoUbicacion?: string | null;
+  respaldoNotas?: string | null;
+  entregaFinalEnlace?: string | null;
+  entregaFinalFecha?: string | null;
 }
 
 export interface ProyectoAsignacionEmpleadoPayload {
