@@ -369,6 +369,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
         next: () => {
           dia.estadoDiaId = estadoDiaId;
           dia.estadoDiaNombre = this.getEstadoDiaNombre(estadoDiaId);
+          this.refrescarProyectoDetalle();
           void Swal.fire({
             icon: 'success',
             title: this.getToastEstadoDiaTitle(estadoNuevo),
@@ -743,6 +744,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
                             dia.estadoDiaNombre = this.getEstadoDiaNombre(estadoEnCursoId);
                           }
                           this.rebuildDiaCaches();
+                          this.refrescarProyectoDetalle();
                         },
                         error: err => {
                           console.error('[proyecto] estado dia auto en curso', err);
@@ -2678,6 +2680,23 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const dias = [...this.diasOrdenadosCache];
     if (!this.soloPendientes) return dias;
     return dias.filter(d => (d.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'pendiente');
+  }
+
+  private refrescarProyectoDetalle(): void {
+    const proyectoId = this.proyecto?.proyectoId;
+    if (!proyectoId) return;
+    this.proyectoService.getProyecto(proyectoId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: data => {
+          this.detalle = data;
+          this.proyecto = data?.proyecto ?? null;
+          this.rebuildDiaCaches();
+        },
+        error: err => {
+          console.error('[proyecto] refrescar detalle', err);
+        }
+      });
   }
 
   private updateStepperOrientation(): void {
