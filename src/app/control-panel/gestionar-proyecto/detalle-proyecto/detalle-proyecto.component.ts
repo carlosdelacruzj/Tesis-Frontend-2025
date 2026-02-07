@@ -1677,8 +1677,20 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   iniciarEdicionPost(): void {
-    if (this.postproduccion.fechaInicioEdicion) return;
-    const fecha = new Date().toISOString().slice(0, 10);
+    if (this.postproduccionOriginal.fechaInicioEdicion) return;
+    const hoy = new Date().toISOString().slice(0, 10);
+    const fechaMinima = this.fechaMinInicioEdicion;
+    const seleccionada = this.toIsoDateOnly(this.postproduccion.fechaInicioEdicion);
+    const base = seleccionada ?? hoy;
+    const fecha = fechaMinima && base < fechaMinima ? fechaMinima : base;
+    if (seleccionada && fechaMinima && seleccionada < fechaMinima) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Fecha inválida',
+        text: `La fecha de inicio no puede ser menor al último día de trabajo (${fechaMinima}).`
+      });
+      return;
+    }
     this.postproduccion = { ...this.postproduccion, fechaInicioEdicion: fecha };
     this.guardarPostproduccionCambios('Edición iniciada', `Inicio: ${fecha}`);
   }
@@ -1707,7 +1719,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   cerrarEdicionPost(): void {
-    if (!this.postproduccion.fechaInicioEdicion) {
+    const fechaInicio = this.toIsoDateOnly(this.postproduccion.fechaInicioEdicion);
+    if (!fechaInicio) {
       void Swal.fire({
         icon: 'warning',
         title: 'Inicia la edición',
@@ -1715,11 +1728,37 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    let fechaFin = this.postproduccion.fechaFinEdicion;
+    const fechaFin = this.toIsoDateOnly(this.postproduccion.fechaFinEdicion);
     if (!fechaFin) {
-      fechaFin = new Date().toISOString().slice(0, 10);
-      this.postproduccion = { ...this.postproduccion, fechaFinEdicion: fechaFin };
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Falta fecha fin',
+        text: 'Debes registrar la fecha de fin de edición.'
+      });
+      return;
     }
+    if (fechaFin <= fechaInicio) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Fecha inválida',
+        text: `La fecha de fin debe ser mayor a la fecha de inicio (${fechaInicio}).`
+      });
+      return;
+    }
+    const ubicacion = (this.postproduccion.respaldoUbicacion ?? '').trim();
+    if (!ubicacion) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Falta ubicación',
+        text: 'Ingresa la ubicación física del respaldo.'
+      });
+      return;
+    }
+    this.postproduccion = {
+      ...this.postproduccion,
+      fechaFinEdicion: fechaFin,
+      respaldoUbicacion: ubicacion
+    };
     this.guardarPostproduccionCambios('Edición cerrada', `Fin: ${fechaFin}`);
   }
 
@@ -1771,19 +1810,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       'Entrega marcada',
       `Entrega: ${fechaEntrega ?? this.postproduccion.fechaFinEdicion ?? ''}`
     );
-  }
-
-  guardarRespaldoPost(): void {
-    const ubicacion = (this.postproduccion.respaldoUbicacion ?? '').trim();
-    if (!ubicacion) {
-      void Swal.fire({
-        icon: 'warning',
-        title: 'Falta ubicación',
-        text: 'Ingresa la ubicación física del respaldo.'
-      });
-      return;
-    }
-    this.guardarPostproduccionCambios('Ubicación guardada', ubicacion);
   }
 
   private getPostproduccionCambios(): ProyectoPostproduccionPayload {
@@ -2682,6 +2708,15 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return dias.filter(d => (d.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'pendiente');
   }
 
+  get fechaMinInicioEdicion(): string | null {
+    const ultimaFechaTrabajo = this.diasOrdenadosCache[this.diasOrdenadosCache.length - 1]?.fecha;
+    return this.toIsoDateOnly(ultimaFechaTrabajo);
+  }
+
+  get fechaMinFinEdicion(): string | null {
+    return this.toIsoDateOnly(this.postproduccion.fechaInicioEdicion);
+  }
+
   private refrescarProyectoDetalle(): void {
     const proyectoId = this.proyecto?.proyectoId;
     if (!proyectoId) return;
@@ -2702,6 +2737,21 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private updateStepperOrientation(): void {
     if (typeof window === 'undefined') return;
     this.stepperOrientation = window.innerWidth < 900 ? 'vertical' : 'horizontal';
+  }
+
+  private toIsoDateOnly(value: string | Date | null | undefined): string | null {
+    if (!value) return null;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (match) return match[1];
+    }
+    const parsed = value instanceof Date ? value : new Date(String(value));
+    if (isNaN(parsed.getTime())) return null;
+    const yyyy = parsed.getUTCFullYear();
+    const mm = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(parsed.getUTCDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   private getDiaResumen(diaId: number): DiaResumen {

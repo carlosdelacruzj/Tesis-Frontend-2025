@@ -502,9 +502,9 @@
               <h4>Inicio de edición</h4>
               <label class="form-field">
                 <span class="label">Fecha inicio</span>
-                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaInicioEdicion" [disabled]="guardandoPostproduccion || !!postproduccion.fechaInicioEdicion">
+                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaInicioEdicion" [attr.min]="fechaMinInicioEdicion || null" [disabled]="guardandoPostproduccion || !!postproduccionOriginal.fechaInicioEdicion">
               </label>
-              <button mat-stroked-button color="primary" type="button" (click)="iniciarEdicionPost()" [disabled]="guardandoPostproduccion || !!postproduccion.fechaInicioEdicion">
+              <button mat-stroked-button color="primary" type="button" (click)="iniciarEdicionPost()" [disabled]="guardandoPostproduccion || !!postproduccionOriginal.fechaInicioEdicion">
                 Iniciar edición
               </button>
             </div>
@@ -538,7 +538,7 @@
               <h4>Cierre de edición</h4>
               <label class="form-field">
                 <span class="label">Fecha fin</span>
-                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaFinEdicion" [disabled]="guardandoPostproduccion">
+                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaFinEdicion" [attr.min]="fechaMinFinEdicion || null" [disabled]="guardandoPostproduccion">
               </label>
               <label class="form-field">
                 <span class="label">Ubicación de respaldo</span>
@@ -548,9 +548,6 @@
                 <span class="label">Notas de respaldo</span>
                 <textarea class="form-control" rows="2" [(ngModel)]="postproduccion.respaldoNotas" placeholder="Observaciones, claves, etc." [disabled]="guardandoPostproduccion"></textarea>
               </label>
-              <button mat-stroked-button type="button" (click)="guardarRespaldoPost()" [disabled]="guardandoPostproduccion">
-                Guardar ubicación
-              </button>
               <button mat-stroked-button type="button" (click)="cerrarEdicionPost()" [disabled]="guardandoPostproduccion">
                 Cerrar edición
               </button>
