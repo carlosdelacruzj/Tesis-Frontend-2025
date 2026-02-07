@@ -733,6 +733,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
                       .pipe(finalize(() => { this.estadoDiaLoading[targetDiaId] = false; }))
                       .subscribe({
                         next: () => {
+                          console.log('[trace][proyecto] auto estado dia -> en curso OK', {
+                            diaId: targetDiaId,
+                            estadoDiaId: estadoEnCursoId
+                          });
                           const dia = this.detalle?.dias?.find(d => d.diaId === targetDiaId);
                           if (dia) {
                             dia.estadoDiaId = estadoEnCursoId;
@@ -742,11 +746,53 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
                         },
                         error: err => {
                           console.error('[proyecto] estado dia auto en curso', err);
-                          Swal.fire({
-                            icon: 'error',
-                            title: 'No se pudo iniciar el día',
-                            text: 'Las asignaciones se guardaron, pero no se pudo cambiar a En curso.'
+                          console.log('[trace][proyecto] auto estado dia -> en curso ERROR', {
+                            diaId: targetDiaId,
+                            estadoDiaId: estadoEnCursoId,
+                            status: err?.status,
+                            statusText: err?.statusText,
+                            url: err?.url,
+                            error: err?.error
                           });
+                          if (!this.proyecto?.proyectoId) {
+                            void Swal.fire({
+                              icon: 'error',
+                              title: 'No se pudo iniciar el día',
+                              text: 'Las asignaciones se guardaron, pero no se pudo cambiar a En curso.'
+                            });
+                            return;
+                          }
+                          this.proyectoService.getProyecto(this.proyecto.proyectoId)
+                            .pipe(takeUntil(this.destroy$))
+                            .subscribe({
+                              next: refreshed => {
+                                this.detalle = refreshed;
+                                this.proyecto = refreshed?.proyecto ?? null;
+                                this.rebuildDiaCaches();
+                                const diaRefrescado = this.detalle?.dias?.find(d => d.diaId === targetDiaId);
+                                const estadoRefrescado = (diaRefrescado?.estadoDiaNombre ?? '').toString().trim().toLowerCase();
+                                console.log('[trace][proyecto] auto estado dia refresh tras error', {
+                                  diaId: targetDiaId,
+                                  estadoRefrescado: diaRefrescado?.estadoDiaNombre ?? null
+                                });
+                                if (estadoRefrescado === 'en curso') {
+                                  return;
+                                }
+                                void Swal.fire({
+                                  icon: 'error',
+                                  title: 'No se pudo iniciar el día',
+                                  text: 'Las asignaciones se guardaron, pero no se pudo cambiar a En curso.'
+                                });
+                              },
+                              error: refreshErr => {
+                                console.error('[proyecto] estado dia auto en curso refresh', refreshErr);
+                                void Swal.fire({
+                                  icon: 'error',
+                                  title: 'No se pudo iniciar el día',
+                                  text: 'Las asignaciones se guardaron, pero no se pudo confirmar el cambio a En curso.'
+                                });
+                              }
+                            });
                         }
                       });
                   }
