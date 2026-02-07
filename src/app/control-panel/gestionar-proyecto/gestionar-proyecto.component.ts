@@ -29,7 +29,7 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
     { key: 'estadoNombre', header: 'Estado', sortable: true, class: 'text-center', width: '110px' },
     { key: 'pago', header: 'Pago', sortable: true, class: 'text-center', width: '140px' },
     { key: 'pendientes', header: 'Pendientes', sortable: true, class: 'text-center', width: '110px' },
-    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, class: 'text-center', width: '110px' }
+    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, class: 'text-center', width: '90px' }
   ];
 
   proyectos: Proyecto[] = [];
@@ -37,6 +37,9 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
   loading = false;
   error: string | null = null;
   searchTerm = '';
+  estadoFilter = 'todos';
+  pagoFilter = 'todos';
+  pendientesFilter = 'todos';
 
   private readonly fb = inject(UntypedFormBuilder);
   private readonly proyectoService = inject(ProyectoService);
@@ -66,6 +69,86 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
   onSearchChange(term: string): void {
     this.searchTerm = term;
   }
+
+  onEstadoFilterChange(value: string): void {
+    this.estadoFilter = value;
+  }
+
+  onPagoFilterChange(value: string): void {
+    this.pagoFilter = value;
+  }
+
+  onPendientesFilterChange(value: string): void {
+    this.pendientesFilter = value;
+  }
+
+  get proyectosFiltrados(): Proyecto[] {
+    const term = (this.searchTerm || '').toLowerCase().trim();
+    const estado = this.estadoFilter;
+    const pago = this.pagoFilter;
+    const pendientes = this.pendientesFilter;
+    const list = (this.proyectos || []).filter((row) => {
+      if (estado !== 'todos' && (row.estadoNombre || '').toLowerCase() !== estado) return false;
+      if (pago !== 'todos' && (row.estadoPagoNombre || '').toLowerCase() !== pago) return false;
+      if (pendientes === 'con' && !row.tienePendientes) return false;
+      if (pendientes === 'sin' && row.tienePendientes) return false;
+
+      if (!term) return true;
+      const hay = [
+        row.proyectoNombre,
+        row.codigo,
+        row.pedidoCodigo,
+        row.estadoNombre,
+        row.estadoPagoNombre,
+        row.ubicacion,
+        row.lugar
+      ]
+        .filter(Boolean)
+        .map(v => String(v).toLowerCase());
+      return hay.some(v => v.includes(term));
+    });
+
+    return list.sort((a, b) => {
+      const da = this.toDateValue(a.eventoFecha) ?? this.toDateValue(a.postproduccion?.fechaInicioEdicion) ?? this.toDateValue(a.createdAt);
+      const db = this.toDateValue(b.eventoFecha) ?? this.toDateValue(b.postproduccion?.fechaInicioEdicion) ?? this.toDateValue(b.createdAt);
+      return da - db;
+    });
+  }
+
+  get totalProyectos(): number {
+    return this.proyectos.length;
+  }
+
+  get totalEnEjecucion(): number {
+    return this.proyectos.filter(p => (p.estadoNombre || '').toLowerCase() === 'en ejecucion').length;
+  }
+
+  get totalPlanificados(): number {
+    return this.proyectos.filter(p => (p.estadoNombre || '').toLowerCase() === 'planificado').length;
+  }
+
+  get totalEntregados(): number {
+    return this.proyectos.filter(p => (p.estadoNombre || '').toLowerCase() === 'entregado').length;
+  }
+
+  get totalPendientesPago(): number {
+    return this.proyectos.filter(p => (p.estadoPagoNombre || '').toLowerCase() !== 'pagado' && (p.saldoPendiente ?? 0) > 0).length;
+  }
+
+  get totalPendientesDevolucion(): number {
+    return this.proyectos.filter(p => (p.pendientesDevolucion ?? 0) > 0).length;
+  }
+
+  get estadosFiltro(): string[] {
+    const set = new Set(this.proyectos.map(p => (p.estadoNombre || '').toLowerCase()).filter(Boolean));
+    return Array.from(set);
+  }
+
+  get pagosFiltro(): string[] {
+    const set = new Set(this.proyectos.map(p => (p.estadoPagoNombre || '').toLowerCase()).filter(Boolean));
+    return Array.from(set);
+  }
+
 
   abrirEditar(row: Proyecto): void {
     this.modal = { open: true, guardando: false, titulo: 'Editar proyecto', editId: row.proyectoId };
@@ -148,6 +231,12 @@ export class GestionarProyectoComponent implements OnInit, OnDestroy {
           this.loading = false;
         }
       });
+  }
+
+  private toDateValue(value: string | null | undefined): number {
+    if (!value) return Number.MAX_SAFE_INTEGER;
+    const parsed = new Date(value.replace(' ', 'T')).getTime();
+    return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
   }
 
   getEstadoNombre(id: number | null | undefined): string {

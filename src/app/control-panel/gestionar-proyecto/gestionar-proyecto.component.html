@@ -8,6 +8,62 @@
     [showCreateButton]="false">
   </app-list-toolbar>
 
+  <div class="project-kpis">
+    <div class="kpi-card">
+      <div class="kpi-label">Total</div>
+      <div class="kpi-value">{{ totalProyectos }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">En ejecucion</div>
+      <div class="kpi-value">{{ totalEnEjecucion }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Planificados</div>
+      <div class="kpi-value">{{ totalPlanificados }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Entregados</div>
+      <div class="kpi-value">{{ totalEntregados }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Pendientes pago</div>
+      <div class="kpi-value">{{ totalPendientesPago }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Devoluciones</div>
+      <div class="kpi-value">{{ totalPendientesDevolucion }}</div>
+    </div>
+  </div>
+
+  <div class="project-filters row g-2">
+    <div class="col-12 col-md-3">
+      <label class="form-label">Estado</label>
+      <select class="form-select" [ngModel]="estadoFilter" (ngModelChange)="onEstadoFilterChange($event)">
+        <option value="todos">Todos</option>
+        @for (estado of estadosFiltro; track estado) {
+          <option [value]="estado">{{ estado | titlecase }}</option>
+        }
+      </select>
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label">Pago</label>
+      <select class="form-select" [ngModel]="pagoFilter" (ngModelChange)="onPagoFilterChange($event)">
+        <option value="todos">Todos</option>
+        @for (estado of pagosFiltro; track estado) {
+          <option [value]="estado">{{ estado | titlecase }}</option>
+        }
+      </select>
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label">Pendientes</label>
+      <select class="form-select" [ngModel]="pendientesFilter" (ngModelChange)="onPendientesFilterChange($event)">
+        <option value="todos">Todos</option>
+        <option value="con">Con pendientes</option>
+        <option value="sin">Sin pendientes</option>
+      </select>
+    </div>
+  </div>
+
   @if (error) {
     <div class="alert alert-danger" role="alert">{{ error }}</div>
   }
@@ -15,10 +71,10 @@
   @if (!loading) {
     <app-table-base
       [columns]="columns"
-      [data]="proyectos"
+      [data]="proyectosFiltrados"
       [showCreateButton]="false"
       [showSearch]="false"
-      [externalSearchTerm]="searchTerm"
+      [externalSearchTerm]="''"
       emptyText="Sin proyectos registrados">
 
       <ng-template appCell="proyectoNombre" let-row>
@@ -89,9 +145,6 @@
         <div class="d-flex justify-content-center gap-1">
           <button mat-icon-button color="primary" type="button" (click)="irADetalle(row)" matTooltip="Ver detalle">
             <mat-icon>open_in_new</mat-icon>
-          </button>
-          <button mat-icon-button color="primary" type="button" (click)="abrirEditar(row)" matTooltip="Editar proyecto">
-            <mat-icon>edit</mat-icon>
           </button>
         </div>
       </ng-template>
