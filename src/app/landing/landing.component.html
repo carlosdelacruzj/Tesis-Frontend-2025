@@ -468,7 +468,7 @@
         </div>
 
         <div class="quote__actions">
-          <button mat-raised-button color="primary" type="submit" [disabled]="isSubmitting">
+          <button mat-raised-button color="primary" type="submit" [disabled]="isSubmitting || !eventCatalogReady">
             {{ isSubmitting ? 'Enviando…' : 'Enviar solicitud' }}
           </button>
           @if (whatsAppLink) {
@@ -561,3 +561,4 @@
     </div>
   </div>
 }
+

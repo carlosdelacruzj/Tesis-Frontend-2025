@@ -55,14 +55,14 @@ interface FaqItem {
 }
 
 interface LandingEventOption {
-  id: number;
+  id: number | null;
   name: string;
 }
 
 const FALLBACK_EVENT_OPTIONS: LandingEventOption[] = [
-  { id: 1, name: 'Boda' },
-  { id: 2, name: 'Corporativo' },
-  { id: 3, name: 'Cumpleaños' }
+  { id: null, name: 'Boda' },
+  { id: null, name: 'Cumpleaños' },
+  { id: null, name: 'Corporativo' }
 ];
 
 @Component({
@@ -256,6 +256,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   eventOptions: LandingEventOption[] = FALLBACK_EVENT_OPTIONS;
+  eventCatalogReady = false;
   readonly minQuoteDate = this.addDays(this.startOfToday(), 1);
   readonly maxQuoteDate = this.addMonths(this.startOfToday(), 6);
 
@@ -620,6 +621,15 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     this.submissionSuccess = false;
     const currentEventSelection = this.quoteForm.get('tipoEvento')?.value ?? '';
     this.syncSelectedEventByName(currentEventSelection);
+    const selectedEventoId = this.quoteForm.get('eventoId')?.value;
+    const eventoId = selectedEventoId !== null && selectedEventoId !== undefined && selectedEventoId !== ''
+      ? Number(selectedEventoId)
+      : null;
+    if (!this.eventCatalogReady || !Number.isFinite(eventoId) || (eventoId ?? 0) <= 0) {
+      this.isSubmitting = false;
+      this.snackBar.open('No pudimos validar el tipo de evento. Recarga la página e inténtalo nuevamente.', 'Cerrar', { duration: 5000 });
+      return;
+    }
     const formValue = this.quoteForm.getRawValue();
     const payload = this.buildCotizacionPayload(formValue);
 
@@ -682,18 +692,20 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   // Retrieves event names for the select input
   private loadEventOptions(): void {
+    this.eventCatalogReady = false;
     this.cotizacionService.getEventos()
       .pipe(
         take(1),
         catchError(err => {
           console.error('[LandingComponent] No se pudieron cargar eventos', err);
-          return of(FALLBACK_EVENT_OPTIONS);
+          return of([]);
         }),
         takeUntil(this.destroy$)
       )
       .subscribe(events => {
         const normalized = this.normalizeEventOptions(events);
         this.eventOptions = normalized.length ? normalized : FALLBACK_EVENT_OPTIONS;
+        this.eventCatalogReady = normalized.length > 0;
         const currentEventName = this.quoteForm.get('tipoEvento')?.value ?? '';
         this.syncSelectedEventByName(currentEventName);
       });
@@ -894,11 +906,11 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       : null;
     const eventoIdFromControl = Number.isFinite(parsedEventoId) ? Number(parsedEventoId) : null;
     const matchById = eventoIdFromControl != null
-      ? this.eventOptions.find(option => option.id === eventoIdFromControl)
+      ? this.eventOptions.find(option => option.id != null && option.id === eventoIdFromControl)
       : null;
     const normalizedSelectedName = this.normalizeEventLabel(selectedName);
     const matchByName = this.eventOptions.find(option => this.normalizeEventLabel(option.name) === normalizedSelectedName);
-    const eventoId = matchById?.id ?? matchByName?.id ?? eventoIdFromControl;
+    const eventoId = matchById?.id ?? matchByName?.id ?? null;
     const tipoEvento = selectedName || matchById?.name || matchByName?.name || 'Evento';
 
     const lugar = String(value.departamento ?? '').trim();
@@ -948,7 +960,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       .map(item => {
         const record = (item as unknown) as Record<string, unknown>;
         const id = Number(record.PK_E_Cod ?? record.id ?? record.ID ?? record.pk);
-        const rawName = record.E_Nombre ?? record.name ?? null;
+        const rawName = record.E_Nombre ?? record.nombre ?? record.name ?? null;
         if (!rawName) {
           return null;
         }
@@ -956,8 +968,11 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         if (!name) {
           return null;
         }
+        if (!Number.isFinite(id) || id <= 0) {
+          return null;
+        }
         return {
-          id: Number.isFinite(id) ? id : Math.random(),
+          id,
           name
         } as LandingEventOption;
       })
@@ -1013,3 +1028,4 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
 }
+

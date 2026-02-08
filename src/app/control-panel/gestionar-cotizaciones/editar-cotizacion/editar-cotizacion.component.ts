@@ -1920,13 +1920,36 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return '';
   }
 
+  private normalizeEventLabel(value: unknown): string {
+    const text = String(value ?? '').trim().toLowerCase();
+    if (!text) {
+      return '';
+    }
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+  }
+
   private normalizeEventoCatalogo(evento: unknown): EventoCatalogo | null {
     const record = this.asRecord(evento);
-    const id = this.parseNumber(record['id']);
+    const id = this.parseNumber(
+      record['id']
+      ?? record['PK_E_Cod']
+      ?? record['idEvento']
+      ?? record['idTipoEvento']
+      ?? record['ID']
+    );
     if (id == null || id <= 0) {
       return null;
     }
-    const nombre = this.pickFirstString(record['nombre']) || 'Evento';
+    const nombre = this.pickFirstString(
+      record['nombre'],
+      record['E_Nombre'],
+      record['name'],
+      record['tipoEvento'],
+      record['evento']
+    ) || 'Evento';
     return { id, nombre, raw: record };
   }
 
@@ -1951,6 +1974,25 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         this.selectedEventoId = eventoId;
         this.selectedEventoNombre = this.getNombre(evento);
         this.selectedEventoIdValue = eventoId != null ? String(eventoId) : '';
+      } else if (this.selectedEventoNombre) {
+        const byName = this.eventos.find(e =>
+          this.normalizeEventLabel(e.nombre) === this.normalizeEventLabel(this.selectedEventoNombre)
+        );
+        if (byName) {
+          this.selectedEventoId = byName.id;
+          this.selectedEventoNombre = byName.nombre;
+          this.selectedEventoIdValue = String(byName.id);
+          this.pendingEventoId = byName.id;
+        }
+      }
+    } else if (!this.selectedEventoId && this.selectedEventoNombre && this.eventos.length) {
+      const byName = this.eventos.find(e =>
+        this.normalizeEventLabel(e.nombre) === this.normalizeEventLabel(this.selectedEventoNombre)
+      );
+      if (byName) {
+        this.selectedEventoId = byName.id;
+        this.selectedEventoNombre = byName.nombre;
+        this.selectedEventoIdValue = String(byName.id);
       }
     } else if (!this.selectedEventoId && this.eventos.length && !this.selectedEventoNombre) {
       this.selectedEventoId = null;
