@@ -61,6 +61,7 @@ span.mat-radio-outer-circle{
   display: flex;
   flex-direction: column;
   gap: 24px;
+  margin-top: 12px;
   padding-bottom: 32px;
 }
 /* Ensure Angular Material overlays appear above custom modals */

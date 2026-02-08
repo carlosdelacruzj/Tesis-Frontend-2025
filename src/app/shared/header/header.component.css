@@ -3,6 +3,15 @@
     height: 68px;
 }
 
+.dashboard-header {
+    padding-bottom: 0;
+}
+
+.dashboard-header .navbar {
+    border-bottom: 0;
+    box-shadow: none;
+}
+
 .pointer {
     cursor: pointer;
 }
