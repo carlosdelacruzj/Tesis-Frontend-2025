@@ -148,6 +148,96 @@ export interface ProyectoDevolucionEquipoParcialPayload {
   usuarioId?: number | null;
 }
 
+export interface ProyectoDevolucionAsyncStartResponse {
+  status: string;
+  jobId: string;
+  diaId: number;
+}
+
+export interface ProyectoDevolucionAsyncJobResult {
+  status: string;
+  diaId: number;
+  equiposActualizados: number;
+}
+
+export interface ProyectoDevolucionAsyncJobStatusResponse {
+  jobId: string;
+  estado: 'PENDIENTE' | 'PROCESANDO' | 'COMPLETADO' | 'ERROR';
+  diaId: number;
+  usuarioId: number | null;
+  intentos: number;
+  error: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  result: ProyectoDevolucionAsyncJobResult | null;
+}
+
+export interface ProyectoDevolucionPreviewRequest {
+  fechaBase?: string;
+  equipos?: ProyectoDevolucionPreviewEquipoRequestItem[];
+  equipoId?: number;
+  estadoDevolucion?: ProyectoEstadoDevolucion;
+  diaId?: number;
+}
+
+export interface ProyectoDevolucionPreviewEquipoRequestItem {
+  equipoId: number;
+  estadoDevolucion: ProyectoEstadoDevolucion;
+  diaId?: number;
+  fechaBase?: string;
+}
+
+export interface ProyectoDevolucionPreviewEquipo {
+  equipoId: number;
+  serie: string;
+  modeloId: number;
+  modeloNombre: string;
+  tipoEquipoId: number;
+  tipoEquipoNombre: string;
+}
+
+export interface ProyectoDevolucionPreviewDiaAfectado {
+  diaId: number;
+  fecha: string;
+  proyectoId: number;
+  proyectoNombre: string;
+}
+
+export interface ProyectoDevolucionPreviewProyectoAfectado {
+  proyectoId: number;
+  proyectoNombre: string;
+  diasAfectados: number;
+  cantidadDesasignaciones: number;
+}
+
+export interface ProyectoDevolucionPreviewSimulacion {
+  equipo: ProyectoDevolucionPreviewEquipo;
+  estadoDevolucion: ProyectoEstadoDevolucion;
+  estadoEquipoObjetivo: string;
+  fechaBase: string;
+  regla: string;
+  aplicaDesasignacion: boolean;
+  motivo: string;
+  cantidadDesasignaciones: number;
+  diasAfectados: ProyectoDevolucionPreviewDiaAfectado[];
+  proyectosAfectados: ProyectoDevolucionPreviewProyectoAfectado[];
+}
+
+export interface ProyectoDevolucionPreviewResponse {
+  status: string;
+  simulacion?: ProyectoDevolucionPreviewSimulacion;
+  simulaciones?: ProyectoDevolucionPreviewSimulacion[];
+  resumen?: ProyectoDevolucionPreviewResumen;
+}
+
+export interface ProyectoDevolucionPreviewResumen {
+  cantidadEquipos: number;
+  cantidadDesasignaciones: number;
+  proyectosAfectadosUnicos: number;
+  diasAfectadosUnicos: number;
+}
+
 export interface RequerimientoPersonalDia {
   diaId: number;
   fecha: string;

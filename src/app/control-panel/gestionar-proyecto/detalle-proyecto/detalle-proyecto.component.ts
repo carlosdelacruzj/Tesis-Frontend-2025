@@ -21,7 +21,9 @@ import {
   ProyectoPostproduccion,
   ProyectoPostproduccionPayload,
   ProyectoDevolucionEquiposPayload,
+  ProyectoDevolucionAsyncJobStatusResponse,
   ProyectoDevolucionEquipoItem,
+  ProyectoDevolucionPreviewResponse,
   ServicioDia
 } from '../model/proyecto.model';
 import { ProyectoService } from '../service/proyecto.service';
@@ -121,6 +123,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   devolucionGruposAbiertos: Record<string, boolean> = {};
   devolucionDraft: Record<number, { estado: ProyectoEstadoDevolucion | ''; notas: string; fecha: string | null }> = {};
   guardandoDevolucion = false;
+  private devolucionAsyncPollingTimer: number | null = null;
   postproduccion: ProyectoPostproduccion = {
     fechaInicioEdicion: null,
     fechaFinEdicion: null,
@@ -232,6 +235,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.devolucionAsyncPollingTimer !== null) {
+      clearTimeout(this.devolucionAsyncPollingTimer);
+      this.devolucionAsyncPollingTimer = null;
+    }
   }
 
   abrirModalAsignar(diaId?: number): void {
@@ -1575,7 +1582,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     }
     const selected = diaId ?? this.openDiaId ?? diasPendientes[0]?.diaId ?? null;
     if (!selected) return;
-    const targetDiaId = this.isDiaPendienteDevolucion(selected)
+    const targetDiaId = (this.isDiaPendienteDevolucion(selected) && this.isDiaFinalizado(selected))
       ? selected
       : (diasPendientes[0]?.diaId ?? null);
     if (!targetDiaId) return;
@@ -1691,11 +1698,32 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    this.postproduccion = { ...this.postproduccion, fechaInicioEdicion: fecha };
-    this.guardarPostproduccionCambios('Edición iniciada', `Inicio: ${fecha}`);
+    void Swal.fire({
+      icon: 'warning',
+      title: '¿Confirmar inicio de edición?',
+      text: `La fecha de inicio quedará registrada como ${this.formatFechaDisplay(fecha)} y luego no podrás editarla.`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, confirmar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.postproduccion = { ...this.postproduccion, fechaInicioEdicion: fecha };
+      this.guardarPostproduccionCambios('Edición iniciada', `Inicio: ${this.formatFechaDisplay(fecha)}`);
+    });
   }
 
   enviarPreEntregaPost(): void {
+    if (!this.puedeEditarPreEntregaPost) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Fase bloqueada',
+        text: this.postproduccion.preEntregaFecha
+          ? 'La pre-entrega ya fue enviada y no puede editarse.'
+          : 'Primero debes iniciar la edición.'
+      });
+      return;
+    }
     const enlace = (this.postproduccion.preEntregaEnlace ?? '').trim();
     if (!enlace) {
       void Swal.fire({
@@ -1714,11 +1742,32 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       return;
     }
     const fecha = new Date().toISOString().slice(0, 10);
-    this.postproduccion = { ...this.postproduccion, preEntregaFecha: fecha };
-    this.guardarPostproduccionCambios('Pre-entrega enviada', `Fecha: ${fecha}`);
+    void Swal.fire({
+      icon: 'warning',
+      title: '¿Confirmar envío de pre-entrega?',
+      text: `Se registrará como enviada el ${this.formatFechaDisplay(fecha)} y luego no podrás editarla.`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, enviar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.postproduccion = { ...this.postproduccion, preEntregaFecha: fecha };
+      this.guardarPostproduccionCambios('Pre-entrega enviada', `Fecha: ${this.formatFechaDisplay(fecha)}`);
+    });
   }
 
   cerrarEdicionPost(): void {
+    if (!this.puedeCerrarEdicionPost) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Fase bloqueada',
+        text: this.postproduccion.fechaFinEdicion
+          ? 'La edición ya está cerrada y sus datos no pueden editarse.'
+          : 'Debes enviar la pre-entrega antes de cerrar la edición.'
+      });
+      return;
+    }
     const fechaInicio = this.toIsoDateOnly(this.postproduccion.fechaInicioEdicion);
     if (!fechaInicio) {
       void Swal.fire({
@@ -1754,19 +1803,40 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    this.postproduccion = {
-      ...this.postproduccion,
-      fechaFinEdicion: fechaFin,
-      respaldoUbicacion: ubicacion
-    };
-    this.guardarPostproduccionCambios('Edición cerrada', `Fin: ${fechaFin}`);
+    void Swal.fire({
+      icon: 'warning',
+      title: '¿Confirmar cierre de edición?',
+      text: `Se cerrará con fecha ${this.formatFechaDisplay(fechaFin)} y ya no podrás editar pre-entrega ni cierre.`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cerrar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.postproduccion = {
+        ...this.postproduccion,
+        fechaFinEdicion: fechaFin,
+        respaldoUbicacion: ubicacion
+      };
+      this.guardarPostproduccionCambios('Edición cerrada', `Fin: ${this.formatFechaDisplay(fechaFin)}`);
+    });
   }
 
-  tienePagoCompletoMock(): boolean {
-    return false;
+  tienePagoCompleto(): boolean {
+    const estadoPagoId = this.proyecto?.estadoPagoId ?? null;
+    const estadoPagoNombre = (this.proyecto?.estadoPagoNombre ?? '').toString().trim().toLowerCase();
+    return estadoPagoId === 3 || estadoPagoNombre === 'pagado';
   }
 
   marcarEntregaPost(): void {
+    if (!this.puedeEditarEntregaFinalPost) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Fase bloqueada',
+        text: 'Debes cerrar la edición antes de registrar la entrega final.'
+      });
+      return;
+    }
     if (!this.postproduccion.fechaFinEdicion) {
       void Swal.fire({
         icon: 'warning',
@@ -1775,7 +1845,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    if (!this.tienePagoCompletoMock()) {
+    if (!this.tienePagoCompleto()) {
       void Swal.fire({
         icon: 'info',
         title: 'Pago incompleto',
@@ -1792,6 +1862,16 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
+    const fechaCierre = this.toIsoDateOnly(this.postproduccion.fechaFinEdicion);
+    const fechaEntregaIngresada = this.toIsoDateOnly(this.postproduccion.entregaFinalFecha);
+    if (fechaCierre && fechaEntregaIngresada && fechaEntregaIngresada < fechaCierre) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Fecha inválida',
+        text: `La fecha de entrega final no puede ser menor al cierre de edición (${this.formatFechaDisplay(fechaCierre)}).`
+      });
+      return;
+    }
     if (this.postEntregaFisicaRequerida && !this.postFechaEntregaFisica) {
       void Swal.fire({
         icon: 'warning',
@@ -1800,16 +1880,27 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    let fechaEntrega = this.postproduccion.entregaFinalFecha;
-    if (!fechaEntrega) {
-      fechaEntrega = new Date().toISOString().slice(0, 10);
-      this.postproduccion = { ...this.postproduccion, entregaFinalFecha: fechaEntrega };
-    }
-    this.postEntregaMarcada = true;
-    this.guardarPostproduccionCambios(
-      'Entrega marcada',
-      `Entrega: ${fechaEntrega ?? this.postproduccion.fechaFinEdicion ?? ''}`
-    );
+    const fechaEntregaCalculada = this.postproduccion.entregaFinalFecha ?? new Date().toISOString().slice(0, 10);
+    const fechaTexto = fechaEntregaCalculada ?? this.postproduccion.fechaFinEdicion ?? '';
+    void Swal.fire({
+      icon: 'warning',
+      title: '¿Confirmar entrega final?',
+      text: `Se registrará la entrega final con fecha ${this.formatFechaDisplay(fechaTexto)}.`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, confirmar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      if (!this.postproduccion.entregaFinalFecha) {
+        this.postproduccion = { ...this.postproduccion, entregaFinalFecha: fechaEntregaCalculada };
+      }
+      this.postEntregaMarcada = true;
+      this.guardarPostproduccionCambios(
+        'Entrega marcada',
+        `Entrega: ${this.formatFechaDisplay(fechaTexto)}`
+      );
+    });
   }
 
   private getPostproduccionCambios(): ProyectoPostproduccionPayload {
@@ -1848,6 +1939,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.postproduccionOriginal = { ...this.postproduccion };
+          this.refrescarProyectoDetalle();
           void Swal.fire({
             icon: 'success',
             title: titulo,
@@ -1866,6 +1958,22 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           });
         }
       });
+  }
+
+  get puedeEditarPreEntregaPost(): boolean {
+    return !!this.postproduccion.fechaInicioEdicion && !this.postproduccion.preEntregaFecha && !this.postproduccion.fechaFinEdicion;
+  }
+
+  get puedeCerrarEdicionPost(): boolean {
+    return !!this.postproduccion.fechaInicioEdicion && !!this.postproduccion.preEntregaFecha && !this.postproduccion.fechaFinEdicion;
+  }
+
+  get puedeEditarEntregaFinalPost(): boolean {
+    return !!this.postproduccion.fechaFinEdicion;
+  }
+
+  get fechaMinEntregaFinalPost(): string | null {
+    return this.toIsoDateOnly(this.postproduccion.fechaFinEdicion);
   }
 
   private cargarDevolucionDraft(diaId: number): void {
@@ -2118,7 +2226,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
           equipoId: eq.equipoId,
           devuelto,
           estadoDevolucion: estado || null,
-          notasDevolucion: draft?.notas ?? ''
+          notasDevolucion: (draft?.notas ?? '').trim()
         };
         if (draft?.fecha) {
           item.fechaDevolucion = draft.fecha;
@@ -2142,7 +2250,9 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return cambios.every(eq => {
       const draft = this.devolucionDraft[eq.equipoId];
       if (!draft?.estado) return false;
-      return validEstados.includes(draft.estado);
+      if (!validEstados.includes(draft.estado)) return false;
+      if (draft.estado === 'DEVUELTO') return true;
+      return !!(draft.notas ?? '').trim();
     });
   }
 
@@ -2150,53 +2260,345 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     if (!this.devolucionDiaId || !this.canGuardarDevoluciones()) return;
     const payload = this.buildDevolucionPayload();
     if (!payload.equipos.length) return;
-    void Swal.fire({
-      icon: 'warning',
-      title: '¿Confirmar devoluciones?',
-      text: 'Esta acción solo se puede registrar una vez. ¿Estás seguro de que no habrá más cambios?',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, registrar',
-      cancelButtonText: 'Cancelar',
-      reverseButtons: true
-    }).then(result => {
-      if (!result.isConfirmed) return;
-      this.guardandoDevolucion = true;
-      this.proyectoService.registrarDevolucionesDia(this.devolucionDiaId!, payload)
-        .pipe(finalize(() => { this.guardandoDevolucion = false; }))
-        .subscribe({
-          next: () => {
-            Swal.fire({
-              icon: 'success',
-              title: 'Devoluciones registradas',
-              timer: 1400,
-              showConfirmButton: false
+    const fechaDia = this.toIsoDateOnly(
+      (this.detalle?.dias ?? []).find(dia => dia.diaId === this.devolucionDiaId)?.fecha
+    ) ?? new Date().toISOString().slice(0, 10);
+    const equiposPreview = payload.equipos
+      .filter(item => !!item.estadoDevolucion && item.estadoDevolucion !== 'DEVUELTO')
+      .map(item => ({
+        equipoId: item.equipoId,
+        estadoDevolucion: item.estadoDevolucion!,
+        diaId: this.devolucionDiaId!
+      }));
+
+    if (!equiposPreview.length) {
+      const totalCambios = payload.equipos.length;
+      void Swal.fire({
+        icon: 'warning',
+        title: '¿Confirmar devoluciones?',
+        html: `
+          <div style="text-align:left;display:grid;gap:8px;">
+            <p>Se registrarán <strong>${totalCambios}</strong> equipo(s) como <strong>Devuelto</strong> para este día.</p>
+            <p>Esta acción solo se puede registrar una vez. ¿Deseas continuar?</p>
+          </div>
+        `,
+        width: '920px',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, registrar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+      }).then(result => {
+        if (!result.isConfirmed) return;
+        this.iniciarRegistroDevolucionesAsync(payload);
+      });
+      return;
+    }
+
+    const requestPreview = {
+      fechaBase: fechaDia,
+      equipos: equiposPreview.map(item => ({
+        equipoId: item.equipoId,
+        estadoDevolucion: item.estadoDevolucion,
+        diaId: item.diaId
+      }))
+    };
+
+    this.guardandoDevolucion = true;
+    this.proyectoService.previewDevolucionEquipos(requestPreview)
+      .pipe(finalize(() => { this.guardandoDevolucion = false; }))
+      .subscribe({
+        next: (resultadoPreview: ProyectoDevolucionPreviewResponse) => {
+          const simulaciones = resultadoPreview.simulaciones ?? (resultadoPreview.simulacion ? [resultadoPreview.simulacion] : []);
+          const proyectosMap = new Map<number, {
+            proyectoNombre: string;
+            dias: Set<string>;
+            equipos: Set<string>;
+            equiposPorDia: Map<string, Set<string>>;
+          }>();
+          const equiposPorTipo = new Map<string, typeof simulaciones>();
+          simulaciones.forEach(simulacion => {
+            const tipo = (simulacion.equipo.tipoEquipoNombre || 'Sin tipo').toString();
+            const items = equiposPorTipo.get(tipo) ?? [];
+            items.push(simulacion);
+            equiposPorTipo.set(tipo, items);
+          });
+          const equiposItemsHtml = Array.from(equiposPorTipo.entries()).map(([tipo, items]) => `
+            <div style="display:grid;gap:8px;">
+              <div style="font-size:12px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.02em;">
+                ${tipo} (${items.length})
+              </div>
+              ${items.map(simulacion => `
+                <div style="padding:12px;border:1px solid #dbe5f0;border-radius:10px;background:#ffffff;box-shadow:0 1px 1px rgba(15,23,42,0.03);display:grid;gap:6px;">
+                  <div style="font-size:13px;font-weight:700;color:#0f172a;">${simulacion.equipo.modeloNombre || 'Equipo'} (${simulacion.equipo.serie || '—'})</div>
+                  <div style="font-size:12px;color:#334155;">Estado devolución (día): <strong>${simulacion.estadoDevolucion === 'DEVUELTO' ? 'Devuelto' : simulacion.estadoDevolucion === 'DANADO' ? 'Dañado' : simulacion.estadoDevolucion === 'PERDIDO' ? 'Perdido' : simulacion.estadoDevolucion === 'ROBADO' ? 'Robado' : simulacion.estadoDevolucion}</strong></div>
+                  <div style="font-size:12px;color:#334155;">Estado real del equipo: <strong>${(simulacion.estadoEquipoObjetivo || '—').toString().replace('En Mantenimiento', 'En mantenimiento').replace('De baja', 'De baja').replace('Disponible', 'Disponible')}</strong></div>
+                </div>
+              `).join('')}
+            </div>
+          `).join('');
+
+          simulaciones.forEach(simulacion => {
+            const equipoLabel = `${simulacion.equipo.tipoEquipoNombre || 'Equipo'} · ${simulacion.equipo.modeloNombre || '—'} (${simulacion.equipo.serie || '—'})`;
+            simulacion.proyectosAfectados.forEach(proyecto => {
+              const actual = proyectosMap.get(proyecto.proyectoId) ?? {
+                proyectoNombre: proyecto.proyectoNombre,
+                dias: new Set<string>(),
+                equipos: new Set<string>(),
+                equiposPorDia: new Map<string, Set<string>>()
+              };
+              actual.equipos.add(equipoLabel);
+              proyectosMap.set(proyecto.proyectoId, actual);
             });
-            if (!this.proyecto?.proyectoId) return;
-            this.proyectoService.getProyecto(this.proyecto.proyectoId)
-              .subscribe({
-                next: data => {
-                  this.detalle = data;
-                  this.proyecto = data?.proyecto ?? null;
-                  this.rebuildDiaCaches();
-                  this.mostrarSoloExcepcionesDevolucion = false;
-                  this.cargarDevolucionDraft(this.devolucionDiaId!);
-                  this.cerrarModalDevolucion();
-                },
-                error: err => {
-                  console.error('[proyecto] devolucion refresh', err);
-                }
-              });
-          },
-          error: err => {
-            console.error('[proyecto] devoluciones', err);
-            Swal.fire({
+            simulacion.diasAfectados.forEach(dia => {
+              const actual = proyectosMap.get(dia.proyectoId) ?? {
+                proyectoNombre: dia.proyectoNombre,
+                dias: new Set<string>(),
+                equipos: new Set<string>(),
+                equiposPorDia: new Map<string, Set<string>>()
+              };
+              actual.dias.add(dia.fecha);
+              actual.equipos.add(equipoLabel);
+              const equiposDia = actual.equiposPorDia.get(dia.fecha) ?? new Set<string>();
+              equiposDia.add(equipoLabel);
+              actual.equiposPorDia.set(dia.fecha, equiposDia);
+              proyectosMap.set(dia.proyectoId, actual);
+            });
+          });
+
+          const proyectoActualId = this.proyecto?.proyectoId ?? null;
+          const proyectosOrdenados = Array.from(proyectosMap.entries())
+            .map(([proyectoId, data]) => {
+              const fechas = Array.from(data.dias).sort().map(fecha => this.formatFechaLarga(fecha));
+              const diasAfectados = fechas.length;
+              return {
+                proyectoId,
+                proyectoNombre: data.proyectoNombre,
+                fechas,
+                diasAfectados,
+                equipos: Array.from(data.equipos).sort(),
+                equiposPorDia: data.equiposPorDia,
+                esProyectoActual: proyectoActualId !== null && proyectoId === proyectoActualId
+              };
+            })
+            .sort((a, b) => {
+              if (a.esProyectoActual && !b.esProyectoActual) return -1;
+              if (!a.esProyectoActual && b.esProyectoActual) return 1;
+              return b.diasAfectados - a.diasAfectados;
+            });
+
+          const proyectosItemsHtml = proyectosOrdenados.map(data => {
+            const colorFondo = data.esProyectoActual ? '#fff7ed' : '#ffffff';
+            const colorBorde = data.esProyectoActual ? '#fb923c' : '#e5e7eb';
+            const badgeActual = data.esProyectoActual
+              ? '<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#fed7aa;color:#9a3412;font-size:11px;font-weight:700;">Este proyecto</span>'
+              : '';
+            const diasConEquiposHtml = data.equiposPorDia.size
+              ? Array.from(data.equiposPorDia.entries())
+                .sort((a, b) => a[0].localeCompare(b[0]))
+                .map(([rawFecha, equiposSet]) => {
+                const fechaLarga = this.formatFechaLarga(rawFecha);
+                const equiposDia = Array.from(equiposSet).sort();
+                return `
+                  <li style="margin:3px 0;">
+                    <strong>${fechaLarga}</strong><br/>
+                    <span style="font-size:12px;color:#334155;">${equiposDia.length ? equiposDia.join(' · ') : 'Sin detalle de equipos'}</span>
+                  </li>
+                `;
+              }).join('')
+              : '<li style="margin:2px 0;">No se detectaron días en agenda</li>';
+            return `
+              <div style="padding:12px;border:1px solid ${colorBorde};border-radius:10px;background:${colorFondo};box-shadow:0 1px 1px rgba(15,23,42,0.03);">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+                  <strong style="color:#0f172a;">${data.proyectoNombre}</strong>
+                  ${badgeActual}
+                </div>
+                <div style="display:grid;gap:6px;">
+                  <div style="font-size:12px;color:#334155;">Uso en <strong>${data.diasAfectados}</strong> día(s)</div>
+                  <div style="font-size:12px;color:#334155;">
+                    Fechas afectadas:
+                    <ul style="margin:4px 0 0 16px;padding:0;">
+                      ${diasConEquiposHtml}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          const resumenTotales = resultadoPreview.resumen;
+          const resumenHtml = `
+            <div style="text-align:left;display:grid;gap:12px;">
+              <div style="padding:12px;border:1px solid #dbe5f0;border-radius:12px;background:linear-gradient(180deg,#f8fbff 0%,#f3f7fc 100%);">
+                <div style="font-weight:700;color:#0f172a;margin-bottom:10px;">Resumen de impacto</div>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+                  <div style="padding:8px;border-radius:10px;background:#ffffff;border:1px solid #e2e8f0;">
+                    <div style="font-size:11px;color:#64748b;">Equipos evaluados</div>
+                    <div style="font-size:18px;font-weight:700;color:#0f172a;">${resumenTotales?.cantidadEquipos ?? simulaciones.length}</div>
+                  </div>
+                  <div style="padding:8px;border-radius:10px;background:#ffffff;border:1px solid #e2e8f0;">
+                    <div style="font-size:11px;color:#64748b;">Proyectos afectados</div>
+                    <div style="font-size:18px;font-weight:700;color:#0f172a;">${resumenTotales?.proyectosAfectadosUnicos ?? proyectosOrdenados.length}</div>
+                  </div>
+                  <div style="padding:8px;border-radius:10px;background:#ffffff;border:1px solid #e2e8f0;">
+                    <div style="font-size:11px;color:#64748b;">Días afectados</div>
+                    <div style="font-size:18px;font-weight:700;color:#0f172a;">${resumenTotales?.diasAfectadosUnicos ?? 0}</div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px;">
+                <div style="display:grid;gap:8px;align-content:start;">
+                  <div style="font-weight:700;color:#0f172a;">Equipo que estás actualizando</div>
+                  ${equiposItemsHtml || '<div style="color:#64748b;">Sin equipos para simular</div>'}
+                </div>
+                <div style="display:grid;gap:8px;align-content:start;">
+                  <div style="font-weight:700;color:#0f172a;">Proyectos que se verían afectados</div>
+                  ${proyectosItemsHtml || '<div style="color:#64748b;">No se detectó impacto en proyectos posteriores.</div>'}
+                </div>
+              </div>
+              <div style="font-size:12px;color:#475569;padding:8px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;">
+                Estos cambios pueden afectar la agenda futura. Revisa los proyectos marcados y confirma solo si estás seguro.
+              </div>
+            </div>
+          `;
+
+          void Swal.fire({
+            icon: 'warning',
+            title: '¿Confirmar devoluciones?',
+            html: resumenHtml,
+            width: '920px',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, registrar',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true
+          }).then(result => {
+            if (!result.isConfirmed) return;
+            this.iniciarRegistroDevolucionesAsync(payload);
+          });
+        },
+        error: err => {
+          console.error('[proyecto] devolucion preview', err);
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo simular',
+            text: err?.error?.message || 'No fue posible calcular el impacto de la devolución.'
+          });
+        }
+      });
+  }
+
+  private iniciarRegistroDevolucionesAsync(payload: ProyectoDevolucionEquiposPayload): void {
+    if (!this.devolucionDiaId) return;
+    if (this.devolucionAsyncPollingTimer !== null) {
+      clearTimeout(this.devolucionAsyncPollingTimer);
+      this.devolucionAsyncPollingTimer = null;
+    }
+    this.guardandoDevolucion = true;
+    void Swal.fire({
+      title: 'Procesando devolución…',
+      text: 'Estamos registrando los cambios. Esto puede tardar unos segundos.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    this.proyectoService.iniciarRegistroDevolucionesDiaAsync(this.devolucionDiaId, payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (inicio) => {
+          this.consultarEstadoRegistroDevolucionesAsync(inicio.jobId);
+        },
+        error: (err) => {
+          this.guardandoDevolucion = false;
+          if (this.devolucionAsyncPollingTimer !== null) {
+            clearTimeout(this.devolucionAsyncPollingTimer);
+            this.devolucionAsyncPollingTimer = null;
+          }
+          void Swal.close();
+          console.error('[proyecto] devoluciones async start', err);
+          void Swal.fire({
+            icon: 'error',
+            title: 'No se pudo iniciar',
+            text: err?.error?.message || 'No fue posible iniciar el registro de devoluciones.'
+          });
+        }
+      });
+  }
+
+  private consultarEstadoRegistroDevolucionesAsync(jobId: string): void {
+    this.proyectoService.consultarRegistroDevolucionesDiaAsync(jobId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (estadoJob: ProyectoDevolucionAsyncJobStatusResponse) => {
+          if (estadoJob.estado === 'PENDIENTE' || estadoJob.estado === 'PROCESANDO') {
+            if (this.devolucionAsyncPollingTimer !== null) {
+              clearTimeout(this.devolucionAsyncPollingTimer);
+            }
+            this.devolucionAsyncPollingTimer = window.setTimeout(() => {
+              this.consultarEstadoRegistroDevolucionesAsync(jobId);
+            }, 1500);
+            return;
+          }
+
+          if (this.devolucionAsyncPollingTimer !== null) {
+            clearTimeout(this.devolucionAsyncPollingTimer);
+            this.devolucionAsyncPollingTimer = null;
+          }
+
+          if (estadoJob.estado === 'ERROR') {
+            this.guardandoDevolucion = false;
+            void Swal.close();
+            void Swal.fire({
               icon: 'error',
               title: 'No se pudo registrar',
-              text: 'Revisa los datos e intenta nuevamente.'
+              text: estadoJob.error || 'El proceso de devoluciones terminó con error.'
             });
+            return;
           }
-        });
-    });
+
+          this.guardandoDevolucion = false;
+          void Swal.close();
+          void Swal.fire({
+            icon: 'success',
+            title: 'Devoluciones registradas',
+            timer: 1400,
+            showConfirmButton: false
+          });
+
+          if (!this.proyecto?.proyectoId) return;
+          this.proyectoService.getProyecto(this.proyecto.proyectoId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: data => {
+                this.detalle = data;
+                this.proyecto = data?.proyecto ?? null;
+                this.rebuildDiaCaches();
+                this.mostrarSoloExcepcionesDevolucion = false;
+                this.cargarDevolucionDraft(this.devolucionDiaId!);
+                this.cerrarModalDevolucion();
+              },
+              error: err => {
+                console.error('[proyecto] devolucion refresh', err);
+              }
+            });
+        },
+        error: (err) => {
+          this.guardandoDevolucion = false;
+          if (this.devolucionAsyncPollingTimer !== null) {
+            clearTimeout(this.devolucionAsyncPollingTimer);
+            this.devolucionAsyncPollingTimer = null;
+          }
+          void Swal.close();
+          console.error('[proyecto] devoluciones async poll', err);
+          void Swal.fire({
+            icon: 'error',
+            title: 'No se pudo consultar el proceso',
+            text: err?.error?.message || 'Intenta nuevamente en unos segundos.'
+          });
+        }
+      });
   }
 
   private getEmpleadoRolEnDia(empleadoId: number | null, diaId: number | null): string | null {
@@ -2284,13 +2686,28 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
   formatFechaLarga(value: string | Date | null | undefined): string {
     if (!value) return '—';
-    const parsed = value instanceof Date ? value : new Date(String(value));
+    let parsed: Date;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const yyyy = Number(match[1]);
+        const mm = Number(match[2]);
+        const dd = Number(match[3]);
+        parsed = new Date(Date.UTC(yyyy, mm - 1, dd));
+      } else {
+        parsed = new Date(trimmed);
+      }
+    } else {
+      parsed = new Date(value);
+    }
     if (isNaN(parsed.getTime())) return '—';
     return new Intl.DateTimeFormat('es-PE', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'UTC'
     }).format(parsed);
   }
 

@@ -90,7 +90,7 @@
 
       <ng-template appCell="evento" let-row>
         <div class="d-flex flex-column">
-          <span>{{ row.eventoFecha ? (row.eventoFecha | date:'yyyy-MM-dd') : '-' }}</span>
+          <span>{{ formatCalendarDate(row.eventoFecha) }}</span>
           <small class="text-muted">{{ row.ubicacion || row.lugar || '-' }}</small>
           @if (row.diasParaEvento != null) {
             <small class="text-muted">En {{ row.diasParaEvento }} dias</small>
@@ -101,8 +101,8 @@
       <ng-template appCell="postproduccion" let-row>
         @if (row.postproduccion?.fechaInicioEdicion || row.postproduccion?.fechaFinEdicion) {
           <div class="d-flex flex-column">
-            <span>{{ row.postproduccion?.fechaInicioEdicion || '-' }}</span>
-            <small class="text-muted">Hasta {{ row.postproduccion?.fechaFinEdicion || '-' }}</small>
+            <span>{{ formatCalendarDate(row.postproduccion?.fechaInicioEdicion || null) }}</span>
+            <small class="text-muted">Hasta {{ formatCalendarDate(row.postproduccion?.fechaFinEdicion || null) }}</small>
           </div>
         } @else {
           <div class="text-muted">-</div>
@@ -115,6 +115,10 @@
           [mapaColores]="{
             'planificado': 'info',
             'en ejecucion': 'warning',
+            'en ejecución': 'warning',
+            'en postproduccion': 'primary',
+            'en postproducción': 'primary',
+            'listo para entrega': 'success-light',
             'entregado': 'success-light',
             'cerrado': 'success'
           }"

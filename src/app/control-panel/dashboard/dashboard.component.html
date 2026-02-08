@@ -1,170 +1,352 @@
 <div class="dashboard-content">
-  <div class="dashboard">
-  <header class="dashboard-header">
-    <div>
-      <p class="dashboard-header__eyebrow">{{ dashboardMeta.studioName }}</p>
-      <h1>Panel operativo</h1>
-      <p class="dashboard-header__description">
-        Resumen del desempeño comercial y estado de producción de experiencias audiovisuales.
-      </p>
-    </div>
-    <div class="dashboard-header__meta">
-      <span class="dashboard-header__week">{{ dashboardMeta.weekRange }}</span>
-      <span class="dashboard-header__update">{{ dashboardMeta.lastUpdate }}</span>
-      <button class="btn btn-dark dashboard-header__cta" type="button"
-        routerLink="/home/gestionar-cotizaciones/registrar">
-        Nueva cotización
-      </button>
-    </div>
-  </header>
+  <div class="ops-dashboard">
+    <header class="ops-header">
+      <div>
+        <p class="ops-header__eyebrow">Operaciones</p>
+        <h1>Dashboard operativo</h1>
+        <p class="ops-header__description">
+          Vista unica para decidir rapido en Cotizacion -> Pedido -> Proyecto.
+        </p>
+      </div>
+      <div class="ops-header__meta">
+        <div class="ops-header__meta-item">
+          <span>Resumen</span>
+          <strong>{{ formatDateTime(resumen?.generatedAt || alertas?.generatedAt || null) }}</strong>
+        </div>
+        <div class="ops-header__meta-item">
+          <span>Analitico</span>
+          <strong>{{ formatDateTime(kpis?.generatedAt || null) }}</strong>
+        </div>
+        <button type="button" class="btn btn-light btn-sm ops-refresh" (click)="refrescarTodo()">
+          Refrescar
+        </button>
+      </div>
+    </header>
 
-  <section class="summary-grid">
-    @for (card of summaryCards; track $index) {
-      <article class="summary-card" [ngClass]="card.accent">
-        <div class="summary-card__top">
-          <span class="summary-card__label">{{ card.title }}</span>
-          <span class="summary-card__chip">{{ card.period }}</span>
-        </div>
-        <div class="summary-card__value">{{ card.value }}</div>
-        <div class="summary-card__trend" [ngClass]="{
-            'is-up': card.trend === 'up',
-            'is-down': card.trend === 'down',
-            'is-flat': card.trend === 'flat'
-          }">
-          <span class="summary-card__trend-value">{{ card.change }}</span>
-          <span class="summary-card__trend-caption">{{ card.subtitle }}</span>
-        </div>
-      </article>
+    <section class="ops-filters card">
+      <div class="ops-filters__title">
+        <h2>Rango de agenda y capacidad</h2>
+        <p>Usa el mismo rango para calendario operativo y riesgo de carga diaria.</p>
+      </div>
+      <div class="ops-filters__controls">
+        <label>
+          <span>Desde</span>
+          <input type="date" class="form-control" [(ngModel)]="fromDate">
+        </label>
+        <label>
+          <span>Hasta</span>
+          <input type="date" class="form-control" [(ngModel)]="toDate">
+        </label>
+        <button type="button" class="btn btn-primary" (click)="aplicarRango()">Aplicar</button>
+      </div>
+      @if (errorAgendaCapacidad) {
+        <p class="error-text">{{ errorAgendaCapacidad }}</p>
+      }
+    </section>
+
+    @if (cargandoLigero && !resumen) {
+      <section class="card loading-card">Cargando resumen operativo...</section>
+    } @else if (resumen) {
+      <section class="kpi-grid">
+        <article class="kpi-card kpi-card--neutral">
+          <p class="kpi-card__label">Cotizaciones</p>
+          <p class="kpi-card__value">{{ resumen.resumen.embudoCore.cotizacionesTotal }}</p>
+          <p class="kpi-card__meta">Con pedido: {{ resumen.resumen.embudoCore.cotizacionesConPedido }}</p>
+        </article>
+        <article class="kpi-card kpi-card--neutral">
+          <p class="kpi-card__label">Pedidos</p>
+          <p class="kpi-card__value">{{ resumen.resumen.embudoCore.pedidosTotal }}</p>
+          <p class="kpi-card__meta">Con proyecto: {{ resumen.resumen.embudoCore.pedidosConProyecto }}</p>
+        </article>
+        <article class="kpi-card kpi-card--neutral">
+          <p class="kpi-card__label">Proyectos</p>
+          <p class="kpi-card__value">{{ resumen.resumen.embudoCore.proyectosTotal }}</p>
+          <p class="kpi-card__meta">Finalizados: {{ resumen.resumen.embudoCore.cotizacionesConProyectoFinal }}</p>
+        </article>
+        <article class="kpi-card kpi-card--accent">
+          <p class="kpi-card__label">Conversion Cotizacion -> Pedido</p>
+          <p class="kpi-card__value">{{ resumen.resumen.embudoCore.conversiones.cotizacionAPedidoPct | number:'1.0-2' }}%</p>
+          <p class="kpi-card__meta">Pedido -> Proyecto: {{ resumen.resumen.embudoCore.conversiones.pedidoAProyectoPct | number:'1.0-2' }}%</p>
+        </article>
+        <article class="kpi-card kpi-card--risk">
+          <p class="kpi-card__label">Equipos no devueltos</p>
+          <p class="kpi-card__value">{{ resumen.resumen.alertasResumen.equiposNoDevueltos }}</p>
+          <p class="kpi-card__meta">Dias suspendidos: {{ resumen.resumen.alertasResumen.diasSuspendidosPorReprogramar }}</p>
+        </article>
+        <article class="kpi-card kpi-card--ok">
+          <p class="kpi-card__label">Listo sin link final</p>
+          <p class="kpi-card__value">{{ resumen.resumen.alertasResumen.proyectoListoSinLinkFinal }}</p>
+          <p class="kpi-card__meta">Accion requerida del equipo de entrega</p>
+        </article>
+      </section>
     }
-  </section>
 
-  <div class="content-grid">
-    <div class="content-main">
-      <section class="panel">
-        <div class="panel__header">
-          <h2>Eventos en producción</h2>
-          <a class="btn btn-link panel__action" routerLink="agenda-operativa">Ver agenda completa</a>
-        </div>
-        <div class="table-responsive">
-          <table class="table align-middle">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Evento</th>
-                <th class="d-none d-md-table-cell">Ubicación</th>
-                <th class="d-none d-lg-table-cell">Líder de crew</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (event of upcomingEvents; track $index) {
-                <tr>
-                  <td class="table-date">{{ event.dateLabel }}</td>
-                  <td>
-                    <div class="table-client">{{ event.title }}</div>
-                    <div class="table-tags">
-                      <span class="tag">{{ event.type }}</span>
-                      <span class="table-meta d-lg-none">{{ event.crewLead }}</span>
-                    </div>
-                    <small class="text-muted d-md-none">{{ event.location }}</small>
-                  </td>
-                  <td class="d-none d-md-table-cell">{{ event.location }}</td>
-                  <td class="d-none d-lg-table-cell">{{ event.crewLead }}</td>
-                  <td>
-                    <span class="status-badge" [ngClass]="event.statusClass">{{ event.status }}</span>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel__header">
-          <h2>Entregables prioritarios</h2>
-          <button class="btn btn-outline-secondary btn-sm" type="button">Ver checklist completo</button>
-        </div>
-        <ul class="deliverables">
-          @for (deliverable of deliverables; track $index) {
-            <li class="deliverable">
-              <div>
-                <h3>{{ deliverable.title }}</h3>
-                <span class="deliverable__client">{{ deliverable.client }}</span>
+    <section class="main-grid">
+      <div class="main-column">
+        <section class="card">
+          <div class="card__header">
+            <h2>Fases core por estado</h2>
+          </div>
+          @if (resumen) {
+            <div class="state-columns">
+              <div class="state-column">
+                <div class="state-column__head">
+                  <h3>Cotizaciones</h3>
+                  <span>{{ getEstadoListaTotal(resumen.resumen.fasesCore.cotizacionesPorEstado) }}</span>
+                </div>
+                @for (item of resumen.resumen.fasesCore.cotizacionesPorEstado; track item.id) {
+                  <div class="state-row">
+                    <span>{{ item.nombre }}</span>
+                    <strong>{{ item.total }}</strong>
+                  </div>
+                } @empty {
+                  <p class="empty-text">Sin datos</p>
+                }
               </div>
-              <div class="deliverable__meta">
-                <span class="deliverable__status">{{ deliverable.status }}</span>
-                <span class="deliverable__owner">{{ deliverable.owner }}</span>
-                <span class="deliverable__due">Entrega {{ deliverable.due }}</span>
+              <div class="state-column">
+                <div class="state-column__head">
+                  <h3>Pedidos</h3>
+                  <span>{{ getEstadoListaTotal(resumen.resumen.fasesCore.pedidosPorEstado) }}</span>
+                </div>
+                @for (item of resumen.resumen.fasesCore.pedidosPorEstado; track item.id) {
+                  <div class="state-row">
+                    <span>{{ item.nombre }}</span>
+                    <strong>{{ item.total }}</strong>
+                  </div>
+                } @empty {
+                  <p class="empty-text">Sin datos</p>
+                }
               </div>
-            </li>
-          }
-        </ul>
-      </section>
-    </div>
-
-    <aside class="content-sidebar">
-      <section class="panel">
-        <div class="panel__header">
-          <h2>Resumen agenda de hoy</h2>
-          <a routerLink="agenda-operativa" class="btn btn-outline-primary btn-sm">Abrir agenda</a>
-        </div>
-        <div class="agenda-snapshot">
-          @for (item of agendaHighlights; track $index) {
-            <div class="agenda-snapshot__item" [ngClass]="'agenda--' + item.theme">
-              <div class="agenda-snapshot__icon">
-                <i class="material-icons">{{ item.icon }}</i>
-              </div>
-              <div>
-                <p class="agenda-snapshot__label">{{ item.label }}</p>
-                <p class="agenda-snapshot__value">{{ item.value }}</p>
-                <p class="agenda-snapshot__detail">{{ item.detail }}</p>
+              <div class="state-column">
+                <div class="state-column__head">
+                  <h3>Proyectos</h3>
+                  <span>{{ getEstadoListaTotal(resumen.resumen.fasesCore.proyectosPorEstado) }}</span>
+                </div>
+                @for (item of resumen.resumen.fasesCore.proyectosPorEstado; track item.id) {
+                  <div class="state-row">
+                    <span>{{ item.nombre }}</span>
+                    <strong>{{ item.total }}</strong>
+                  </div>
+                } @empty {
+                  <p class="empty-text">Sin datos</p>
+                }
               </div>
             </div>
+          } @else {
+            <p class="empty-text">Sin datos para fases core.</p>
           }
-        </div>
-      </section>
+        </section>
 
-      <section class="panel">
-        <div class="panel__header">
-          <h2>Utilización de equipos</h2>
-        </div>
-        <ul class="equipment-list">
-          @for (equipment of equipmentUtilization; track $index) {
-            <li>
-              <div class="equipment-list__header">
-                <h3>{{ equipment.label }}</h3>
-                <span class="equipment-list__availability">{{ equipment.availability }}</span>
-              </div>
-              <span class="equipment-list__detail">{{ equipment.detail }}</span>
-              <div class="progress progress--thin">
-                <div class="progress-bar" [style.width.%]="equipment.utilization"></div>
-              </div>
-              <span class="equipment-list__utilization">{{ equipment.utilization }}% en uso</span>
-            </li>
-          }
-        </ul>
-      </section>
+        <section class="card">
+          <div class="card__header">
+            <h2>Agenda operativa</h2>
+            <p>{{ agenda?.range?.from ? formatFechaCorta(agenda?.range?.from) : '-' }} al {{ agenda?.range?.to ? formatFechaCorta(agenda?.range?.to) : '-' }}</p>
+          </div>
+          @if (cargandoAgendaCapacidad && !agenda) {
+            <p class="empty-text">Cargando agenda...</p>
+          } @else if (agenda) {
+            <div class="agenda-summary-grid">
+              @for (row of agenda.resumenPorFecha; track row.fecha) {
+                <article class="agenda-day-summary">
+                  <p class="agenda-day-summary__date">{{ formatFechaLarga(row.fecha) }}</p>
+                  <div>
+                    <span>Proyecto-dias: <strong>{{ row.totalProyectoDias }}</strong></span>
+                    <span>Proyectos unicos: <strong>{{ row.totalProyectosUnicos }}</strong></span>
+                    <span>Eventos de pedido: <strong>{{ row.totalPedidosEventos }}</strong></span>
+                  </div>
+                </article>
+              } @empty {
+                <p class="empty-text">No hay movimiento en el rango seleccionado.</p>
+              }
+            </div>
 
-      <section class="panel">
-        <div class="panel__header">
-          <h2>Canales de captación</h2>
-        </div>
-        <ul class="sales-sources">
-          @for (source of salesSources; track $index) {
-            <li [ngClass]="{
-                'is-up': source.trend === 'up',
-                'is-down': source.trend === 'down'
-              }">
-              <div class="sales-sources__channel">{{ source.channel }}</div>
-              <div class="sales-sources__meta">
-                <span class="sales-sources__value">{{ source.contribution }}</span>
-                <span class="sales-sources__note">{{ source.note }}</span>
-              </div>
-            </li>
+            <div class="list-block">
+              <h3>Proyecto-dias programados</h3>
+              @for (item of agenda.agenda.proyectoDias; track item.diaId) {
+                <article class="agenda-item">
+                  <div class="agenda-item__top">
+                    <div>
+                      <p class="agenda-item__project">{{ item.proyecto }}</p>
+                      <p class="agenda-item__meta">{{ formatFechaLarga(item.fecha) }} | {{ item.estadoDia }} | {{ item.estadoProyecto }}</p>
+                    </div>
+                    <a class="btn btn-sm btn-outline-primary" [routerLink]="['/home/gestionar-proyecto', item.proyectoId]">Abrir</a>
+                  </div>
+                  <div class="agenda-item__metrics">
+                    <span>Bloques: {{ item.totalBloques }}</span>
+                    <span>Personal: {{ item.totalEmpleados }}</span>
+                    <span>Equipos: {{ item.totalEquipos }}</span>
+                    <span class="metric-pending">Pendientes devolucion: {{ item.totalEquiposPendientes }}</span>
+                  </div>
+                </article>
+              } @empty {
+                <p class="empty-text">No hay proyecto-dias en el rango.</p>
+              }
+            </div>
           }
-        </ul>
-      </section>
-    </aside>
+        </section>
+
+        <section class="card">
+          <div class="card__header">
+            <h2>Capacidad diaria</h2>
+            @if (capacidad) {
+              <p>Staff base: {{ capacidad.capacidadBase.totalStaffActivo }} | Equipos base: {{ capacidad.capacidadBase.totalEquipoDisponible }}</p>
+            }
+          </div>
+          @if (cargandoAgendaCapacidad && !capacidad) {
+            <p class="empty-text">Cargando capacidad...</p>
+          } @else if (capacidad) {
+            <div class="capacity-kpis">
+              <div>
+                <span>Dias evaluados</span>
+                <strong>{{ capacidad.resumen.diasEvaluados }}</strong>
+              </div>
+              <div>
+                <span>Riesgo staff >= 80%</span>
+                <strong>{{ capacidad.resumen.diasRiesgoStaff80 }}</strong>
+              </div>
+              <div>
+                <span>Riesgo equipo >= 80%</span>
+                <strong>{{ capacidad.resumen.diasRiesgoEquipo80 }}</strong>
+              </div>
+            </div>
+            <div class="capacity-list">
+              @for (day of capacidad.capacidadPorDia; track day.fecha) {
+                <article class="capacity-item">
+                  <h3>{{ formatFechaLarga(day.fecha) }}</h3>
+                  <div class="capacity-row">
+                    <div class="capacity-row__label">
+                      <span>Staff</span>
+                      <strong>{{ day.staff.saturacionPct | number:'1.0-2' }}%</strong>
+                    </div>
+                    <div class="capacity-bar">
+                      <div class="capacity-bar__fill"
+                        [ngClass]="getSaturacionClass(day.staff.saturacionPct)"
+                        [style.width.%]="day.staff.saturacionPct"></div>
+                    </div>
+                    <p>Usado: {{ day.staff.usado }} | Libre: {{ day.staff.libre }} | Asignaciones: {{ day.staff.asignaciones }}</p>
+                  </div>
+                  <div class="capacity-row">
+                    <div class="capacity-row__label">
+                      <span>Equipos</span>
+                      <strong>{{ day.equipo.saturacionPct | number:'1.0-2' }}%</strong>
+                    </div>
+                    <div class="capacity-bar">
+                      <div class="capacity-bar__fill"
+                        [ngClass]="getSaturacionClass(day.equipo.saturacionPct)"
+                        [style.width.%]="day.equipo.saturacionPct"></div>
+                    </div>
+                    <p>Usado: {{ day.equipo.usado }} | Libre: {{ day.equipo.libre }} | Pendientes devolucion: {{ day.equipo.pendientesDevolucion }}</p>
+                  </div>
+                </article>
+              } @empty {
+                <p class="empty-text">No hay datos de capacidad para el rango.</p>
+              }
+            </div>
+          }
+        </section>
+      </div>
+
+      <aside class="side-column">
+        <section class="card">
+          <div class="card__header">
+            <h2>Cola operativa</h2>
+            <p>Total alertas: {{ alertas?.totalAlertas ?? 0 }}</p>
+          </div>
+          @if (cargandoLigero && !alertas) {
+            <p class="empty-text">Cargando alertas...</p>
+          } @else if (alertas) {
+            <article class="alert-card">
+              <div class="alert-card__header">
+                <h3>Proyecto listo sin link final</h3>
+                <span class="priority-chip" [ngClass]="getPrioridadClass(alertas.colaOperativa.proyectoListoSinLinkFinal.prioridad)">
+                  {{ alertas.colaOperativa.proyectoListoSinLinkFinal.prioridad }}
+                </span>
+              </div>
+              <p class="alert-card__total">{{ alertas.colaOperativa.proyectoListoSinLinkFinal.total }}</p>
+              @for (item of alertas.colaOperativa.proyectoListoSinLinkFinal.items; track item.proyectoId) {
+                <a class="alert-item-link" [routerLink]="['/home/gestionar-proyecto', item.proyectoId]">
+                  {{ item.proyecto }}
+                </a>
+              } @empty {
+                <p class="empty-text">Sin pendientes.</p>
+              }
+            </article>
+
+            <article class="alert-card">
+              <div class="alert-card__header">
+                <h3>Equipos no devueltos</h3>
+                <span class="priority-chip" [ngClass]="getPrioridadClass(alertas.colaOperativa.equiposNoDevueltos.prioridad)">
+                  {{ alertas.colaOperativa.equiposNoDevueltos.prioridad }}
+                </span>
+              </div>
+              <p class="alert-card__total">
+                {{ alertas.colaOperativa.equiposNoDevueltos.total }} equipos en {{ alertas.colaOperativa.equiposNoDevueltos.totalDias }} dias
+              </p>
+              @for (item of alertas.colaOperativa.equiposNoDevueltos.items; track item.diaId) {
+                <a class="alert-item-link" [routerLink]="['/home/gestionar-proyecto', item.proyectoId]">
+                  {{ formatFechaCorta(item.fecha) }} | Proyecto {{ item.proyectoId }} | Pendientes: {{ item.pendientes }}
+                </a>
+              } @empty {
+                <p class="empty-text">Sin pendientes.</p>
+              }
+            </article>
+
+            <article class="alert-card">
+              <div class="alert-card__header">
+                <h3>Dias suspendidos por reprogramar</h3>
+                <span class="priority-chip" [ngClass]="getPrioridadClass(alertas.colaOperativa.diasSuspendidosPorReprogramar.prioridad)">
+                  {{ alertas.colaOperativa.diasSuspendidosPorReprogramar.prioridad }}
+                </span>
+              </div>
+              <p class="alert-card__total">{{ alertas.colaOperativa.diasSuspendidosPorReprogramar.total }}</p>
+              @for (item of alertas.colaOperativa.diasSuspendidosPorReprogramar.items; track item.diaId) {
+                <a class="alert-item-link" [routerLink]="['/home/gestionar-proyecto', item.proyectoId]">
+                  {{ formatFechaCorta(item.fecha) }} | {{ item.estadoDia }} | Proyecto {{ item.proyectoId }}
+                </a>
+              } @empty {
+                <p class="empty-text">Sin pendientes.</p>
+              }
+            </article>
+          }
+        </section>
+
+        <section class="card">
+          <div class="card__header">
+            <h2>Antiguedad por fase</h2>
+          </div>
+          @if (cargandoKpis && !kpis) {
+            <p class="empty-text">Cargando KPIs...</p>
+          } @else if (kpis) {
+            <div class="aging-item">
+              <h3>Cotizacion sin pedido</h3>
+              <p>Total: {{ kpis.kpis.antiguedadFases.cotizacionSinPedido.total }}</p>
+              <p>Promedio: {{ kpis.kpis.antiguedadFases.cotizacionSinPedido.promedioDias | number:'1.0-1' }} dias</p>
+              <p>Maximo: {{ kpis.kpis.antiguedadFases.cotizacionSinPedido.maxDias }} dias</p>
+            </div>
+            <div class="aging-item">
+              <h3>Pedido sin proyecto</h3>
+              <p>Total: {{ kpis.kpis.antiguedadFases.pedidoSinProyecto.total }}</p>
+              <p>Promedio: {{ kpis.kpis.antiguedadFases.pedidoSinProyecto.promedioDias | number:'1.0-1' }} dias</p>
+              <p>Maximo: {{ kpis.kpis.antiguedadFases.pedidoSinProyecto.maxDias }} dias</p>
+            </div>
+            <div class="aging-item">
+              <h3>Proyecto activo no entregado</h3>
+              <p>Total: {{ kpis.kpis.antiguedadFases.proyectoActivoNoEntregado.total }}</p>
+              <p>Promedio: {{ kpis.kpis.antiguedadFases.proyectoActivoNoEntregado.promedioDias | number:'1.0-1' }} dias</p>
+              <p>Maximo: {{ kpis.kpis.antiguedadFases.proyectoActivoNoEntregado.maxDias }} dias</p>
+            </div>
+          } @else {
+            <p class="empty-text">Sin datos de antiguedad.</p>
+          }
+        </section>
+      </aside>
+    </section>
+
+    @if (errorLigero) {
+      <p class="error-text">{{ errorLigero }}</p>
+    }
+    @if (errorKpis) {
+      <p class="error-text">{{ errorKpis }}</p>
+    }
   </div>
 </div>

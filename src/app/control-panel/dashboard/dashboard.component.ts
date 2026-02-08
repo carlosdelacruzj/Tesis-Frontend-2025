@@ -1,256 +1,228 @@
-import { Component } from '@angular/core';
-
-type TrendDirection = 'up' | 'down' | 'flat';
-
-interface DashboardSummaryCard {
-  id: string;
-  title: string;
-  value: string;
-  period: string;
-  change: string;
-  subtitle: string;
-  trend: TrendDirection;
-  accent: string;
-}
-
-type DashboardStatusClass =
-  | 'status-success'
-  | 'status-warning'
-  | 'status-info'
-  | 'status-neutral'
-  | 'status-risk';
-
-interface DashboardEvent {
-  dateLabel: string;
-  title: string;
-  type: string;
-  location: string;
-  crewLead: string;
-  status: string;
-  statusClass: DashboardStatusClass;
-}
-
-interface Deliverable {
-  title: string;
-  client: string;
-  due: string;
-  status: string;
-  owner: string;
-}
-
-interface EquipmentUtilization {
-  id: string;
-  label: string;
-  utilization: number;
-  detail: string;
-  availability: string;
-}
-
-interface SalesSource {
-  channel: string;
-  contribution: string;
-  trend: TrendDirection;
-  note: string;
-}
-
-interface AgendaHighlight {
-  label: string;
-  value: string;
-  detail: string;
-  icon: string;
-  theme: 'primary' | 'success' | 'warning';
-}
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { forkJoin, interval, startWith, Subscription, switchMap } from 'rxjs';
+import {
+  DashboardAlertasResponse,
+  DashboardCapacidadResponse,
+  DashboardEstadoConteo,
+  DashboardKpisResponse,
+  DashboardResumenResponse,
+  OperacionesAgendaResponse
+} from './model/dashboard.model';
+import { DashboardService } from './service/dashboard.service';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
-export class DashboardComponent {
-  readonly dashboardMeta = {
-    studioName: 'Foto D la Cruz',
-    weekRange: '13 al 19 Ene 2025',
-    lastUpdate: 'Actualizado hace 2h'
-  };
+export class DashboardComponent implements OnInit, OnDestroy {
+  private readonly dashboardService = inject(DashboardService);
+  private refrescoLigeroSub: Subscription | null = null;
 
-  readonly summaryCards: DashboardSummaryCard[] = [
-    {
-      id: 'agenda-today',
-      title: 'Eventos en agenda',
-      value: '3 eventos',
-      period: 'Hoy',
-      change: '1 en montaje',
-      subtitle: 'Actualización diaria',
-      trend: 'up',
-      accent: 'accent-sand'
-    },
-    {
-      id: 'crew-coverage',
-      title: 'Cobertura de crew',
-      value: '12 / 15',
-      period: 'Turno de hoy',
-      change: '3 por confirmar',
-      subtitle: 'Coordinación operativa',
-      trend: 'flat',
-      accent: 'accent-sky'
-    },
-    {
-      id: 'critical-tasks',
-      title: 'Tareas críticas',
-      value: '2 tareas',
-      period: 'Próximas 24h',
-      change: '1 completada hoy',
-      subtitle: 'Checklist inmediato',
-      trend: 'flat',
-      accent: 'accent-rose'
-    },
-    {
-      id: 'equipment-usage',
-      title: 'Utilización equipos',
-      value: '82%',
-      period: 'Sesiones de hoy',
-      change: '2 unidades libres',
-      subtitle: 'Ver detalle por categoría',
-      trend: 'flat',
-      accent: 'accent-forest'
-    }
-  ];
+  fromDate = '';
+  toDate = '';
 
-  readonly upcomingEvents: DashboardEvent[] = [
-    {
-      dateLabel: 'Vie 17 Ene',
-      title: 'Mendoza & Salazar',
-      type: 'Boda',
-      location: 'Hacienda Santa Ana',
-      crewLead: 'Valeria Soto',
-      status: 'Pre-producción',
-      statusClass: 'status-warning'
-    },
-    {
-      dateLabel: 'Sáb 18 Ene',
-      title: 'InnoTech Summit',
-      type: 'Corporativo',
-      location: 'Centro de Convenciones',
-      crewLead: 'Diego Huamán',
-      status: 'Confirmado',
-      statusClass: 'status-success'
-    },
-    {
-      dateLabel: 'Dom 19 Ene',
-      title: 'Quinceañera Arlette F.',
-      type: 'Social',
-      location: 'Casa Prado',
-      crewLead: 'Lucía Ramos',
-      status: 'Rodaje',
-      statusClass: 'status-info'
-    },
-    {
-      dateLabel: 'Lun 20 Ene',
-      title: 'Nativa Café',
-      type: 'Branding',
-      location: 'San Isidro',
-      crewLead: 'Marcos Paredes',
-      status: 'Brief en revisión',
-      statusClass: 'status-neutral'
-    }
-  ];
+  cargandoLigero = false;
+  cargandoAgendaCapacidad = false;
+  cargandoKpis = false;
+  errorLigero = '';
+  errorAgendaCapacidad = '';
+  errorKpis = '';
 
-  readonly agendaHighlights: AgendaHighlight[] = [
-    {
-      label: 'Primera llamada',
-      value: '07:00',
-      detail: 'Montaje InnoTech Summit',
-      icon: 'alarm',
-      theme: 'primary'
-    },
-    {
-      label: 'Eventos hoy',
-      value: '3',
-      detail: '1 en montaje · 2 en rodaje',
-      icon: 'event_available',
-      theme: 'success'
-    },
-  {
-      label: 'Alertas logísticas',
-      value: '2',
-      detail: 'Traslado drone · Clima playa',
-      icon: 'warning_amber',
-      theme: 'warning'
-    }
-  ];
+  resumen: DashboardResumenResponse | null = null;
+  alertas: DashboardAlertasResponse | null = null;
+  agenda: OperacionesAgendaResponse | null = null;
+  capacidad: DashboardCapacidadResponse | null = null;
+  kpis: DashboardKpisResponse | null = null;
 
-  readonly deliverables: Deliverable[] = [
-    {
-      title: 'Preview boda Matos',
-      client: 'Matos & Benavides',
-      due: '12 Ene',
-      status: 'Enviar link privado',
-      owner: 'Valeria'
-    },
-    {
-      title: 'Contrato firma pendiente',
-      client: 'Corporativo InnoTech',
-      due: 'Hoy',
-      status: 'Firmas digitales',
-      owner: 'Rocío'
-    },
-    {
-      title: 'Plan de cobertura',
-      client: 'Quince Arlette F.',
-      due: '14 Ene',
-      status: 'Validación de padres',
-      owner: 'Marcos'
-    }
-  ];
+  ngOnInit(): void {
+    const hoy = new Date();
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    this.fromDate = this.toIsoDateOnly(inicioMes);
+    this.toDate = this.toIsoDateOnly(finMes);
 
-  readonly equipmentUtilization: EquipmentUtilization[] = [
-    {
-      id: 'cam',
-      label: 'Cámaras mirrorless',
-      utilization: 82,
-      detail: 'Sony A7SIII (8/10 en uso)',
-      availability: '2 unidades libres'
-    },
-    {
-      id: 'light',
-      label: 'Iluminación',
-      utilization: 45,
-      detail: 'Kits Aputure 120d',
-      availability: 'Disponible para reservas'
-    },
-    {
-      id: 'drone',
-      label: 'Drones',
-      utilization: 67,
-      detail: 'Mavic 3 (2/3 en ruta)',
-      availability: '1 disponible viernes'
-    }
-  ];
+    this.cargarResumenYAlertas();
+    this.cargarAgendaYCapacidad();
+    this.cargarKpis();
+    this.iniciarRefrescoLigero();
+  }
 
-  readonly salesSources: SalesSource[] = [
-    {
-      channel: 'Referencias de clientes',
-      contribution: '42%',
-      trend: 'up',
-      note: '+6% vs. promedio'
-    },
-    {
-      channel: 'Redes sociales (IG/TikTok)',
-      contribution: '31%',
-      trend: 'up',
-      note: 'Campaña "Historias reales"'
-    },
-    {
-      channel: 'Google Ads',
-      contribution: '18%',
-      trend: 'flat',
-      note: 'CPC estable'
-    },
-    {
-      channel: 'Aliados planners',
-      contribution: '9%',
-      trend: 'down',
-      note: 'Requiere activación'
+  ngOnDestroy(): void {
+    if (this.refrescoLigeroSub) {
+      this.refrescoLigeroSub.unsubscribe();
+      this.refrescoLigeroSub = null;
     }
-  ];
+  }
+
+  iniciarRefrescoLigero(): void {
+    if (this.refrescoLigeroSub) {
+      this.refrescoLigeroSub.unsubscribe();
+      this.refrescoLigeroSub = null;
+    }
+
+    this.refrescoLigeroSub = interval(90000)
+      .pipe(
+        startWith(0),
+        switchMap(() => this.dashboardService.getDashboardResumen())
+      )
+      .subscribe({
+        next: (resumen) => {
+          this.resumen = resumen;
+          this.errorLigero = '';
+        },
+        error: () => {
+          this.errorLigero = 'No se pudo refrescar el resumen automaticamente.';
+        }
+      });
+  }
+
+  refrescarTodo(): void {
+    this.cargarResumenYAlertas();
+    this.cargarAgendaYCapacidad();
+    this.cargarKpis();
+  }
+
+  aplicarRango(): void {
+    if (!this.fromDate || !this.toDate) {
+      this.errorAgendaCapacidad = 'Debes indicar fecha inicial y fecha final.';
+      return;
+    }
+    if (this.fromDate > this.toDate) {
+      this.errorAgendaCapacidad = 'La fecha inicial no puede ser mayor que la fecha final.';
+      return;
+    }
+    this.cargarAgendaYCapacidad();
+  }
+
+  private cargarResumenYAlertas(): void {
+    this.cargandoLigero = true;
+    this.errorLigero = '';
+    forkJoin({
+      resumen: this.dashboardService.getDashboardResumen(),
+      alertas: this.dashboardService.getDashboardAlertas()
+    }).subscribe({
+      next: (response) => {
+        this.resumen = response.resumen;
+        this.alertas = response.alertas;
+        this.cargandoLigero = false;
+      },
+      error: () => {
+        this.cargandoLigero = false;
+        this.errorLigero = 'No se pudo cargar resumen y alertas del dashboard.';
+      }
+    });
+  }
+
+  private cargarAgendaYCapacidad(): void {
+    this.cargandoAgendaCapacidad = true;
+    this.errorAgendaCapacidad = '';
+    forkJoin({
+      agenda: this.dashboardService.getAgenda(this.fromDate, this.toDate),
+      capacidad: this.dashboardService.getCapacidad(this.fromDate, this.toDate)
+    }).subscribe({
+      next: (response) => {
+        this.agenda = {
+          ...response.agenda,
+          resumenPorFecha: [...(response.agenda.resumenPorFecha ?? [])].sort((a, b) => a.fecha.localeCompare(b.fecha)),
+          agenda: {
+            proyectoDias: [...(response.agenda.agenda?.proyectoDias ?? [])].sort((a, b) => {
+              if (a.fecha === b.fecha) return a.proyecto.localeCompare(b.proyecto);
+              return a.fecha.localeCompare(b.fecha);
+            }),
+            pedidoEventos: [...(response.agenda.agenda?.pedidoEventos ?? [])].sort((a, b) => {
+              if (a.fecha === b.fecha) return (a.hora || '').localeCompare(b.hora || '');
+              return a.fecha.localeCompare(b.fecha);
+            })
+          }
+        };
+        this.capacidad = {
+          ...response.capacidad,
+          capacidadPorDia: [...(response.capacidad.capacidadPorDia ?? [])].sort((a, b) => a.fecha.localeCompare(b.fecha))
+        };
+        this.cargandoAgendaCapacidad = false;
+      },
+      error: () => {
+        this.cargandoAgendaCapacidad = false;
+        this.errorAgendaCapacidad = 'No se pudo cargar agenda y capacidad para el rango seleccionado.';
+      }
+    });
+  }
+
+  private cargarKpis(): void {
+    this.cargandoKpis = true;
+    this.errorKpis = '';
+    this.dashboardService.getDashboardKpis().subscribe({
+      next: (response) => {
+        this.kpis = response;
+        this.cargandoKpis = false;
+      },
+      error: () => {
+        this.cargandoKpis = false;
+        this.errorKpis = 'No se pudo cargar el analisis de KPIs.';
+      }
+    });
+  }
+
+  getEstadoListaTotal(lista: DashboardEstadoConteo[] | undefined): number {
+    return (lista ?? []).reduce((acc, row) => acc + (row.total ?? 0), 0);
+  }
+
+  getPrioridadClass(prioridad: string | null | undefined): string {
+    const value = (prioridad ?? '').toLowerCase();
+    if (value === 'alta') return 'priority-high';
+    if (value === 'media') return 'priority-medium';
+    return 'priority-low';
+  }
+
+  getSaturacionClass(value: number): string {
+    if (value >= 90) return 'sat-critical';
+    if (value >= 80) return 'sat-high';
+    if (value >= 60) return 'sat-medium';
+    return 'sat-ok';
+  }
+
+  formatFechaCorta(value: string | null | undefined): string {
+    if (!value) return '-';
+    const [year, month, day] = value.split('-');
+    if (!year || !month || !day) return value;
+    return `${day}-${month}-${year}`;
+  }
+
+  formatFechaLarga(value: string | null | undefined): string {
+    if (!value) return '-';
+    const [yearText, monthText, dayText] = value.split('-');
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+    if (!year || !month || !day) return value;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return new Intl.DateTimeFormat('es-PE', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC'
+    }).format(date);
+  }
+
+  formatDateTime(value: string | null | undefined): string {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  }
+
+  toIsoDateOnly(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
 }

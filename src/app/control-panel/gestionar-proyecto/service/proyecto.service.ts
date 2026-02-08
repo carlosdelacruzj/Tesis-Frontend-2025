@@ -12,7 +12,11 @@ import {
   ProyectoPayload,
   ProyectoPostproduccionPayload,
   ProyectoDevolucionEquiposPayload,
-  ProyectoDevolucionEquipoParcialPayload
+  ProyectoDevolucionEquipoParcialPayload,
+  ProyectoDevolucionAsyncStartResponse,
+  ProyectoDevolucionAsyncJobStatusResponse,
+  ProyectoDevolucionPreviewRequest,
+  ProyectoDevolucionPreviewResponse
 } from '../model/proyecto.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { ProyectoDisponibilidad } from '../model/proyecto-disponibilidad.model';
@@ -73,6 +77,22 @@ export class ProyectoService {
     );
   }
 
+  iniciarRegistroDevolucionesDiaAsync(
+    diaId: number,
+    payload: ProyectoDevolucionEquiposPayload
+  ): Observable<ProyectoDevolucionAsyncStartResponse> {
+    return this.http.post<ProyectoDevolucionAsyncStartResponse>(
+      `${this.API}/dias/${diaId}/equipos/devolucion/async`,
+      payload
+    );
+  }
+
+  consultarRegistroDevolucionesDiaAsync(jobId: string): Observable<ProyectoDevolucionAsyncJobStatusResponse> {
+    return this.http.get<ProyectoDevolucionAsyncJobStatusResponse>(
+      `${this.API}/devoluciones/jobs/${jobId}`
+    );
+  }
+
   registrarDevolucionEquipo(
     diaId: number,
     equipoId: number,
@@ -80,6 +100,13 @@ export class ProyectoService {
   ): Observable<{ status: string; diaId: number; equiposActualizados: number }> {
     return this.http.patch<{ status: string; diaId: number; equiposActualizados: number }>(
       `${this.API}/dias/${diaId}/equipos/${equipoId}/devolucion`,
+      payload
+    );
+  }
+
+  previewDevolucionEquipos(payload: ProyectoDevolucionPreviewRequest): Observable<ProyectoDevolucionPreviewResponse> {
+    return this.http.post<ProyectoDevolucionPreviewResponse>(
+      `${this.API}/equipos/devolucion/preview`,
       payload
     );
   }

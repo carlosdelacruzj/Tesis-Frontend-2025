@@ -29,21 +29,15 @@
                 'planificado': 'info',
                 'en ejecucion': 'warning',
                 'en ejecución': 'warning',
+                'en postproduccion': 'primary',
+                'en postproducción': 'primary',
+                'listo para entrega': 'success-light',
                 'entregado': 'success-light',
                 'cerrado': 'success'
               }"
             ></app-estado-badge>
           </div>
         </header>
-
-        <div class="hero-tags">
-          @if (postproduccion.fechaInicioEdicion) {
-            <span class="chip chip-success">Edición iniciada</span>
-          }
-          @if (postproduccion.entregaFinalFecha) {
-            <span class="chip chip-info">Entrega final</span>
-          }
-        </div>
 
         <div class="workflow-lane" aria-label="Flujo de trabajo del proyecto">
           <button class="workflow-item" type="button" (click)="irASeccion('agenda-proyecto')">
@@ -87,10 +81,6 @@
           @if (totalEquiposPendientesDevolucion > 0) {
             <button mat-stroked-button color="warn" type="button" (click)="irASeccion('devoluciones-proyecto')">
               Ir a devoluciones pendientes
-            </button>
-          } @else {
-            <button mat-stroked-button color="primary" type="button" (click)="irASeccion('postproduccion-proyecto')">
-              Ir a postproducción
             </button>
           }
         </div>
@@ -415,14 +405,7 @@
               <button mat-button type="button" (click)="$event.stopPropagation(); toggleSoloExcepcionesEstado()">
                 @if (mostrarSoloExcepcionesEstado) { Ver todo } @else { Solo excepciones }
               </button>
-              @if (getDiasDevolucionPendientes().length) {
-                <button mat-stroked-button color="primary" type="button"
-                  (click)="$event.stopPropagation(); abrirModalDevolucion(openDiaId || undefined)">
-                  Registrar devoluciones del día
-                </button>
-              } @else {
-                <span class="muted small">Sin devoluciones pendientes.</span>
-              }
+              <span class="muted small">Registra devoluciones desde cada día.</span>
               <span class="collapsible__caret">▾</span>
             </div>
           </summary>
@@ -438,6 +421,16 @@
                         Devueltos: {{ getResumenEstadoDia(dia.diaId).devueltos }} ·
                         Excepciones: {{ getResumenEstadoDia(dia.diaId).excepciones }}
                       </div>
+                    </div>
+                    <div class="estado-dia-card__actions">
+                      <button
+                        mat-stroked-button
+                        color="primary"
+                        type="button"
+                        (click)="$event.stopPropagation(); abrirModalDevolucion(dia.diaId)"
+                        [disabled]="!isDiaFinalizado(dia.diaId) || !isDiaPendienteDevolucion(dia.diaId)">
+                        Registrar devoluciones
+                      </button>
                     </div>
                   </summary>
 
@@ -513,11 +506,11 @@
               <h4>Pre-entrega</h4>
               <label class="form-field">
                 <span class="label">Enlace pre-entrega</span>
-                <input class="form-control" type="text" [(ngModel)]="postproduccion.preEntregaEnlace" placeholder="https://..." [disabled]="guardandoPostproduccion">
+                <input class="form-control" type="text" [(ngModel)]="postproduccion.preEntregaEnlace" placeholder="https://..." [disabled]="guardandoPostproduccion || !puedeEditarPreEntregaPost">
               </label>
               <label class="form-field">
                 <span class="label">Tipo de pre-entrega</span>
-                <select class="form-control" [(ngModel)]="postproduccion.preEntregaTipo" [disabled]="guardandoPostproduccion">
+                <select class="form-control" [(ngModel)]="postproduccion.preEntregaTipo" [disabled]="guardandoPostproduccion || !puedeEditarPreEntregaPost">
                   <option [ngValue]="null">Selecciona</option>
                   <option [ngValue]="'VIDEO'">Video (trailer)</option>
                   <option [ngValue]="'FOTOS'">Fotos (selección)</option>
@@ -526,10 +519,10 @@
               </label>
               <label class="form-field">
                 <span class="label">Feedback / Selección del cliente</span>
-                <textarea class="form-control" rows="3" [(ngModel)]="postproduccion.preEntregaFeedback" placeholder="Aprobado, cambios solicitados o fotos elegidas..." [disabled]="guardandoPostproduccion"></textarea>
+                <textarea class="form-control" rows="3" [(ngModel)]="postproduccion.preEntregaFeedback" placeholder="Aprobado, cambios solicitados o fotos elegidas..." [disabled]="guardandoPostproduccion || !puedeEditarPreEntregaPost"></textarea>
               </label>
               <div class="muted small">Fecha de envío: {{ postproduccion.preEntregaFecha || '—' }}</div>
-              <button mat-stroked-button type="button" (click)="enviarPreEntregaPost()" [disabled]="guardandoPostproduccion || !postproduccion.fechaInicioEdicion">
+              <button mat-stroked-button type="button" (click)="enviarPreEntregaPost()" [disabled]="guardandoPostproduccion || !puedeEditarPreEntregaPost">
                 Enviar pre-entrega
               </button>
             </div>
@@ -538,17 +531,17 @@
               <h4>Cierre de edición</h4>
               <label class="form-field">
                 <span class="label">Fecha fin</span>
-                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaFinEdicion" [attr.min]="fechaMinFinEdicion || null" [disabled]="guardandoPostproduccion">
+                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaFinEdicion" [attr.min]="fechaMinFinEdicion || null" [disabled]="guardandoPostproduccion || !puedeCerrarEdicionPost">
               </label>
               <label class="form-field">
                 <span class="label">Ubicación de respaldo</span>
-                <input class="form-control" type="text" [(ngModel)]="postproduccion.respaldoUbicacion" placeholder="HDD 2026-A · Disco #3 · Carpeta PRO-000004" [disabled]="guardandoPostproduccion">
+                <input class="form-control" type="text" [(ngModel)]="postproduccion.respaldoUbicacion" placeholder="HDD 2026-A · Disco #3 · Carpeta PRO-000004" [disabled]="guardandoPostproduccion || !puedeCerrarEdicionPost">
               </label>
               <label class="form-field">
                 <span class="label">Notas de respaldo</span>
-                <textarea class="form-control" rows="2" [(ngModel)]="postproduccion.respaldoNotas" placeholder="Observaciones, claves, etc." [disabled]="guardandoPostproduccion"></textarea>
+                <textarea class="form-control" rows="2" [(ngModel)]="postproduccion.respaldoNotas" placeholder="Observaciones, claves, etc." [disabled]="guardandoPostproduccion || !puedeCerrarEdicionPost"></textarea>
               </label>
-              <button mat-stroked-button type="button" (click)="cerrarEdicionPost()" [disabled]="guardandoPostproduccion">
+              <button mat-stroked-button type="button" (click)="cerrarEdicionPost()" [disabled]="guardandoPostproduccion || !puedeCerrarEdicionPost">
                 Cerrar edición
               </button>
             </div>
@@ -557,15 +550,15 @@
               <h4>Entrega final</h4>
               <label class="form-field">
                 <span class="label">Enlace final</span>
-                <input class="form-control" type="text" [(ngModel)]="postproduccion.entregaFinalEnlace" placeholder="https://..." [disabled]="guardandoPostproduccion">
+                <input class="form-control" type="text" [(ngModel)]="postproduccion.entregaFinalEnlace" placeholder="https://..." [disabled]="guardandoPostproduccion || !puedeEditarEntregaFinalPost">
               </label>
               <label class="form-field">
                 <span class="label">Fecha de entrega final</span>
-                <input class="form-control" type="date" [(ngModel)]="postproduccion.entregaFinalFecha" [disabled]="guardandoPostproduccion">
+                <input class="form-control" type="date" [(ngModel)]="postproduccion.entregaFinalFecha" [attr.min]="fechaMinEntregaFinalPost || null" [disabled]="guardandoPostproduccion || !puedeEditarEntregaFinalPost">
               </label>
               <label class="form-field">
                 <span class="label">Entrega física requerida</span>
-                <select class="form-control" [(ngModel)]="postEntregaFisicaRequerida" [disabled]="guardandoPostproduccion">
+                <select class="form-control" [(ngModel)]="postEntregaFisicaRequerida" [disabled]="guardandoPostproduccion || !puedeEditarEntregaFinalPost">
                   <option [ngValue]="false">No</option>
                   <option [ngValue]="true">Sí</option>
                 </select>
@@ -573,24 +566,24 @@
               @if (postEntregaFisicaRequerida) {
                 <label class="form-field">
                   <span class="label">Tipo de entrega física</span>
-                  <input class="form-control" type="text" [(ngModel)]="postTipoEntregaFisica" placeholder="Impresiones, photobook, USB, etc." [disabled]="guardandoPostproduccion">
+                  <input class="form-control" type="text" [(ngModel)]="postTipoEntregaFisica" placeholder="Impresiones, photobook, USB, etc." [disabled]="guardandoPostproduccion || !puedeEditarEntregaFinalPost">
                 </label>
                 <label class="form-field">
                   <span class="label">Fecha de entrega física</span>
-                  <input class="form-control" type="date" [(ngModel)]="postFechaEntregaFisica" [disabled]="guardandoPostproduccion">
+                  <input class="form-control" type="date" [(ngModel)]="postFechaEntregaFisica" [disabled]="guardandoPostproduccion || !puedeEditarEntregaFinalPost">
                 </label>
                 <label class="form-field">
                   <span class="label">Responsable de entrega</span>
-                  <input class="form-control" type="text" [(ngModel)]="postResponsableEntregaFisica" placeholder="Nombre y apellido" [disabled]="guardandoPostproduccion">
+                  <input class="form-control" type="text" [(ngModel)]="postResponsableEntregaFisica" placeholder="Nombre y apellido" [disabled]="guardandoPostproduccion || !puedeEditarEntregaFinalPost">
                 </label>
                 <label class="form-field">
                   <span class="label">Observaciones</span>
-                  <textarea class="form-control" rows="2" [(ngModel)]="postObservacionesEntregaFisica" placeholder="Notas sobre la entrega física" [disabled]="guardandoPostproduccion"></textarea>
+                  <textarea class="form-control" rows="2" [(ngModel)]="postObservacionesEntregaFisica" placeholder="Notas sobre la entrega física" [disabled]="guardandoPostproduccion || !puedeEditarEntregaFinalPost"></textarea>
                 </label>
               }
               <div class="muted small">Entrega solo con pago completo.</div>
               <button mat-flat-button color="primary" type="button" (click)="marcarEntregaPost()"
-                [disabled]="guardandoPostproduccion || !postproduccion.fechaFinEdicion || !tienePagoCompletoMock()">
+                [disabled]="guardandoPostproduccion || !puedeEditarEntregaFinalPost || !tienePagoCompleto()">
                 Marcar entrega
               </button>
             </div>
@@ -1355,7 +1348,14 @@
                   </label>
                   <label class="form-field small">
                     <span class="label">Notas</span>
-                    <textarea class="form-control" rows="2" [ngModel]="devolucionDraft[eq.equipoId]?.notas || ''" (ngModelChange)="onDevolucionNotasChange(eq.equipoId, $event)" placeholder="Solo si hubo alguna incidencia en la devolución"></textarea>
+                    <textarea class="form-control" rows="2"
+                      [class.is-invalid]="(getEstadoDevolucionActual(eq.equipoId) === 'DANADO' || getEstadoDevolucionActual(eq.equipoId) === 'PERDIDO' || getEstadoDevolucionActual(eq.equipoId) === 'ROBADO') && !(devolucionDraft[eq.equipoId]?.notas || '').trim()"
+                      [ngModel]="devolucionDraft[eq.equipoId]?.notas || ''"
+                      (ngModelChange)="onDevolucionNotasChange(eq.equipoId, $event)"
+                      placeholder="Obligatorio para dañado, perdido o robado"></textarea>
+                    @if ((getEstadoDevolucionActual(eq.equipoId) === 'DANADO' || getEstadoDevolucionActual(eq.equipoId) === 'PERDIDO' || getEstadoDevolucionActual(eq.equipoId) === 'ROBADO') && !(devolucionDraft[eq.equipoId]?.notas || '').trim()) {
+                      <div class="text-danger micro">La nota es obligatoria para este estado.</div>
+                    }
                   </label>
                 </div>
               </div>
