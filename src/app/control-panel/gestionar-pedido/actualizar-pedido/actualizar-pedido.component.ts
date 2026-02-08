@@ -1411,7 +1411,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         const tmpId = idValue != null ? `i${idValue}` : `i${index + 1}`;
         return {
           id: idValue,
-          key: record.id ?? this.getPkgKey(record as unknown as AnyRecord),
+          key: this.getPkgKey(record as unknown as AnyRecord),
           eventKey: eventoCodigo,
           tmpId,
           eventoCodigo,
