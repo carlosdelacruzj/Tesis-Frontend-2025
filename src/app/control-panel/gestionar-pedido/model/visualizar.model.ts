@@ -213,9 +213,15 @@ export interface PedidoUpdateItem {
   notas: string;
 }
 
+export interface PedidoUpdateServicioFecha {
+  idPedidoServicio?: number;
+  itemTmpId?: string;
+  fecha: string;
+}
+
 export interface PedidoUpdatePayload {
   pedido: PedidoUpdateDetalle;
   eventos: PedidoUpdateEvento[];
   items: PedidoUpdateItem[];
-  serviciosFechas: PedidoServicioFecha[];
+  serviciosFechas: PedidoUpdateServicioFecha[];
 }

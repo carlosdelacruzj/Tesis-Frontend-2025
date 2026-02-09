@@ -2158,11 +2158,12 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const serviciosFechasPayload = serviciosFechas
       .map(entry => {
         const idPedidoServicio = tmpIdToId.get(entry.itemTmpId);
-        return idPedidoServicio != null
-          ? { idPedidoServicio, fecha: entry.fecha }
-          : null;
+        const payloadEntry = idPedidoServicio != null
+          ? { idPedidoServicio, itemTmpId: entry.itemTmpId, fecha: entry.fecha }
+          : { itemTmpId: entry.itemTmpId, fecha: entry.fecha };
+        return payloadEntry;
       })
-      .filter((entry): entry is { idPedidoServicio: number; fecha: string } => !!entry);
+      .filter(entry => !!entry.itemTmpId && !!entry.fecha);
 
     const payload: PedidoUpdatePayload = {
       pedido: {
