@@ -987,8 +987,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   onDiasChange(value: unknown): void {
+    const diasPrevios = this.getDiasTrabajo();
     const parsed = this.parseNumber(value);
     this.visualizarService.selectAgregarPedido.dias = parsed != null ? Math.max(1, Math.floor(parsed)) : null;
+    const diasActuales = this.getDiasTrabajo();
+    const cambioDias = diasPrevios !== diasActuales;
     const multiple = this.isMultipleDias();
     const max = this.getCantidadMaximaPorDias();
     if (!multiple) {
@@ -1006,8 +1009,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
     if (multiple) {
       this.visualizarService.selectAgregarPedido.fechaEvent = '';
+      if (cambioDias) {
+        this.serviciosFechasSeleccionadas = [];
+        this.fechasDisponibles = [];
+        this.asignacionFechasAbierta = false;
+      }
     } else {
       this.serviciosFechasSeleccionadas = [];
+      this.fechasDisponibles = [];
       if (this.asignacionFechasAbierta) {
         this.asignacionFechasAbierta = false;
       }

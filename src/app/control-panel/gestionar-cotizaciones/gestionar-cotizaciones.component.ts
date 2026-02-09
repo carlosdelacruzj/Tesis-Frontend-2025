@@ -257,7 +257,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                     Swal.fire({
                       icon: 'error',
                       title: 'No pudimos crear el pedido',
-                      text: err?.message ?? 'Intenta nuevamente mÃ¡s tarde.'
+                      text: err?.message ?? 'Intenta nuevamente más tarde.'
                     });
                     this.clienteCreadoEnAceptacion = false;
                   }

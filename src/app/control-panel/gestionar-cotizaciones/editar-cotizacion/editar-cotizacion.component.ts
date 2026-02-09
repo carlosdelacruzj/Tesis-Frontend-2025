@@ -95,6 +95,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
   readonly minutoOptions = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
   readonly ampmOptions = ['AM', 'PM'] as const;
+  readonly maxLocacionesPorDia = 6;
 
   form: UntypedFormGroup;
 
@@ -127,6 +128,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   asignacionFechasAbierta = false;
   fechasDisponibles: string[] = [];
   serviciosFechasSeleccionadas: CotizacionAdminServicioFechaPayload[] = [];
+  private fechasTrabajoSnapshot: string[] = [];
+  private lastDiasAplicado = 0;
+  private diasChangeGuard = false;
+  private programacionExpandida = new WeakMap<UntypedFormGroup, boolean>();
   private tmpIdSequence = 0;
   private lastDepartamento = '';
   private departamentoChangeLock = false;
@@ -180,13 +185,14 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       clienteNombre: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(2)]],
       clienteContacto: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(6)]],
       fechaEvento: ['', [Validators.required, this.fechaEventoEnRangoValidator()]],
-      dias: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
+      dias: [null, [Validators.required, Validators.min(1), Validators.max(7)]],
       horasEstimadas: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
       departamento: ['', Validators.required],
       viaticosCliente: [true],
       viaticosMonto: [{ value: null, disabled: true }],
       descripcion: [''],
       totalEstimado: [{ value: 0, disabled: true }, Validators.min(0)],
+      fechasTrabajo: this.fb.array([]),
       programacion: this.fb.array([])
     });
   }
@@ -204,7 +210,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       });
     this.form.get('dias')?.valueChanges
       .pipe(takeUntil(this.destroy$))
-      .subscribe(value => this.applyDiasRules(value));
+      .subscribe(value => this.onDiasChange(value));
     this.lastDepartamento = (this.form.get('departamento')?.value ?? '').toString().trim();
     this.form.get('departamento')?.valueChanges
       .pipe(takeUntil(this.destroy$))
@@ -215,6 +221,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.form.get('viaticosMonto')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.syncTotalEstimado());
+    this.applyDiasRules(this.form.get('dias')?.value);
+    this.lastDiasAplicado = this.normalizeDias(this.form.get('dias')?.value);
   }
 
   ngOnDestroy(): void {
@@ -226,17 +234,68 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return this.form.get('programacion') as UntypedFormArray;
   }
 
-  addProgramacionItem(): void {
+  get fechasTrabajo(): UntypedFormArray {
+    return this.form.get('fechasTrabajo') as UntypedFormArray;
+  }
+
+  get fechasTrabajoValores(): string[] {
+    return this.fechasTrabajo.controls
+      .map(control => (control.value ?? '').toString().trim())
+      .filter(Boolean);
+  }
+
+  addProgramacionItem(fechaForzada?: string): void {
     const siguienteIndice = this.programacion.length + 1;
     const nombreAuto = `Locación ${siguienteIndice}`;
-    const fechaRef = this.isMultipleDias()
-      ? ''
-      : (this.form.get('fechaEvento')?.value ?? this.fechaEventoOriginal ?? '');
-    this.programacion.push(this.createProgramacionItem({ nombre: nombreAuto, fecha: fechaRef, esPrincipal: siguienteIndice <= this.programacionMinimaRecomendada }));
+    const fechaConfig = this.getFechaProgramacionNuevaFila(fechaForzada);
+    if (!fechaConfig) {
+      this.showAlert('warning', 'Fecha requerida', 'Primero define una fecha de trabajo para agregar locaciones.');
+      return;
+    }
+    const actuales = this.getProgramacionIndicesPorFecha(fechaConfig).length;
+    if (actuales >= this.maxLocacionesPorDia) {
+      this.showAlert(
+        'warning',
+        'Límite alcanzado',
+        `Máximo ${this.maxLocacionesPorDia} locaciones por día (${this.formatFechaConDia(fechaConfig)}).`
+      );
+      return;
+    }
+    const grupo = this.createProgramacionItem({ nombre: nombreAuto, fecha: fechaConfig, esPrincipal: siguienteIndice <= this.programacionMinimaRecomendada });
+    this.programacion.push(grupo);
+    this.setProgramacionExpandida(grupo, this.programacion.length === 1);
     this.ensureProgramacionPrincipales();
-    this.syncProgramacionFechas(fechaRef);
+    this.syncProgramacionFechas(fechaConfig);
     this.programacion.markAsDirty();
     this.programacion.updateValueAndValidity();
+  }
+
+  duplicarProgramacionItem(index: number): void {
+    const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+    if (!grupo) {
+      return;
+    }
+    const raw = grupo.getRawValue() as Record<string, unknown>;
+    const fecha = (raw['fecha'] ?? '').toString().trim();
+    if (!fecha) {
+      return;
+    }
+    const actuales = this.getProgramacionIndicesPorFecha(fecha).length;
+    if (actuales >= this.maxLocacionesPorDia) {
+      this.showAlert('warning', 'Límite alcanzado', `Máximo ${this.maxLocacionesPorDia} locaciones por día.`);
+      return;
+    }
+    const duplicado = this.createProgramacionItem({
+      nombre: (raw['nombre'] ?? '').toString().trim(),
+      direccion: (raw['direccion'] ?? '').toString().trim(),
+      hora: (raw['hora'] ?? '').toString().trim(),
+      notas: (raw['notas'] ?? '').toString().trim(),
+      fecha,
+      esPrincipal: false
+    });
+    this.programacion.insert(index + 1, duplicado);
+    this.setProgramacionExpandida(duplicado, true);
+    this.syncProgramacionFechas();
   }
 
   removeProgramacionItem(index: number): void {
@@ -710,6 +769,16 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
     const raw = this.form.getRawValue();
     const diasNumero = this.parseNumber(raw.dias);
+    const restriccionesProgramacion = this.validarRestriccionesProgramacion(diasNumero);
+    if (restriccionesProgramacion.length) {
+      this.showAlertHtml(
+        'warning',
+        'Revisa la programación',
+        `<ul class="text-start mb-0">${restriccionesProgramacion.map(err => `<li>${err}</li>`).join('')}</ul>`
+      );
+      this.expandirProgramacionConErrores();
+      return;
+    }
     if (diasNumero != null && diasNumero > 2) {
       const totalCantidad = this.getTotalCantidadSeleccionada();
       if (totalCantidad < diasNumero) {
@@ -1145,6 +1214,14 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
     const programacionEventos = this.extractProgramacionEventos(cotizacion, raw);
     this.populateProgramacion(programacionEventos);
+    const fechasProgramacion = Array.from(new Set(
+      (this.programacion.getRawValue() as ProgramacionEventoItemConfig[])
+        .map(config => (config.fecha ?? '').toString().trim())
+        .filter(Boolean)
+    )).sort();
+    this.fechasTrabajoSnapshot = fechasProgramacion.length
+      ? fechasProgramacion
+      : (fechaEventoIso ? [fechaEventoIso] : []);
 
     this.syncTotalEstimado();
     this.applyPendingSelections();
@@ -1153,6 +1230,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.form.markAsPristine();
     this.form.markAsUntouched();
     this.applyDiasRules(this.form.get('dias')?.value);
+    this.lastDiasAplicado = this.normalizeDias(this.form.get('dias')?.value);
     this.applyViaticosRules();
     this.initialSnapshot = this.buildSnapshot();
   }
@@ -1221,6 +1299,15 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     });
   }
 
+  private showAlertHtml(icon: AlertIcon, title: string, html: string): void {
+    void Swal.fire({
+      icon,
+      title,
+      html,
+      confirmButtonText: 'Entendido'
+    });
+  }
+
   private showToast(icon: AlertIcon, title: string, text?: string, timer = 2200): void {
     void Swal.fire({
       icon,
@@ -1232,6 +1319,67 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       timerProgressBar: true,
       showConfirmButton: false
     });
+  }
+
+  private validarRestriccionesProgramacion(diasNumero: number | null): string[] {
+    const errores: string[] = [];
+    const fechasTrabajo = this.fechasTrabajoValores;
+    const diasEsperados = diasNumero != null && diasNumero >= 1 ? Math.min(Math.floor(diasNumero), 7) : 0;
+
+    if (diasEsperados > 0 && fechasTrabajo.length !== diasEsperados) {
+      errores.push(`Debes registrar ${diasEsperados} fecha(s) de trabajo.`);
+      return errores;
+    }
+
+    const fechasUnicas = new Set(fechasTrabajo);
+    if (fechasUnicas.size !== fechasTrabajo.length) {
+      errores.push('Las fechas de trabajo no pueden repetirse.');
+    }
+
+    const ordenadas = [...fechasTrabajo].sort();
+    const desordenadas = fechasTrabajo.some((fecha, index) => fecha !== ordenadas[index]);
+    if (desordenadas) {
+      errores.push('Ordena las fechas de trabajo cronológicamente (de la más próxima a la más lejana).');
+    }
+
+    for (const fecha of fechasTrabajo) {
+      const indices = this.getProgramacionIndicesPorFecha(fecha);
+      const fechaLabel = this.formatFechaConDia(fecha);
+
+      if (!indices.length) {
+        errores.push(`"${fechaLabel}": agrega al menos una locación.`);
+        continue;
+      }
+
+      const locacionKeyConteo = new Map<string, number>();
+      let incompletas = 0;
+
+      indices.forEach(index => {
+        const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+        const raw = grupo?.getRawValue() as Record<string, unknown> | undefined;
+        const nombre = (raw?.['nombre'] ?? '').toString().trim();
+        const direccion = (raw?.['direccion'] ?? '').toString().trim();
+        const hora = (raw?.['hora'] ?? '').toString().trim();
+        if (!nombre || !direccion || !hora) {
+          incompletas += 1;
+        }
+        if (nombre && direccion && hora) {
+          const key = `${this.normalizarClave(nombre)}|${this.normalizarClave(direccion)}|${hora}`;
+          locacionKeyConteo.set(key, (locacionKeyConteo.get(key) ?? 0) + 1);
+        }
+      });
+
+      if (incompletas > 0) {
+        errores.push(`"${fechaLabel}": tienes ${incompletas} locación(es) con datos incompletos.`);
+      }
+
+      const duplicadas = Array.from(locacionKeyConteo.values()).some(total => total > 1);
+      if (duplicadas) {
+        errores.push(`"${fechaLabel}": hay locaciones duplicadas (misma locación, dirección y hora).`);
+      }
+    }
+
+    return errores;
   }
 
   private extractProgramacionEventos(cotizacion: Cotizacion, raw?: CotizacionPayload | null): ProgramacionEventoItem[] {
@@ -1321,12 +1469,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private createProgramacionItem(config: ProgramacionEventoItem): UntypedFormGroup {
     const hora24 = this.normalizeHora24(config.hora ?? '');
     const horaParts = this.splitHoraTo12(hora24);
-    const multiple = this.isMultipleDias();
     const grupo = this.fb.group({
       nombre: [config.nombre ?? '', Validators.required],
       direccion: [config.direccion ?? '', Validators.required],
-      fecha: [{ value: config.fecha ?? '', disabled: !multiple },
-        multiple ? [Validators.required, this.fechaEventoEnRangoValidator()] : []],
+      fecha: [{ value: config.fecha ?? '', disabled: true }],
       hora: [hora24, [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/), this.horaRangoValidator()]],
       hora12: [horaParts.hora12, Validators.required],
       minuto: [horaParts.minuto, Validators.required],
@@ -1523,9 +1669,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private syncProgramacionFechas(fecha?: string | null): void {
-    if (this.isMultipleDias()) {
-      return;
-    }
     const referencia = this.normalizeProgramacionFecha(
       fecha ??
       this.form.get('fechaEvento')?.value ??
@@ -1537,7 +1680,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       if (!fechaControl) {
         return;
       }
-      if (fechaControl.value !== referencia) {
+      const actual = (fechaControl.value ?? '').toString().trim();
+      if (!actual && referencia) {
         fechaControl.setValue(referencia, { emitEvent: false });
       }
       if (!fechaControl.disabled) {
@@ -1571,39 +1715,499 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return Array.from(new Set(fechas)).sort();
   }
 
+  getProgramacionIndicesPorFecha(fecha: string): number[] {
+    const objetivo = (fecha ?? '').toString().trim();
+    if (!objetivo) {
+      return [];
+    }
+    const indices = Array.from({ length: this.programacion.length }, (_, index) => index).filter(index => {
+      const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+      const fechaLocacion = (grupo?.get('fecha')?.value ?? '').toString().trim();
+      return fechaLocacion === objetivo;
+    });
+    indices.sort((a, b) => {
+      const aGrupo = this.programacion.at(a) as UntypedFormGroup | null;
+      const bGrupo = this.programacion.at(b) as UntypedFormGroup | null;
+      const aHora = ((aGrupo?.getRawValue() as Record<string, unknown> | undefined)?.['hora'] ?? '').toString().trim();
+      const bHora = ((bGrupo?.getRawValue() as Record<string, unknown> | undefined)?.['hora'] ?? '').toString().trim();
+      const aMin = this.horaToMinutos(aHora);
+      const bMin = this.horaToMinutos(bHora);
+      if (aMin !== bMin) {
+        return aMin - bMin;
+      }
+      return a - b;
+    });
+    return indices;
+  }
+
+  isProgramacionExpandida(index: number): boolean {
+    const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+    if (!grupo) {
+      return false;
+    }
+    return this.programacionExpandida.get(grupo) ?? false;
+  }
+
+  toggleProgramacionExpandida(index: number): void {
+    const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+    if (!grupo) {
+      return;
+    }
+    this.setProgramacionExpandida(grupo, !this.isProgramacionExpandida(index));
+  }
+
+  getProgramacionHoraResumen(index: number): string {
+    const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+    const hora = (grupo?.get('hora')?.value ?? '').toString().trim();
+    return hora ? this.formatHoraTexto(hora) : 'Sin hora';
+  }
+
+  getProgramacionDireccionResumen(index: number): string {
+    const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+    const direccion = (grupo?.get('direccion')?.value ?? '').toString().trim();
+    if (!direccion) {
+      return 'Sin dirección';
+    }
+    return direccion.length > 52 ? `${direccion.slice(0, 52)}...` : direccion;
+  }
+
+  isProgramacionIncompleta(index: number): boolean {
+    const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+    if (!grupo) {
+      return true;
+    }
+    const raw = grupo.getRawValue() as Record<string, unknown>;
+    const nombre = (raw['nombre'] ?? '').toString().trim();
+    const direccion = (raw['direccion'] ?? '').toString().trim();
+    const hora = (raw['hora'] ?? '').toString().trim();
+    return !nombre || !direccion || !hora;
+  }
+
+  getProgramacionEstadoLabel(index: number): string {
+    return this.isProgramacionIncompleta(index) ? 'Incompleta' : 'Completa';
+  }
+
+  getProgramacionEstadoClass(index: number): string {
+    return this.isProgramacionIncompleta(index) ? 'programacion-status--warn' : 'programacion-status--ok';
+  }
+
+  canAgregarLocacion(fecha: string): boolean {
+    return this.getProgramacionIndicesPorFecha(fecha).length < this.maxLocacionesPorDia;
+  }
+
+  getResumenDia(fecha: string): { total: number; primera: string } {
+    const indices = this.getProgramacionIndicesPorFecha(fecha);
+    const total = indices.length;
+    const primeraHora = indices
+      .map(index => ((this.programacion.at(index) as UntypedFormGroup | null)?.get('hora')?.value ?? '').toString().trim())
+      .filter(Boolean)
+      .sort()[0] ?? '';
+    return {
+      total,
+      primera: primeraHora ? this.formatHoraTexto(primeraHora) : 'Sin hora'
+    };
+  }
+
+  canCopiarDiaAnterior(diaIndex: number): boolean {
+    return diaIndex > 0;
+  }
+
+  copiarLocacionesDiaAnterior(diaIndex: number, fechaDestino: string): void {
+    if (diaIndex <= 0) {
+      return;
+    }
+    const fechaOrigen = (this.fechasTrabajoValores[diaIndex - 1] ?? '').toString().trim();
+    const destino = (fechaDestino ?? '').toString().trim();
+    if (!fechaOrigen || !destino || fechaOrigen === destino) {
+      return;
+    }
+    const indicesOrigen = this.getProgramacionIndicesPorFecha(fechaOrigen);
+    if (!indicesOrigen.length) {
+      this.showAlert('info', 'Sin locaciones', 'El día anterior no tiene locaciones para copiar.');
+      return;
+    }
+    const disponibles = Math.max(0, this.maxLocacionesPorDia - this.getProgramacionIndicesPorFecha(destino).length);
+    if (!disponibles) {
+      this.showAlert('warning', 'Límite alcanzado', `Máximo ${this.maxLocacionesPorDia} locaciones por día.`);
+      return;
+    }
+    const aCopiar = indicesOrigen.slice(0, disponibles);
+    aCopiar.forEach(index => {
+      const grupo = this.programacion.at(index) as UntypedFormGroup | null;
+      const raw = grupo?.getRawValue() as Record<string, unknown> | undefined;
+      this.programacion.push(this.createProgramacionItem({
+        nombre: (raw?.['nombre'] ?? '').toString().trim(),
+        direccion: (raw?.['direccion'] ?? '').toString().trim(),
+        hora: (raw?.['hora'] ?? '').toString().trim(),
+        notas: (raw?.['notas'] ?? '').toString().trim(),
+        fecha: destino,
+        esPrincipal: false
+      }));
+    });
+    this.ensureProgramacionPrincipales();
+    this.syncProgramacionFechas();
+  }
+
+  onFechaTrabajoChange(index: number, value: unknown): void {
+    if (index < 0 || index >= this.fechasTrabajo.length) {
+      return;
+    }
+    const prev = [...this.fechasTrabajoSnapshot];
+    const fechaAnterior = (prev[index] ?? '').toString().trim();
+    const fecha = (value ?? '').toString().trim();
+    const control = this.fechasTrabajo.at(index);
+    const duplicada = this.fechasTrabajo.controls.some((ctrl, i) =>
+      i !== index && (ctrl.value ?? '').toString().trim() === fecha && !!fecha
+    );
+    if (duplicada) {
+      control.setValue(prev[index] ?? '', { emitEvent: false });
+      this.showAlert('warning', 'Fecha repetida', 'Cada día de trabajo debe tener una fecha diferente.');
+      return;
+    }
+    const changingExistingDate = !!fechaAnterior && fechaAnterior !== fecha;
+    if (!changingExistingDate) {
+      control.setValue(fecha, { emitEvent: false });
+      this.ordenarFechasTrabajo();
+      this.fechasTrabajoSnapshot = this.getFechasTrabajoRaw();
+      this.syncFechaEventoDesdeFechasTrabajo();
+      return;
+    }
+    if (!this.hasLocacionesRegistradas()) {
+      control.setValue(fecha, { emitEvent: false });
+      this.remapFechaLocacionesYAsignaciones(fechaAnterior, fecha);
+      this.ordenarFechasTrabajo();
+      this.fechasTrabajoSnapshot = this.getFechasTrabajoRaw();
+      this.syncFechaEventoDesdeFechasTrabajo();
+      return;
+    }
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Cambiar fecha de trabajo',
+      html: `
+        <p>Ya tienes locaciones registradas.</p>
+        <p class="mb-0">¿Seguro que deseas cambiar <b>${this.formatFechaConDia(fechaAnterior)}</b> por <b>${this.formatFechaConDia(fecha)}</b>?</p>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (!result.isConfirmed) {
+        control.setValue(fechaAnterior, { emitEvent: false });
+        return;
+      }
+      control.setValue(fecha, { emitEvent: false });
+      this.remapFechaLocacionesYAsignaciones(fechaAnterior, fecha);
+      this.ordenarFechasTrabajo();
+      this.fechasTrabajoSnapshot = this.getFechasTrabajoRaw();
+      this.syncFechaEventoDesdeFechasTrabajo();
+    });
+  }
+
+  private getFechaProgramacionNuevaFila(fechaForzada?: string): string {
+    const forzada = (fechaForzada ?? '').toString().trim();
+    if (forzada) {
+      return forzada;
+    }
+    const fechasTrabajo = this.fechasTrabajoValores;
+    if (fechasTrabajo.length) {
+      return fechasTrabajo[0];
+    }
+    const fechaEvento = (this.form.get('fechaEvento')?.value ?? '').toString().trim();
+    return fechaEvento || this.fechaMinimaEvento;
+  }
+
+  private getFechasTrabajoRaw(): string[] {
+    return this.fechasTrabajo.controls.map(control => (control.value ?? '').toString().trim());
+  }
+
+  private ordenarFechasTrabajo(): void {
+    const raw = this.getFechasTrabajoRaw();
+    const filled = raw.filter(Boolean).sort();
+    const emptyCount = raw.length - filled.length;
+    const next = [...filled, ...Array.from({ length: emptyCount }, () => '')];
+    this.fechasTrabajo.controls.forEach((ctrl, idx) => {
+      ctrl.setValue(next[idx] ?? '', { emitEvent: false });
+    });
+  }
+
+  private setFechasTrabajoRaw(values: string[]): void {
+    this.fechasTrabajo.controls.forEach((control, index) => {
+      control.setValue((values[index] ?? '').toString().trim(), { emitEvent: false });
+    });
+    this.fechasTrabajoSnapshot = this.getFechasTrabajoRaw();
+    this.syncFechaEventoDesdeFechasTrabajo();
+  }
+
+  private moverDiasAlFinal(indices: number[]): void {
+    const values = this.getFechasTrabajoRaw();
+    const validos = Array.from(new Set(indices))
+      .filter(index => Number.isInteger(index) && index >= 0 && index < values.length)
+      .sort((a, b) => a - b);
+    if (!validos.length) {
+      return;
+    }
+    const removidos = validos.map(index => values[index] ?? '');
+    const restantes = values.filter((_, index) => !validos.includes(index));
+    this.setFechasTrabajoRaw([...restantes, ...removidos]);
+  }
+
+
+
+  private async seleccionarDiasAEliminar(anterior: number, nuevo: number): Promise<number[] | null> {
+    const values = this.getFechasTrabajoRaw();
+    const cantidadAEliminar = anterior - nuevo;
+    if (cantidadAEliminar <= 0 || values.length <= nuevo) {
+      return [];
+    }
+    const opcionesHtml = values.map((fecha, index) => {
+      const fechaLabel = fecha ? this.formatFechaConDia(fecha) : 'Sin fecha';
+      const locaciones = fecha ? this.getProgramacionIndicesPorFecha(fecha).length : 0;
+      const checked = index >= nuevo ? 'checked' : '';
+      const estado = locaciones > 0 ? `${locaciones} locaciones` : 'Sin locaciones';
+      return `
+        <label class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+          <input type="checkbox" class="swal2-day-checkbox" value="${index}" ${checked}>
+          <span><b>Dia ${index + 1}</b> - ${fechaLabel}<br><small class="text-muted">${estado}</small></span>
+        </label>
+      `;
+    }).join('');
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'Elige los dias a eliminar',
+      width: 760,
+      html: `
+        <p class="mb-2">Estas reduciendo de <b>${anterior}</b> a <b>${nuevo}</b> dias.</p>
+        <p class="mb-2">Selecciona <b>${cantidadAEliminar}</b> dia(s) para eliminar.</p>
+        <div class="text-start" style="max-height:320px;overflow:auto;">${opcionesHtml}</div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar seleccionados',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const selected = Array.from(document.querySelectorAll<HTMLInputElement>('.swal2-day-checkbox:checked'))
+          .map(node => Number(node.value))
+          .filter(Number.isFinite);
+        if (selected.length !== cantidadAEliminar) {
+          Swal.showValidationMessage(`Selecciona exactamente ${cantidadAEliminar} dia(s).`);
+          return null;
+        }
+        return selected;
+      }
+    });
+    return result.isConfirmed ? ((result.value as number[] | null) ?? []) : null;
+  }
+
+
+  private syncFechaEventoDesdeFechasTrabajo(): void {
+    const primera = this.fechasTrabajoValores[0] ?? '';
+    this.form.get('fechaEvento')?.setValue(primera || null, { emitEvent: false });
+  }
+
+  private hasLocacionesRegistradas(): boolean {
+    return this.programacion.controls.some(control => {
+      const raw = (control as UntypedFormGroup).getRawValue() as Record<string, unknown>;
+      const nombre = (raw['nombre'] ?? '').toString().trim();
+      const direccion = (raw['direccion'] ?? '').toString().trim();
+      const hora = (raw['hora'] ?? '').toString().trim();
+      const notas = (raw['notas'] ?? '').toString().trim();
+      return !!(nombre || direccion || hora || notas);
+    });
+  }
+
+  private remapFechaLocacionesYAsignaciones(fechaAnterior: string, fechaNueva: string): void {
+    if (!fechaAnterior || !fechaNueva || fechaAnterior === fechaNueva) {
+      return;
+    }
+    this.programacion.controls.forEach(control => {
+      const fechaControl = (control as UntypedFormGroup).get('fecha');
+      if ((fechaControl?.value ?? '').toString().trim() === fechaAnterior) {
+        fechaControl?.setValue(fechaNueva, { emitEvent: false });
+      }
+    });
+    if (this.serviciosFechasSeleccionadas.length) {
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
+        entry.fecha === fechaAnterior ? { ...entry, fecha: fechaNueva } : entry
+      );
+    }
+  }
+
 
   formatFechaConDia(fecha: string): string {
     const parsed = parseDateInput(fecha);
     if (!parsed) {
       return fecha;
     }
-    const dias = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-    const dia = dias[parsed.getDay()] ?? '';
-    const dd = String(parsed.getDate()).padStart(2, '0');
-    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
-    const yyyy = parsed.getFullYear();
-    return `${dia} ${dd}-${mm}-${yyyy}`;
+    const base = new Intl.DateTimeFormat('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(parsed);
+    return base.replace(/ de (\d{4})$/, ' del $1');
   }
 
-  shouldShowFechaEvento(): boolean {
-    const value = this.form.get('dias')?.value;
+  private normalizeDias(value: unknown): number {
     const parsed = this.parseNumber(value);
-    return parsed != null && parsed <= 1;
+    if (parsed == null || parsed < 1) {
+      return 0;
+    }
+    return Math.min(Math.floor(parsed), 7);
+  }
+
+  private onDiasChange(value: unknown): void {
+    if (this.diasChangeGuard) {
+      return;
+    }
+    const diasControl = this.form.get('dias');
+    const nuevo = this.normalizeDias(value);
+    const anterior = this.lastDiasAplicado > 0 ? this.lastDiasAplicado : this.fechasTrabajo.length;
+    const valorControl = this.parseNumber(diasControl?.value);
+
+    if (diasControl && valorControl !== nuevo) {
+      this.diasChangeGuard = true;
+      diasControl.setValue(nuevo || null, { emitEvent: false });
+      diasControl.updateValueAndValidity({ emitEvent: false });
+      this.diasChangeGuard = false;
+    }
+
+    if (anterior > 0 && nuevo > 0 && nuevo < anterior) {
+      void (async () => {
+        const fechasOriginales = this.getFechasTrabajoRaw();
+        const indices = await this.seleccionarDiasAEliminar(anterior, nuevo);
+        if (indices == null) {
+          this.setFechasTrabajoRaw(fechasOriginales);
+          this.diasChangeGuard = true;
+          diasControl?.setValue(anterior || null, { emitEvent: false });
+          diasControl?.updateValueAndValidity({ emitEvent: false });
+          this.diasChangeGuard = false;
+          this.applyDiasRules(anterior);
+          this.lastDiasAplicado = anterior;
+          return;
+        }
+        this.moverDiasAlFinal(indices);
+        this.aplicarReduccionDias(nuevo);
+        this.applyDiasRules(nuevo);
+        this.lastDiasAplicado = nuevo;
+      })();
+      return;
+    }
+
+    this.applyDiasRules(nuevo);
+    this.lastDiasAplicado = nuevo;
+  }
+
+  private getImpactoReduccionDias(nuevoDias: number): { total: number; fechas: number; locaciones: number; asignaciones: number } {
+    const fechasActuales = this.getFechasTrabajoRaw();
+    const fechasPermitidas = new Set(fechasActuales.slice(0, nuevoDias).filter(Boolean));
+    const fechasEliminadas = fechasActuales.slice(nuevoDias).filter(Boolean);
+    const locacionesEliminadas = this.programacion.controls.filter(control => {
+      const fecha = ((control as UntypedFormGroup).get('fecha')?.value ?? '').toString().trim();
+      return !!fecha && !fechasPermitidas.has(fecha);
+    }).length;
+    const asignacionesEliminadas = this.serviciosFechasSeleccionadas.filter(entry =>
+      !fechasPermitidas.has((entry.fecha ?? '').toString().trim())
+    ).length;
+    const total = fechasEliminadas.length + locacionesEliminadas + asignacionesEliminadas;
+    return { total, fechas: fechasEliminadas.length, locaciones: locacionesEliminadas, asignaciones: asignacionesEliminadas };
+  }
+
+  private aplicarReduccionDias(nuevoDias: number): void {
+    const fechasActuales = this.getFechasTrabajoRaw();
+    const fechasPermitidas = new Set(fechasActuales.slice(0, nuevoDias).filter(Boolean));
+    for (let i = this.programacion.length - 1; i >= 0; i -= 1) {
+      const grupo = this.programacion.at(i) as UntypedFormGroup;
+      const fecha = (grupo.get('fecha')?.value ?? '').toString().trim();
+      if (fecha && !fechasPermitidas.has(fecha)) {
+        this.programacion.removeAt(i);
+      }
+    }
+    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+      fechasPermitidas.has((entry.fecha ?? '').toString().trim())
+    );
+  }
+
+  private syncFechasTrabajoPorDias(value: unknown): void {
+    const dias = this.parseNumber(value);
+    const target = dias != null && dias >= 1 ? Math.min(Math.floor(dias), 7) : 0;
+    const prev = [...this.fechasTrabajoSnapshot];
+    const currentLength = this.fechasTrabajo.length;
+    const prevLength = prev.length;
+    while (this.fechasTrabajo.length < target) {
+      this.fechasTrabajo.push(this.fb.control('', [Validators.required, this.fechaEventoEnRangoValidator()]));
+    }
+    while (this.fechasTrabajo.length > target) {
+      this.fechasTrabajo.removeAt(this.fechasTrabajo.length - 1);
+    }
+    this.fechasTrabajo.controls.forEach(control => {
+      control.setValidators([Validators.required, this.fechaEventoEnRangoValidator()]);
+      control.updateValueAndValidity({ emitEvent: false });
+    });
+    if (currentLength === 0 && prev.some(Boolean)) {
+      this.fechasTrabajo.controls.forEach((control, index) => {
+        const seed = (prev[index] ?? '').toString().trim();
+        if (seed) {
+          control.setValue(seed, { emitEvent: false });
+        }
+      });
+    }
+    const next = this.getFechasTrabajoRaw();
+    const isExpansion = target > prevLength;
+    if (!isExpansion) {
+      this.remapProgramacionFechas(prev, next);
+    }
+    this.fechasTrabajoSnapshot = next;
+    this.syncFechaEventoDesdeFechasTrabajo();
+  }
+
+  private remapProgramacionFechas(prev: string[], next: string[]): void {
+    const nextNoVacias = next.map(item => item.trim()).filter(Boolean);
+    if (!nextNoVacias.length) {
+      this.programacion.controls.forEach(control => {
+        (control as UntypedFormGroup).get('fecha')?.setValue('', { emitEvent: false });
+      });
+      return;
+    }
+    const max = Math.max(prev.length, next.length);
+    for (let i = 0; i < max; i += 1) {
+      const oldFecha = (prev[i] ?? '').trim();
+      const newFecha = (next[i] ?? '').trim();
+      if (!oldFecha || !newFecha || oldFecha === newFecha) {
+        continue;
+      }
+      this.programacion.controls.forEach(control => {
+        const fechaControl = (control as UntypedFormGroup).get('fecha');
+        if ((fechaControl?.value ?? '').toString().trim() === oldFecha) {
+          fechaControl?.setValue(newFecha, { emitEvent: false });
+        }
+      });
+    }
+    const fallback = nextNoVacias[0];
+    this.programacion.controls.forEach(control => {
+      const fechaControl = (control as UntypedFormGroup).get('fecha');
+      const fechaActual = (fechaControl?.value ?? '').toString().trim();
+      if (!fechaActual || !nextNoVacias.includes(fechaActual)) {
+        fechaControl?.setValue(fallback, { emitEvent: false });
+      }
+    });
   }
 
   private applyDiasRules(value: unknown): void {
-    const parsed = this.parseNumber(value);
+    const parsedRaw = this.parseNumber(value);
+    const parsed = parsedRaw != null && parsedRaw >= 1 ? Math.min(Math.floor(parsedRaw), 7) : parsedRaw;
+    const diasControl = this.form.get('dias');
+    if (parsed !== parsedRaw && diasControl) {
+      diasControl.setValue(parsed, { emitEvent: false });
+      diasControl.updateValueAndValidity({ emitEvent: false });
+    }
     const multiple = parsed != null && parsed > 1;
     const fechaControl = this.form.get('fechaEvento');
     const horasControl = this.form.get('horasEstimadas');
     if (fechaControl) {
-      if (multiple) {
-        fechaControl.clearValidators();
-      } else {
-        fechaControl.setValidators([Validators.required, this.fechaEventoEnRangoValidator()]);
-      }
+      fechaControl.clearValidators();
       fechaControl.updateValueAndValidity({ emitEvent: false });
     }
+    this.syncFechasTrabajoPorDias(parsed);
     if (horasControl) {
       const diasValidos = parsed != null && parsed >= 1;
       if (diasValidos && horasControl.disabled) {
@@ -1619,17 +2223,13 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const grupo = control as UntypedFormGroup;
       const fechaProg = grupo.get('fecha');
       if (!fechaProg) return;
-      if (multiple) {
-        if (fechaProg.disabled) {
-          fechaProg.enable({ emitEvent: false });
-        }
-        fechaProg.setValidators([Validators.required, this.fechaEventoEnRangoValidator()]);
-      } else {
-        fechaProg.clearValidators();
-        this.syncProgramacionFechas();
+      fechaProg.clearValidators();
+      if (!fechaProg.disabled) {
+        fechaProg.disable({ emitEvent: false });
       }
       fechaProg.updateValueAndValidity({ emitEvent: false });
     });
+    this.syncProgramacionFechas();
 
     if (!multiple && this.selectedPaquetes.some(item => (item.cantidad ?? 1) !== 1)) {
       this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
@@ -2209,6 +2809,64 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
     const parsed = Number(match[1].replace(',', '.'));
     return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  private horaToMinutos(value: string): number {
+    const texto = (value ?? '').toString().trim();
+    const match = /^(\d{2}):(\d{2})$/.exec(texto);
+    if (!match) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+    const horas = Number(match[1]);
+    const minutos = Number(match[2]);
+    if (!Number.isFinite(horas) || !Number.isFinite(minutos)) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+    return (horas * 60) + minutos;
+  }
+
+  private formatHoraTexto(hora24: string): string {
+    const texto = (hora24 ?? '').toString().trim();
+    const match = /^(\d{2}):(\d{2})$/.exec(texto);
+    if (!match) {
+      return 'Sin hora';
+    }
+    let hora = Number(match[1]);
+    const minuto = match[2];
+    if (!Number.isFinite(hora)) {
+      return 'Sin hora';
+    }
+    const ampm = hora >= 12 ? 'PM' : 'AM';
+    hora = hora % 12;
+    if (hora === 0) {
+      hora = 12;
+    }
+    return `${hora}:${minuto} ${ampm}`;
+  }
+
+  private normalizarClave(value: string): string {
+    return value.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  private setProgramacionExpandida(grupo: UntypedFormGroup, expandida: boolean): void {
+    this.programacionExpandida.set(grupo, expandida);
+  }
+
+  private expandirProgramacionConErrores(): void {
+    this.programacion.controls.forEach(control => {
+      const grupo = control as UntypedFormGroup;
+      if (grupo.invalid || this.isProgramacionIncompletaPorGrupo(grupo)) {
+        this.setProgramacionExpandida(grupo, true);
+      }
+    });
+  }
+
+  private isProgramacionIncompletaPorGrupo(grupo: UntypedFormGroup): boolean {
+    const raw = grupo.getRawValue() as Record<string, unknown>;
+    const nombre = (raw['nombre'] ?? '').toString().trim();
+    const direccion = (raw['direccion'] ?? '').toString().trim();
+    const hora = (raw['hora'] ?? '').toString().trim();
+    return !nombre || !direccion || !hora;
   }
 
   private parseNumber(raw: unknown): number | null {

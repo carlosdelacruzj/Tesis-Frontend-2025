@@ -121,17 +121,16 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label class="col-form-label" for="diasEvento">Cantidad de días</label>
-                  <input id="diasEvento" type="number" class="form-control" formControlName="dias" placeholder="Ej. 2"
-                    min="1" max="7" step="1" inputmode="numeric"
+                  <select id="diasEvento" class="form-control" formControlName="dias"
                     [class.is-invalid]="form.get('dias')?.invalid && form.get('dias')?.touched">
+                    <option [ngValue]="null" disabled>Selecciona días</option>
+                    @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
+                    <option [ngValue]="dia">{{ dia }}</option>
+                    }
+                  </select>
                   @if (form.get('dias')?.hasError('required') && form.get('dias')?.touched) {
                   <small class="text-danger">
                     Ingresa la cantidad de días.
-                  </small>
-                  }
-                  @if (form.get('dias')?.hasError('pattern') && form.get('dias')?.touched) {
-                  <small class="text-danger">
-                    Usa solo números enteros.
                   </small>
                   }
                   @if (form.get('dias')?.hasError('min') && form.get('dias')?.touched) {
@@ -788,3 +787,5 @@
     <button type="button" class="btn btn-outline-secondary" (click)="cerrarAsignacionFechas()">Cerrar</button>
   </div>
 </app-modal-base>
+
+

@@ -182,7 +182,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       clienteNombre: ['', [Validators.required, Validators.minLength(2)]],
       clienteContacto: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
       fechaEvento: [RegistrarCotizacionComponent.computeFechaMinimaEvento(), [Validators.required, this.fechaEventoEnRangoValidator()]],
-      dias: [null, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1), Validators.max(7)]],
+      dias: [null, [Validators.required, Validators.min(1), Validators.max(7)]],
       departamento: ['Lima', Validators.required],
       viaticosCliente: [true],
       viaticosMonto: [{ value: null, disabled: true }],
@@ -1504,6 +1504,76 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     });
   }
 
+  private setFechasTrabajoRaw(values: string[]): void {
+    this.fechasTrabajo.controls.forEach((control, index) => {
+      control.setValue((values[index] ?? '').toString().trim(), { emitEvent: false });
+    });
+    this.fechasTrabajoSnapshot = this.getFechasTrabajoRaw();
+    this.syncFechaEventoDesdeFechasTrabajo();
+  }
+
+
+  private moverDiasAlFinal(indices: number[]): void {
+    const values = this.getFechasTrabajoRaw();
+    const validos = Array.from(new Set(indices))
+      .filter(index => Number.isInteger(index) && index >= 0 && index < values.length)
+      .sort((a, b) => a - b);
+    if (!validos.length) {
+      return;
+    }
+    const removidos = validos.map(index => values[index] ?? '');
+    const restantes = values.filter((_, index) => !validos.includes(index));
+    this.setFechasTrabajoRaw([...restantes, ...removidos]);
+  }
+
+
+  private async seleccionarDiasAEliminar(anterior: number, nuevo: number): Promise<number[] | null> {
+    const values = this.getFechasTrabajoRaw();
+    const cantidadAEliminar = anterior - nuevo;
+    if (cantidadAEliminar <= 0 || values.length <= nuevo) {
+      return [];
+    }
+    const opcionesHtml = values.map((fecha, index) => {
+      const fechaLabel = fecha ? this.formatFechaConDia(fecha) : 'Sin fecha';
+      const locaciones = fecha ? this.getProgramacionIndicesPorFecha(fecha).length : 0;
+      const checked = index >= nuevo ? 'checked' : '';
+      const estado = locaciones > 0 ? `${locaciones} locaciones` : 'Sin locaciones';
+      return `
+        <label class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+          <input type="checkbox" class="swal2-day-checkbox" value="${index}" ${checked}>
+          <span><b>Dia ${index + 1}</b> - ${fechaLabel}<br><small class="text-muted">${estado}</small></span>
+        </label>
+      `;
+    }).join('');
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'Elige los dias a eliminar',
+      width: 760,
+      html: `
+        <p class="mb-2">Estas reduciendo de <b>${anterior}</b> a <b>${nuevo}</b> dias.</p>
+        <p class="mb-2">Selecciona <b>${cantidadAEliminar}</b> dia(s) para eliminar.</p>
+        <div class="text-start" style="max-height:320px;overflow:auto;">${opcionesHtml}</div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar seleccionados',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const selected = Array.from(document.querySelectorAll<HTMLInputElement>('.swal2-day-checkbox:checked'))
+          .map(node => Number(node.value))
+          .filter(Number.isFinite);
+        if (selected.length !== cantidadAEliminar) {
+          Swal.showValidationMessage(`Selecciona exactamente ${cantidadAEliminar} dia(s).`);
+          return null;
+        }
+        return selected;
+      }
+    });
+    return result.isConfirmed ? ((result.value as number[] | null) ?? []) : null;
+  }
+
+
+
   private hasLocacionesRegistradas(): boolean {
     return this.programacion.controls.some(control => {
       const raw = (control as UntypedFormGroup).getRawValue() as Record<string, unknown>;
@@ -1704,10 +1774,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (this.diasChangeGuard) {
       return;
     }
-
     const diasControl = this.form.get('dias');
     const nuevo = this.normalizeDias(value);
-    const anterior = this.lastDiasAplicado;
+    const anterior = this.lastDiasAplicado > 0 ? this.lastDiasAplicado : this.fechasTrabajo.length;
     const valorControl = this.parseNumber(diasControl?.value);
 
     if (diasControl && valorControl !== nuevo) {
@@ -1718,28 +1787,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     if (anterior > 0 && nuevo > 0 && nuevo < anterior) {
-      const impacto = this.getImpactoReduccionDias(nuevo);
-      if (impacto.total <= 0) {
-        this.applyDiasRules(nuevo);
-        this.lastDiasAplicado = nuevo;
-        return;
-      }
-      void Swal.fire({
-        icon: 'warning',
-        title: 'Reducir días de trabajo',
-        html: `
-          <p>Vas a pasar de <b>${anterior}</b> a <b>${nuevo}</b> día(s).</p>
-          <ul class="text-start mb-0">
-            <li>Se eliminarán <b>${impacto.fechas}</b> fecha(s).</li>
-            <li>Se eliminarán <b>${impacto.locaciones}</b> locación(es).</li>
-            <li>Se eliminarán <b>${impacto.asignaciones}</b> asignación(es) de servicios.</li>
-          </ul>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Sí, reducir',
-        cancelButtonText: 'Cancelar'
-      }).then(result => {
-        if (!result.isConfirmed) {
+      void (async () => {
+        const fechasOriginales = this.getFechasTrabajoRaw();
+        const indices = await this.seleccionarDiasAEliminar(anterior, nuevo);
+        if (indices == null) {
+          this.setFechasTrabajoRaw(fechasOriginales);
           this.diasChangeGuard = true;
           diasControl?.setValue(anterior || null, { emitEvent: false });
           diasControl?.updateValueAndValidity({ emitEvent: false });
@@ -1748,10 +1800,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           this.lastDiasAplicado = anterior;
           return;
         }
+        this.moverDiasAlFinal(indices);
         this.aplicarReduccionDias(nuevo);
         this.applyDiasRules(nuevo);
         this.lastDiasAplicado = nuevo;
-      });
+      })();
       return;
     }
 

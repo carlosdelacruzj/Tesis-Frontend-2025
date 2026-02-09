@@ -28,7 +28,7 @@
                 placeholder="Ej. 999 999 999">
               @if (form.get('clienteContacto')?.invalid && form.get('clienteContacto')?.touched) {
               <small class="text-danger">
-                Ingresa un medio de contacto válido.
+                Ingresa un medio de contacto valido.
               </small>
               }
             </div>
@@ -43,20 +43,19 @@
           </mat-card-header>
           <mat-card-content>
             <div class="row g-3">
-              <div [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'">
+              <div class="col-md-6">
                 <div class="form-group">
                   <label class="col-form-label" for="diasEvento">Cantidad de días</label>
-                  <input id="diasEvento" type="number" class="form-control" formControlName="dias" placeholder="Ej. 2"
-                    min="1" step="1" inputmode="numeric"
+                  <select id="diasEvento" class="form-control" formControlName="dias"
                     [class.is-invalid]="form.get('dias')?.invalid && form.get('dias')?.touched">
+                    <option [ngValue]="null" disabled>Selecciona dias</option>
+                    @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
+                    <option [ngValue]="dia">{{ dia }}</option>
+                    }
+                  </select>
                   @if (form.get('dias')?.hasError('required') && form.get('dias')?.touched) {
                   <small class="text-danger">
                     Ingresa la cantidad de días.
-                  </small>
-                  }
-                  @if (form.get('dias')?.hasError('pattern') && form.get('dias')?.touched) {
-                  <small class="text-danger">
-                    Usa solo números enteros.
                   </small>
                   }
                   @if (form.get('dias')?.hasError('min') && form.get('dias')?.touched) {
@@ -64,39 +63,14 @@
                     Ingresa un número mayor a 0.
                   </small>
                   }
-                </div>
-              </div>
-              @if (shouldShowFechaEvento()) {
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label class="col-form-label" for="fechaEvento">Fecha del evento</label>
-                  <input id="fechaEvento" type="date" class="form-control" formControlName="fechaEvento"
-                    [min]="fechaMinimaEvento" [max]="fechaMaximaEvento"
-                    [class.is-invalid]="form.get('fechaEvento')?.invalid && form.get('fechaEvento')?.touched">
-                  @if (form.get('fechaEvento')?.hasError('required') && form.get('fechaEvento')?.touched) {
+                  @if (form.get('dias')?.hasError('max') && form.get('dias')?.touched) {
                   <small class="text-danger">
-                    Selecciona una fecha.
-                  </small>
-                  }
-                  @if (form.get('fechaEvento')?.hasError('fechaEventoAnterior') && form.get('fechaEvento')?.touched) {
-                  <small class="text-danger">
-                    La fecha debe ser al menos un día después de hoy.
-                  </small>
-                  }
-                  @if (form.get('fechaEvento')?.hasError('fechaEventoPosterior') && form.get('fechaEvento')?.touched) {
-                  <small class="text-danger">
-                    La fecha no puede superar los 6 meses desde hoy.
-                  </small>
-                  }
-                  @if (form.get('fechaEvento')?.hasError('fechaEventoInvalida') && form.get('fechaEvento')?.touched) {
-                  <small class="text-danger">
-                    Selecciona una fecha válida.
+                    El máximo permitido es 7 días.
                   </small>
                   }
                 </div>
               </div>
-              }
-              <div [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'">
+              <div class="col-md-6">
                 <div class="form-group">
                   <label class="col-form-label" for="horasEstimadas">Horas estimadas por día</label>
                   <input id="horasEstimadas" type="number" class="form-control" formControlName="horasEstimadas"
@@ -173,126 +147,182 @@
         </mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
+        <div class="programacion-fechas form-group mb-3">
+          <label class="col-form-label mb-2">Fechas de trabajo</label>
+          <div formArrayName="fechasTrabajo" class="row g-2">
+            @for (control of fechasTrabajo.controls; track $index) {
+            <div class="col-md-4">
+              <label class="small text-muted mb-1 d-block">Día {{ $index + 1 }}</label>
+              <input type="date" class="form-control" [formControlName]="$index" [min]="fechaMinimaEvento"
+                [max]="fechaMaximaEvento" (change)="onFechaTrabajoChange($index, $any($event.target).value)"
+                [class.is-invalid]="control.invalid && (control.touched || form.get('dias')?.touched)">
+              @if (control.invalid && (control.touched || form.get('dias')?.touched)) {
+              <small class="text-danger">Selecciona una fecha válida.</small>
+              }
+            </div>
+            }
+          </div>
+        </div>
         <div formArrayName="programacion" class="programacion-list">
-          @for (grupo of programacion.controls; track $index) {
-          <div class="programacion-item" [formGroupName]="$index">
-            <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
-              <div class="d-flex align-items-center gap-2">
-                <h4 class="mb-0">
-                  {{ grupo.get('nombre')?.value || ('Locación ' + ($index + 1)) }}
-                </h4>
-                <!-- <span class="badge" [ngClass]="grupo.get('esPrincipal')?.value ? 'bg-primary' : 'bg-secondary'">
-                    {{ grupo.get('esPrincipal')?.value ? 'Principal' : 'Opcional' }}
-                  </span> -->
+          @for (fecha of fechasTrabajoValores; track fecha; let diaIndex = $index) {
+          <div class="programacion-day">
+            <div class="programacion-day__header d-flex align-items-center justify-content-between gap-2">
+              <div>
+                <h5 class="mb-1">Día {{ diaIndex + 1 }} · {{ formatFechaConDia(fecha) }}</h5>
+                @let resumenDia = getResumenDia(fecha);
+                <div class="programacion-day__summary">
+                  <span class="programacion-chip programacion-chip--soft">{{ resumenDia.total }} locación(es)</span>
+                  <span class="programacion-chip programacion-chip--soft">Inicio: {{ resumenDia.primera }}</span>
+                </div>
               </div>
-              <button type="button" class="btn btn-link btn-sm text-danger" (click)="removeProgramacionItem($index)"
-                [disabled]="programacion.length <= 1"
-                [attr.aria-label]="'Eliminar locación ' + (grupo.get('nombre')?.value || ('Locación ' + ($index + 1)))"
-                [attr.title]="programacion.length <= 1 ? 'Mantén al menos una locación' : 'Eliminar locación'">
-                Eliminar
-              </button>
+              <div class="d-flex align-items-center gap-2">
+                @if (canCopiarDiaAnterior(diaIndex)) {
+                <button type="button" class="btn btn-outline-secondary btn-sm"
+                  (click)="copiarLocacionesDiaAnterior(diaIndex, fecha)">
+                  Copiar día anterior
+                </button>
+                }
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="addProgramacionItem(fecha)"
+                  [disabled]="!canAgregarLocacion(fecha)"
+                  [attr.title]="!canAgregarLocacion(fecha) ? ('Máximo ' + maxLocacionesPorDia + ' locaciones por día') : 'Agregar locación'">
+                  Agregar locación
+                </button>
+              </div>
             </div>
 
-            <div class="row g-3 mt-2">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="col-form-label" [attr.for]="'programacionNombre' + $index">Nombre de la locación</label>
-                  <input [attr.id]="'programacionNombre' + $index" type="text" class="form-control"
-                    formControlName="nombre" placeholder="Ej. Recepción en casona"
-                    [class.is-invalid]="grupo.get('nombre')?.invalid && grupo.get('nombre')?.touched">
-                  @if (grupo.get('nombre')?.hasError('required') && grupo.get('nombre')?.touched) {
-                  <small class="text-danger">
-                    Ingresa la locación.
-                  </small>
-                  }
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="col-form-label" [attr.for]="'programacionDireccion' + $index">Dirección o punto de
-                    encuentro</label>
-                  <input [attr.id]="'programacionDireccion' + $index" type="text" class="form-control"
-                    formControlName="direccion" placeholder="Ej. Av. La Marina 1234"
-                    [class.is-invalid]="grupo.get('direccion')?.invalid && grupo.get('direccion')?.touched">
-                  @if (grupo.get('direccion')?.hasError('required') && grupo.get('direccion')?.touched) {
-                  <small class="text-danger">
-                    Ingresa la dirección.
-                  </small>
-                  }
-                </div>
-              </div>
-              <div class="col-sm-6 col-md-3">
-                <div class="form-group">
-                  <label class="col-form-label" [attr.for]="'programacionFecha' + $index">Fecha</label>
-                  <input [attr.id]="'programacionFecha' + $index" type="date" class="form-control"
-                    formControlName="fecha" [min]="fechaMinimaEvento" [max]="fechaMaximaEvento"
-                    [class.is-invalid]="grupo.get('fecha')?.invalid && grupo.get('fecha')?.touched">
-                  @if (grupo.get('fecha')?.invalid && grupo.get('fecha')?.touched) {
-                  <small class="text-danger">
-                    Selecciona una fecha válida.
-                  </small>
-                  }
-                </div>
-              </div>
-              <div class="col-sm-6 col-md-3">
-                <div class="form-group">
-                  <label class="col-form-label" [attr.for]="'programacionHora' + $index">Hora</label>
-                  <div class="d-flex gap-2">
-                    <select class="form-select" formControlName="hora12"
-                      [class.is-invalid]="grupo.get('hora12')?.invalid && grupo.get('hora12')?.touched">
-                      <option [ngValue]="null" disabled>Hora</option>
-                      @for (hora of horaOptions; track hora) {
-                      <option [ngValue]="hora">{{ hora }}</option>
-                      }
-                    </select>
-                    <select class="form-select" formControlName="minuto"
-                      [class.is-invalid]="grupo.get('minuto')?.invalid && grupo.get('minuto')?.touched">
-                      <option [ngValue]="null" disabled>Min</option>
-                      @for (minuto of minutoOptions; track minuto) {
-                      <option [ngValue]="minuto">{{ minuto }}</option>
-                      }
-                    </select>
-                    <select class="form-select" formControlName="ampm"
-                      [class.is-invalid]="grupo.get('ampm')?.invalid && grupo.get('ampm')?.touched">
-                      <option [ngValue]="null" disabled>AM/PM</option>
-                      @for (meridiem of ampmOptions; track meridiem) {
-                      <option [ngValue]="meridiem">{{ meridiem }}</option>
-                      }
-                    </select>
-                  </div>
-                  <input type="hidden" formControlName="hora">
-                  @if (
-                  (grupo.get('hora12')?.invalid || grupo.get('minuto')?.invalid || grupo.get('ampm')?.invalid)
-                  && (grupo.get('hora12')?.touched || grupo.get('minuto')?.touched || grupo.get('ampm')?.touched)
-                  ) {
-                  <small class="text-danger">
-                    Ingresa la hora.
-                  </small>
-                  }
-                  @if (grupo.get('hora')?.hasError('rangoHora')
-                  && (grupo.get('hora12')?.touched || grupo.get('minuto')?.touched || grupo.get('ampm')?.touched)) {
-                  <small class="text-danger">
-                    La hora debe estar entre 06:00 y 22:00.
-                  </small>
-                  }
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group mb-0">
-                  <label class="col-form-label" [attr.for]="'programacionNotas' + $index">Notas internas</label>
-                  <textarea [attr.id]="'programacionNotas' + $index" class="form-control" rows="2"
-                    formControlName="notas" placeholder="Detalles adicionales para el equipo (opcional)"></textarea>
-                </div>
-              </div>
+            @let indices = getProgramacionIndicesPorFecha(fecha);
+            @if (!indices.length) {
+            <div class="programacion-empty">
+              Aún no hay locaciones para este día.
             </div>
+            }
+            @for (index of indices; track index) {
+            @let grupo = programacion.at(index);
+            <div class="programacion-item" [formGroupName]="index">
+              <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2 programacion-item__header--clickable"
+                (click)="toggleProgramacionExpandida(index)">
+                <div class="programacion-item__summary">
+                  <div class="d-flex align-items-center gap-2">
+                    <h4 class="mb-0">
+                      {{ grupo.get('nombre')?.value || ('Locación ' + (index + 1)) }}
+                    </h4>
+                    @if (!isProgramacionExpandida(index)) {
+                    <span class="programacion-chip" [ngClass]="getProgramacionEstadoClass(index)">
+                      {{ getProgramacionEstadoLabel(index) }}
+                    </span>
+                    }
+                  </div>
+                  @if (!isProgramacionExpandida(index)) {
+                  <div class="programacion-item__meta">
+                    <span class="programacion-chip programacion-chip--soft">{{ getProgramacionHoraResumen(index) }}</span>
+                    <span class="programacion-chip programacion-chip--soft">{{ getProgramacionDireccionResumen(index) }}</span>
+                  </div>
+                  }
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-secondary btn-sm"
+                    (click)="$event.stopPropagation(); duplicarProgramacionItem(index)">
+                    Duplicar
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm programacion-item__remove"
+                    (click)="$event.stopPropagation(); removeProgramacionItem(index)" [disabled]="programacion.length <= 1"
+                    [attr.aria-label]="'Eliminar locación ' + (grupo.get('nombre')?.value || ('Locación ' + (index + 1)))"
+                    [attr.title]="programacion.length <= 1 ? 'Mantén al menos una locación' : 'Eliminar locación'">
+                    Quitar
+                  </button>
+                </div>
+              </div>
+
+              @if (isProgramacionExpandida(index)) {
+              <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionNombre' + index">Nombre de la locación</label>
+                    <input [attr.id]="'programacionNombre' + index" type="text" class="form-control"
+                      formControlName="nombre" placeholder="Ej. Recepción en casona"
+                      [class.is-invalid]="grupo.get('nombre')?.invalid && grupo.get('nombre')?.touched">
+                    @if (grupo.get('nombre')?.hasError('required') && grupo.get('nombre')?.touched) {
+                    <small class="text-danger">
+                      Ingresa la locación.
+                    </small>
+                    }
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionDireccion' + index">Dirección o punto de encuentro</label>
+                    <input [attr.id]="'programacionDireccion' + index" type="text" class="form-control"
+                      formControlName="direccion" placeholder="Ej. Av. La Marina 1234"
+                      [class.is-invalid]="grupo.get('direccion')?.invalid && grupo.get('direccion')?.touched">
+                    @if (grupo.get('direccion')?.hasError('required') && grupo.get('direccion')?.touched) {
+                    <small class="text-danger">
+                      Ingresa la dirección.
+                    </small>
+                    }
+                  </div>
+                </div>
+                <div class="col-sm-6 col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionHora' + index">Hora</label>
+                    <div class="d-flex gap-2">
+                      <select class="form-select" formControlName="hora12"
+                        [class.is-invalid]="grupo.get('hora12')?.invalid && grupo.get('hora12')?.touched">
+                        <option [ngValue]="null" disabled>Hora</option>
+                        @for (hora of horaOptions; track hora) {
+                        <option [ngValue]="hora">{{ hora }}</option>
+                        }
+                      </select>
+                      <select class="form-select" formControlName="minuto"
+                        [class.is-invalid]="grupo.get('minuto')?.invalid && grupo.get('minuto')?.touched">
+                        <option [ngValue]="null" disabled>Min</option>
+                        @for (minuto of minutoOptions; track minuto) {
+                        <option [ngValue]="minuto">{{ minuto }}</option>
+                        }
+                      </select>
+                      <select class="form-select" formControlName="ampm"
+                        [class.is-invalid]="grupo.get('ampm')?.invalid && grupo.get('ampm')?.touched">
+                        <option [ngValue]="null" disabled>AM/PM</option>
+                        @for (meridiem of ampmOptions; track meridiem) {
+                        <option [ngValue]="meridiem">{{ meridiem }}</option>
+                        }
+                      </select>
+                    </div>
+                    <input type="hidden" formControlName="hora">
+                    @if (
+                    (grupo.get('hora12')?.invalid || grupo.get('minuto')?.invalid || grupo.get('ampm')?.invalid)
+                    && (grupo.get('hora12')?.touched || grupo.get('minuto')?.touched || grupo.get('ampm')?.touched)
+                    ) {
+                    <small class="text-danger">
+                      Ingresa la hora.
+                    </small>
+                    }
+                    @if (grupo.get('hora')?.hasError('rangoHora')
+                    && (grupo.get('hora12')?.touched || grupo.get('minuto')?.touched || grupo.get('ampm')?.touched)) {
+                    <small class="text-danger">
+                      La hora debe estar entre 06:00 y 22:00.
+                    </small>
+                    }
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group mb-0">
+                    <label class="col-form-label" [attr.for]="'programacionNotas' + index">Notas internas</label>
+                    <textarea [attr.id]="'programacionNotas' + index" class="form-control" rows="2"
+                      formControlName="notas" placeholder="Detalles adicionales para el equipo (opcional)"></textarea>
+                  </div>
+                </div>
+              </div>
+              }
+              <input type="hidden" formControlName="fecha">
+            </div>
+            }
           </div>
           }
-        </div>
-
-        <div class="text-end mt-3">
-          <button type="button" class="btn btn-outline-primary btn-sm" (click)="addProgramacionItem()">
-            Agregar locación
-          </button>
+          @if (!fechasTrabajoValores.length) {
+          <div class="programacion-empty">
+            Define primero la cantidad de días y sus fechas de trabajo.
+          </div>
+          }
         </div>
       </mat-card-content>
     </mat-card>
@@ -437,7 +467,7 @@
                 <div>{{ row.precioOriginal | usd:'1.2-2' }}</div>
                 @if (getDescuentoPorcentaje(row) !== null) {
                 <div class="text-success small">
-                  −{{ getDescuentoPorcentaje(row) | number:'1.0-1' }}%
+                  -{{ getDescuentoPorcentaje(row) | number:'1.0-1' }}%
                 </div>
                 }
               </div>
@@ -461,7 +491,7 @@
             </ng-template>
 
             <ng-template appCell="quitar" let-row>
-              <button type="button" class="btn btn-link text-danger p-0" (click)="removePaquete(row.key)">✖</button>
+              <button type="button" class="btn btn-link text-danger p-0" (click)="removePaquete(row.key)">Quitar</button>
             </ng-template>
 
           </app-table-base>
@@ -553,7 +583,7 @@
   @if (detallePaqueteSeleccionado) {
   <div class="row g-3">
     <div class="col-md-6">
-      <label class="form-label" for="detallePaqueteTituloEdit">Título</label>
+      <label class="form-label" for="detallePaqueteTituloEdit">Titulo</label>
       <input id="detallePaqueteTituloEdit" class="form-control" [value]="detallePaqueteSeleccionado?.titulo ?? '—'"
         disabled>
     </div>
@@ -574,7 +604,7 @@
         disabled>
     </div>
     <div class="col-md-6">
-      <label class="form-label" for="detallePaqueteCategoriaEdit">Categoría</label>
+      <label class="form-label" for="detallePaqueteCategoriaEdit">Categoria</label>
       <input id="detallePaqueteCategoriaEdit" class="form-control"
         [value]="detallePaqueteSeleccionado?.categoriaNombre ?? detallePaqueteSeleccionado?.categoriaTipo ?? '—'"
         disabled>
@@ -585,7 +615,7 @@
         [value]="detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'" disabled>
     </div>
     <div class="col-12">
-      <label class="form-label" for="detallePaqueteDescripcionEdit">Descripción</label>
+      <label class="form-label" for="detallePaqueteDescripcionEdit">Descripcion</label>
       <textarea id="detallePaqueteDescripcionEdit" class="form-control" rows="3"
         [value]="detallePaqueteSeleccionado?.descripcion || detallePaqueteSeleccionado?.Descripcion || '—'"
         disabled></textarea>
@@ -601,7 +631,7 @@
         disabled>
     </div>
     <div class="col-md-4">
-      <label class="form-label" for="detallePaqueteFilmEdit">Filmación (min)</label>
+      <label class="form-label" for="detallePaqueteFilmEdit">Filmacion (min)</label>
       <input id="detallePaqueteFilmEdit" class="form-control" [value]="detallePaqueteSeleccionado?.filmMin ?? '—'"
         disabled>
     </div>
