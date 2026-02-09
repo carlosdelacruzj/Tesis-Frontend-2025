@@ -399,10 +399,18 @@
             </ng-template>
 
             <ng-template appCell="cantidad" let-row>
-              <div class="text-center">
-                <input type="number" class="form-control form-control-sm text-center" [value]="row.cantidad || 1"
-                  min="1" step="1" inputmode="numeric" [attr.max]="getCantidadMaximaPorDias() || null"
-                  (input)="onCantidadChange(row, $any($event.target).value)">
+              <div class="text-center qty-select-wrap">
+                <mat-form-field appearance="outline" class="qty-mat-field">
+                  <mat-select
+                    [ngModel]="row.cantidad || 1"
+                    [ngModelOptions]="{standalone:true}"
+                    (ngModelChange)="onCantidadChange(row, $event)"
+                    panelClass="qty-mat-panel">
+                    @for (cantidad of getCantidadOptions(); track cantidad) {
+                      <mat-option [value]="cantidad" class="qty-mat-option">{{ cantidad }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
               </div>
             </ng-template>
 

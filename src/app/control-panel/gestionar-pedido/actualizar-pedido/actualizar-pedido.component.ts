@@ -556,7 +556,20 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const descripcion = String(record['descripcion'] ?? '');
     const moneda = String(record['moneda'] ?? 'USD');
     const precioUnit = Number(record['precio'] ?? 0);
-    const cantidad = 1;
+    const servicioNombreActual = typeof servicioRecord?.['nombre'] === 'string'
+      ? String(servicioRecord['nombre']).toLowerCase()
+      : '';
+    const esMismoServicio = (item: PedidoPaqueteSeleccionado): boolean => {
+      if (servicioId != null) {
+        return (item.servicioId ?? null) === servicioId;
+      }
+      return (item.servicioId ?? null) == null &&
+        (item.servicioNombre ?? '').toLowerCase() === servicioNombreActual;
+    };
+    const reemplazados = this.selectedPaquetes.filter(esMismoServicio);
+    const cantidadMaxima = this.getCantidadMaximaPorDias();
+    const cantidadBase = Math.max(1, Number(reemplazados[0]?.cantidad ?? 1) || 1);
+    const cantidad = cantidadMaxima != null ? Math.min(cantidadBase, cantidadMaxima) : cantidadBase;
     const descuento = 0;
     const recargo = 0;
     const notas = '';
@@ -568,7 +581,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const filmMin = record['filmMin'] != null ? Number(record['filmMin']) : null;
     this.tmpIdSequence += 1;
     const tmpId = `i${this.tmpIdSequence}`;
-    const restantes = this.selectedPaquetes.filter(item => (item.servicioId ?? null) !== servicioId);
+    const restantes = this.selectedPaquetes.filter(item => !esMismoServicio(item));
     this.selectedPaquetes = [
       ...restantes,
       {
@@ -599,8 +612,16 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       }
     ];
     if (this.serviciosFechasSeleccionadas.length) {
+      const replacedTmpIds = new Set(reemplazados.map(item => item.tmpId));
       const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
-      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => tmpIds.has(entry.itemTmpId));
+      const migradas = this.serviciosFechasSeleccionadas
+        .map(entry => replacedTmpIds.has(entry.itemTmpId) ? { ...entry, itemTmpId: tmpId } : entry)
+        .filter(entry => tmpIds.has(entry.itemTmpId));
+      const nuevas = migradas.filter(entry => entry.itemTmpId === tmpId).slice(0, cantidad);
+      this.serviciosFechasSeleccionadas = [
+        ...migradas.filter(entry => entry.itemTmpId !== tmpId),
+        ...nuevas
+      ];
     }
     this.refreshSelectedPaquetesColumns();
   }
@@ -726,6 +747,12 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   getCantidadMaximaPorDias(): number | null {
     const parsed = this.getDiasTrabajo();
     return parsed != null && parsed >= 1 ? parsed : null;
+  }
+
+  getCantidadOptions(): number[] {
+    const max = this.getCantidadMaximaPorDias();
+    const limite = max != null && max >= 1 ? max : 1;
+    return Array.from({ length: limite }, (_, index) => index + 1);
   }
 
   private getFechasUbicacionUnicas(): string[] {
@@ -1857,6 +1884,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       }));
     const items = (this.selectedPaquetes || []).map(it => ({
       key: String(it.key),
+      tmpId: String(it.tmpId ?? ''),
       idEventoServicio: it.idEventoServicio ?? null,
       eventoId: it.eventoId ?? null,
       servicioId: it.servicioId ?? null,
@@ -1959,20 +1987,91 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     actual.items.forEach(item => {
       nextItemsMap.set(String(item.key), item);
     });
+    const fechasAntesPorItem = this.buildFechasPorItemMap(anterior.serviciosFechas ?? []);
+    const fechasAhoraPorItem = this.buildFechasPorItemMap(actual.serviciosFechas ?? []);
+
+    const matchedPrevKeys = new Set<string>();
+    const matchedNextKeys = new Set<string>();
+
+    // 1) Cambios sobre el mismo ítem (misma key)
     const allKeys = new Set<string>([...prevItemsMap.keys(), ...nextItemsMap.keys()]);
     allKeys.forEach(key => {
       const prev = prevItemsMap.get(key);
       const next = nextItemsMap.get(key);
-      if (!prev && !next) return;
-      if (!prev || !next || JSON.stringify(prev) !== JSON.stringify(next)) {
-        const label = prev?.nombre || next?.nombre || `Paquete ${key}`;
+      if (!prev || !next) return;
+      matchedPrevKeys.add(key);
+      matchedNextKeys.add(key);
+      const fechasPrev = this.getFechasItem(fechasAntesPorItem, prev);
+      const fechasNext = this.getFechasItem(fechasAhoraPorItem, next);
+      const cambiaronDatos = JSON.stringify(prev) !== JSON.stringify(next);
+      const cambiaronFechas = JSON.stringify(fechasPrev) !== JSON.stringify(fechasNext);
+      if (cambiaronDatos || cambiaronFechas) {
+        const label = prev.nombre || next.nombre || `Paquete ${key}`;
+        const resumen = this.formatItemCambio(prev, next, fechasPrev, fechasNext, false);
         cambios.push({
           label,
-          before: this.formatItemResumen(prev),
-          after: this.formatItemResumen(next),
+          before: resumen.before,
+          after: resumen.after,
           level: 'strong'
         });
       }
+    });
+
+    // 2) Detectar reemplazos (sale uno y entra otro del mismo servicio)
+    const prevNoMatch = anterior.items.filter(item => !matchedPrevKeys.has(String(item.key)));
+    const nextNoMatch = actual.items.filter(item => !matchedNextKeys.has(String(item.key)));
+    const nextPendientes = [...nextNoMatch];
+
+    prevNoMatch.forEach(prev => {
+      if (prev.servicioId == null) {
+        return;
+      }
+      const idx = nextPendientes.findIndex(next =>
+        next.servicioId != null && next.servicioId === prev.servicioId
+      );
+      if (idx < 0) {
+        return;
+      }
+      const next = nextPendientes[idx];
+      nextPendientes.splice(idx, 1);
+      matchedPrevKeys.add(String(prev.key));
+      matchedNextKeys.add(String(next.key));
+
+      const fechasPrev = this.getFechasItem(fechasAntesPorItem, prev);
+      const fechasNext = this.getFechasItem(fechasAhoraPorItem, next);
+      const cambiaronDatos = JSON.stringify(prev) !== JSON.stringify(next);
+      const cambiaronFechas = JSON.stringify(fechasPrev) !== JSON.stringify(fechasNext);
+      if (cambiaronDatos || cambiaronFechas) {
+        const servicioLabel = this.getTipoServicioLabel(next) || this.getTipoServicioLabel(prev) || `Servicio ${prev.servicioId}`;
+        const resumen = this.formatItemCambio(prev, next, fechasPrev, fechasNext, true);
+        cambios.push({
+          label: `Reemplazo en ${servicioLabel}`,
+          before: resumen.before,
+          after: resumen.after,
+          level: 'strong'
+        });
+      }
+    });
+
+    // 3) Lo no pareado queda como agregado/eliminado explícito
+    const prevSolo = anterior.items.filter(item => !matchedPrevKeys.has(String(item.key)));
+    prevSolo.forEach(prev => {
+      cambios.push({
+        label: `${prev.nombre || `Paquete ${prev.key}`} (eliminado)`,
+        before: this.formatItemSolo(prev, this.getFechasItem(fechasAntesPorItem, prev), false),
+        after: '—',
+        level: 'strong'
+      });
+    });
+
+    const nextSolo = actual.items.filter(item => !matchedNextKeys.has(String(item.key)));
+    nextSolo.forEach(next => {
+      cambios.push({
+        label: `${next.nombre || `Paquete ${next.key}`} (agregado)`,
+        before: '—',
+        after: this.formatItemSolo(next, this.getFechasItem(fechasAhoraPorItem, next), false),
+        level: 'strong'
+      });
     });
 
     return { hasStrong: cambios.some(item => item.level === 'strong'), items: cambios };
@@ -2019,11 +2118,126 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     };
   }
 
-  private formatItemResumen(item?: PedidoItemSnapshot): string {
-    if (!item) return '—';
-    const precio = Number.isFinite(item.precio) ? item.precio.toFixed(2) : '0.00';
-    const cantidad = item.cantidad ?? 1;
-    return `Precio: ${precio} | Cant: ${cantidad}`;
+  private formatItemSolo(item: PedidoItemSnapshot, fechas: string[], includeNombre: boolean): string {
+    const parts: string[] = [];
+    if (includeNombre && item.nombre) {
+      parts.push(item.nombre);
+    }
+    parts.push(`Precio: ${this.formatMoneda(item.precio)}`);
+    parts.push(`Cant: ${item.cantidad ?? 1}`);
+    parts.push(`Fechas: ${this.formatFechasLista(fechas)}`);
+    return parts.join(' | ');
+  }
+
+  private formatItemCambio(
+    prev: PedidoItemSnapshot,
+    next: PedidoItemSnapshot,
+    fechasPrev: string[],
+    fechasNext: string[],
+    includeNombre: boolean
+  ): { before: string; after: string } {
+    const changedNombre = prev.nombre !== next.nombre;
+    const changedPrecio = !this.sameNumber(prev.precio, next.precio);
+    const changedCantidad = !this.sameNumber(prev.cantidad, next.cantidad);
+    const changedFechas = JSON.stringify(fechasPrev) !== JSON.stringify(fechasNext);
+
+    const beforeParts: string[] = [];
+    const afterParts: string[] = [];
+
+    if (includeNombre && changedNombre) {
+      beforeParts.push(prev.nombre || '—');
+      afterParts.push(next.nombre || '—');
+    }
+    if (changedPrecio) {
+      beforeParts.push(`Precio: ${this.formatMoneda(prev.precio)}`);
+      afterParts.push(`Precio: ${this.formatMoneda(next.precio)}`);
+    }
+    if (changedCantidad) {
+      beforeParts.push(`Cant: ${prev.cantidad ?? 1}`);
+      afterParts.push(`Cant: ${next.cantidad ?? 1}`);
+    }
+    if (changedFechas) {
+      beforeParts.push(`Fechas: ${this.formatFechasLista(fechasPrev)}`);
+      afterParts.push(`Fechas: ${this.formatFechasLista(fechasNext)}`);
+    }
+
+    if (!beforeParts.length && !afterParts.length) {
+      return {
+        before: this.formatItemSolo(prev, fechasPrev, includeNombre),
+        after: this.formatItemSolo(next, fechasNext, includeNombre)
+      };
+    }
+
+    return {
+      before: beforeParts.join(' | '),
+      after: afterParts.join(' | ')
+    };
+  }
+
+  private sameNumber(a: unknown, b: unknown): boolean {
+    const na = Number(a ?? 0);
+    const nb = Number(b ?? 0);
+    return Number.isFinite(na) && Number.isFinite(nb) && Math.abs(na - nb) < 0.000001;
+  }
+
+  private formatMoneda(value: unknown): string {
+    const num = Number(value ?? 0);
+    return Number.isFinite(num) ? num.toFixed(2) : '0.00';
+  }
+
+  private formatFechasLista(fechas: string[]): string {
+    return fechas.length ? fechas.join(' / ') : 'Sin asignar';
+  }
+
+  private getFechasItem(map: Map<string, string[]>, item?: PedidoItemSnapshot): string[] {
+    if (!item) {
+      return [];
+    }
+    const tmpId = String(item.tmpId ?? '').trim();
+    const key = String(item.key ?? '').trim();
+    return map.get(tmpId) ?? map.get(key) ?? [];
+  }
+
+  private buildFechasPorItemMap(serviciosFechas: PedidoServicioFecha[]): Map<string, string[]> {
+    const map = new Map<string, string[]>();
+    serviciosFechas.forEach(entry => {
+      const key = String(entry.itemTmpId ?? '').trim();
+      const fecha = String(entry.fecha ?? '').trim();
+      if (!key || !fecha) {
+        return;
+      }
+      const fechas = map.get(key) ?? [];
+      fechas.push(fecha);
+      map.set(key, fechas);
+    });
+    map.forEach((fechas, key) => {
+      const ordenadas = [...new Set(fechas)]
+        .sort((a, b) => a.localeCompare(b))
+        .map(fecha => this.formatFechaLarga(fecha));
+      map.set(key, ordenadas);
+    });
+    return map;
+  }
+
+  private formatFechaLarga(value: string): string {
+    const parsed = parseDateInput(value);
+    if (!parsed) {
+      return value;
+    }
+    const weekday = parsed.toLocaleDateString('es-PE', { weekday: 'long' });
+    const day = parsed.getDate();
+    const month = parsed.toLocaleDateString('es-PE', { month: 'long' });
+    const year = parsed.getFullYear();
+    return `${weekday}, ${day} de ${month} del ${year}`;
+  }
+
+  private getTipoServicioLabel(item?: PedidoItemSnapshot): string {
+    const nombre = String(item?.nombre ?? '').trim();
+    if (!nombre) {
+      return '';
+    }
+    const [primeraPalabra = ''] = nombre.split(/\s+/);
+    return primeraPalabra.trim();
   }
 
   private confirmStrongChanges(items: PedidoChangeItem[]): Promise<boolean> {
@@ -2039,6 +2253,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return Swal.fire({
       icon: 'warning',
       title: 'Cambios importantes',
+      width: 920,
       html: `
         <p>Los cambios realizados harán que haya un desfase entre la cotización y el pedido, y esto afectará al contrato final.</p>
         <ul style="text-align:left; padding-left:18px; margin-top:8px; max-height:240px; overflow:auto;">
@@ -2152,6 +2367,7 @@ interface PedidoEventoSnapshot {
 
 interface PedidoItemSnapshot {
   key: string;
+  tmpId: string;
   idEventoServicio: number | null;
   eventoId: number | null;
   servicioId: number | null;

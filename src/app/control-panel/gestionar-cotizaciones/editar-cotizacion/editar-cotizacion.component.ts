@@ -388,28 +388,30 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const descuento = this.getDescuento(element);
     const recargo = this.getRecargo(element);
     const precioBase = Number(element?.precio ?? element?.Precio ?? 0) || 0;
-
-    let restantes: PaqueteSeleccionado[];
-    if (servicioId != null) {
-      restantes = this.selectedPaquetes.filter(item => (item.servicioId ?? null) !== servicioId);
-    } else {
-      const servicioNombreActual = (servicioNombre ?? this.selectedServicioNombre ?? '').toLowerCase();
-      restantes = this.selectedPaquetes.filter(item =>
-        (item.servicioId ?? null) != null
-          ? true
-          : (item.servicioNombre ?? '').toLowerCase() !== servicioNombreActual
-      );
-    }
+    const servicioNombreActual = (servicioNombre ?? this.selectedServicioNombre ?? '').toLowerCase();
+    const esMismoServicio = (item: PaqueteSeleccionado): boolean => {
+      if (servicioId != null) {
+        return (item.servicioId ?? null) === servicioId;
+      }
+      return (item.servicioId ?? null) == null &&
+        (item.servicioNombre ?? '').toLowerCase() === servicioNombreActual;
+    };
+    const reemplazados = this.selectedPaquetes.filter(esMismoServicio);
+    const restantes = this.selectedPaquetes.filter(item => !esMismoServicio(item));
+    const cantidadMaxima = this.getCantidadMaximaPorDias();
+    const cantidadBase = Math.max(1, Number(reemplazados[0]?.cantidad ?? 1) || 1);
+    const cantidadInicial = cantidadMaxima != null ? Math.min(cantidadBase, cantidadMaxima) : cantidadBase;
+    const nextTmpId = `i${this.tmpIdSequence + 1}`;
 
     this.selectedPaquetes = [
       ...restantes,
       {
         key,
-        tmpId: `i${this.tmpIdSequence + 1}`,
+        tmpId: nextTmpId,
         titulo,
         descripcion,
         precio: precioBase,
-        cantidad: 1,
+        cantidad: cantidadInicial,
         moneda: moneda ?? undefined,
         grupo,
         opcion,
@@ -431,8 +433,16 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     ];
     this.tmpIdSequence += 1;
     if (this.serviciosFechasSeleccionadas.length) {
+      const replacedTmpIds = new Set(reemplazados.map(item => item.tmpId));
       const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
-      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => tmpIds.has(entry.itemTmpId));
+      const migradas = this.serviciosFechasSeleccionadas
+        .map(entry => replacedTmpIds.has(entry.itemTmpId) ? { ...entry, itemTmpId: nextTmpId } : entry)
+        .filter(entry => tmpIds.has(entry.itemTmpId));
+      const nuevas = migradas.filter(entry => entry.itemTmpId === nextTmpId).slice(0, cantidadInicial);
+      this.serviciosFechasSeleccionadas = [
+        ...migradas.filter(entry => entry.itemTmpId !== nextTmpId),
+        ...nuevas
+      ];
     }
     this.syncTotalEstimado();
   }
@@ -1545,6 +1555,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   getCantidadMaximaPorDias(): number | null {
     const parsed = this.parseNumber(this.form.get('dias')?.value);
     return parsed != null && parsed >= 1 ? parsed : null;
+  }
+
+  getCantidadOptions(): number[] {
+    const max = this.getCantidadMaximaPorDias();
+    const limite = max != null && max >= 1 ? max : 1;
+    return Array.from({ length: limite }, (_, index) => index + 1);
   }
 
   private getFechasProgramacionUnicas(): string[] {
