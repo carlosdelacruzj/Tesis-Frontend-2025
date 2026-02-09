@@ -974,7 +974,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   shouldShowPrecioOriginal(): boolean {
-    return this.selectedPaquetes.some(item => this.isPrecioModificado(item));
+    return false;
   }
 
   isPrecioModificado(paquete: PaqueteSeleccionado): boolean {

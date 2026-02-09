@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
+﻿import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
@@ -86,6 +86,7 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Paquetes seleccionados (solo para mostrar) ======
   selectedPaquetes: PaqueteResumenRow[] = [];
+  fechasTrabajo: string[] = [];
   selectedPaquetesColumns: TableColumn<PaqueteResumenRow>[] = [
     { key: 'titulo', header: 'Titulo', sortable: false, width: '30%' },
     { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '100px' },
@@ -204,6 +205,78 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
     return formatDisplayDate(value, '');
   }
 
+  get fechasTrabajoValores(): string[] {
+    return this.fechasTrabajo
+      .map(fecha => (fecha ?? '').toString().trim())
+      .filter(Boolean);
+  }
+
+  formatFechaConDia(fecha: string): string {
+    const parsed = parseDateInput(fecha);
+    if (!parsed) {
+      return fecha;
+    }
+    const base = new Intl.DateTimeFormat('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(parsed);
+    return base.replace(/ de (\d{4})$/, ' del $1');
+  }
+
+  getProgramacionIndicesPorFecha(fecha: string): number[] {
+    const objetivo = (fecha ?? '').toString().trim();
+    if (!objetivo) {
+      return [];
+    }
+    return this.ubicacion
+      .map((item, index) => ({ item, index }))
+      .filter(entry => (entry.item.Fecha ?? '').toString().trim() === objetivo)
+      .sort((a, b) => {
+        const hA = (a.item.Hora ?? '').toString().trim();
+        const hB = (b.item.Hora ?? '').toString().trim();
+        return hA.localeCompare(hB);
+      })
+      .map(entry => entry.index);
+  }
+
+  getResumenDia(fecha: string): { total: number; primera: string } {
+    const indices = this.getProgramacionIndicesPorFecha(fecha);
+    const primera = indices
+      .map(index => (this.ubicacion[index]?.Hora ?? '').toString().trim())
+      .filter(Boolean)
+      .sort()[0] ?? '';
+    return {
+      total: indices.length,
+      primera: primera || 'Sin hora'
+    };
+  }
+
+  getProgramacionHoraResumen(index: number): string {
+    const hora = (this.ubicacion[index]?.Hora ?? '').toString().trim();
+    return hora || 'Sin hora';
+  }
+
+  getProgramacionDireccionResumen(index: number): string {
+    const direccion = (this.ubicacion[index]?.DireccionExacta ?? '').toString().trim();
+    if (!direccion) {
+      return 'Sin direccion';
+    }
+    return direccion.length > 52 ? `${direccion.slice(0, 52)}...` : direccion;
+  }
+
+  isProgramacionIncompleta(index: number): boolean {
+    const row = this.ubicacion[index];
+    if (!row) {
+      return true;
+    }
+    const nombre = (row.Direccion ?? '').toString().trim();
+    const direccion = (row.DireccionExacta ?? '').toString().trim();
+    const hora = (row.Hora ?? '').toString().trim();
+    return !nombre || !direccion || !hora;
+  }
+
   // ====== Catálogos (solo carga) ======
   getServicio() {
     const obs = this.pedidoService.getServicios?.() as Observable<unknown> | undefined;
@@ -312,6 +385,11 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
       }));
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
+      this.fechasTrabajo = Array.from(new Set(
+        this.ubicacion
+          .map(item => (item.Fecha ?? '').toString().trim())
+          .filter(Boolean)
+      )).sort();
 
       // Items/paquetes seleccionados (para mostrar tabla resumen)
       this.selectedPaquetes = items.map((it) => ({
@@ -373,3 +451,4 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
   }
 
 }
+

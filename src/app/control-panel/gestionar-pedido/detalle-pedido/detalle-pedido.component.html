@@ -1,4 +1,4 @@
-<div class="dashboard-content">
+﻿<div class="dashboard-content">
   <app-list-toolbar [title]="'Detalle del pedido'" [showSearch]="false" [showCreateButton]="false">
   </app-list-toolbar>
 
@@ -60,25 +60,17 @@
             </div>
 
             <div class="row g-3 mt-1">
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <div class="form-group">
-                  <label class="col-form-label" for="diasTrabajo">Cantidad de días</label>
+                  <label class="col-form-label" for="diasTrabajo">Cantidad de dias</label>
                   <input id="diasTrabajo" type="number" class="form-control"
                     [value]="visualizarService.selectAgregarPedido.dias ?? 1" disabled readonly>
                 </div>
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <div class="form-group">
-                  <label class="col-form-label" for="fechaEvent">Fecha del evento</label>
-                  <input id="fechaEvent" type="date" class="form-control"
-                    [value]="visualizarService.selectAgregarPedido.fechaEvent || ''" disabled readonly>
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label class="col-form-label" for="horasEstimadas">Horas estimadas por día</label>
+                  <label class="col-form-label" for="horasEstimadas">Horas estimadas por dia</label>
                   <input id="horasEstimadas" type="number" class="form-control"
                     [value]="visualizarService.selectAgregarPedido.horasEstimadas ?? ''" disabled readonly>
                 </div>
@@ -91,55 +83,108 @@
       <div class="col-12">
         <mat-card class="card mb-3">
           <mat-card-header class="programacion-header">
-            <mat-card-title>Programación del evento</mat-card-title>
+            <mat-card-title>Programacion del evento</mat-card-title>
             <mat-card-subtitle>
               Locaciones y horarios definidos para el pedido.
             </mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
+            <div class="programacion-fechas form-group mb-3">
+              <label class="col-form-label mb-2">Fechas de trabajo</label>
+              <div class="row g-2">
+                @for (fecha of fechasTrabajoValores; track fecha; let i = $index) {
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label class="small text-muted mb-1 d-block">Dia {{ i + 1 }}</label>
+                    <input type="date" class="form-control" [value]="fecha" disabled readonly>
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+
             <div class="programacion-list">
-              @for (item of ubicacion; track $index) {
-              <div class="programacion-item">
-                <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
-                  <h4 class="mb-0">{{ item.Direccion || ('Locación ' + ($index + 1)) }}</h4>
-                </div>
+              @if (!fechasTrabajoValores.length) {
+              <div class="programacion-empty">
+                Aun no hay fechas de trabajo registradas.
+              </div>
+              }
 
-                <div class="row g-3 mt-2">
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label class="col-form-label">Nombre de la locación</label>
-                      <input type="text" class="form-control" [value]="item.Direccion || ''" disabled readonly>
-                    </div>
-                  </div>
-
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label class="col-form-label">Dirección o punto de encuentro</label>
-                      <input type="text" class="form-control" [value]="item.DireccionExacta || ''" disabled readonly>
-                    </div>
-                  </div>
-
-                  <div class="col-sm-6 col-md-3">
-                    <div class="form-group">
-                      <label class="col-form-label">Fecha</label>
-                      <input type="date" class="form-control" [value]="item.Fecha || ''" disabled readonly>
-                    </div>
-                  </div>
-
-                  <div class="col-sm-6 col-md-3">
-                    <div class="form-group">
-                      <label class="col-form-label">Hora</label>
-                      <input type="time" class="form-control" [value]="item.Hora || ''" disabled readonly>
-                    </div>
-                  </div>
-
-                  <div class="col-md-6">
-                    <div class="form-group mb-0">
-                      <label class="col-form-label">Notas internas</label>
-                      <textarea class="form-control" rows="2" [value]="item.Notas || ''" disabled readonly></textarea>
+              @for (fecha of fechasTrabajoValores; track fecha; let diaIndex = $index) {
+              <div class="programacion-day">
+                <div class="programacion-day__header d-flex align-items-center justify-content-between gap-2">
+                  <div>
+                    <h5 class="mb-1">Dia {{ diaIndex + 1 }} · {{ formatFechaConDia(fecha) }}</h5>
+                    @let resumenDia = getResumenDia(fecha);
+                    <div class="programacion-day__summary">
+                      <span class="programacion-chip programacion-chip--soft">{{ resumenDia.total }} locacion(es)</span>
+                      <span class="programacion-chip programacion-chip--soft">Inicio: {{ resumenDia.primera }}</span>
                     </div>
                   </div>
                 </div>
+
+                @let indices = getProgramacionIndicesPorFecha(fecha);
+                @if (!indices.length) {
+                <div class="programacion-empty">
+                  Aun no hay locaciones para este dia.
+                </div>
+                }
+
+                @for (index of indices; track index) {
+                <div class="programacion-item">
+                  <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
+                    <div class="programacion-item__summary">
+                      <div class="d-flex align-items-center gap-2">
+                        <h4 class="mb-0">{{ ubicacion[index].Direccion || ('Locacion ' + (index + 1)) }}</h4>
+                        <span class="programacion-chip" [ngClass]="isProgramacionIncompleta(index) ? 'programacion-status--warn' : 'programacion-status--ok'">
+                          {{ isProgramacionIncompleta(index) ? 'Incompleta' : 'Completa' }}
+                        </span>
+                      </div>
+                      <div class="programacion-item__meta">
+                        <span class="programacion-chip programacion-chip--soft">{{ getProgramacionHoraResumen(index) }}</span>
+                        <span class="programacion-chip programacion-chip--soft">{{ getProgramacionDireccionResumen(index) }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label class="col-form-label">Nombre de la locacion</label>
+                        <input type="text" class="form-control" [value]="ubicacion[index].Direccion || ''" disabled readonly>
+                      </div>
+                    </div>
+
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label class="col-form-label">Direccion o punto de encuentro</label>
+                        <input type="text" class="form-control" [value]="ubicacion[index].DireccionExacta || ''" disabled readonly>
+                      </div>
+                    </div>
+
+                    <div class="col-sm-6 col-md-3">
+                      <div class="form-group">
+                        <label class="col-form-label">Fecha</label>
+                        <input type="date" class="form-control" [value]="ubicacion[index].Fecha || ''" disabled readonly>
+                      </div>
+                    </div>
+
+                    <div class="col-sm-6 col-md-3">
+                      <div class="form-group">
+                        <label class="col-form-label">Hora</label>
+                        <input type="time" class="form-control" [value]="ubicacion[index].Hora || ''" disabled readonly>
+                      </div>
+                    </div>
+
+                    <div class="col-md-6">
+                      <div class="form-group mb-0">
+                        <label class="col-form-label">Notas internas</label>
+                        <textarea class="form-control" rows="2" [value]="ubicacion[index].Notas || ''" disabled readonly></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                }
               </div>
               }
             </div>
@@ -170,8 +215,8 @@
 
             @if (selectedPaquetes.length) {
             <div class="mt-2">
-              <div class="d-flex align-items-center justify-content-between">
-                <h6>Paquetes seleccionados ({{ selectedPaquetes.length }})</h6>
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <h5 class="mb-0 paquetes-selected-title">Paquetes seleccionados ({{ selectedPaquetes.length }})</h5>
               </div>
 
               <div class="table-responsive">
@@ -226,17 +271,17 @@
         @if ((visualizarService.selectAgregarPedido.departamento || '').toLowerCase() !== 'lima') {
         <mat-card class="card mb-3">
           <mat-card-header>
-            <mat-card-title>Viáticos</mat-card-title>
+            <mat-card-title>Viaticos</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="form-check mb-3">
               <input id="viaticosClientePedido" type="checkbox" class="form-check-input"
                 [checked]="!!visualizarService.selectAgregarPedido.viaticosCliente" disabled>
-              <label class="form-check-label" for="viaticosClientePedido">El cliente cubre viáticos</label>
+              <label class="form-check-label" for="viaticosClientePedido">El cliente cubre viaticos</label>
             </div>
             @if (!visualizarService.selectAgregarPedido.viaticosCliente) {
             <div class="form-group">
-              <label class="col-form-label" for="viaticosMontoPedido">Monto de viáticos (USD)</label>
+              <label class="col-form-label" for="viaticosMontoPedido">Monto de viaticos (USD)</label>
               <input id="viaticosMontoPedido" type="number" class="form-control"
                 [value]="visualizarService.selectAgregarPedido.viaticosMonto ?? ''" disabled readonly>
             </div>
@@ -271,7 +316,8 @@
     </div>
 
     <div class="text-end">
-      <button type="button" class="btn btn-outline-secondary" [routerLink]="['/home/gestionar-pedido']">Atrás</button>
+      <button type="button" class="btn btn-outline-secondary" [routerLink]="['/home/gestionar-pedido']">Atras</button>
     </div>
   </form>
 </div>
+

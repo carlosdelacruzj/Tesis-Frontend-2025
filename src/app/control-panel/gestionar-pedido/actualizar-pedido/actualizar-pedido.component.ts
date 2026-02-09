@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit, inject } from '@angular/core';
+﻿import { Component, OnInit, ViewChild, AfterViewInit, inject } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { PedidoService } from '../service/pedido.service';
 import { VisualizarService } from '../service/visualizar.service';
@@ -85,14 +85,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   // ====== Columnas ======
   columnsToDisplay = ['Nro', 'Fecha', 'Hora', 'Direccion', 'DireccionExacta', 'Notas', 'Editar', 'Quitar'];
   paquetesColumns: TableColumn<PaqueteRow>[] = [
-    { key: 'titulo', header: 'Título', sortable: true, width: '45%' },
+    { key: 'titulo', header: 'Titulo', sortable: true, width: '45%' },
     { key: 'precio', header: 'Precio', sortable: true, class: 'text-center', width: '120px' },
     { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
     { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
     { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '200px' }
   ];
 
-  // ====== Data y catálogos ======
+  // ====== Data y catalogos ======
   servicios: AnyRecord[] = [];
   evento: AnyRecord[] = [];
   servicioSeleccionado = 1;
@@ -137,9 +137,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   asignacionFechasAbierta = false;
   fechasDisponibles: string[] = [];
   serviciosFechasSeleccionadas: PedidoServicioFecha[] = [];
+  fechasTrabajo: string[] = [];
   private tmpIdSequence = 0;
   private lastDepartamento = '';
   private departamentoChangeLock = false;
+  private fechasTrabajoSnapshot: string[] = [];
+  private lastDiasAplicado = 0;
+  private diasChangeGuard = false;
+  private programacionExpandidaIds = new Set<number>();
+  readonly maxLocacionesPorDia = 6;
 
   readonly departamentos: string[] = [
     'Amazonas',
@@ -169,6 +175,29 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     'Ucayali'
   ];
 
+  private normalizarDepartamento(value: unknown): string {
+    return (value ?? '')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private asegurarDepartamentoEnCatalogo(value: unknown): string {
+    const raw = (value ?? '').toString().trim();
+    if (!raw) {
+      return '';
+    }
+    const normalizado = this.normalizarDepartamento(raw);
+    const existente = this.departamentos.find(dep => this.normalizarDepartamento(dep) === normalizado);
+    if (existente) {
+      return existente;
+    }
+    this.departamentos.push(raw);
+    return raw;
+  }
+
   // ====== Pedido actual ======
   private pedidoId!: number;
   private estadoPedidoId: number | null = null;
@@ -186,7 +215,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     this.pedidoId = +(this.route.snapshot.paramMap.get('id') || 0);
     if (!this.pedidoId) {
       Swal.fire({
-        text: 'ID de pedido inválido.',
+        text: 'ID de pedido invalido.',
         icon: 'error',
         showCancelButton: false,
         customClass: { confirmButton: 'btn btn-danger' },
@@ -279,7 +308,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   getDataCliente(dni: number) {
     const obs = this.pedidoService.getDni?.(dni);
     if (!obs || typeof obs.subscribe !== 'function') {
-      console.warn('[getDni] devolvió undefined o no-Observable');
+      console.warn('[getDni] devolvio undefined o no-Observable');
       return;
     }
     obs.pipe(
@@ -303,11 +332,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     this.getDataCliente(dni);
   }
 
-  // ====== Catálogos ======
+  // ====== Catalogos ======
   getServicio() {
     const obs = this.pedidoService.getServicios?.();
     if (!obs || typeof obs.subscribe !== 'function') {
-      console.warn('[getServicios] devolvió undefined o no-Observable');
+      console.warn('[getServicios] devolvio undefined o no-Observable');
       this.servicios = [];
       return;
     }
@@ -322,6 +351,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   asignarServicio(event: string | number) {
+    if (!this.ensureEventoSeleccionado('seleccionar un servicio')) {
+      return;
+    }
     const parsed = this.parseNumber(event);
     this.servicioSeleccionado = parsed ?? this.servicioSeleccionado;
     if (this.puedeCargarPaquetes) {
@@ -332,7 +364,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   getEventos() {
     const obs = this.pedidoService.getEventos?.();
     if (!obs || typeof obs.subscribe !== 'function') {
-      console.warn('[getEventos] devolvió undefined o no-Observable');
+      console.warn('[getEventos] devolvio undefined o no-Observable');
       this.evento = [];
       return;
     }
@@ -355,7 +387,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       void Swal.fire({
         icon: 'warning',
         title: 'Cambiar tipo de evento',
-        text: 'Cambiar el tipo de evento eliminará toda la selección de paquetes.',
+        text: 'Cambiar el tipo de evento eliminara toda la seleccion de paquetes.',
         confirmButtonText: 'Cambiar',
         cancelButtonText: 'Cancelar',
         showCancelButton: true,
@@ -397,7 +429,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   getEventoxServicio() {
     const obs = this.visualizarService?.getEventosServicio?.(this.eventoSeleccionado, this.servicioSeleccionado);
     if (!obs || typeof obs.subscribe !== 'function') {
-      console.warn('[getEventosServicio] devolvió undefined o no-Observable');
+      console.warn('[getEventosServicio] devolvio undefined o no-Observable');
       this.paquetesRows = [];
       this.loadingPaquetes = false;
       return;
@@ -424,7 +456,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     });
   }
 
-  // ====== Selección de paquetes ======
+  // ====== Seleccion de paquetes ======
   isInSeleccion(el: AnyRecord, eventoKey: string | number | null = this.currentEventoKey): boolean {
     const key = this.getPkgKey(el);
     const ek = eventoKey ?? null;
@@ -443,7 +475,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   shouldShowPrecioOriginal(): boolean {
-    return this.selectedPaquetes.some(item => this.isPrecioModificado(item));
+    return false;
   }
 
   isPrecioModificado(paquete: PedidoPaqueteSeleccionado): boolean {
@@ -542,6 +574,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   addPaquete(el: AnyRecord, eventoKey: string | number | null = this.currentEventoKey) {
+    if (!this.ensureEventoSeleccionado('agregar servicios')) {
+      return;
+    }
     if (this.isInSeleccion(el, eventoKey)) {
       // ...
       return;
@@ -659,14 +694,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
   getDetalleStaffTotal(paquete: PaqueteDetalle | null | undefined): string | number {
     if (!paquete) {
-      return '—';
+      return '-';
     }
     const staff = paquete.staff;
     if (typeof staff === 'number') {
       return staff;
     }
     const total = staff?.total ?? paquete.personal;
-    return total ?? '—';
+    return total ?? '-';
   }
 
   get totalSeleccion(): number {
@@ -712,7 +747,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     return monto != null && monto > 0 ? monto : 0;
   }
 
-  // ====== Edición inline en tabla de ubicaciones ======
+  // ====== Edicion inline en tabla de ubicaciones ======
   startEdit(row: UbicacionRowEditable) {
     row._backup = { ...row };
     row._fechaPrev = row.Fecha;
@@ -741,7 +776,212 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   private getDiasTrabajo(): number | null {
     const raw = this.visualizarService.selectAgregarPedido?.dias;
     const parsed = this.parseNumber(raw);
-    return parsed != null && parsed >= 1 ? parsed : null;
+    return parsed != null && parsed >= 1 ? Math.min(Math.floor(parsed), 7) : null;
+  }
+
+  get fechasTrabajoValores(): string[] {
+    return this.fechasTrabajo
+      .map(fecha => (fecha ?? '').toString().trim())
+      .filter(Boolean);
+  }
+
+  getFechaTrabajoLabel(index: number): string {
+    const fecha = (this.fechasTrabajo[index] ?? '').toString().trim();
+    return fecha ? `Dia ${index + 1} · ${this.formatFechaConDia(fecha)}` : `Dia ${index + 1} · Sin fecha`;
+  }
+
+  getProgramacionIndicesPorFecha(fecha: string): number[] {
+    const objetivo = (fecha ?? '').toString().trim();
+    if (!objetivo) {
+      return [];
+    }
+    return this.ubicacion
+      .map((item, index) => ({ item, index }))
+      .filter(entry => (entry.item.Fecha ?? '').toString().trim() === objetivo)
+      .sort((a, b) => {
+        const hA = (a.item.Hora ?? '').toString().trim();
+        const hB = (b.item.Hora ?? '').toString().trim();
+        return hA.localeCompare(hB);
+      })
+      .map(entry => entry.index);
+  }
+
+  getResumenDia(fecha: string): { total: number; primera: string } {
+    const indices = this.getProgramacionIndicesPorFecha(fecha);
+    const primera = indices
+      .map(index => (this.ubicacion[index]?.Hora ?? '').toString().trim())
+      .filter(Boolean)
+      .sort()[0] ?? '';
+    return {
+      total: indices.length,
+      primera: primera || 'Sin hora'
+    };
+  }
+
+  getProgramacionHoraResumen(index: number): string {
+    const hora = (this.ubicacion[index]?.Hora ?? '').toString().trim();
+    return hora || 'Sin hora';
+  }
+
+  getProgramacionDireccionResumen(index: number): string {
+    const direccion = (this.ubicacion[index]?.DireccionExacta ?? '').toString().trim();
+    if (!direccion) {
+      return 'Sin direccion';
+    }
+    return direccion.length > 52 ? `${direccion.slice(0, 52)}...` : direccion;
+  }
+
+  isProgramacionIncompleta(index: number): boolean {
+    const row = this.ubicacion[index];
+    if (!row) {
+      return true;
+    }
+    const nombre = (row.Direccion ?? '').toString().trim();
+    const direccion = (row.DireccionExacta ?? '').toString().trim();
+    const hora = (row.Hora ?? '').toString().trim();
+    return !nombre || !direccion || !hora;
+  }
+
+  getProgramacionEstadoLabel(index: number): string {
+    return this.isProgramacionIncompleta(index) ? 'Incompleta' : 'Completa';
+  }
+
+  getProgramacionEstadoClass(index: number): string {
+    return this.isProgramacionIncompleta(index) ? 'programacion-status--warn' : 'programacion-status--ok';
+  }
+
+  isProgramacionExpandida(index: number): boolean {
+    const id = this.ubicacion[index]?.ID;
+    return id != null ? this.programacionExpandidaIds.has(id) : false;
+  }
+
+  toggleProgramacionExpandida(index: number): void {
+    const id = this.ubicacion[index]?.ID;
+    if (id == null) {
+      return;
+    }
+    if (this.programacionExpandidaIds.has(id)) {
+      this.programacionExpandidaIds.delete(id);
+      return;
+    }
+    this.programacionExpandidaIds.add(id);
+  }
+
+  private setProgramacionExpandidaById(id: number, expandida: boolean): void {
+    if (expandida) {
+      this.programacionExpandidaIds.add(id);
+      return;
+    }
+    this.programacionExpandidaIds.delete(id);
+  }
+
+  private syncProgramacionExpandida(): void {
+    const ids = new Set(this.ubicacion.map(item => item.ID));
+    this.programacionExpandidaIds.forEach(id => {
+      if (!ids.has(id)) {
+        this.programacionExpandidaIds.delete(id);
+      }
+    });
+    if (!this.programacionExpandidaIds.size && this.ubicacion.length) {
+      this.programacionExpandidaIds.add(this.ubicacion[0].ID);
+    }
+  }
+
+  canAgregarLocacion(fecha: string): boolean {
+    const objetivo = (fecha ?? '').toString().trim();
+    return !!objetivo && this.getProgramacionIndicesPorFecha(objetivo).length < this.maxLocacionesPorDia;
+  }
+
+  canCopiarDiaAnterior(index: number): boolean {
+    return index > 0;
+  }
+
+  copiarLocacionesDiaAnterior(index: number, fechaDestinoParam?: string): void {
+    if (index <= 0 || index >= this.fechasTrabajo.length) {
+      return;
+    }
+    const fechaDestino = (fechaDestinoParam ?? this.fechasTrabajo[index] ?? '').toString().trim();
+    const fechaOrigen = (this.fechasTrabajo[index - 1] ?? '').toString().trim();
+    if (!fechaDestino || !fechaOrigen || fechaDestino === fechaOrigen) {
+      return;
+    }
+    const indicesOrigen = this.getProgramacionIndicesPorFecha(fechaOrigen);
+    if (!indicesOrigen.length) {
+      this.showAlert('info', 'Sin locaciones', 'El dia anterior no tiene locaciones para copiar.');
+      return;
+    }
+    const disponibles = Math.max(0, this.maxLocacionesPorDia - this.getProgramacionIndicesPorFecha(fechaDestino).length);
+    if (!disponibles) {
+      this.showAlert('warning', 'Limite alcanzado', `Maximo ${this.maxLocacionesPorDia} locaciones por dia.`);
+      return;
+    }
+    const aCopiar = indicesOrigen.slice(0, disponibles);
+    let nextId = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
+    aCopiar.forEach(indexOrigen => {
+      const row = this.ubicacion[indexOrigen];
+      if (!row) return;
+      const nueva = {
+        ID: nextId++,
+        dbId: 0,
+        Direccion: row.Direccion ?? '',
+        Fecha: fechaDestino,
+        Hora: row.Hora ?? '',
+        DireccionExacta: row.DireccionExacta ?? '',
+        Notas: row.Notas ?? '',
+        hora12: row.hora12 ?? null,
+        minuto: row.minuto ?? null,
+        ampm: row.ampm ?? null
+      };
+      this.ubicacion.push(nueva);
+      this.setProgramacionExpandidaById(nueva.ID, true);
+    });
+    this.dataSource.data = this.ubicacion;
+    this.bindSorts();
+    this.syncProgramacionExpandida();
+  }
+
+  addUbicacionPorDia(index: number, fechaDestinoParam?: string): void {
+    const fecha = (fechaDestinoParam ?? this.fechasTrabajo[index] ?? '').toString().trim();
+    if (!fecha) {
+      this.showAlert('warning', 'Fecha requerida', 'Primero define la fecha de este dia.');
+      return;
+    }
+    this.onQuickAdd(fecha);
+  }
+
+  duplicarUbicacionById(id: number): void {
+    const index = this.ubicacion.findIndex(item => item.ID === id);
+    if (index < 0) {
+      return;
+    }
+    const row = this.ubicacion[index];
+    const fecha = (row.Fecha ?? '').toString().trim();
+    if (!fecha) {
+      return;
+    }
+    const actuales = this.getProgramacionIndicesPorFecha(fecha).length;
+    if (actuales >= this.maxLocacionesPorDia) {
+      this.showAlert('warning', 'Limite alcanzado', `Maximo ${this.maxLocacionesPorDia} locaciones por dia.`);
+      return;
+    }
+    const nextId = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
+    const nueva = {
+      ID: nextId,
+      dbId: 0,
+      Direccion: (row.Direccion ?? '').toString().trim(),
+      Fecha: fecha,
+      Hora: (row.Hora ?? '').toString().trim(),
+      DireccionExacta: (row.DireccionExacta ?? '').toString().trim(),
+      Notas: (row.Notas ?? '').toString().trim(),
+      hora12: row.hora12 ?? null,
+      minuto: row.minuto ?? null,
+      ampm: row.ampm ?? null
+    };
+    this.ubicacion.splice(index + 1, 0, nueva);
+    this.setProgramacionExpandidaById(nueva.ID, true);
+    this.dataSource.data = this.ubicacion;
+    this.bindSorts();
+    this.syncProgramacionExpandida();
   }
 
   getCantidadMaximaPorDias(): number | null {
@@ -767,25 +1007,29 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (!parsed) {
       return fecha;
     }
-    const dias = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-    const dia = dias[parsed.getDay()] ?? '';
-    const dd = String(parsed.getDate()).padStart(2, '0');
-    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
-    const yyyy = parsed.getFullYear();
-    return `${dia} ${dd}-${mm}-${yyyy}`;
+    const base = new Intl.DateTimeFormat('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(parsed);
+    return base.replace(/ de (\d{4})$/, ' del $1');
   }
 
   abrirAsignacionFechas(): void {
+    if (!this.ensureEventoSeleccionado('asignar fechas a servicios')) {
+      return;
+    }
     if (!this.isMultipleDias()) {
       return;
     }
-    const fechasUnicas = this.getFechasUbicacionUnicas();
-    this.fechasDisponibles = fechasUnicas.length ? fechasUnicas : [];
+    const fechasUnicas = this.fechasTrabajoValores;
+    this.fechasDisponibles = fechasUnicas.length ? [...fechasUnicas] : [];
     if (!this.fechasDisponibles.length) {
       Swal.fire({
         icon: 'warning',
         title: 'Fechas pendientes',
-        text: 'Registra fechas en la programación para asignarlas a los servicios.',
+        text: 'Registra fechas en la programacion para asignarlas a los servicios.',
         confirmButtonText: 'Entendido'
       });
       return;
@@ -877,8 +1121,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       ? 'El monto de viaticos podria variar si cambias de departamento.'
       : '';
     const texto = avisoMonto
-      ? `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"? ${avisoMonto}`
-      : `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"?`;
+      ? `Seguro que deseas cambiar el departamento de "${prev}" a "${next}"? ${avisoMonto}`
+      : `Seguro que deseas cambiar el departamento de "${prev}" a "${next}"?`;
     void Swal.fire({
       icon: 'warning',
       title: 'Cambiar departamento',
@@ -987,41 +1231,293 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   onDiasChange(value: unknown): void {
-    const diasPrevios = this.getDiasTrabajo();
+    if (this.diasChangeGuard) {
+      return;
+    }
+    const nuevo = this.normalizeDias(value);
+    const anterior = this.lastDiasAplicado > 0 ? this.lastDiasAplicado : this.fechasTrabajo.length;
+    this.visualizarService.selectAgregarPedido.dias = nuevo || null;
+    if (anterior > 0 && nuevo > 0 && nuevo < anterior) {
+      void (async () => {
+        const fechasOriginales = [...this.fechasTrabajo];
+        const indices = await this.seleccionarDiasAEliminar(anterior, nuevo);
+        if (indices == null) {
+          this.fechasTrabajo = fechasOriginales;
+          this.diasChangeGuard = true;
+          this.visualizarService.selectAgregarPedido.dias = anterior;
+          this.diasChangeGuard = false;
+          this.applyDiasRules(anterior);
+          this.lastDiasAplicado = anterior;
+          return;
+        }
+        this.moverDiasAlFinal(indices);
+        this.aplicarReduccionDias(nuevo);
+        this.applyDiasRules(nuevo);
+        this.lastDiasAplicado = nuevo;
+      })();
+      return;
+    }
+    this.applyDiasRules(nuevo);
+    this.lastDiasAplicado = nuevo;
+  }
+
+  private normalizeDias(value: unknown): number {
     const parsed = this.parseNumber(value);
-    this.visualizarService.selectAgregarPedido.dias = parsed != null ? Math.max(1, Math.floor(parsed)) : null;
-    const diasActuales = this.getDiasTrabajo();
-    const cambioDias = diasPrevios !== diasActuales;
-    const multiple = this.isMultipleDias();
-    const max = this.getCantidadMaximaPorDias();
+    if (parsed == null || parsed < 1) {
+      return 0;
+    }
+    return Math.min(Math.floor(parsed), 7);
+  }
+
+  private getFechasTrabajoRaw(): string[] {
+    return this.fechasTrabajo.map(fecha => (fecha ?? '').toString().trim());
+  }
+
+  private setFechasTrabajoRaw(values: string[]): void {
+    this.fechasTrabajo = values.map(value => (value ?? '').toString().trim());
+    this.fechasTrabajoSnapshot = [...this.fechasTrabajo];
+    this.syncFechaEventoDesdeFechasTrabajo();
+  }
+
+  private moverDiasAlFinal(indices: number[]): void {
+    const values = this.getFechasTrabajoRaw();
+    const validos = Array.from(new Set(indices))
+      .filter(index => Number.isInteger(index) && index >= 0 && index < values.length)
+      .sort((a, b) => a - b);
+    if (!validos.length) {
+      return;
+    }
+    const removidos = validos.map(index => values[index] ?? '');
+    const restantes = values.filter((_, index) => !validos.includes(index));
+    this.setFechasTrabajoRaw([...restantes, ...removidos]);
+  }
+
+  private async seleccionarDiasAEliminar(anterior: number, nuevo: number): Promise<number[] | null> {
+    const values = this.getFechasTrabajoRaw();
+    const cantidadAEliminar = anterior - nuevo;
+    if (cantidadAEliminar <= 0 || values.length <= nuevo) {
+      return [];
+    }
+    const opcionesHtml = values.map((fecha, index) => {
+      const fechaLabel = fecha ? this.formatFechaConDia(fecha) : 'Sin fecha';
+      const locaciones = fecha ? this.getProgramacionIndicesPorFecha(fecha).length : 0;
+      const checked = index >= nuevo ? 'checked' : '';
+      const estado = locaciones > 0 ? `${locaciones} locaciones` : 'Sin locaciones';
+      return `
+        <label class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+          <input type="checkbox" class="swal2-day-checkbox" value="${index}" ${checked}>
+          <span><b>Dia ${index + 1}</b> - ${fechaLabel}<br><small class="text-muted">${estado}</small></span>
+        </label>
+      `;
+    }).join('');
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'Elige los dias a eliminar',
+      width: 760,
+      html: `
+        <p class="mb-2">Estas reduciendo de <b>${anterior}</b> a <b>${nuevo}</b> dias.</p>
+        <p class="mb-2">Selecciona <b>${cantidadAEliminar}</b> dia(s) para eliminar.</p>
+        <div class="text-start" style="max-height:320px;overflow:auto;">${opcionesHtml}</div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar seleccionados',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const selected = Array.from(document.querySelectorAll<HTMLInputElement>('.swal2-day-checkbox:checked'))
+          .map(node => Number(node.value))
+          .filter(Number.isFinite);
+        if (selected.length !== cantidadAEliminar) {
+          Swal.showValidationMessage(`Selecciona exactamente ${cantidadAEliminar} dia(s).`);
+          return null;
+        }
+        return selected;
+      }
+    });
+    return result.isConfirmed ? ((result.value as number[] | null) ?? []) : null;
+  }
+
+  private aplicarReduccionDias(nuevoDias: number): void {
+    const fechasActuales = this.getFechasTrabajoRaw();
+    const fechasPermitidas = new Set(fechasActuales.slice(0, nuevoDias).filter(Boolean));
+    this.ubicacion = this.ubicacion.filter(item => {
+      const fecha = (item.Fecha ?? '').toString().trim();
+      return !fecha || fechasPermitidas.has(fecha);
+    });
+    this.dataSource.data = this.ubicacion;
+    this.bindSorts();
+    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
+      fechasPermitidas.has((entry.fecha ?? '').toString().trim())
+    );
+  }
+
+  private syncFechasTrabajoPorDias(value: unknown): void {
+    const target = this.normalizeDias(value);
+    const prev = [...this.fechasTrabajoSnapshot];
+    while (this.fechasTrabajo.length < target) {
+      this.fechasTrabajo.push('');
+    }
+    while (this.fechasTrabajo.length > target) {
+      this.fechasTrabajo.pop();
+    }
+    if (target > 0 && !this.fechasTrabajo[0]) {
+      const fechaEvento = (this.visualizarService.selectAgregarPedido.fechaEvent ?? '').toString().trim();
+      if (fechaEvento) {
+        this.fechasTrabajo[0] = fechaEvento;
+      }
+    }
+    this.fechasTrabajoSnapshot = [...this.fechasTrabajo];
+    const next = this.getFechasTrabajoRaw();
+    this.remapUbicacionesFechas(prev, next);
+    this.syncFechaEventoDesdeFechasTrabajo();
+  }
+
+  private remapUbicacionesFechas(prev: string[], next: string[]): void {
+    const max = Math.max(prev.length, next.length);
+    for (let i = 0; i < max; i += 1) {
+      const oldFecha = (prev[i] ?? '').trim();
+      const newFecha = (next[i] ?? '').trim();
+      if (!oldFecha || !newFecha || oldFecha === newFecha) {
+        continue;
+      }
+      this.ubicacion.forEach(item => {
+        if ((item.Fecha ?? '').toString().trim() === oldFecha) {
+          item.Fecha = newFecha;
+        }
+      });
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
+        (entry.fecha ?? '').toString().trim() === oldFecha ? { ...entry, fecha: newFecha } : entry
+      );
+    }
+    this.dataSource.data = this.ubicacion;
+    this.bindSorts();
+  }
+
+  private ordenarFechasTrabajo(): void {
+    const raw = this.getFechasTrabajoRaw();
+    const filled = raw.filter(Boolean).sort();
+    const emptyCount = raw.length - filled.length;
+    this.fechasTrabajo = [...filled, ...Array.from({ length: emptyCount }, () => '')];
+  }
+
+  private hasLocacionesRegistradas(): boolean {
+    return this.ubicacion.some(item => {
+      const nombre = (item.Direccion ?? '').toString().trim();
+      const direccion = (item.DireccionExacta ?? '').toString().trim();
+      const hora = (item.Hora ?? '').toString().trim();
+      const notas = (item.Notas ?? '').toString().trim();
+      return !!(nombre || direccion || hora || notas);
+    });
+  }
+
+  private remapFechaLocacionesYAsignaciones(fechaAnterior: string, fechaNueva: string): void {
+    const from = (fechaAnterior ?? '').toString().trim();
+    const to = (fechaNueva ?? '').toString().trim();
+    if (!from || !to || from === to) {
+      return;
+    }
+    this.ubicacion.forEach(item => {
+      if ((item.Fecha ?? '').toString().trim() === from) {
+        item.Fecha = to;
+      }
+    });
+    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
+      (entry.fecha ?? '').toString().trim() === from ? { ...entry, fecha: to } : entry
+    );
+    this.dataSource.data = this.ubicacion;
+    this.bindSorts();
+  }
+
+  private syncFechaEventoDesdeFechasTrabajo(): void {
+    const primera = (this.fechasTrabajo[0] ?? '').toString().trim();
+    this.visualizarService.selectAgregarPedido.fechaEvent = primera || '';
+  }
+
+  onFechaTrabajoChange(index: number, value: unknown): void {
+    if (index < 0 || index >= this.fechasTrabajo.length) {
+      return;
+    }
+    const prev = [...this.fechasTrabajoSnapshot];
+    const fechaAnterior = (prev[index] ?? '').toString().trim();
+    const fecha = (value ?? '').toString().trim();
+    const duplicada = this.fechasTrabajo.some((item, i) =>
+      i !== index && (item ?? '').toString().trim() === fecha && !!fecha
+    );
+    if (duplicada) {
+      this.fechasTrabajo[index] = prev[index] ?? '';
+      this.showAlert('warning', 'Fecha repetida', 'Cada dia de trabajo debe tener una fecha diferente.');
+      return;
+    }
+    const changingExistingDate = !!fechaAnterior && fechaAnterior !== fecha;
+    if (!changingExistingDate) {
+      this.fechasTrabajo[index] = fecha;
+      this.ordenarFechasTrabajo();
+      this.fechasTrabajoSnapshot = [...this.fechasTrabajo];
+      this.syncFechaEventoDesdeFechasTrabajo();
+      return;
+    }
+    if (!this.hasLocacionesRegistradas()) {
+      this.fechasTrabajo[index] = fecha;
+      this.remapFechaLocacionesYAsignaciones(fechaAnterior, fecha);
+      this.ordenarFechasTrabajo();
+      this.fechasTrabajoSnapshot = [...this.fechasTrabajo];
+      this.syncFechaEventoDesdeFechasTrabajo();
+      return;
+    }
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Cambiar fecha de trabajo',
+      html: `
+        <p>Ya tienes locaciones registradas.</p>
+        <p class="mb-0">Seguro que deseas cambiar <b>${this.formatFechaConDia(fechaAnterior)}</b> por <b>${this.formatFechaConDia(fecha)}</b>?</p>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Si, cambiar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (!result.isConfirmed) {
+        this.fechasTrabajo[index] = fechaAnterior;
+        return;
+      }
+      this.fechasTrabajo[index] = fecha;
+      this.remapFechaLocacionesYAsignaciones(fechaAnterior, fecha);
+      this.ordenarFechasTrabajo();
+      this.fechasTrabajoSnapshot = [...this.fechasTrabajo];
+      this.syncFechaEventoDesdeFechasTrabajo();
+    });
+  }
+
+  private applyDiasRules(value: unknown): void {
+    const parsed = this.normalizeDias(value);
+    this.visualizarService.selectAgregarPedido.dias = parsed || null;
+    this.syncFechasTrabajoPorDias(parsed);
+    const multiple = parsed > 1;
+    const max = parsed >= 1 ? parsed : 1;
     if (!multiple) {
       this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
-    } else if (max != null) {
-      const ajustados = this.selectedPaquetes.map(item => ({
+    } else {
+      this.selectedPaquetes = this.selectedPaquetes.map(item => ({
         ...item,
         cantidad: Math.min(Number(item.cantidad ?? 1) || 1, max)
       }));
-      const changed = ajustados.some((item, index) => item.cantidad !== this.selectedPaquetes[index]?.cantidad);
-      if (changed) {
-        this.selectedPaquetes = ajustados;
-        this.serviciosFechasSeleccionadas = [];
-      }
     }
+    const permitidas = new Set(this.fechasTrabajoValores);
     if (multiple) {
-      this.visualizarService.selectAgregarPedido.fechaEvent = '';
-      if (cambioDias) {
-        this.serviciosFechasSeleccionadas = [];
-        this.fechasDisponibles = [];
-        this.asignacionFechasAbierta = false;
-      }
+      this.fechasDisponibles = [...this.fechasTrabajoValores];
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => permitidas.has(entry.fecha));
     } else {
-      this.serviciosFechasSeleccionadas = [];
       this.fechasDisponibles = [];
-      if (this.asignacionFechasAbierta) {
-        this.asignacionFechasAbierta = false;
-      }
+      this.asignacionFechasAbierta = false;
+      this.serviciosFechasSeleccionadas = [];
+      const objetivo = this.visualizarService.selectAgregarPedido.fechaEvent || '';
+      this.ubicacion.forEach(item => {
+        item.Fecha = objetivo;
+      });
+      this.dataSource.data = this.ubicacion;
+      this.bindSorts();
     }
     this.refreshSelectedPaquetesColumns();
+    this.syncProgramacionExpandida();
   }
 
   onUbicacionFechaChange(row: UbicacionRowEditable, value: unknown): void {
@@ -1059,9 +1555,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       row.Fecha = row._fechaPrev ?? '';
       Swal.fire({
         icon: 'warning',
-        title: 'Días ya definidos',
+        title: 'Dias ya definidos',
         html: `
-          <p>Ya seleccionaste ${maxDias} día(s):</p>
+          <p>Ya seleccionaste ${maxDias} dia(s):</p>
           <ul class="text-start mb-0">
             ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
           </ul>
@@ -1074,14 +1570,14 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       icon: 'warning',
       title: 'Cambiar fechas',
       html: `
-        <p>Ya seleccionaste ${maxDias} día(s):</p>
+        <p>Ya seleccionaste ${maxDias} dia(s):</p>
         <ul class="text-start mb-3">
           ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
         </ul>
-        <p class="mb-0">¿Quieres cambiar todas las locaciones del día <b>${this.formatFechaConDia(fechaAnterior)}</b> al día <b>${this.formatFechaConDia(fecha)}</b>?</p>
+        <p class="mb-0">Quieres cambiar todas las locaciones del dia <b>${this.formatFechaConDia(fechaAnterior)}</b> al dia <b>${this.formatFechaConDia(fecha)}</b>?</p>
       `,
       showCancelButton: true,
-      confirmButtonText: 'Sí, cambiar todas',
+      confirmButtonText: 'Si, cambiar todas',
       cancelButtonText: 'Cancelar'
     }).then(result => {
       if (!result.isConfirmed) {
@@ -1110,31 +1606,49 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   get canAgregarEvento(): boolean {
-    return true;
+    return !!this.eventoSeleccionado;
   }
 
-  onQuickAdd() {
-    const fecha = this.shouldShowFechaEvento() ? (this.visualizarService.selectAgregarPedido.fechaEvent || '') : '';
+  onQuickAdd(fechaForzada?: string): void {
+    if (!this.ensureEventoSeleccionado('agregar locaciones')) {
+      return;
+    }
+    const fecha = (fechaForzada ?? '').toString().trim() ||
+      (this.shouldShowFechaEvento()
+        ? (this.visualizarService.selectAgregarPedido.fechaEvent || '')
+        : (this.fechasTrabajoValores[0] ?? ''));
+    if (!fecha) {
+      this.showAlert('warning', 'Fecha requerida', 'Primero define una fecha de trabajo para agregar locaciones.');
+      return;
+    }
+    const actuales = this.getProgramacionIndicesPorFecha(fecha).length;
+    if (actuales >= this.maxLocacionesPorDia) {
+      this.showAlert('warning', 'Limite alcanzado', `Maximo ${this.maxLocacionesPorDia} locaciones por dia.`);
+      return;
+    }
     const hora = this.visualizarService.selectAgregarPedido.horaEvent || '';
     const nextId = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
     const parts = this.splitHoraParts(hora);
+    const nueva = {
+      ID: nextId,
+      dbId: 0,
+      Direccion: '',
+      Fecha: fecha,
+      Hora: hora,
+      DireccionExacta: '',
+      Notas: '',
+      hora12: parts.hora12,
+      minuto: parts.minuto,
+      ampm: parts.ampm
+    };
     this.ubicacion = [
       ...this.ubicacion,
-      {
-        ID: nextId,
-        dbId: 0,
-        Direccion: '',
-        Fecha: fecha,
-        Hora: hora,
-        DireccionExacta: '',
-        Notas: '',
-        hora12: parts.hora12,
-        minuto: parts.minuto,
-        ampm: parts.ampm
-      }
+      nueva
     ];
+    this.setProgramacionExpandidaById(nueva.ID, true);
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
+    this.syncProgramacionExpandida();
   }
 
   addListUbicacion(direccion: string, fecha: string, hora: string, direccionExacta?: string, notas?: string) {
@@ -1147,7 +1661,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       Swal.fire({
         icon: 'warning',
         title: 'Evento duplicado',
-        text: 'Ya existe un evento con la misma fecha, hora y ubicación.',
+        text: 'Ya existe un evento con la misma fecha, hora y ubicacion.',
         confirmButtonText: 'Entendido'
       });
       return;
@@ -1160,7 +1674,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
     const i = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
     const parts = this.splitHoraParts(hora);
-    this.ubicacion.push({
+    const nueva = {
       ID: i,
       dbId: 0,
       Direccion: direccion,
@@ -1171,21 +1685,24 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       hora12: parts.hora12,
       minuto: parts.minuto,
       ampm: parts.ampm
-    });
+    };
+    this.ubicacion.push(nueva);
+    this.setProgramacionExpandidaById(nueva.ID, true);
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
+    this.syncProgramacionExpandida();
   }
 
 
   async deleteElement(p: string, c: string) {
     const fila = this.ubicacion.find(x => x.Hora == c && x.Direccion == p);
-    const nombre = (fila?.Direccion ?? '').toString().trim() || 'Locación';
+    const nombre = (fila?.Direccion ?? '').toString().trim() || 'Locacion';
     const { isConfirmed } = await Swal.fire({
       icon: 'warning',
-      title: 'Eliminar locación',
-      text: `¿Quieres eliminar "${nombre}" de la programación?`,
+      title: 'Eliminar locacion',
+      text: `Quieres eliminar "${nombre}" de la programacion?`,
       showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
+      confirmButtonText: 'Si, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#dc3545'
     });
@@ -1194,10 +1711,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
     const idx = this.ubicacion.findIndex(x => x.Hora == c && x.Direccion == p);
     if (idx >= 0) {
+      const removedId = this.ubicacion[idx]?.ID;
       this.ubicacion.splice(idx, 1);
+      if (removedId != null) {
+        this.programacionExpandidaIds.delete(removedId);
+      }
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
-      this.showToast('success', 'Locación eliminada', 'Se eliminó la locación seleccionada.');
+      this.syncProgramacionExpandida();
+      this.showToast('success', 'Locacion eliminada', 'Se elimino la locacion seleccionada.');
     }
   }
 
@@ -1206,6 +1728,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     this.ubicacion = [...this.ubicacion];
     this.dataSource.data = this.ubicacion;
     this.bindSorts();
+    this.syncProgramacionExpandida();
   }
 
   // ====== Carga del pedido existente ======
@@ -1236,7 +1759,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.visualizarService.selectAgregarPedido.NombrePedido = pedido.nombrePedido ?? '';
       this.visualizarService.selectAgregarPedido.Observacion = pedido.observaciones ?? '';
       this.visualizarService.selectAgregarPedido.mensaje = pedido.mensaje ?? '';
-      this.visualizarService.selectAgregarPedido.departamento = pedido.lugar ?? 'Lima';
+      this.visualizarService.selectAgregarPedido.departamento = this.asegurarDepartamentoEnCatalogo(pedido.lugar ?? 'Lima');
       this.lastDepartamento = this.visualizarService.selectAgregarPedido.departamento.toString().trim();
       const viaticosClienteApi = typeof pedido.viaticosCliente === 'boolean'
         ? pedido.viaticosCliente
@@ -1306,6 +1829,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       });
       this.dataSource.data = this.ubicacion;
       this.bindSorts();
+      this.programacionExpandidaIds.clear();
+      this.syncProgramacionExpandida();
 
       const diasCab = pedido.dias ?? null;
       const fechasUnicas = new Set(
@@ -1315,7 +1840,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       );
       const diasInferidos = fechasUnicas.size ? fechasUnicas.size : (pedido.fechaEvento ? 1 : null);
       this.visualizarService.selectAgregarPedido.dias = diasCab ?? diasInferidos ?? 1;
-      this.onDiasChange(this.visualizarService.selectAgregarPedido.dias);
+      this.fechasTrabajoSnapshot = Array.from(fechasUnicas).sort();
+      this.fechasTrabajo = [...this.fechasTrabajoSnapshot];
+      this.applyDiasRules(this.visualizarService.selectAgregarPedido.dias);
+      this.lastDiasAplicado = this.normalizeDias(this.visualizarService.selectAgregarPedido.dias);
       this.visualizarService.selectAgregarPedido.horasEstimadas = pedido.horasEstimadas ?? null;
 
       // Precargar controles "Fecha/Hora" superiores con el primer evento (UX)
@@ -1336,7 +1864,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
 
       // === Mapear items/paquetes ===
       // this.selectedPaquetes = (Array.isArray(items) ? items : []).map((it: any) => ({
-      //   key: this.getPkgKey(it),                         // ahora sí dará el mismo valor que en el catálogo
+      //   key: this.getPkgKey(it),                         // ahora si dara el mismo valor que en el catalogo
       //   eventKey: it.eventoCodigo ?? null,               // si asocias por evento
       //   ID: it.exsId ?? it.id ?? null,                   // importante: conserva el ID del paquete
       //   descripcion: it.nombre ?? it.descripcion ?? '',
@@ -1421,11 +1949,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     });
   }
 
-  // ====== Enviar actualización ======
+  async deleteUbicacionById(id: number): Promise<void> {
+    const fila = this.ubicacion.find(x => x.ID === id);
+    if (!fila) {
+      return;
+    }
+    await this.deleteElement(fila.Direccion, fila.Hora);
+  }
+
+  // ====== Enviar actualizacion ======
 
 
   updatePedido() {
-    if (this.saving) return;              // ← evita doble click
+    if (this.saving) return;              //  evita doble click
     if (!this.pedidoId) return;
     const currentSnapshotData = this.buildSnapshotData();
     const currentSnapshot = JSON.stringify(currentSnapshotData);
@@ -1438,8 +1974,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (diasTrabajo == null) {
       Swal.fire({
         icon: 'warning',
-        title: 'Días requeridos',
-        text: 'Selecciona la cantidad de días del evento.',
+        title: 'Dias requeridos',
+        text: 'Selecciona la cantidad de dias del evento.',
         confirmButtonText: 'Entendido'
       });
       return;
@@ -1449,7 +1985,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       if (fechaError) {
         Swal.fire({
           icon: 'warning',
-          title: 'Fecha inválida',
+          title: 'Fecha invalida',
           text: 'Selecciona una fecha dentro del rango permitido.',
           confirmButtonText: 'Entendido'
         });
@@ -1465,7 +2001,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         Swal.fire({
           icon: 'warning',
           title: 'Fechas insuficientes',
-          text: `Para ${diasTrabajo} días de trabajo debes registrar al menos ${diasTrabajo} fechas diferentes en las locaciones.`,
+          text: `Para ${diasTrabajo} dias de trabajo debes registrar al menos ${diasTrabajo} fechas diferentes en las locaciones.`,
           confirmButtonText: 'Entendido'
         });
         return;
@@ -1481,11 +2017,21 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       }
     }
 
+    const erroresProgramacion = this.validarRestriccionesProgramacion(diasTrabajo);
+    if (erroresProgramacion.length) {
+      this.showAlertHtml(
+        'warning',
+        'Revisa la programacion',
+        `<ul class="text-start mb-0">${erroresProgramacion.map(error => `<li>${error}</li>`).join('')}</ul>`
+      );
+      return;
+    }
+
     if (!this.infoCliente?.idCliente) {
       Swal.fire({
         icon: 'warning',
         title: 'Cliente requerido',
-        text: 'El pedido debe tener un cliente válido.',
+        text: 'El pedido debe tener un cliente valido.',
         confirmButtonText: 'Entendido'
       });
       return;
@@ -1494,8 +2040,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (!this.ubicacion?.length || !this.ubicacion.some(u => (u?.Direccion || '').trim())) {
       Swal.fire({
         icon: 'warning',
-        title: 'Ubicación requerida',
-        text: 'Agrega al menos una ubicación válida antes de actualizar.',
+        title: 'Ubicacion requerida',
+        text: 'Agrega al menos una ubicacion valida antes de actualizar.',
         confirmButtonText: 'Entendido'
       });
       return;
@@ -1505,7 +2051,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       Swal.fire({
         icon: 'warning',
         title: 'Paquetes requeridos',
-        text: 'Selecciona al menos un paquete/ítem antes de actualizar.',
+        text: 'Selecciona al menos un paquete/item antes de actualizar.',
         confirmButtonText: 'Entendido'
       });
       return;
@@ -1517,7 +2063,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         Swal.fire({
           icon: 'warning',
           title: 'Cantidades insuficientes',
-          text: `Para ${diasTrabajo} días debes asignar al menos ${diasTrabajo} servicios en total.`,
+          text: `Para ${diasTrabajo} dias debes asignar al menos ${diasTrabajo} servicios en total.`,
           confirmButtonText: 'Entendido'
         });
         return;
@@ -1531,8 +2077,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       if (viaticosMonto == null || viaticosMonto <= 0) {
         Swal.fire({
           icon: 'warning',
-          title: 'Viáticos requeridos',
-          text: 'Ingresa el monto de viáticos.',
+          title: 'Viaticos requeridos',
+          text: 'Ingresa el monto de viaticos.',
           confirmButtonText: 'Entendido'
         });
         return;
@@ -1566,8 +2112,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         if (asignadas !== cantidad) {
           Swal.fire({
             icon: 'warning',
-            title: 'Asignación pendiente',
-            text: 'Completa la asignación de fechas para todos los servicios.',
+            title: 'Asignacion pendiente',
+            text: 'Completa la asignacion de fechas para todos los servicios.',
             confirmButtonText: 'Entendido'
           });
           return;
@@ -1598,9 +2144,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       ? 0
       : (this.parseNumber(this.visualizarService.selectAgregarPedido?.viaticosMonto) ?? 0);
     const mensaje = (this.visualizarService.selectAgregarPedido as { mensaje?: string } | null)?.mensaje ?? '';
-    const fechaEvento = this.shouldShowFechaEvento()
-      ? (this.visualizarService.selectAgregarPedido?.fechaEvent ?? null)
-      : null;
+    const fechaEventoBase =
+      (this.fechasTrabajoValores[0] ?? '').toString().trim() ||
+      (this.visualizarService.selectAgregarPedido?.fechaEvent ?? '').toString().trim();
+    const fechaEvento = fechaEventoBase || null;
 
     const tmpIdToId = new Map<string, number>();
     this.selectedPaquetes.forEach(item => {
@@ -1673,13 +2220,13 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       serviciosFechas: serviciosFechasPayload
     };
 
-    // Validación de formatos ANTES de activar el candado
+    // Validacion de formatos ANTES de activar el candado
     const horaInvalida = payload.eventos.some(e => !/^\d{2}:\d{2}:\d{2}$/.test(e.hora));
     const fechaInvalida = payload.eventos.some(e => !/^\d{4}-\d{2}-\d{2}$/.test(e.fecha));
     if (horaInvalida || fechaInvalida) {
       Swal.fire({
         icon: 'warning',
-        title: 'Formato inválido',
+        title: 'Formato invalido',
         text: 'Revisa el formato de fecha (YYYY-MM-DD) y hora (HH:mm:ss) en los eventos.',
         confirmButtonText: 'Entendido'
       });
@@ -1758,9 +2305,76 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     });
   }
 
+  private showAlertHtml(icon: AlertIcon, title: string, html: string): void {
+    void Swal.fire({
+      icon,
+      title,
+      html,
+      confirmButtonText: 'Entendido'
+    });
+  }
+
+  private ensureEventoSeleccionado(actionText: string): boolean {
+    if (this.eventoSeleccionado) {
+      return true;
+    }
+    this.eventoSelectTouched = true;
+    this.showAlert('warning', 'Tipo de evento requerido', `Primero selecciona el tipo de evento para ${actionText}.`);
+    return false;
+  }
+
+  private validarRestriccionesProgramacion(diasNumero: number | null): string[] {
+    const errores: string[] = [];
+    const diasEsperados = diasNumero != null && diasNumero >= 1 ? Math.min(Math.floor(diasNumero), 7) : 0;
+    const fechasTrabajo = this.fechasTrabajoValores;
+    if (diasEsperados > 0 && fechasTrabajo.length !== diasEsperados) {
+      errores.push(`Debes registrar ${diasEsperados} fecha(s) de trabajo.`);
+      return errores;
+    }
+    const fechasUnicas = new Set(fechasTrabajo);
+    if (fechasUnicas.size !== fechasTrabajo.length) {
+      errores.push('Las fechas de trabajo no pueden repetirse.');
+    }
+    const ordenadas = [...fechasTrabajo].sort();
+    const desordenadas = fechasTrabajo.some((fecha, index) => fecha !== ordenadas[index]);
+    if (desordenadas) {
+      errores.push('Ordena las fechas de trabajo cronologicamente (de la mas proxima a la mas lejana).');
+    }
+    for (const fecha of fechasTrabajo) {
+      const indices = this.getProgramacionIndicesPorFecha(fecha);
+      const fechaLabel = this.formatFechaConDia(fecha);
+      if (!indices.length) {
+        errores.push(`"${fechaLabel}": agrega al menos una locacion.`);
+        continue;
+      }
+      const duplicadas = new Map<string, number>();
+      let incompletas = 0;
+      indices.forEach(index => {
+        const row = this.ubicacion[index];
+        const nombre = (row?.Direccion ?? '').toString().trim();
+        const direccion = (row?.DireccionExacta ?? '').toString().trim();
+        const hora = (row?.Hora ?? '').toString().trim();
+        if (!nombre || !direccion || !hora) {
+          incompletas += 1;
+        }
+        if (nombre && direccion && hora) {
+          const key = `${this.norm(nombre)}|${this.norm(direccion)}|${hora}`;
+          duplicadas.set(key, (duplicadas.get(key) ?? 0) + 1);
+        }
+      });
+      if (incompletas > 0) {
+        errores.push(`"${fechaLabel}": tienes ${incompletas} locacion(es) con datos incompletos.`);
+      }
+      if (Array.from(duplicadas.values()).some(total => total > 1)) {
+        errores.push(`"${fechaLabel}": hay locaciones duplicadas (misma locacion, direccion y hora).`);
+      }
+    }
+    return errores;
+  }
+
   private refreshSelectedPaquetesColumns(): void {
     const base: TableColumn<PedidoPaqueteSeleccionado>[] = [
-      { key: 'titulo', header: 'Título', sortable: false },
+      { key: 'titulo', header: 'Titulo', sortable: false },
       { key: 'precioUnit', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' },
     ];
     if (this.isMultipleDias()) {
@@ -1929,8 +2543,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (nombreAntes !== nombreAhora) {
       cambios.push({
         label: 'Nombre del pedido',
-        before: nombreAntes || '—',
-        after: nombreAhora || '—',
+        before: nombreAntes || '-',
+        after: nombreAhora || '-',
         level: 'weak'
       });
     }
@@ -1940,8 +2554,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (obsAntes !== obsAhora) {
       cambios.push({
         label: 'Mensaje del solicitante',
-        before: obsAntes || '—',
-        after: obsAhora || '—',
+        before: obsAntes || '-',
+        after: obsAhora || '-',
         level: 'weak'
       });
     }
@@ -1980,7 +2594,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         && (prev?.notas ?? '') !== (next?.notas ?? '');
       if (!prev || !next || JSON.stringify(prev) !== JSON.stringify(next)) {
         cambios.push({
-          label: `Locación ${i + 1}`,
+          label: this.getEventoCambioLabel(prev, next, i + 1),
           before: this.formatEventoResumen(prev),
           after: this.formatEventoResumen(next),
           level: (cambioSoloNombre || cambioSoloNotas) ? 'weak' : 'strong'
@@ -2002,7 +2616,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const matchedPrevKeys = new Set<string>();
     const matchedNextKeys = new Set<string>();
 
-    // 1) Cambios sobre el mismo ítem (misma key)
+    // 1) Cambios sobre el mismo item (misma key)
     const allKeys = new Set<string>([...prevItemsMap.keys(), ...nextItemsMap.keys()]);
     allKeys.forEach(key => {
       const prev = prevItemsMap.get(key);
@@ -2062,13 +2676,13 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       }
     });
 
-    // 3) Lo no pareado queda como agregado/eliminado explícito
+    // 3) Lo no pareado queda como agregado/eliminado explicito
     const prevSolo = anterior.items.filter(item => !matchedPrevKeys.has(String(item.key)));
     prevSolo.forEach(prev => {
       cambios.push({
         label: `${prev.nombre || `Paquete ${prev.key}`} (eliminado)`,
         before: this.formatItemSolo(prev, this.getFechasItem(fechasAntesPorItem, prev), false),
-        after: '—',
+        after: '-',
         level: 'strong'
       });
     });
@@ -2077,7 +2691,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     nextSolo.forEach(next => {
       cambios.push({
         label: `${next.nombre || `Paquete ${next.key}`} (agregado)`,
-        before: '—',
+        before: '-',
         after: this.formatItemSolo(next, this.getFechasItem(fechasAhoraPorItem, next), false),
         level: 'strong'
       });
@@ -2087,13 +2701,26 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   private formatEventoResumen(evento?: PedidoEventoSnapshot): string {
-    if (!evento) return '—';
-    const fecha = evento.fecha ? this.formatFechaResumen(evento.fecha) : '—';
-    const hora = evento.hora || '—';
-    const ubicacion = evento.ubicacion || '—';
+    if (!evento) return '-';
+    const fecha = evento.fecha ? this.formatFechaResumen(evento.fecha) : '-';
+    const hora = evento.hora || '-';
+    const ubicacion = evento.ubicacion || '-';
     const direccion = evento.direccion ? ` (${evento.direccion})` : '';
     const notas = evento.notas ? ` | ${evento.notas}` : '';
     return `${fecha} ${hora} - ${ubicacion}${direccion}${notas}`;
+  }
+
+  private getEventoCambioLabel(prev?: PedidoEventoSnapshot, next?: PedidoEventoSnapshot, index = 1): string {
+    const nombrePrev = String(prev?.ubicacion ?? '').trim();
+    const nombreNext = String(next?.ubicacion ?? '').trim();
+    const nombre = nombreNext || nombrePrev || `Locacion ${index}`;
+    if (!prev && next) {
+      return `Locacion agregada: ${nombre}`;
+    }
+    if (prev && !next) {
+      return `Locacion eliminada: ${nombre}`;
+    }
+    return `Locacion actualizada: ${nombre}`;
   }
 
   private formatFechaResumen(value: string): string {
@@ -2154,8 +2781,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     const afterParts: string[] = [];
 
     if (includeNombre && changedNombre) {
-      beforeParts.push(prev.nombre || '—');
-      afterParts.push(next.nombre || '—');
+      beforeParts.push(prev.nombre || '-');
+      afterParts.push(next.nombre || '-');
     }
     if (changedPrecio) {
       beforeParts.push(`Precio: ${this.formatMoneda(prev.precio)}`);
@@ -2250,12 +2877,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   private confirmStrongChanges(items: PedidoChangeItem[]): Promise<boolean> {
+    const formatValue = (value: string) => this.escapeHtml((value ?? '').trim() === '-' ? 'Sin registro' : value);
     const filas = items
       .map(item => `
-        <li style="margin-bottom:6px;">
-          <strong>${item.label}${item.level === 'weak' ? ' (cambio menor)' : ''}</strong><br>
-          <span style="color:#6c757d;">Antes:</span> ${item.before}<br>
-          <span style="color:#6c757d;">Ahora:</span> ${item.after}
+        <li style="margin-bottom:10px; border:1px solid #e9ecef; border-radius:10px; padding:10px 12px; list-style:none;">
+          <div style="font-weight:600; margin-bottom:6px;">
+            ${this.escapeHtml(item.label)}${item.level === 'weak' ? ' <span style="font-weight:500; color:#6c757d;">(cambio menor)</span>' : ''}
+          </div>
+          <div><span style="color:#6c757d;">Antes:</span> ${formatValue(item.before)}</div>
+          <div><span style="color:#6c757d;">Ahora:</span> ${formatValue(item.after)}</div>
         </li>
       `)
       .join('');
@@ -2264,8 +2894,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       title: 'Cambios importantes',
       width: 920,
       html: `
-        <p>Los cambios realizados harán que haya un desfase entre la cotización y el pedido, y esto afectará al contrato final.</p>
-        <ul style="text-align:left; padding-left:18px; margin-top:8px; max-height:240px; overflow:auto;">
+        <p style="text-align:left; margin-bottom:8px;">
+          Detectamos cambios que pueden desalinear este pedido respecto a su cotizacion y afectar el contrato final.
+        </p>
+        <ul style="text-align:left; padding-left:0; margin-top:8px; max-height:300px; overflow:auto;">
           ${filas}
         </ul>
       `,
@@ -2276,6 +2908,15 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }).then(result => result.isConfirmed);
   }
 
+  private escapeHtml(value: string): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   private enviarActualizacion(payload: PedidoUpdatePayload): void {
     const obs = this.visualizarService.updatePedido?.(this.pedidoId, payload);
     if (!obs || typeof obs.subscribe !== 'function') {
@@ -2283,16 +2924,16 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       Swal.fire({
         icon: 'error',
         title: 'Error al actualizar',
-        text: 'No se pudo enviar la actualización.',
+        text: 'No se pudo enviar la actualizacion.',
         confirmButtonText: 'Entendido'
       });
       return;
     }
-    this.saving = true; // ← activa el candado SOLO cuando ya vas a llamar al API
+    this.saving = true; //  activa el candado SOLO cuando ya vas a llamar al API
 
     obs.pipe(
       take(1),
-      finalize(() => { this.saving = false; }) // ← libéralo siempre
+      finalize(() => { this.saving = false; }) //  liberalo siempre
     ).subscribe(
       () => {
         void Swal.fire({
@@ -2394,3 +3035,5 @@ interface PedidoChangeItem {
   after: string;
   level: 'weak' | 'strong';
 }
+
+

@@ -511,19 +511,7 @@
 
             <ng-template appCell="precioUnit" let-row>
               <div class="text-end">
-                @if (!row.editandoPrecio) {
-                <button type="button" class="btn btn-link p-0 text-decoration-underline" (click)="enablePrecioEdit(row)"
-                  title="Haz clic para editar">
-                  {{ row.precio | usd:'1.2-2' }}
-                </button>
-                } @else {
-                <input type="number" class="form-control form-control-sm text-end" [id]="getPrecioInputId(row)"
-                  [value]="row.precio" step="0.01" [attr.min]="getPrecioMinimo(row)"
-                  (blur)="confirmPrecioEdit(row, $any($event.target).value)"
-                  (keydown.enter)="confirmPrecioEdit(row, $any($event.target).value)"
-                  (keydown.escape)="cancelPrecioEdit(row)">
-                <small class="text-muted">Mínimo: {{ getPrecioMinimo(row) | number:'1.2-2' }}</small>
-                }
+                {{ row.precio | usd:'1.2-2' }}
               </div>
             </ng-template>
 
