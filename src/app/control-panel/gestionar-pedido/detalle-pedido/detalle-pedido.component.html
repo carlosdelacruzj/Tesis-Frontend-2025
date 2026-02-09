@@ -1,215 +1,277 @@
 <div class="dashboard-content">
-  <div class="dashboard-ecommerce">
-  <div class="container-fluid">
-    <h1>Detalle del pedido</h1>
+  <app-list-toolbar [title]="'Detalle del pedido'" [showSearch]="false" [showCreateButton]="false">
+  </app-list-toolbar>
 
-    <form #EmpleadoForm="ngForm">
-      <div class="row">
-        <div class="col">
-          <mat-card class="card">
-            <mat-card-header>
-              <mat-card-title>Datos del pedido</mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="card-body">
-              <div class="form-group">
-                <label class="col-form-label" for="pedidoNombre">Pedido</label>
-                <input id="pedidoNombre" type="text" class="form-control" name="NombrePedido"
-                  [(ngModel)]="visualizarService.selectAgregarPedido.NombrePedido" required disabled readonly>
-              </div>
+  <form class="cotizacion-form">
+    <div class="row g-3 card-grid">
+      <div class="col-md-6">
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title>Datos del solicitante</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="form-group">
+              <label class="col-form-label" for="clienteNombreCompleto">Nombre completo</label>
+              <input id="clienteNombreCompleto" type="text" class="form-control" [value]="clienteNombreCompleto" disabled readonly>
+            </div>
 
-              <div class="form-group">
-                <label class="col-form-label" for="codigoEmpleado">Empleado</label>
-                <input id="codigoEmpleado" type="text" name="CodigoEmpleado" [(ngModel)]="CodigoEmpleado"
-                  class="form-control" disabled readonly>
-              </div>
+            <div class="form-group">
+              <label class="col-form-label" for="clienteCelular">WhatsApp / contacto</label>
+              <input id="clienteCelular" type="text" class="form-control" [value]="clienteCelular" disabled readonly>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
 
-              <div class="form-group">
-                <label class="col-form-label" for="fechaCreate">Fecha de registro</label>
-                <input id="fechaCreate" type="text" class="form-control" name="fechaCreate"
-                  [(ngModel)]="visualizarService.selectAgregarPedido.fechaCreate" disabled readonly>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-
-        <div class="col ms-auto">
-          <mat-card class="card">
-            <mat-card-header>
-              <mat-card-title>Datos del cliente</mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="card-body">
-              <div class="form-group">
-                <label class="col-form-label" for="clienteNombreCompleto">Cliente</label>
-                <div class="input-group mb-1">
-                  <input
-                    id="clienteNombreCompleto"
-                    type="text"
-                    class="form-control"
-                    [value]="clienteNombreCompleto"
-                    disabled
-                    readonly>
+      <div class="col-md-6">
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title>Detalles del evento</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label class="col-form-label" for="pedidoNombre">Pedido</label>
+                  <input id="pedidoNombre" type="text" class="form-control"
+                    [value]="visualizarService.selectAgregarPedido.NombrePedido || ''" disabled readonly>
                 </div>
               </div>
-              <div class="form-group">
-                <label class="col-form-label" for="clienteDocumento">Documento de identidad</label>
-                <input
-                  id="clienteDocumento"
-                  type="text"
-                  class="form-control"
-                  [value]="clienteDocumento"
-                  disabled
-                  readonly>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label class="col-form-label" for="departamentoPedido">Departamento</label>
+                  <input id="departamentoPedido" type="text" class="form-control"
+                    [value]="visualizarService.selectAgregarPedido.departamento || ''" disabled readonly>
+                </div>
               </div>
-              <div class="form-group">
-                <label class="col-form-label" for="clienteCelular">Celular</label>
-                <input
-                  id="clienteCelular"
-                  type="text"
-                  class="form-control"
-                  [value]="clienteCelular"
-                  disabled
-                  readonly>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-      </div>
 
-      <mat-card class="card">
-        <mat-card-header>
-          <mat-card-title>Programación del evento</mat-card-title>
-        </mat-card-header>
-
-        <mat-card-content class="card-body">
-
-          <div class="row">
-            <table mat-table [dataSource]="dataSource" matSort #sortUbic="matSort" class="table">
-              <ng-container matColumnDef="Nro">
-                <th mat-header-cell *matHeaderCellDef> # </th>
-                <td mat-cell *matCellDef="let element">
-                  {{ (dataSource?.data?.indexOf(element) ?? 0) + 1 }}
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="Fecha">
-                <th mat-header-cell *matHeaderCellDef> Fecha </th>
-                <td mat-cell *matCellDef="let element">
-                  {{ formatProgramDate(element.Fecha) }} ({{ weekdayPeru(element.Fecha) }})
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="Hora">
-                <th mat-header-cell *matHeaderCellDef> Hora </th>
-                <td mat-cell *matCellDef="let element">
-                  {{ element.Hora }}
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="Direccion">
-                <th mat-header-cell *matHeaderCellDef> Direccion </th>
-                <td mat-cell *matCellDef="let element">
-                  {{ element.Direccion }}
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="DireccionExacta">
-                <th mat-header-cell *matHeaderCellDef> Dirección exacta </th>
-                <td mat-cell *matCellDef="let element">
-                  {{ element.DireccionExacta }}
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="Notas">
-                <th mat-header-cell *matHeaderCellDef> Notas </th>
-                <td mat-cell *matCellDef="let element">
-                  {{ element.Notas }}
-                </td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
-              <tr mat-row *matRowDef="let row; columns: columnsToDisplay;"></tr>
-            </table>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <mat-card class="card">
-        <mat-card-header>
-          <mat-card-title>Servicios contratados</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="card-body">
-          @if (selectedPaquetes.length) {
-            <div class="row mt-3">
-              <div class="col">
-                <h6>Seleccionados ({{selectedPaquetes.length}})</h6>
-
-                <table class="table table-sm align-middle">
-                  <thead>
-                    <tr>
-                      <th>Descripción</th>
-                      <th class="text-end">Precio</th>
-                      <th class="text-center">Cant.</th>
-                      <th class="text-end">Subtotal</th>
-                      <th style="width:28%">Notas</th>
-
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (it of selectedPaquetes; track $index) {
-                      <tr>
-                        <td>{{ it.descripcion }}</td>
-                        <td class="text-end">{{ it.precio | usd:'1.2-2' }}</td>
-                        <td class="text-center">1</td>
-                        <td class="text-end">{{ it.precio | usd:'1.2-2' }}</td>
-                        <td>
-                          <input type="text" class="form-control form-control-sm" [(ngModel)]="it.notas"
-                            [ngModelOptions]="{standalone:true}" maxlength="255" disabled readonly>
-                        </td>
-                      </tr>
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
+                  <select id="eventoSelect" class="form-control" [value]="(eventoSeleccionado ?? '').toString()" disabled>
+                    <option value="" disabled>Selecciona un tipo de evento</option>
+                    @for (e of evento; track $index) {
+                    <option [value]="(e.id ?? '').toString()">{{ e.nombre }}</option>
                     }
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <th colspan="3" class="text-end">Subtotal</th>
-                      <th class="text-end">{{ pedidoSubtotal | usd:'1.2-2' }}</th>
-                      <th colspan="2"></th>
-                    </tr>
-                    <tr>
-                      <th colspan="3" class="text-end">IGV</th>
-                      <th class="text-end">{{ pedidoIgv | usd:'1.2-2' }}</th>
-                      <th colspan="2"></th>
-                    </tr>
-                    <tr>
-                      <th colspan="3" class="text-end">Total (con IGV)</th>
-                      <th class="text-end">{{ pedidoTotal | usd:'1.2-2' }}</th>
-                      <th colspan="2"></th>
-                    </tr>
-                  </tfoot>
-                </table>
+                  </select>
+                </div>
               </div>
             </div>
-          }
 
-          <div class="form-group">
-            <label class="col-form-label" for="observacionesPedido">Observaciones</label>
-            <textarea id="observacionesPedido" type="text" class="form-control" name="Observacion" rows="5"
-              [(ngModel)]="visualizarService.selectAgregarPedido.Observacion" disabled readonly>
-            </textarea>
-          </div>
-        </mat-card-content>
-      </mat-card>
+            <div class="row g-3 mt-1">
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label class="col-form-label" for="diasTrabajo">Cantidad de días</label>
+                  <input id="diasTrabajo" type="number" class="form-control"
+                    [value]="visualizarService.selectAgregarPedido.dias ?? 1" disabled readonly>
+                </div>
+              </div>
 
-      <div class="row" style="text-align: center;">
-        <div class="col-6" style="text-align: right;">
-          <button type="button" class="btn btn-outline-dark" disabled>
-            Actualizar
-          </button>
-        </div>
-        <div class="col-6" style="text-align: left;">
-          <button type="button" class="btn btn-outline-dark" [routerLink]="['/home/gestionar-pedido']">Atrás</button>
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label class="col-form-label" for="fechaEvent">Fecha del evento</label>
+                  <input id="fechaEvent" type="date" class="form-control"
+                    [value]="visualizarService.selectAgregarPedido.fechaEvent || ''" disabled readonly>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label class="col-form-label" for="horasEstimadas">Horas estimadas por día</label>
+                  <input id="horasEstimadas" type="number" class="form-control"
+                    [value]="visualizarService.selectAgregarPedido.horasEstimadas ?? ''" disabled readonly>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <div class="col-12">
+        <mat-card class="card mb-3">
+          <mat-card-header class="programacion-header">
+            <mat-card-title>Programación del evento</mat-card-title>
+            <mat-card-subtitle>
+              Locaciones y horarios definidos para el pedido.
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="programacion-list">
+              @for (item of ubicacion; track $index) {
+              <div class="programacion-item">
+                <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
+                  <h4 class="mb-0">{{ item.Direccion || ('Locación ' + ($index + 1)) }}</h4>
+                </div>
+
+                <div class="row g-3 mt-2">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label class="col-form-label">Nombre de la locación</label>
+                      <input type="text" class="form-control" [value]="item.Direccion || ''" disabled readonly>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label class="col-form-label">Dirección o punto de encuentro</label>
+                      <input type="text" class="form-control" [value]="item.DireccionExacta || ''" disabled readonly>
+                    </div>
+                  </div>
+
+                  <div class="col-sm-6 col-md-3">
+                    <div class="form-group">
+                      <label class="col-form-label">Fecha</label>
+                      <input type="date" class="form-control" [value]="item.Fecha || ''" disabled readonly>
+                    </div>
+                  </div>
+
+                  <div class="col-sm-6 col-md-3">
+                    <div class="form-group">
+                      <label class="col-form-label">Hora</label>
+                      <input type="time" class="form-control" [value]="item.Hora || ''" disabled readonly>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-group mb-0">
+                      <label class="col-form-label">Notas internas</label>
+                      <textarea class="form-control" rows="2" [value]="item.Notas || ''" disabled readonly></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <div class="col-12">
+        <mat-card class="card mb-3">
+          <mat-card-header>
+            <mat-card-title>Servicios y paquetes</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="col-form-label" for="servicioSelect">Servicio</label>
+                  <select id="servicioSelect" class="form-control" [value]="(servicioSeleccionado ?? '').toString()"
+                    disabled>
+                    <option value="" disabled>Selecciona un servicio</option>
+                    @for (s of servicios; track $index) {
+                    <option [value]="(s['id'] ?? '').toString()">{{ s['nombre'] }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            @if (selectedPaquetes.length) {
+            <div class="mt-2">
+              <div class="d-flex align-items-center justify-content-between">
+                <h6>Paquetes seleccionados ({{ selectedPaquetes.length }})</h6>
+              </div>
+
+              <div class="table-responsive">
+                <app-table-base [columns]="selectedPaquetesColumns" [data]="selectedPaquetes" [showSearch]="false"
+                  [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false"
+                  [showCreateButton]="false" [pageSize]="selectedPaquetes.length || 10"
+                  [pageSizeOptions]="[selectedPaquetes.length || 10]" emptyText="Sin paquetes seleccionados">
+
+                  <ng-template appCell="titulo" let-row>
+                    {{ row.titulo || row.descripcion }}
+                  </ng-template>
+
+                  <ng-template appCell="cantidad" let-row>
+                    <div class="text-center">
+                      <input type="number" class="form-control form-control-sm text-center"
+                        [value]="row.cantidad || 1" disabled readonly>
+                    </div>
+                  </ng-template>
+
+                  <ng-template appCell="precioUnit" let-row>
+                    <div class="text-end">{{ row.precio | usd:'1.2-2' }}</div>
+                  </ng-template>
+
+                  <ng-template appCell="horas" let-row>
+                    <div class="text-center">{{ row.horas ?? '-' }}</div>
+                  </ng-template>
+
+                  <ng-template appCell="staff" let-row>
+                    <div class="text-center">{{ row.personal ?? '-' }}</div>
+                  </ng-template>
+
+                  <ng-template appCell="subtotal" let-row>
+                    <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | usd:'1.2-2' }}</div>
+                  </ng-template>
+
+                  <ng-template appCell="notas" let-row>
+                    <input type="text" class="form-control form-control-sm" [value]="row.notas || ''" disabled readonly>
+                  </ng-template>
+                </app-table-base>
+              </div>
+
+              <div class="text-end mt-2">
+                <strong>Subtotal paquetes: {{ pedidoSubtotal | usd:'1.2-2' }}</strong>
+              </div>
+            </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <div class="col-12">
+        @if ((visualizarService.selectAgregarPedido.departamento || '').toLowerCase() !== 'lima') {
+        <mat-card class="card mb-3">
+          <mat-card-header>
+            <mat-card-title>Viáticos</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="form-check mb-3">
+              <input id="viaticosClientePedido" type="checkbox" class="form-check-input"
+                [checked]="!!visualizarService.selectAgregarPedido.viaticosCliente" disabled>
+              <label class="form-check-label" for="viaticosClientePedido">El cliente cubre viáticos</label>
+            </div>
+            @if (!visualizarService.selectAgregarPedido.viaticosCliente) {
+            <div class="form-group">
+              <label class="col-form-label" for="viaticosMontoPedido">Monto de viáticos (USD)</label>
+              <input id="viaticosMontoPedido" type="number" class="form-control"
+                [value]="visualizarService.selectAgregarPedido.viaticosMonto ?? ''" disabled readonly>
+            </div>
+            }
+          </mat-card-content>
+        </mat-card>
+        }
+      </div>
+
+      <div class="col-12">
+        <mat-card class="card mb-3">
+          <mat-card-header>
+            <mat-card-title>Mensaje del solicitante</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <textarea class="form-control" rows="3" [value]="visualizarService.selectAgregarPedido.Observacion || ''" disabled readonly></textarea>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-4 ms-auto">
+        <small class="d-block text-end text-muted mt-1">Subtotal: {{ pedidoSubtotal | usd:'1.2-2' }}</small>
+        <small class="d-block text-end text-muted">IGV (18%): {{ pedidoIgv | usd:'1.2-2' }}</small>
+        <label class="col-form-label mt-2" for="totalEstimado">Total final</label>
+        <div class="input-group">
+          <span class="input-group-text">US$</span>
+          <input id="totalEstimado" type="number" class="form-control" [value]="pedidoTotal" disabled>
         </div>
       </div>
-    </form>
-  </div>
-  </div>
+    </div>
+
+    <div class="text-end">
+      <button type="button" class="btn btn-outline-secondary" [routerLink]="['/home/gestionar-pedido']">Atrás</button>
+    </div>
+  </form>
 </div>

@@ -9,6 +9,7 @@ import { catchError } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DateInput, formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { PedidoResponse } from '../model/visualizar.model';
+import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
 type AnyRecord = Record<string, unknown>;
 
@@ -26,10 +27,17 @@ interface PaqueteResumenRow {
   id?: number;
   key: string | number;
   eventKey: string | number | null;
+  idEventoServicio?: number | null;
+  eventoId?: number | null;
   ID?: number;
+  servicioId?: number | null;
+  titulo: string;
   descripcion: string;
   precio: number;
+  precioOriginal?: number;
   cantidad?: number;
+  horas?: number | null;
+  personal?: number | null;
   notas: string;
 }
 
@@ -78,6 +86,15 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
 
   // ====== Paquetes seleccionados (solo para mostrar) ======
   selectedPaquetes: PaqueteResumenRow[] = [];
+  selectedPaquetesColumns: TableColumn<PaqueteResumenRow>[] = [
+    { key: 'titulo', header: 'Titulo', sortable: false, width: '30%' },
+    { key: 'cantidad', header: 'Cantidad', sortable: false, class: 'text-center', width: '100px' },
+    { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-center', width: '140px' },
+    { key: 'horas', header: 'Horas', sortable: false, class: 'text-center', width: '90px' },
+    { key: 'staff', header: 'Staff', sortable: false, class: 'text-center', width: '90px' },
+    { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-center', width: '140px' },
+    { key: 'notas', header: 'Notas', sortable: false, width: '24%' }
+  ];
 
   // ====== Pedido actual ======
   private pedidoId!: number;
@@ -253,13 +270,18 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
       this.pedidoTotal = Number(pedido.total ?? 0) || 0;
       this.visualizarService.selectAgregarPedido.NombrePedido = pedido.nombrePedido ?? '';
       this.visualizarService.selectAgregarPedido.Observacion = pedido.observaciones ?? '';
+      this.visualizarService.selectAgregarPedido.mensaje = pedido.mensaje ?? '';
       this.visualizarService.selectAgregarPedido.departamento = pedido.lugar ?? '';
+      this.visualizarService.selectAgregarPedido.dias = pedido.dias ?? 1;
+      this.visualizarService.selectAgregarPedido.horasEstimadas = pedido.horasEstimadas ?? null;
+      this.visualizarService.selectAgregarPedido.fechaEvent = (pedido.fechaEvento ?? '').slice(0, 10);
       const viaticosClienteApi = typeof pedido.viaticosCliente === 'boolean'
         ? pedido.viaticosCliente
         : !(pedido.viaticosMonto && pedido.viaticosMonto > 0);
       this.visualizarService.selectAgregarPedido.viaticosCliente = viaticosClienteApi;
       this.visualizarService.selectAgregarPedido.viaticosMonto = pedido.viaticosMonto ?? null;
       this.CodigoEmpleado = pedido.empleadoId ?? this.CodigoEmpleado;
+      this.eventoSeleccionado = pedido.idTipoEvento ?? this.eventoSeleccionado;
       const fechaCreacionParsed = parseDateInput(this.toDateInput(pedido.fechaCreacion)) ?? new Date();
       this.fechaCreate = fechaCreacionParsed;
       this.visualizarService.selectAgregarPedido.fechaCreate = formatDisplayDate(fechaCreacionParsed, '');
@@ -296,12 +318,24 @@ export class DetallePedidoComponent implements OnInit, AfterViewInit {
         id: it.id ?? undefined,
         key: it.id ?? `${it.nombre}|${it.precioUnit}`,
         eventKey: it.eventoCodigo ?? null,
+        idEventoServicio: it.idEventoServicio ?? null,
+        eventoId: it.eventoId ?? null,
         ID: it.id ?? undefined,
+        servicioId: it.servicioId ?? null,
+        titulo: it.nombre ?? it.descripcion ?? '',
         descripcion: it.nombre ?? it.descripcion ?? '',
         precio: it.precioUnit ?? 0,
+        precioOriginal: it.precioUnit ?? 0,
         cantidad: it.cantidad ?? 1,
+        horas: it.horas ?? null,
+        personal: it.personal ?? null,
         notas: it.notas ?? ''
       }));
+
+      const servicioDesdeItems = this.selectedPaquetes.find(item => item.servicioId != null)?.servicioId ?? null;
+      if (servicioDesdeItems != null) {
+        this.servicioSeleccionado = servicioDesdeItems;
+      }
     });
   }
 

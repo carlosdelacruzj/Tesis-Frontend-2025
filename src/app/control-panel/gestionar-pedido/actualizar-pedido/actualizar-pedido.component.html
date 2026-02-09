@@ -508,10 +508,12 @@
 
     <div class="row mb-3">
       <div class="col-md-4 ms-auto">
-        <label class="col-form-label" for="totalEstimado">Total final</label>
+        <small class="d-block text-end text-muted mt-1">Subtotal: {{ subtotalSinIgv | usd:'1.2-2' }}</small>
+        <small class="d-block text-end text-muted">IGV (18%): {{ igvMonto | usd:'1.2-2' }}</small>
+        <label class="col-form-label mt-2" for="totalEstimado">Total final</label>
         <div class="input-group">
           <span class="input-group-text">US$</span>
-          <input id="totalEstimado" type="number" class="form-control" [value]="totalSeleccion" disabled>
+          <input id="totalEstimado" type="number" class="form-control" [value]="totalConIgv" disabled>
         </div>
       </div>
     </div>

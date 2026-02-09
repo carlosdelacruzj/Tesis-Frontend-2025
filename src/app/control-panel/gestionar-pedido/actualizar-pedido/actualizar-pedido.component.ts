@@ -75,6 +75,7 @@ type UbicacionRowEditable = UbicacionRow & { _backup?: UbicacionRow; editing?: b
   styleUrls: ['./actualizar-pedido.component.css']
 })
 export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
+  private readonly igvRate = 0.18;
   saving = false;
   private initialSnapshot = '';
   private initialSnapshotData: PedidoSnapshot | null = null;
@@ -756,6 +757,19 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       const cantidad = Number(p.cantidad ?? 1) || 1;
       return sum + (precio * cantidad);
     }, 0);
+  }
+
+  get subtotalSinIgv(): number {
+    return this.totalSeleccion;
+  }
+
+  get igvMonto(): number {
+    const base = this.subtotalSinIgv;
+    return Number((base * this.igvRate).toFixed(2));
+  }
+
+  get totalConIgv(): number {
+    return Number((this.subtotalSinIgv + this.igvMonto).toFixed(2));
   }
 
   private getViaticosMontoTotal(): number {
