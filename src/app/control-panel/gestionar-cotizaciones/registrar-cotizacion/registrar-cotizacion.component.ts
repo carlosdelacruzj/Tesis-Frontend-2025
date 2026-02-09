@@ -126,7 +126,6 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     'Ucayali'
   ];
   readonly programacionMinimaRecomendada = 1;
-  readonly programacionMaxima = 6;
   clienteSearchControl = new UntypedFormControl('');
   clienteResultados: ClienteBusquedaResultado[] = [];
   clienteSearchLoading = false;
@@ -226,10 +225,6 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   addProgramacionItem(): void {
-    if (this.programacion.length >= this.programacionMaxima) {
-      this.showAlert('warning', 'Límite alcanzado', `Máximo ${this.programacionMaxima} locaciones.`);
-      return;
-    }
     const siguienteIndice = this.programacion.length + 1;
     const nombreAuto = `Locación ${siguienteIndice}`;
     const fechaConfig = this.isMultipleDias() ? '' : (this.form.get('fechaEvento')?.value ?? '');

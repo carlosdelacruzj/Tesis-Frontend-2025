@@ -4,10 +4,8 @@
     [showSearch]="true"
     [searchPlaceholder]="'Buscar: cliente, documento, estado'"
     [searchValue]="searchTerm"
-    [showCreateButton]="true"
-    [createButtonLabel]="'Registrar pedido'"
-    (searchChange)="onToolbarSearch($event)"
-    (createClick)="navigateToCreate()">
+    [showCreateButton]="false"
+    (searchChange)="onToolbarSearch($event)">
   </app-list-toolbar>
 
   @if (error) {

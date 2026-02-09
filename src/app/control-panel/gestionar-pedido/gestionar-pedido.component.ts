@@ -90,10 +90,6 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  navigateToCreate(): void {
-    this.router.navigate(['/home/gestionar-pedido/agregar']);
-  }
-
   onToolbarSearch(term: string): void {
     this.searchTerm = term ?? '';
   }

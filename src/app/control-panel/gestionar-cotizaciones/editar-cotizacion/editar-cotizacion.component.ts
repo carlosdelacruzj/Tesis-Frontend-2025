@@ -141,7 +141,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
   readonly programacionMinimaRecomendada = 1;
-  readonly programacionMaxima = 6;
   readonly departamentos: string[] = [
     'Amazonas',
     'Ancash',
@@ -228,10 +227,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   addProgramacionItem(): void {
-    if (this.programacion.length >= this.programacionMaxima) {
-      this.showAlert('warning', 'Límite alcanzado', `Máximo ${this.programacionMaxima} locaciones.`);
-      return;
-    }
     const siguienteIndice = this.programacion.length + 1;
     const nombreAuto = `Locación ${siguienteIndice}`;
     const fechaRef = this.isMultipleDias()

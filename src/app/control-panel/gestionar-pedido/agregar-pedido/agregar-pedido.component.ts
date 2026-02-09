@@ -13,12 +13,6 @@ import { catchError, debounceTime, distinctUntilChanged, filter, map, switchMap,
 import { formatDisplayDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 
-interface Tag {
-  nombre: string;
-  direccion: string;
-  usedAt?: number;
-}
-
 interface PedidoPaqueteSeleccionado {
   key: string | number;
   eventKey: string | number | null;
@@ -116,10 +110,6 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   private lastDepartamento = '';
   private departamentoChangeLock = false;
 
-  // ====== TAGS ======
-  tagsPedido: Tag[] = [];
-  tagsCliente: Tag[] = [];
-
   readonly departamentos: string[] = [
     'Amazonas',
     'Ancash',
@@ -160,8 +150,6 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     this.getServicio();
     this.getEventoxServicio();
     this.lastDepartamento = (this.visualizarService.selectAgregarPedido.departamento ?? '').toString().trim();
-
-    if (this.dniCliente) this.loadTagsCliente();
 
     this.clienteSearchControl.valueChanges
       .pipe(
@@ -213,18 +201,8 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     this.resetFormState();
   }
 
-  // ====== Helpers TAGS ======
-  get tagStorageKey(): string {
-    return `ubicTags:${this.dniCliente || 'anon'}`;
-  }
-
   private norm(s: string): string {
     return (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  }
-
-  private findTagIndexByNombre(arr: Tag[], nombre: string): number {
-    const n = this.norm(nombre);
-    return arr.findIndex(t => this.norm(t.nombre) === n);
   }
 
   private asRecord(value: unknown): AnyRecord {
@@ -243,87 +221,6 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
   }
   public pkgKey = (el: AnyRecord) => this.getPkgKey(el);
 
-  get canGuardarTag(): boolean {
-    const u = this.norm(this.Direccion);
-    const dx = (this.DireccionExacta || '').trim();
-    return !!(u && dx && dx.length >= 8);
-  }
-
-  loadTagsCliente() {
-    if (!this.dniCliente) {
-      this.tagsCliente = [];
-      return;
-    }
-
-    try {
-      const raw = localStorage.getItem(this.tagStorageKey);
-      this.tagsCliente = raw ? JSON.parse(raw) : [];
-    } catch {
-      this.tagsCliente = [];
-    }
-  }
-
-  saveTagsCliente() {
-    if (!this.dniCliente) {
-      return;
-    }
-
-    const max = 12;
-    const arr = this.tagsCliente
-      .sort((a: Tag, b: Tag) => (b.usedAt || 0) - (a.usedAt || 0))
-      .slice(0, max);
-    localStorage.setItem(this.tagStorageKey, JSON.stringify(arr));
-  }
-
-  saveTag(scope: 'pedido' | 'cliente') {
-    if (!this.canGuardarTag) return;
-
-    const nombre = (this.Direccion || '').trim();
-    const direccion = (this.DireccionExacta || '').trim();
-    const now = Date.now();
-
-    if (scope === 'pedido') {
-      const idx = this.findTagIndexByNombre(this.tagsPedido, nombre);
-      if (idx >= 0) {
-        this.tagsPedido[idx] = { ...this.tagsPedido[idx], direccion, usedAt: now };
-        const updated = this.tagsPedido.splice(idx, 1)[0];
-        this.tagsPedido.unshift(updated);
-      } else {
-        this.tagsPedido.unshift({ nombre, direccion, usedAt: now });
-      }
-    } else {
-      const idx = this.findTagIndexByNombre(this.tagsCliente, nombre);
-      if (idx >= 0) {
-        this.tagsCliente[idx] = { ...this.tagsCliente[idx], direccion, usedAt: now };
-        const updated = this.tagsCliente.splice(idx, 1)[0];
-        this.tagsCliente.unshift(updated);
-      } else {
-        this.tagsCliente.unshift({ nombre, direccion, usedAt: now });
-      }
-      this.saveTagsCliente();
-    }
-  }
-
-  applyTag(tag: Tag) {
-    this.Direccion = tag.nombre;
-    this.DireccionExacta = tag.direccion;
-    tag.usedAt = Date.now();
-    this.tagsCliente = [...this.tagsCliente];
-    this.saveTagsCliente();
-  }
-
-  removeTag(tag: Tag, scope: 'pedido' | 'cliente') {
-    const same = (t: Tag) =>
-      this.norm(t.nombre) === this.norm(tag.nombre) &&
-      this.norm(t.direccion) === this.norm(tag.direccion);
-
-    if (scope === 'pedido') {
-      this.tagsPedido = this.tagsPedido.filter(t => !same(t));
-    } else {
-      this.tagsCliente = this.tagsCliente.filter(t => !same(t));
-      this.saveTagsCliente();
-    }
-  }
 
   // ====== Fechas ======
   fechaValidate(date) {
@@ -408,7 +305,6 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
         this.dniCliente = documento;
       }
 
-      this.loadTagsCliente();
     });
   }
 
@@ -428,7 +324,6 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     this.clienteBusquedaTermino = this.resolveClienteNombre(cliente);
     this.clienteSearchLoading = false;
 
-    this.loadTagsCliente();
     this.cdr.detectChanges();
   }
 
@@ -443,8 +338,6 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     this.infoCliente = { nombre: '-', apellido: '-', celular: '-', correo: '-', documento: '-', direccion: '-', idCliente: 0, idUsuario: 0 };
     this.clienteSearchControl.enable({ emitEvent: false });
     this.visualizarService.selectAgregarPedido.doc = '';
-    this.tagsCliente = [];
-    this.tagsPedido = [];
   }
 
   private normalizeClienteTerm(value: string | ClienteBusquedaResultado | null | undefined): string {
@@ -1122,19 +1015,17 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       return item.ID != cualEliminar.ID && item.Direccion != cualEliminar.Direccion;
     });
 
-    if (this.ubicacion.length < 8) {
-      const i = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
-      this.ubicacion.push({
-        ID: i,
-        Direccion: direccion,
-        Fecha: fecha,
-        Hora: hora,
-        DireccionExacta: direccionExacta ?? '',
-        Notas: notas ?? ''
-      });
-      this.dataSource.data = this.ubicacion; // ✅ no recrear
-      this.bindSorts();
-    }
+    const i = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
+    this.ubicacion.push({
+      ID: i,
+      Direccion: direccion,
+      Fecha: fecha,
+      Hora: hora,
+      DireccionExacta: direccionExacta ?? '',
+      Notas: notas ?? ''
+    });
+    this.dataSource.data = this.ubicacion; // ✅ no recrear
+    this.bindSorts();
   }
 
 
@@ -1216,8 +1107,6 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     this.fechasDisponibles = [];
     this.asignacionFechasAbierta = false;
     this.tmpIdSequence = 0;
-    this.tagsPedido = [];
-    this.tagsCliente = [];
     this.refreshSelectedPaquetesColumns();
   }
 

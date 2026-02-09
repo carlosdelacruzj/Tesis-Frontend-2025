@@ -191,20 +191,6 @@
                         </div>
                     </div>
 
-                    @if (tagsPedido.length) {
-                        <div class="col">
-                            <span class="me-2">Tags:</span>
-                            @for (t of tagsPedido; track $index) {
-                                <button type="button" class="btn btn-light btn-sm me-2" title="{{t.direccion}}"
-                                    (click)="applyTag(t)">
-                                    {{ t.nombre }}
-                                </button>
-                                <button type="button" class="btn btn-link text-danger p-0 me-3" title="Eliminar tag"
-                                    (click)="removeTag(t,'pedido')">✖</button>
-                            }
-                        </div>
-                    }
-
                     <div class="row mt-2">
                         <div class="col ms-auto">
                             <div class="form-group">
@@ -222,15 +208,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="row mt-2">
-                        <div class="col">
-                            <button type="button" class="btn btn-outline-primary btn-sm me-2"
-                                [disabled]="!canGuardarTag" (click)="saveTag('pedido')">Guardar como tag
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="row mt-2">
                         <div class="col text-end">
                             <button type="button" class="btn btn-danger" [disabled]="!canAgregarEvento"
@@ -619,3 +596,4 @@
     <button type="button" class="btn btn-outline-secondary" (click)="cerrarAsignacionFechas()">Cerrar</button>
   </div>
 </app-modal-base>
+

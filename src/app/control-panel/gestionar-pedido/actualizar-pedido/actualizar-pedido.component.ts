@@ -14,12 +14,6 @@ import { PedidoResponse, PedidoUpdatePayload } from '../model/visualizar.model';
 
 type AlertIcon = 'success' | 'error' | 'warning' | 'info' | 'question';
 
-interface Tag {
-  nombre: string;
-  direccion: string;
-  usedAt?: number;
-}
-
 interface PedidoPaqueteSeleccionado {
   key: string | number;
   eventKey: string | number | null;
@@ -147,10 +141,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   private lastDepartamento = '';
   private departamentoChangeLock = false;
 
-  // ====== TAGS ======
-  tagsPedido: Tag[] = [];
-  tagsCliente: Tag[] = [];
-
   readonly departamentos: string[] = [
     'Amazonas',
     'Ancash',
@@ -185,7 +175,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   private estadoPagoId: number | null = null;
   private cotizacionId: number | null = null;
   readonly programacionMinimaRecomendada = 1;
-  readonly programacionMaxima = 6;
 
   public readonly pedidoService = inject(PedidoService);
   public readonly visualizarService = inject(VisualizarService);
@@ -225,18 +214,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     this.bindSorts();
   }
 
-  // ====== Helpers TAGS ======
-  get tagStorageKey(): string {
-    return `ubicTags:${this.dniCliente || 'anon'}`;
-  }
-
   private norm(s: string): string {
     return (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  }
-
-  private findTagIndexByNombre(arr: Tag[], nombre: string): number {
-    const n = this.norm(nombre);
-    return arr.findIndex(t => this.norm(t.nombre) === n);
   }
 
   private asRecord(value: unknown): AnyRecord {
@@ -254,78 +233,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
   public pkgKey = (el: AnyRecord) => this.getPkgKey(el);
 
-  get canGuardarTag(): boolean {
-    const u = this.norm(this.Direccion);
-    const dx = (this.DireccionExacta || '').trim();
-    return !!(u && dx && dx.length >= 8);
-  }
-
-  loadTagsCliente() {
-    try {
-      const raw = localStorage.getItem(this.tagStorageKey);
-      this.tagsCliente = raw ? JSON.parse(raw) : [];
-    } catch {
-      this.tagsCliente = [];
-    }
-  }
-
-  saveTagsCliente() {
-    const max = 12;
-    const arr = this.tagsCliente
-      .sort((a: Tag, b: Tag) => (b.usedAt || 0) - (a.usedAt || 0))
-      .slice(0, max);
-    localStorage.setItem(this.tagStorageKey, JSON.stringify(arr));
-  }
-
-  saveTag(scope: 'pedido' | 'cliente') {
-    if (!this.canGuardarTag) return;
-
-    const nombre = (this.Direccion || '').trim();
-    const direccion = (this.DireccionExacta || '').trim();
-    const now = Date.now();
-
-    if (scope === 'pedido') {
-      const idx = this.findTagIndexByNombre(this.tagsPedido, nombre);
-      if (idx >= 0) {
-        this.tagsPedido[idx] = { ...this.tagsPedido[idx], direccion, usedAt: now };
-        const updated = this.tagsPedido.splice(idx, 1)[0];
-        this.tagsPedido.unshift(updated);
-      } else {
-        this.tagsPedido.unshift({ nombre, direccion, usedAt: now });
-      }
-    } else {
-      const idx = this.findTagIndexByNombre(this.tagsCliente, nombre);
-      if (idx >= 0) {
-        this.tagsCliente[idx] = { ...this.tagsCliente[idx], direccion, usedAt: now };
-        const updated = this.tagsCliente.splice(idx, 1)[0];
-        this.tagsCliente.unshift(updated);
-      } else {
-        this.tagsCliente.unshift({ nombre, direccion, usedAt: now });
-      }
-      this.saveTagsCliente();
-    }
-  }
-
-  applyTag(tag: Tag) {
-    this.Direccion = tag.nombre;
-    this.DireccionExacta = tag.direccion;
-    tag.usedAt = Date.now();
-    this.tagsCliente = [...this.tagsCliente];
-    this.saveTagsCliente();
-  }
-
-  removeTag(tag: Tag, scope: 'pedido' | 'cliente') {
-    const same = (t: Tag) =>
-      this.norm(t.nombre) === this.norm(tag.nombre) &&
-      this.norm(t.direccion) === this.norm(tag.direccion);
-
-    if (scope === 'pedido') {
-      this.tagsPedido = this.tagsPedido.filter(t => !same(t));
-    } else {
-      this.tagsCliente = this.tagsCliente.filter(t => !same(t));
-      this.saveTagsCliente();
-    }
-  }
 
   // ====== Fechas ======
   fechaValidate(date: Date | string) {
@@ -389,7 +296,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       this.clienteNombreCompleto = razonSocial || [nombres, apellidos].filter(Boolean).join(' ').trim();
       this.clienteCelular = String(this.infoCliente.celular ?? '').trim();
       this.clienteDocumento = String(this.infoCliente.documento ?? '').trim();
-      this.loadTagsCliente();
     });
   }
 
@@ -1172,15 +1078,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   onQuickAdd() {
-    if (this.ubicacion.length >= this.programacionMaxima) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Límite alcanzado',
-        text: `Máximo ${this.programacionMaxima} locaciones.`,
-        confirmButtonText: 'Entendido'
-      });
-      return;
-    }
     const fecha = this.shouldShowFechaEvento() ? (this.visualizarService.selectAgregarPedido.fechaEvent || '') : '';
     const hora = this.visualizarService.selectAgregarPedido.horaEvent || '';
     const nextId = this.ubicacion.length ? Math.max(...this.ubicacion.map(u => u.ID)) + 1 : 1;
@@ -1205,15 +1102,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   addListUbicacion(direccion: string, fecha: string, hora: string, direccionExacta?: string, notas?: string) {
-    if (this.ubicacion.length >= this.programacionMaxima) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Límite alcanzado',
-        text: `Máximo ${this.programacionMaxima} locaciones.`,
-        confirmButtonText: 'Entendido'
-      });
-      return;
-    }
     const yaExiste = this.ubicacion.some(u =>
       u.Fecha === fecha &&
       u.Hora === hora &&
@@ -1494,8 +1382,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       }
       this.initialSnapshotData = this.buildSnapshotData();
       this.initialSnapshot = JSON.stringify(this.initialSnapshotData);
-      // Cargar tags del cliente (si procede)
-      if (this.dniCliente) this.loadTagsCliente();
     });
   }
 
