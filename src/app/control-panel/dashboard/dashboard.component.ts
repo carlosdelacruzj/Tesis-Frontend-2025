@@ -1,14 +1,20 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { forkJoin, interval, startWith, Subscription, switchMap } from 'rxjs';
+import { Router } from '@angular/router';
+import { Subscription, interval } from 'rxjs';
 import {
-  DashboardAlertasResponse,
-  DashboardCapacidadResponse,
+  DashboardCapacidadPorDia,
   DashboardEstadoConteo,
-  DashboardKpisResponse,
-  DashboardResumenResponse,
-  OperacionesAgendaResponse
+  DashboardHomeResponse,
+  OperacionesAgendaPedidoEvento,
+  OperacionesAgendaProyectoDia
 } from './model/dashboard.model';
 import { DashboardService } from './service/dashboard.service';
+
+interface AgendaDiaAgrupada {
+  fecha: string;
+  proyectoDias: OperacionesAgendaProyectoDia[];
+  pedidoEventos: OperacionesAgendaPedidoEvento[];
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -17,150 +23,106 @@ import { DashboardService } from './service/dashboard.service';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private readonly dashboardService = inject(DashboardService);
-  private refrescoLigeroSub: Subscription | null = null;
+  private readonly router = inject(Router);
 
-  fromDate = '';
-  toDate = '';
+  private autoRefreshSub: Subscription | null = null;
+  private requestSub: Subscription | null = null;
 
-  cargandoLigero = false;
-  cargandoAgendaCapacidad = false;
-  cargandoKpis = false;
-  errorLigero = '';
-  errorAgendaCapacidad = '';
-  errorKpis = '';
+  readonly horizonOptions = [7, 14, 30];
+  agendaDays = 14;
 
-  resumen: DashboardResumenResponse | null = null;
-  alertas: DashboardAlertasResponse | null = null;
-  agenda: OperacionesAgendaResponse | null = null;
-  capacidad: DashboardCapacidadResponse | null = null;
-  kpis: DashboardKpisResponse | null = null;
+  isInitialLoading = true;
+  isRefreshing = false;
+  errorMessage = '';
+
+  dashboardHome: DashboardHomeResponse | null = null;
+  agendaPorDia: AgendaDiaAgrupada[] = [];
 
   ngOnInit(): void {
-    const hoy = new Date();
-    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
-    this.fromDate = this.toIsoDateOnly(inicioMes);
-    this.toDate = this.toIsoDateOnly(finMes);
-
-    this.cargarResumenYAlertas();
-    this.cargarAgendaYCapacidad();
-    this.cargarKpis();
-    this.iniciarRefrescoLigero();
+    this.loadDashboard(true);
+    this.startAutoRefresh();
   }
 
   ngOnDestroy(): void {
-    if (this.refrescoLigeroSub) {
-      this.refrescoLigeroSub.unsubscribe();
-      this.refrescoLigeroSub = null;
-    }
+    this.autoRefreshSub?.unsubscribe();
+    this.requestSub?.unsubscribe();
   }
 
-  iniciarRefrescoLigero(): void {
-    if (this.refrescoLigeroSub) {
-      this.refrescoLigeroSub.unsubscribe();
-      this.refrescoLigeroSub = null;
-    }
-
-    this.refrescoLigeroSub = interval(90000)
-      .pipe(
-        startWith(0),
-        switchMap(() => this.dashboardService.getDashboardResumen())
-      )
-      .subscribe({
-        next: (resumen) => {
-          this.resumen = resumen;
-          this.errorLigero = '';
-        },
-        error: () => {
-          this.errorLigero = 'No se pudo refrescar el resumen automaticamente.';
-        }
-      });
+  private startAutoRefresh(): void {
+    this.autoRefreshSub?.unsubscribe();
+    this.autoRefreshSub = interval(60000).subscribe(() => this.loadDashboard(false));
   }
 
-  refrescarTodo(): void {
-    this.cargarResumenYAlertas();
-    this.cargarAgendaYCapacidad();
-    this.cargarKpis();
-  }
-
-  aplicarRango(): void {
-    if (!this.fromDate || !this.toDate) {
-      this.errorAgendaCapacidad = 'Debes indicar fecha inicial y fecha final.';
-      return;
+  loadDashboard(showInitialLoader = false): void {
+    if (showInitialLoader && !this.dashboardHome) {
+      this.isInitialLoading = true;
+    } else {
+      this.isRefreshing = true;
     }
-    if (this.fromDate > this.toDate) {
-      this.errorAgendaCapacidad = 'La fecha inicial no puede ser mayor que la fecha final.';
-      return;
-    }
-    this.cargarAgendaYCapacidad();
-  }
 
-  private cargarResumenYAlertas(): void {
-    this.cargandoLigero = true;
-    this.errorLigero = '';
-    forkJoin({
-      resumen: this.dashboardService.getDashboardResumen(),
-      alertas: this.dashboardService.getDashboardAlertas()
-    }).subscribe({
+    this.errorMessage = '';
+    this.requestSub?.unsubscribe();
+    this.requestSub = this.dashboardService.getDashboardHome(this.agendaDays).subscribe({
       next: (response) => {
-        this.resumen = response.resumen;
-        this.alertas = response.alertas;
-        this.cargandoLigero = false;
+        this.dashboardHome = response;
+        this.agendaPorDia = this.buildAgendaByDate(
+          response.dashboard.agenda.agenda.proyectoDias ?? [],
+          response.dashboard.agenda.agenda.pedidoEventos ?? []
+        );
+        this.isInitialLoading = false;
+        this.isRefreshing = false;
       },
       error: () => {
-        this.cargandoLigero = false;
-        this.errorLigero = 'No se pudo cargar resumen y alertas del dashboard.';
+        this.isInitialLoading = false;
+        this.isRefreshing = false;
+        this.errorMessage = 'No se pudo cargar dashboard operativo';
       }
     });
   }
 
-  private cargarAgendaYCapacidad(): void {
-    this.cargandoAgendaCapacidad = true;
-    this.errorAgendaCapacidad = '';
-    forkJoin({
-      agenda: this.dashboardService.getAgenda(this.fromDate, this.toDate),
-      capacidad: this.dashboardService.getCapacidad(this.fromDate, this.toDate)
-    }).subscribe({
-      next: (response) => {
-        this.agenda = {
-          ...response.agenda,
-          resumenPorFecha: [...(response.agenda.resumenPorFecha ?? [])].sort((a, b) => a.fecha.localeCompare(b.fecha)),
-          agenda: {
-            proyectoDias: [...(response.agenda.agenda?.proyectoDias ?? [])].sort((a, b) => {
-              if (a.fecha === b.fecha) return a.proyecto.localeCompare(b.proyecto);
-              return a.fecha.localeCompare(b.fecha);
-            }),
-            pedidoEventos: [...(response.agenda.agenda?.pedidoEventos ?? [])].sort((a, b) => {
-              if (a.fecha === b.fecha) return (a.hora || '').localeCompare(b.hora || '');
-              return a.fecha.localeCompare(b.fecha);
-            })
-          }
-        };
-        this.capacidad = {
-          ...response.capacidad,
-          capacidadPorDia: [...(response.capacidad.capacidadPorDia ?? [])].sort((a, b) => a.fecha.localeCompare(b.fecha))
-        };
-        this.cargandoAgendaCapacidad = false;
-      },
-      error: () => {
-        this.cargandoAgendaCapacidad = false;
-        this.errorAgendaCapacidad = 'No se pudo cargar agenda y capacidad para el rango seleccionado.';
-      }
+  onAgendaDaysChange(days: number): void {
+    if (this.agendaDays === days) return;
+    this.agendaDays = days;
+    this.loadDashboard(false);
+  }
+
+  refreshNow(): void {
+    this.loadDashboard(false);
+  }
+
+  onRetry(): void {
+    this.loadDashboard(!this.dashboardHome);
+  }
+
+  onKpiClick(key: 'cotizacionesPorExpirar7d' | 'pedidosEnRiesgo7d' | 'equiposNoDevueltos' | 'proyectoListoSinLinkFinal'): void {
+    if (key === 'cotizacionesPorExpirar7d') {
+      this.router.navigate(['/home/gestionar-cotizaciones'], { queryParams: { alerta: 'por-expirar' } });
+      return;
+    }
+    if (key === 'pedidosEnRiesgo7d') {
+      this.router.navigate(['/home/gestionar-pedido'], { queryParams: { alerta: 'en-riesgo' } });
+      return;
+    }
+    if (key === 'equiposNoDevueltos') {
+      this.router.navigate(['/home/gestionar-proyecto'], { queryParams: { alerta: 'equipos-no-devueltos' } });
+      return;
+    }
+    this.router.navigate(['/home/gestionar-proyecto'], { queryParams: { alerta: 'listo-sin-link-final' } });
+  }
+
+  goToCotizacion(cotizacionId: number): void {
+    this.router.navigate(['/home/gestionar-cotizaciones'], {
+      queryParams: { alerta: 'por-expirar', cotizacionId }
     });
   }
 
-  private cargarKpis(): void {
-    this.cargandoKpis = true;
-    this.errorKpis = '';
-    this.dashboardService.getDashboardKpis().subscribe({
-      next: (response) => {
-        this.kpis = response;
-        this.cargandoKpis = false;
-      },
-      error: () => {
-        this.cargandoKpis = false;
-        this.errorKpis = 'No se pudo cargar el analisis de KPIs.';
-      }
+  goToPedido(pedidoId: number): void {
+    this.router.navigate(['/home/gestionar-pedido/detalle', pedidoId]);
+  }
+
+  goToProyecto(proyectoId: number, diaId?: number): void {
+    this.router.navigate(['/home/gestionar-proyecto', proyectoId], {
+      queryParams: diaId ? { diaId } : undefined
     });
   }
 
@@ -170,16 +132,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getPrioridadClass(prioridad: string | null | undefined): string {
     const value = (prioridad ?? '').toLowerCase();
-    if (value === 'alta') return 'priority-high';
-    if (value === 'media') return 'priority-medium';
-    return 'priority-low';
+    if (value === 'alta') return 'chip-red';
+    if (value === 'media') return 'chip-amber';
+    return 'chip-green';
   }
 
   getSaturacionClass(value: number): string {
-    if (value >= 90) return 'sat-critical';
-    if (value >= 80) return 'sat-high';
-    if (value >= 60) return 'sat-medium';
-    return 'sat-ok';
+    if (value >= 90) return 'level-red';
+    if (value >= 80) return 'level-amber';
+    return 'level-green';
+  }
+
+  getDiasEventoClass(days: number | null | undefined): string {
+    if (days === null || days === undefined) return 'level-amber';
+    if (days < 0) return 'level-red';
+    if (days <= 3) return 'level-amber';
+    return 'level-green';
   }
 
   formatFechaCorta(value: string | null | undefined): string {
@@ -219,10 +187,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }).format(date);
   }
 
-  toIsoDateOnly(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  private buildAgendaByDate(
+    proyectoDias: OperacionesAgendaProyectoDia[],
+    pedidoEventos: OperacionesAgendaPedidoEvento[]
+  ): AgendaDiaAgrupada[] {
+    const byDate = new Map<string, AgendaDiaAgrupada>();
+
+    for (const item of proyectoDias) {
+      const current = byDate.get(item.fecha) ?? { fecha: item.fecha, proyectoDias: [], pedidoEventos: [] };
+      current.proyectoDias.push(item);
+      byDate.set(item.fecha, current);
+    }
+
+    for (const item of pedidoEventos) {
+      const current = byDate.get(item.fecha) ?? { fecha: item.fecha, proyectoDias: [], pedidoEventos: [] };
+      current.pedidoEventos.push(item);
+      byDate.set(item.fecha, current);
+    }
+
+    return Array.from(byDate.values())
+      .map((group) => ({
+        ...group,
+        proyectoDias: [...group.proyectoDias].sort((a, b) => a.proyecto.localeCompare(b.proyecto)),
+        pedidoEventos: [...group.pedidoEventos].sort((a, b) => (a.hora || '').localeCompare(b.hora || ''))
+      }))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }
+
+  get capacidadPorDia(): DashboardCapacidadPorDia[] {
+    return this.dashboardHome?.dashboard.capacidad.capacidadPorDia ?? [];
   }
 }

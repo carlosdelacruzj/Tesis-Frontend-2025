@@ -147,6 +147,8 @@ export interface DashboardAlertasResumen {
   equiposNoDevueltos: number;
   diasSuspendidosPorReprogramar: number;
   proyectoListoSinLinkFinal: number;
+  cotizacionesPorExpirar7d: number;
+  pedidosEnRiesgo7d: number;
 }
 
 export interface DashboardResumenData {
@@ -206,10 +208,41 @@ export interface DashboardColaOperativa {
     prioridad: string;
     items: DashboardAlertaDiasSuspendidosPorReprogramarItem[];
   };
+  cotizacionesPorExpirar: {
+    total: number;
+    totalVencidas: number;
+    prioridad: string;
+    items: {
+      cotizacionId: number;
+      cotizacion: string;
+      clienteId: number | null;
+      cliente: string | null;
+      fechaVencimiento: string | null;
+      diasParaVencer: number | null;
+      vencida: boolean;
+    }[];
+  };
+  pedidosEnRiesgo: {
+    total: number;
+    totalVencidos: number;
+    totalSinFechaEvento: number;
+    prioridad: string;
+    items: {
+      pedidoId: number;
+      pedido: string;
+      clienteId: number | null;
+      cliente: string | null;
+      fechaPrimerEvento: string | null;
+      diasParaEvento: number | null;
+      sinFechaEvento: boolean;
+      vencido: boolean;
+    }[];
+  };
 }
 
 export interface DashboardAlertasResponse {
   generatedAt: string;
+  horizonDays: number;
   totalAlertas: number;
   colaOperativa: DashboardColaOperativa;
 }
@@ -240,11 +273,28 @@ export interface OperacionesAgendaProyectoDia {
   estadoProyecto: string;
   pedidoId: number;
   pedido: string;
+  estadoPedidoId: number;
+  estadoPedido: string;
   totalBloques: number;
   totalEmpleados: number;
   totalEquipos: number;
   totalEquiposPendientes: number;
   bloques: OperacionesAgendaBloque[];
+  empleados: {
+    empleadoId: number;
+    empleado: string;
+    rol: string | null;
+  }[];
+  equipos: {
+    equipoId: number;
+    serie: string;
+    equipo: string;
+    estadoAsignacion: string | null;
+  }[];
+  riesgosCapacidad: {
+    staff80: boolean;
+    equipo80: boolean;
+  };
 }
 
 export interface OperacionesAgendaPedidoEvento {
@@ -254,6 +304,8 @@ export interface OperacionesAgendaPedidoEvento {
   fecha: string;
   hora: string;
   ubicacion: string;
+  direccion: string | null;
+  notas: string | null;
   estadoPedidoId: number;
   estadoPedido: string;
   proyectoIdVinculado: number | null;
@@ -307,4 +359,18 @@ export interface DashboardCapacidadResponse {
     diasRiesgoEquipo80: number;
   };
   capacidadPorDia: DashboardCapacidadPorDia[];
+}
+
+export interface DashboardHomeResponse {
+  generatedAt: string;
+  range: {
+    from: string;
+    to: string;
+  };
+  dashboard: {
+    resumen: DashboardResumenData;
+    alertas: DashboardAlertasResponse;
+    agenda: OperacionesAgendaResponse;
+    capacidad: DashboardCapacidadResponse;
+  };
 }

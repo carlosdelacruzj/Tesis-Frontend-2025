@@ -5,6 +5,7 @@ import { environment } from 'src/environments/environment';
 import {
   DashboardAlertasResponse,
   DashboardCapacidadResponse,
+  DashboardHomeResponse,
   DashboardKpisResponse,
   DashboardResumenResponse,
   OperacionesAgendaResponse
@@ -41,5 +42,13 @@ export class DashboardService {
     if (from) params = params.set('from', from);
     if (to) params = params.set('to', to);
     return this.http.get<DashboardCapacidadResponse>(`${this.API}/dashboard/capacidad`, { params });
+  }
+
+  getDashboardHome(agendaDays?: number | null): Observable<DashboardHomeResponse> {
+    let params = new HttpParams();
+    if (agendaDays !== null && agendaDays !== undefined) {
+      params = params.set('agendaDays', agendaDays.toString());
+    }
+    return this.http.get<DashboardHomeResponse>(`${this.API}/dashboard/home`, { params });
   }
 }
