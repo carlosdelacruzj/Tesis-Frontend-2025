@@ -15,7 +15,7 @@
     <div class="alert alert-danger" role="alert">{{ error }}</div>
   }
 
-  @if (!loadingList) {
+  @if (!loadingList) { 
     <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="10"
       emptyText="Sin resultados"
       (rowClick)="editarCliente($any($event))" (sortChange)="onSortChange($event)" (pageChange)="onPageChange($event)"
