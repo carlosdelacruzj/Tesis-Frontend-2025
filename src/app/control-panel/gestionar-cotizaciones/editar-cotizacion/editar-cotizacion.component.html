@@ -421,6 +421,7 @@
                               class="form-control"
                               formControlName="nombre"
                               placeholder="Ej. Recepción en casona"
+                              maxlength="50"
                               [class.is-invalid]="
                                 grupo.get('nombre')?.invalid &&
                                 grupo.get('nombre')?.touched
@@ -946,7 +947,7 @@
   @if (detallePaqueteSeleccionado) {
     <div class="row g-3">
       <div class="col-md-6">
-        <label class="form-label" for="detallePaqueteTituloEdit">Titulo</label>
+        <label class="form-label" for="detallePaqueteTituloEdit">Título</label>
         <input
           id="detallePaqueteTituloEdit"
           class="form-control"
@@ -989,7 +990,7 @@
       </div>
       <div class="col-md-6">
         <label class="form-label" for="detallePaqueteCategoriaEdit"
-          >Categoria</label
+          >Categoría</label
         >
         <input
           id="detallePaqueteCategoriaEdit"
@@ -1017,7 +1018,7 @@
       </div>
       <div class="col-12">
         <label class="form-label" for="detallePaqueteDescripcionEdit"
-          >Descripcion</label
+          >Descripción</label
         >
         <textarea
           id="detallePaqueteDescripcionEdit"
@@ -1055,7 +1056,7 @@
       </div>
       <div class="col-md-4">
         <label class="form-label" for="detallePaqueteFilmEdit"
-          >Filmacion (min)</label
+          >Filmación (min)</label
         >
         <input
           id="detallePaqueteFilmEdit"

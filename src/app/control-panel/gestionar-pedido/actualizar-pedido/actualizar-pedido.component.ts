@@ -2383,7 +2383,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       { key: 'precioUnit', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' },
     ];
     if (this.isMultipleDias()) {
-      base.splice(1, 0, { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' });
+      base.splice(1, 0, { key: 'cantidad', header: 'Dias', sortable: false, class: 'text-center', width: '90px' });
     }
     if (this.shouldShowPrecioOriginal()) {
       base.push({ key: 'precioOriginal', header: 'Base', sortable: false, class: 'text-end text-nowrap', width: '140px' });
