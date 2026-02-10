@@ -1,81 +1,90 @@
 @if (open) {
-<!-- Backdrop -->
-<button type="button"
-        class="modal-backdrop fade show"
-        aria-label="Cerrar"
-        (click)="onClickBackdrop($event)"
-        (keydown.enter)="onClickBackdrop($event)"
-        (keydown.space)="onClickBackdrop($event)"></button>
+  <!-- Backdrop -->
+  <button
+    type="button"
+    class="modal-backdrop fade show"
+    aria-label="Cerrar"
+    (click)="onClickBackdrop($event)"
+    (keydown.enter)="onClickBackdrop($event)"
+    (keydown.space)="onClickBackdrop($event)"
+  ></button>
 
-<!-- Contenedor del diálogo -->
-<div class="modal d-block fade show"
-     role="dialog"
-     aria-modal="true"
-     [attr.aria-labelledby]="title ? 'modal-title' : null"
-     [attr.aria-describedby]="ariaDescribedBy || null">
+  <!-- Contenedor del diálogo -->
+  <div
+    class="modal d-block fade show"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="title ? 'modal-title' : null"
+    [attr.aria-describedby]="ariaDescribedBy || null"
+  >
+    <div class="modal-dialog {{ sizeClass }}">
+      <div class="modal-content" #dialog tabindex="-1">
+        <!-- Header -->
+        <div class="modal-header" (mousedown)="onDragStart($event)">
+          <!-- Slot opcional -->
+          <ng-content select="[modal-header]"></ng-content>
 
-  <div class="modal-dialog {{ sizeClass }}">
-    <div class="modal-content" #dialog tabindex="-1">
-      <!-- Header -->
-      <div class="modal-header" (mousedown)="onDragStart($event)">
-        <!-- Slot opcional -->
-        <ng-content select="[modal-header]"></ng-content>
+          <!-- Título por defecto si no inyectas header -->
+          @if (title) {
+            <h4 id="modal-title" class="modal-title">{{ title }}</h4>
+          }
 
-        <!-- Título por defecto si no inyectas header -->
-        @if (title) {
-        <h5 id="modal-title" class="modal-title">{{ title }}</h5>
-        }
+          @if (showCloseButton) {
+            <button
+              #closeBtn
+              type="button"
+              class="btn-close"
+              aria-label="Cerrar"
+              (click)="close('close')"
+            ></button>
+          }
+        </div>
 
-        @if (showCloseButton) {
-        <button
-                #closeBtn
+        <!-- Body -->
+        <div class="modal-body">
+          <ng-content select="[modal-body]"></ng-content>
+          <!-- También permitimos contenido libre si no se usa [modal-body] -->
+          <ng-content></ng-content>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+          <ng-content select="[modal-footer]"></ng-content>
+
+          <!-- Botones por defecto -->
+          @if (useDefaultFooter) {
+            @if (showSecondary) {
+              <button
                 type="button"
-                class="btn-close"
-                aria-label="Cerrar"
-                (click)="close('close')">
-        </button>
-        }
-      </div>
-
-      <!-- Body -->
-      <div class="modal-body">
-        <ng-content select="[modal-body]"></ng-content>
-        <!-- También permitimos contenido libre si no se usa [modal-body] -->
-        <ng-content></ng-content>
-      </div>
-
-      <!-- Footer -->
-      <div class="modal-footer">
-        <ng-content select="[modal-footer]"></ng-content>
-
-        <!-- Botones por defecto -->
-        @if (useDefaultFooter) {
-          @if (showSecondary) {
-          <button
-                  type="button"
-                  class="btn btn-outline-secondary"
-                  [disabled]="loading"
-                  (click)="onCancel()">
-            {{ secondaryLabel }}
-          </button>
-          }
-
-          @if (showPrimary) {
-          <button
-                  type="button"
-                  class="btn"
-                  [ngClass]="'btn-' + primaryVariant"
-                  [disabled]="loading"
-                  (click)="onConfirm()">
-            @if (loading) {
-            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                class="btn btn-outline-secondary"
+                [disabled]="loading"
+                (click)="onCancel()"
+              >
+                {{ secondaryLabel }}
+              </button>
             }
-            {{ primaryLabel }}
-          </button>
+
+            @if (showPrimary) {
+              <button
+                type="button"
+                class="btn"
+                [ngClass]="'btn-' + primaryVariant"
+                [disabled]="loading"
+                (click)="onConfirm()"
+              >
+                @if (loading) {
+                  <span
+                    class="spinner-border spinner-border-sm me-1"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                }
+                {{ primaryLabel }}
+              </button>
+            }
           }
-        }
+        </div>
       </div>
     </div>
   </div>
-</div>
 }

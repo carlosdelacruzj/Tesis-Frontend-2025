@@ -23,7 +23,7 @@
   --text-muted-rgb: 169, 183, 200;
   --disabled: #6e8096;
 
-  --hover: #36597d;
+  --hover: #0f1c30e8;
   --focus: #4b6d92;
 
   --success: #2eaa4b;
@@ -267,16 +267,16 @@ h6 {
 }
 
 h1 {
-  font-size: 28px;
+  font-size: 20px;
 }
 
 h2 {
-  font-size: 24px;
+  font-size: 18px;
   line-height: 30px;
 }
 
 h3 {
-  font-size: 18px !important;
+  font-size: 16px !important;
 }
 
 h4 {
@@ -338,24 +338,28 @@ label {
   display: inline-block;
   max-width: 100%;
   margin-bottom: 5px;
-  font-size: 15px;
-  color: #71748d;
+  font-size: 13.5px;
+  color: var(--tertiary);
 }
 
+.form-select,
 .form-control {
   display: block;
   width: 100%;
-  font-size: 14px;
-  line-height: 1.42857143;
-  color: #71748d;
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--primary);
   background-color: #fff;
-  background-image: none;
   border: 1px solid #d2d2e4;
-  border-radius: 2px;
+  border-radius: 20px;
+}
+
+.form-control {
+  background-image: none;
 }
 
 .form-control:focus {
-  color: #71748d;
+  color: var(--primary);
   background-color: #fff;
   border-color: #a7a7f0;
   outline: 0;
@@ -416,6 +420,7 @@ input[type="file"] {
 button {
   background-color: white;
   padding: 8px 20px 8px 20px;
+  border-radius: 20px;
 }
 
 button:focus {
@@ -583,17 +588,22 @@ textarea:focus::-webkit-input-placeholder {
   display: flex;
   -ms-flex-align: center;
   align-items: center;
-  padding: 10px;
+  padding: 0.2rem 0.5rem;
   margin-bottom: 0;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
-  color: #75748d;
+  color: var(--secondary);
   text-align: center;
   white-space: nowrap;
-  background-color: #efeff6;
+  background-color: var(--text);
   border: 1px solid #d2d2e4;
-  border-radius: 4px;
+  border-radius: 20px;
+  .material-icons,
+  .mat-icon {
+    height: 18px;
+    width: 18px;
+  }
 }
 
 .section-block {
@@ -2887,7 +2897,7 @@ input[type="radio"] {
 .btn {
   font-size: 14px;
   padding: 9px 16px;
-  border-radius: 2px;
+  border-radius: 20px;
 }
 
 .btn-wishlist {
@@ -2934,9 +2944,10 @@ input[type="radio"] {
 
 .btn-primary {
   color: var(--primary);
-  border-radius: 20px;
+  /* background-color: var(--primary); */
   background-color: transparent;
   border-color: var(--primary);
+  border-radius: 20px;
 }
 
 .btn-primary:hover,
@@ -2944,76 +2955,110 @@ input[type="radio"] {
 .btn-primary:active,
 .btn-primary.active,
 .show > .btn-primary.dropdown-toggle {
-  background-color: var(--primary);
-  border-color: var(--primary);
-  box-shadow: 0 0 0 0.25rem rgba(15, 28, 48, 0.35);
+  background-color: var(--hover);
+  border-color: var(--hover);
+  box-shadow: var(--focus-ring);
 }
 
 .btn-primary:disabled,
 .btn-primary.disabled {
-  background-color: var(--primary);
-  border-color: var(--primary);
+  background-color: var(--disabled);
+  border-color: var(--disabled);
+  color: #fff;
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .btn-primary:hover {
   color: #fff;
-  border-color: 1px var(--primary);
+  border-color: var(--hover);
 }
 
 .btn-primary.focus,
 .btn-primary:focus {
   color: #fff;
-  background-color: var(--primary);
-  border-color: var(--primary);
-  /* box-shadow: 0 0 0 1px var(--primary); */
+  background-color: var(--hover);
+  border-color: var(--hover);
+  box-shadow: var(--focus-ring);
 }
 
 .btn-primary:not(:disabled):not(.disabled).active:focus,
 .btn-primary:not(:disabled):not(.disabled):active:focus,
 .show > .btn-primary.dropdown-toggle:focus {
-  box-shadow: 0 0 0 0.2rem var(--primary);
+  box-shadow: var(--focus-ring);
 }
 
 .btn-primary:not(:disabled):not(.disabled).active,
 .btn-primary:not(:disabled):not(.disabled):active,
 .show > .btn-primary.dropdown-toggle {
-  color: var(--primary);
-  background-color: white;
-  border-color: #c0d0ef;
+  color: #fff;
+  background-color: var(--hover);
+  border-color: var(--hover);
 }
 
 /*--- btn secondary --*/
 
 .btn-secondary {
-  color: var(--secondary);
-  background-color: #fff;
-  border-color: #c2c6ce;
+  color: #fff;
+  background-color: var(--secondary);
+  border-color: var(--secondary);
   border-radius: 20px;
 }
 
 .btn-secondary:hover {
-  color: var(--secondary);
-  background-color: #c2c6ce;
-  border-color: #c2c6ce;
-  border-radius: 10px;
+  color: #fff;
+  background-color: var(--hover);
+  border-color: var(--hover);
+  border-radius: 20px;
 }
 
 .btn-secondary.focus,
 .btn-secondary:focus {
-  color: var(--secondary);
-  background-color: #c2c6ce;
-  border-color: #c2c6ce;
-  box-shadow: 0 0 0 1px #929499;
-  border-radius: 10px;
+  color: #fff;
+  background-color: var(--hover);
+  border-color: var(--hover);
+  box-shadow: var(--focus-ring);
+  border-radius: 20px;
 }
 
 .btn-secondary:not(:disabled):not(.disabled).active,
 .btn-secondary:not(:disabled):not(.disabled):active,
 .show > .btn-secondary.dropdown-toggle {
-  color: var(--secondary);
-  background-color: #c2c6ce;
-  border-color: #c2c6ce;
-  border-radius: 10px;
+  color: #fff;
+  background-color: var(--hover);
+  border-color: var(--hover);
+  border-radius: 20px;
+}
+
+/*--- btn tertiary --*/
+
+.btn-tertiary {
+  color: #fff;
+  background-color: var(--tertiary);
+  border-color: var(--tertiary);
+  border-radius: 20px;
+}
+
+.btn-tertiary:hover {
+  color: #fff;
+  background-color: var(--hover);
+  border-color: var(--hover);
+}
+
+.btn-tertiary.focus,
+.btn-tertiary:focus {
+  color: #fff;
+  background-color: var(--hover);
+  border-color: var(--hover);
+  box-shadow: var(--focus-ring);
+}
+
+.btn-tertiary:not(:disabled):not(.disabled).active,
+.btn-tertiary:not(:disabled):not(.disabled):active,
+.show > .btn-tertiary.dropdown-toggle {
+  color: #fff;
+  background-color: var(--hover);
+  border-color: var(--hover);
 }
 
 /*--- btn success --*/
@@ -3399,7 +3444,7 @@ input[type="radio"] {
 
 .btn-sm {
   padding: 5px 12px;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
 .btn-lg {
@@ -7367,6 +7412,7 @@ span.mat-radio-outer-circle {
   z-index: 10000;
 }
 
+html .mat-mdc-icon-button.mat-primary,
 html .mat-mdc-icon-button.mat-accent {
   --mdc-icon-button-icon-color: var(--secondary);
   --mat-icon-button-state-layer-color: var(--secondary);
