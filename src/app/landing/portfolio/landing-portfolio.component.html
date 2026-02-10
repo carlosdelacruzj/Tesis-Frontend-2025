@@ -1,0 +1,173 @@
+<section class="portfolio" id="portafolio">
+  <div class="section__header">
+    <h2>Portafolio reciente</h2>
+    <p>Selecciona una categoría.</p>
+  </div>
+
+  @if (portfolioLoading) {
+    <p class="portfolio__status">Cargando portafolio...</p>
+  } @else if (portfolioError) {
+    <p class="portfolio__status">{{ portfolioError }}</p>
+  } @else if (portfolioCategories.length === 0) {
+    <p class="portfolio__status">Sin imágenes para mostrar.</p>
+  } @else {
+    <div class="portfolio__categories-wrap">
+      <button
+        type="button"
+        class="portfolio__nav portfolio__nav--prev"
+        (click)="scrollCategoryPrev()"
+        [disabled]="!canScrollCategories || categoryAtStart"
+      >
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <div class="portfolio__carousel">
+        <div
+          class="portfolio__categories"
+          #categoryTrack
+          (scroll)="onCategoryScroll()"
+        >
+          @for (category of carouselCategories; track category.name) {
+            <button
+              type="button"
+              class="portfolio__category"
+              [class.is-active]="selectedCategory === category.name"
+              (click)="openCategory(category.name)"
+            >
+              <div class="portfolio__category-images">
+                @for (preview of category.preview; track preview.id) {
+                  <img
+                    [src]="preview.thumbnail"
+                    [alt]="preview.title"
+                    loading="lazy"
+                  />
+                }
+              </div>
+              <div class="portfolio__category-meta">
+                <h3>{{ category.name }}</h3>
+                <span>{{ category.total }} imágenes</span>
+              </div>
+            </button>
+          }
+        </div>
+      </div>
+      <button
+        type="button"
+        class="portfolio__nav portfolio__nav--next"
+        (click)="scrollCategoryNext()"
+        [disabled]="!canScrollCategories || categoryAtEnd"
+      >
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+
+    @if (selectedCategory) {
+      <div class="portfolio__gallery">
+        <div class="portfolio__gallery-header">
+          <div>
+            <h3>{{ selectedCategory }}</h3>
+            <p>{{ selectedCategoryItems.length }} imagenes disponibles</p>
+          </div>
+          <button
+            type="button"
+            class="portfolio__close"
+            (click)="closeCategory()"
+          >
+            Cerrar
+          </button>
+        </div>
+        <div class="portfolio__grid">
+          @for (item of pagedCategoryItems; track item.id) {
+            <article
+              class="portfolio__item"
+              (click)="openLightbox(item)"
+              tabindex="0"
+              (keydown.enter)="openLightbox(item)"
+            >
+              <img
+                class="portfolio__image"
+                [src]="item.thumbnail"
+                [alt]="item.title"
+                loading="lazy"
+              />
+              <div class="portfolio__overlay">
+                <span class="portfolio__type">{{ item.type }}</span>
+                <h3 class="portfolio__title">{{ item.title }}</h3>
+              </div>
+            </article>
+          }
+        </div>
+        @if (galleryTotalPages > 1) {
+          <div class="portfolio__pager">
+            <button
+              type="button"
+              class="portfolio__pager-btn"
+              (click)="prevGalleryPage()"
+              [disabled]="galleryPage === 1"
+            >
+              Anterior
+            </button>
+            <span>Pagina {{ galleryPage }} de {{ galleryTotalPages }}</span>
+            <button
+              type="button"
+              class="portfolio__pager-btn"
+              (click)="nextGalleryPage()"
+              [disabled]="galleryPage === galleryTotalPages"
+            >
+              Siguiente
+            </button>
+          </div>
+        }
+      </div>
+    }
+  }
+</section>
+
+@if (selectedLightboxItem) {
+  <div
+    class="lightbox"
+    role="button"
+    tabindex="0"
+    (click)="closeLightbox()"
+    (keydown.enter)="closeLightbox()"
+    (keydown.space)="closeLightbox()"
+  >
+    <div
+      class="lightbox__content"
+      tabindex="0"
+      (click)="$event.stopPropagation()"
+      (keydown.enter)="$event.stopPropagation()"
+      (keydown.space)="$event.stopPropagation()"
+    >
+      <button
+        class="lightbox__close"
+        type="button"
+        (click)="closeLightbox()"
+        aria-label="Cerrar"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+      @switch (selectedLightboxItem.mediaType) {
+        @case ("image") {
+          <img
+            [src]="selectedLightboxItem.source"
+            [alt]="selectedLightboxItem.title"
+            loading="lazy"
+          />
+        }
+        @case ("video") {
+          <video
+            controls
+            autoplay
+            playsinline
+            [poster]="selectedLightboxItem.poster"
+            muted
+          >
+            <source [src]="selectedLightboxItem.source" type="video/mp4" />
+          </video>
+        }
+      }
+      <h3>{{ selectedLightboxItem?.title }}</h3>
+      <p>{{ selectedLightboxItem?.type }}</p>
+    </div>
+  </div>
+}

@@ -4,6 +4,7 @@ import { LandingComponent } from './landing.component';
 import { LandingLayoutComponent } from './layout/landing-layout.component';
 import { LandingClientCotizacionesComponent } from './portal/landing-client-cotizaciones.component';
 import { LandingClientPedidosComponent } from './portal/landing-client-pedidos.component';
+import { LandingPortfolioComponent } from './portfolio/landing-portfolio.component';
 
 const routes: Routes = [
   {
@@ -12,6 +13,7 @@ const routes: Routes = [
     children: [
       { path: '', component: LandingComponent },
       { path: 'inicio', redirectTo: '', pathMatch: 'full' },
+      { path: 'portafolio', component: LandingPortfolioComponent },
       { path: 'cotizaciones', component: LandingClientCotizacionesComponent },
       { path: 'pedidos', component: LandingClientPedidosComponent }
     ]

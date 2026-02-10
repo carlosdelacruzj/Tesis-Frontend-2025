@@ -17,9 +17,10 @@
   --bg: #fcfcfc;
   --surface: #101d31;
   --border: #22324a;
+  --lavender: #f0f6ff;
 
   --text: #eef3fa;
-  --text-muted: #a9b7c8;
+  --text-muted: #cad4e0;
   --text-muted-rgb: 169, 183, 200;
   --disabled: #6e8096;
 
@@ -605,6 +606,10 @@ textarea:focus::-webkit-input-placeholder {
     width: 18px;
     font-size: 18px;
   }
+}
+.services__nav,
+.lightbox__close {
+  justify-content: center;
 }
 
 .section-block {

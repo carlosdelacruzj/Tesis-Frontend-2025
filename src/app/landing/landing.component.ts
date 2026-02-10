@@ -338,14 +338,18 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   @ViewChild(FormGroupDirective, { static: false }) private quoteFormDirective?: FormGroupDirective;
   @ViewChild('categoryTrack', { static: false }) private categoryTrack?: ElementRef<HTMLDivElement>;
+  @ViewChild('serviceTrack', { static: false }) private serviceTrack?: ElementRef<HTMLDivElement>;
   private readonly portafolioService = inject(LandingPortafolioService);
   private readonly portfolioAssetBase = this.getPortfolioAssetBase();
   categoryAtStart = true;
   categoryAtEnd = false;
+  serviceAtStart = true;
+  serviceAtEnd = false;
+  private serviceAutoScrollId: number | null = null;
 
   ngOnInit(): void {
     this.loadEventOptions();
-    this.loadPortfolioPublico();
+    this.resetServiceScroll();
     this.route.fragment
       .pipe(takeUntil(this.destroy$))
       .subscribe(fragment => {
@@ -411,6 +415,12 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     return track.scrollWidth > track.clientWidth + 4;
   }
 
+  get canScrollServices(): boolean {
+    const track = this.serviceTrack?.nativeElement;
+    if (!track) return false;
+    return track.scrollWidth > track.clientWidth + 4;
+  }
+
   get carouselCategories(): PortfolioCategory[] {
     return this.portfolioCategories;
   }
@@ -456,9 +466,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           if (this.selectedCategory && !this.portfolioCategories.find(cat => cat.name === this.selectedCategory)) {
             this.selectedCategory = null;
           }
-          this.portfolioLoading = false;
-          this.resetCategoryScroll();
-          setTimeout(() => this.updateCategoryBounds(), 0);
+      this.portfolioLoading = false;
+      this.resetCategoryScroll();
+      this.resetServiceScroll();
+      setTimeout(() => this.updateCategoryBounds(), 0);
         },
         error: (err) => {
           console.error('[landing] portafolio', err);
@@ -552,6 +563,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     return card.offsetWidth + gap;
   }
 
+  private getServiceScrollStep(track: HTMLDivElement): number {
+    const card = track.querySelector<HTMLElement>('.service-card');
+    if (!card) return 0;
+    const styles = window.getComputedStyle(track);
+    const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
+    return card.offsetWidth + gap;
+  }
+
   private resetCategoryScroll(): void {
     const track = this.categoryTrack?.nativeElement;
     if (!track) return;
@@ -559,8 +578,19 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateCategoryBounds();
   }
 
+  private resetServiceScroll(): void {
+    const track = this.serviceTrack?.nativeElement;
+    if (!track) return;
+    track.scrollLeft = 0;
+    this.updateServiceBounds();
+  }
+
   onCategoryScroll(): void {
     this.updateCategoryBounds();
+  }
+
+  onServiceScroll(): void {
+    this.updateServiceBounds();
   }
 
   private updateCategoryBounds(): void {
@@ -573,6 +603,18 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     const maxScroll = track.scrollWidth - track.clientWidth;
     this.categoryAtStart = track.scrollLeft <= 4;
     this.categoryAtEnd = track.scrollLeft >= maxScroll - 4;
+  }
+
+  private updateServiceBounds(): void {
+    const track = this.serviceTrack?.nativeElement;
+    if (!track) {
+      this.serviceAtStart = true;
+      this.serviceAtEnd = false;
+      return;
+    }
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    this.serviceAtStart = track.scrollLeft <= 4;
+    this.serviceAtEnd = track.scrollLeft >= maxScroll - 4;
   }
 
   scrollToSection(anchor: string): void {
@@ -679,9 +721,13 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.updateCategoryBounds();
+    this.updateServiceBounds();
+    this.syncServiceCardHeights();
+    this.startServiceAutoScroll();
   }
 
   ngOnDestroy(): void {
+    this.stopServiceAutoScroll();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -689,6 +735,68 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('window:resize')
   onResize(): void {
     this.updateCategoryBounds();
+    this.updateServiceBounds();
+    this.startServiceAutoScroll();
+    this.syncServiceCardHeights();
+  }
+
+  scrollServicesNext(): void {
+    const track = this.serviceTrack?.nativeElement;
+    if (!track) return;
+    const step = this.getServiceScrollStep(track);
+    if (!step) return;
+    track.scrollBy({ left: step, behavior: 'smooth' });
+    setTimeout(() => this.updateServiceBounds(), 350);
+  }
+
+  scrollServicesPrev(): void {
+    const track = this.serviceTrack?.nativeElement;
+    if (!track) return;
+    const step = this.getServiceScrollStep(track);
+    if (!step) return;
+    track.scrollBy({ left: -step, behavior: 'smooth' });
+    setTimeout(() => this.updateServiceBounds(), 350);
+  }
+
+  private syncServiceCardHeights(): void {
+    const track = this.serviceTrack?.nativeElement;
+    if (!track) return;
+    const cards = Array.from(track.querySelectorAll<HTMLElement>('.service-card'));
+    if (!cards.length) return;
+    cards.forEach(card => card.style.removeProperty('height'));
+    const max = Math.max(...cards.map(card => card.getBoundingClientRect().height));
+    if (Number.isFinite(max) && max > 0) {
+      cards.forEach(card => {
+        card.style.height = `${max}px`;
+      });
+    }
+  }
+
+  private startServiceAutoScroll(): void {
+    this.stopServiceAutoScroll();
+    if (!this.canScrollServices) {
+      return;
+    }
+    this.serviceAutoScrollId = window.setInterval(() => {
+      const track = this.serviceTrack?.nativeElement;
+      if (!track) return;
+      const step = this.getServiceScrollStep(track);
+      if (!step) return;
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      if (track.scrollLeft >= maxScroll - 4) {
+        track.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        track.scrollBy({ left: step, behavior: 'smooth' });
+      }
+      this.updateServiceBounds();
+    }, 4500);
+  }
+
+  private stopServiceAutoScroll(): void {
+    if (this.serviceAutoScrollId !== null) {
+      window.clearInterval(this.serviceAutoScrollId);
+      this.serviceAutoScrollId = null;
+    }
   }
   // Retrieves event names for the select input
   private loadEventOptions(): void {

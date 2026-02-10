@@ -9,6 +9,7 @@ import { LandingLayoutComponent } from './layout/landing-layout.component';
 import { LandingHeaderComponent } from './components/landing-header/landing-header.component';
 import { LandingClientCotizacionesComponent } from './portal/landing-client-cotizaciones.component';
 import { LandingClientPedidosComponent } from './portal/landing-client-pedidos.component';
+import { LandingPortfolioComponent } from './portfolio/landing-portfolio.component';
 import { UsdPipe } from '../pipes/usd.pipe';
 import { EstadoBadgeComponent } from '../components/estado-badge/estado-badge.component';
 
@@ -17,6 +18,7 @@ import { EstadoBadgeComponent } from '../components/estado-badge/estado-badge.co
     LandingComponent,
     LandingLayoutComponent,
     LandingHeaderComponent,
+    LandingPortfolioComponent,
     LandingClientCotizacionesComponent,
     LandingClientPedidosComponent
   ],
