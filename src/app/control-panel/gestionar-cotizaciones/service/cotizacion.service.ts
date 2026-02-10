@@ -50,7 +50,7 @@ export class CotizacionService {
     }
 
     return this.http.get<CotizacionApiResponse>(`${this.baseUrl}/${numericId}`).pipe(
-      map(item => this.normalizeApiCotizacion({ ...item, id: item?.id ?? numericId })),
+      map(item => this.normalizeDetalleCotizacion(item, numericId)),
       tap(cotizacion => this.upsertCotizacion(cotizacion)),
       map(cotizacion => this.cloneCotizacion(cotizacion)),
       catchError(err => {
@@ -312,6 +312,101 @@ downloadPdf(
     return value
       .filter(item => item != null)
       .map(item => (item as Record<string, unknown>));
+  }
+
+  private normalizeDetalleCotizacion(
+    api: CotizacionApiResponse,
+    fallbackId: number
+  ): Cotizacion & { raw?: CotizacionPayload } {
+    if (!api?.cotizacion || !Array.isArray(api?.items)) {
+      return this.normalizeApiCotizacion({ ...api, id: api?.id ?? fallbackId });
+    }
+
+    const idCotizacion = this.parseNumberNullable(api.idCotizacion) ?? fallbackId;
+    const detalle = api.cotizacion ?? {};
+    const contacto = api.contacto ?? null;
+    const primerItem = this.toRecordArray(api.items)[0] ?? {};
+    const primerEventoServicioRaw = primerItem['eventoServicio'];
+    const primerEventoServicio =
+      primerEventoServicioRaw && typeof primerEventoServicioRaw === 'object' && !Array.isArray(primerEventoServicioRaw)
+        ? (primerEventoServicioRaw as Record<string, unknown>)
+        : {};
+
+    const payload: CotizacionPayload = {
+      contacto: {
+        id: this.parseNumberNullable(contacto?.id) ?? undefined,
+        nombre: this.toOptionalString(contacto?.nombre),
+        celular: this.toOptionalString(contacto?.celular),
+        origen: this.toOptionalString(contacto?.origen),
+        correo: this.toOptionalString(contacto?.correo),
+        fechaCreacion: this.toOptionalString(contacto?.fechaCrea)
+      },
+      cotizacion: {
+        idCotizacion,
+        eventoId: this.parseNumberNullable(detalle.idTipoEvento) ?? undefined,
+        idTipoEvento: this.parseNumberNullable(detalle.idTipoEvento) ?? undefined,
+        tipoEvento: this.toOptionalString(detalle.tipoEvento),
+        fechaEvento: this.normalizeIsoDate(detalle.fechaEvento),
+        lugar: this.toOptionalString(detalle.lugar),
+        dias: this.parseNumberNullable(detalle.dias) ?? undefined,
+        horasEstimadas: this.parseNumberNullable(detalle.horasEstimadas) ?? undefined,
+        mensaje: this.toOptionalString(detalle.mensaje),
+        estado: this.toOptionalString(detalle.estado),
+        totalEstimado: this.parseNumberNullable(detalle.total) ?? undefined,
+        viaticosMonto: this.parseNumberNullable(detalle.viaticosMonto)
+      },
+      items: api.items.map(item => ({
+        idEventoServicio: this.parseNumberNullable(item['idEventoServicio']) ?? undefined,
+        idCotizacionServicio: this.parseNumberNullable(item['idCotizacionServicio']) ?? undefined,
+        eventoId: this.parseNumberNullable(item['eventoId']) ?? undefined,
+        servicioId: this.parseNumberNullable(item['servicioId']) ?? undefined,
+        titulo: this.toOptionalString(item['nombre']) ?? 'Item',
+        descripcion: this.toOptionalString(item['descripcion']),
+        moneda: this.toOptionalString(item['moneda']) ?? undefined,
+        precioUnitario: this.parseNumberNullable(item['precioUnit']) ?? 0,
+        cantidad: this.parseNumberNullable(item['cantidad']) ?? 1,
+        descuento: this.parseNumberNullable(item['descuento']) ?? undefined,
+        recargo: this.parseNumberNullable(item['recargo']) ?? undefined,
+        notas: this.toOptionalString(item['notas']),
+        horas: this.parseNumberNullable(item['horas']),
+        personal: this.parseNumberNullable(item['personal']),
+        fotosImpresas: this.parseNumberNullable(item['fotosImpresas']),
+        trailerMin: this.parseNumberNullable(item['trailerMin']),
+        filmMin: this.parseNumberNullable(item['filmMin'])
+      })),
+      eventos: Array.isArray(api.eventos)
+        ? api.eventos.map((evento, index) => ({
+            id: this.parseNumberNullable(evento['id']) ?? undefined,
+            fecha: this.normalizeProgramacionFecha(this.toOptionalString(evento['fecha'])),
+            hora: this.normalizeProgramacionHora(this.toOptionalString(evento['hora'])),
+            ubicacion: this.toOptionalString(evento['ubicacion']),
+            direccion: this.toOptionalString(evento['direccion']),
+            notas: this.toOptionalString(evento['notas']),
+            esPrincipal: index < 2
+          }))
+        : [],
+      contexto: {
+        clienteId: this.parseNumberNullable(contacto?.id) ?? undefined,
+        servicioId: this.parseNumberNullable(api.items[0]?.['servicioId']) ?? undefined,
+        servicioNombre: this.toOptionalString(primerEventoServicio['servicioNombre']),
+        eventoNombre: this.toOptionalString(detalle.tipoEvento),
+        horaEvento: Array.isArray(api.eventos)
+          ? this.normalizeProgramacionHora(this.toOptionalString(api.eventos[0]?.['hora']))
+          : undefined,
+        horasEstimadasTexto: this.formatHoras(this.parseNumberNullable(detalle.horasEstimadas))
+      },
+      serviciosFechas: Array.isArray(api.serviciosFechas) ? api.serviciosFechas : []
+    };
+
+    const normalized = this.buildCotizacion(idCotizacion, payload);
+    normalized.createdAt = this.toOptionalString(detalle.fechaCreacion ?? api.fechaCreacion) ?? normalized.createdAt;
+    normalized.estado = this.toOptionalString(detalle.estado) ?? normalized.estado;
+    normalized.lugar = this.toOptionalString(detalle.lugar) ?? normalized.lugar;
+    normalized.notas = this.toOptionalString(detalle.mensaje) ?? normalized.notas;
+
+    this.sequence = Math.max(this.sequence, normalized.id);
+
+    return normalized;
   }
 
   private normalizeApiCotizacion(api: CotizacionApiResponse): Cotizacion & { raw?: CotizacionPayload } {

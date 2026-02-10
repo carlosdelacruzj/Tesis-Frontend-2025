@@ -74,7 +74,7 @@
                     [ngClass]="{'is-invalid': eventoSelectTouched && !eventoSeleccionado}">
                     <option value="" disabled>Selecciona un tipo de evento</option>
                     @for (e of evento; track e.id !== null && e.id !== undefined ? e.id : $index) {
-                    <option [value]="(e.id ?? '').toString()" [selected]="e.id === eventoSeleccionado">
+                    <option [value]="(e.id ?? '').toString()">
                       {{ e.nombre }}
                     </option>
                     }

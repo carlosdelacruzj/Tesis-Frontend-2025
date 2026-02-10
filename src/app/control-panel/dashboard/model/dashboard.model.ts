@@ -275,6 +275,8 @@ export interface OperacionesAgendaProyectoDia {
   pedido: string;
   estadoPedidoId: number;
   estadoPedido: string;
+  estadoPagoId?: number | null;
+  estadoPago?: string | null;
   totalBloques: number;
   totalEmpleados: number;
   totalEquipos: number;
@@ -308,6 +310,8 @@ export interface OperacionesAgendaPedidoEvento {
   notas: string | null;
   estadoPedidoId: number;
   estadoPedido: string;
+  estadoPagoId?: number | null;
+  estadoPago?: string | null;
   proyectoIdVinculado: number | null;
 }
 
@@ -364,13 +368,75 @@ export interface DashboardCapacidadResponse {
 export interface DashboardHomeResponse {
   generatedAt: string;
   range: {
-    from: string;
-    to: string;
+    fromYmd?: string;
+    toYmd?: string;
+    from?: string;
+    to?: string;
   };
+  operacionDia?: DashboardOperacionDia;
   dashboard: {
     resumen: DashboardResumenData;
     alertas: DashboardAlertasResponse;
     agenda: OperacionesAgendaResponse;
     capacidad: DashboardCapacidadResponse;
   };
+}
+
+export interface DashboardOperacionDiaTarjetas {
+  serviciosProgramadosHoy: number;
+  eventosHoy: number;
+  proyectosEnCursoHoy: number;
+  proyectosPendientesInicioHoy: number;
+  equiposPorDevolverHoy: number;
+  pagosConSaldoHoy: number;
+}
+
+export interface DashboardOperacionDiaAgendaItem {
+  diaId: number;
+  proyectoId: number;
+  proyecto: string;
+  pedidoId: number;
+  pedido: string;
+  horaInicio: string | null;
+  estadoDia: string;
+  estadoProyecto: string;
+  estadoPedido: string;
+  estadoPago: string | null;
+  totalBloques: number;
+  totalEmpleados: number;
+  totalEquipos: number;
+  totalEquiposPendientes: number;
+  ubicacionPrincipal: string | null;
+  riesgos: {
+    sinStaff: boolean;
+    sinEquipo: boolean;
+    equipoPendienteDevolucion: boolean;
+    pagoConSaldo: boolean;
+  };
+  riesgoCount: number;
+}
+
+export interface DashboardOperacionDiaColaPendienteItem {
+  tipo: string;
+  prioridad: string;
+  proyectoId: number | null;
+  diaId: number | null;
+  mensaje: string;
+}
+
+export interface DashboardOperacionDia {
+  fecha: string;
+  tarjetas: DashboardOperacionDiaTarjetas;
+  capacidadHoy: DashboardCapacidadPorDia;
+  cobrosHoy: {
+    pedidosPendientePago: number;
+    pedidosParcialPago: number;
+    pedidosPagado: number;
+    pedidosConSaldo: number;
+  };
+  agendaHoy: {
+    total: number;
+    items: DashboardOperacionDiaAgendaItem[];
+  };
+  colaPendientesHoy: DashboardOperacionDiaColaPendienteItem[];
 }

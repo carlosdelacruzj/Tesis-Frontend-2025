@@ -2,19 +2,13 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription, interval } from 'rxjs';
 import {
-  DashboardCapacidadPorDia,
   DashboardEstadoConteo,
   DashboardHomeResponse,
-  OperacionesAgendaPedidoEvento,
-  OperacionesAgendaProyectoDia
+  DashboardOperacionDiaAgendaItem,
+  DashboardOperacionDiaColaPendienteItem,
+  DashboardOperacionDiaTarjetas
 } from './model/dashboard.model';
 import { DashboardService } from './service/dashboard.service';
-
-interface AgendaDiaAgrupada {
-  fecha: string;
-  proyectoDias: OperacionesAgendaProyectoDia[];
-  pedidoEventos: OperacionesAgendaPedidoEvento[];
-}
 
 @Component({
   selector: 'app-dashboard',
@@ -36,7 +30,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   errorMessage = '';
 
   dashboardHome: DashboardHomeResponse | null = null;
-  agendaPorDia: AgendaDiaAgrupada[] = [];
 
   ngOnInit(): void {
     this.loadDashboard(true);
@@ -62,13 +55,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.errorMessage = '';
     this.requestSub?.unsubscribe();
-    this.requestSub = this.dashboardService.getDashboardHome(this.agendaDays).subscribe({
+    this.requestSub = this.dashboardService.getDashboardHome().subscribe({
       next: (response) => {
         this.dashboardHome = response;
-        this.agendaPorDia = this.buildAgendaByDate(
-          response.dashboard.agenda.agenda.proyectoDias ?? [],
-          response.dashboard.agenda.agenda.pedidoEventos ?? []
-        );
         this.isInitialLoading = false;
         this.isRefreshing = false;
       },
@@ -94,36 +83,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadDashboard(!this.dashboardHome);
   }
 
-  onKpiClick(key: 'cotizacionesPorExpirar7d' | 'pedidosEnRiesgo7d' | 'equiposNoDevueltos' | 'proyectoListoSinLinkFinal'): void {
-    if (key === 'cotizacionesPorExpirar7d') {
-      this.router.navigate(['/home/gestionar-cotizaciones'], { queryParams: { alerta: 'por-expirar' } });
-      return;
-    }
-    if (key === 'pedidosEnRiesgo7d') {
-      this.router.navigate(['/home/gestionar-pedido'], { queryParams: { alerta: 'en-riesgo' } });
-      return;
-    }
-    if (key === 'equiposNoDevueltos') {
-      this.router.navigate(['/home/gestionar-proyecto'], { queryParams: { alerta: 'equipos-no-devueltos' } });
-      return;
-    }
-    this.router.navigate(['/home/gestionar-proyecto'], { queryParams: { alerta: 'listo-sin-link-final' } });
+  goToCotizaciones(): void {
+    this.router.navigate(['/home/gestionar-cotizaciones']);
   }
 
-  goToCotizacion(cotizacionId: number): void {
-    this.router.navigate(['/home/gestionar-cotizaciones'], {
-      queryParams: { alerta: 'por-expirar', cotizacionId }
+  goToPedidos(): void {
+    this.router.navigate(['/home/gestionar-pedido']);
+  }
+
+  goToProyectos(): void {
+    this.router.navigate(['/home/gestionar-proyecto']);
+  }
+
+  goToPagos(): void {
+    this.router.navigate(['/home/pagos-estandar']);
+  }
+
+  goToProyecto(proyectoId: number, diaId?: number | null): void {
+    this.router.navigate(['/home/gestionar-proyecto', proyectoId], {
+      queryParams: diaId ? { diaId } : undefined
     });
   }
 
   goToPedido(pedidoId: number): void {
     this.router.navigate(['/home/gestionar-pedido/detalle', pedidoId]);
-  }
-
-  goToProyecto(proyectoId: number, diaId?: number): void {
-    this.router.navigate(['/home/gestionar-proyecto', proyectoId], {
-      queryParams: diaId ? { diaId } : undefined
-    });
   }
 
   getEstadoListaTotal(lista: DashboardEstadoConteo[] | undefined): number {
@@ -138,16 +121,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getSaturacionClass(value: number): string {
-    if (value >= 90) return 'level-red';
-    if (value >= 80) return 'level-amber';
-    return 'level-green';
+    if (value >= 90) return 'chip-red';
+    if (value >= 80) return 'chip-amber';
+    return 'chip-green';
   }
 
-  getDiasEventoClass(days: number | null | undefined): string {
-    if (days === null || days === undefined) return 'level-amber';
-    if (days < 0) return 'level-red';
-    if (days <= 3) return 'level-amber';
-    return 'level-green';
+  getRiesgoClass(riesgoCount: number): string {
+    if (riesgoCount >= 2) return 'chip-red';
+    if (riesgoCount === 1) return 'chip-amber';
+    return 'chip-green';
   }
 
   formatFechaCorta(value: string | null | undefined): string {
@@ -157,21 +139,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `${day}-${month}-${year}`;
   }
 
-  formatFechaLarga(value: string | null | undefined): string {
-    if (!value) return '-';
-    const [yearText, monthText, dayText] = value.split('-');
-    const year = Number(yearText);
-    const month = Number(monthText);
-    const day = Number(dayText);
-    if (!year || !month || !day) return value;
-    const date = new Date(Date.UTC(year, month - 1, day));
-    return new Intl.DateTimeFormat('es-PE', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'UTC'
-    }).format(date);
+  formatHora(value: string | null | undefined): string {
+    if (!value) return '--:--';
+    return value.slice(0, 5);
   }
 
   formatDateTime(value: string | null | undefined): string {
@@ -187,34 +157,140 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }).format(date);
   }
 
-  private buildAgendaByDate(
-    proyectoDias: OperacionesAgendaProyectoDia[],
-    pedidoEventos: OperacionesAgendaPedidoEvento[]
-  ): AgendaDiaAgrupada[] {
-    const byDate = new Map<string, AgendaDiaAgrupada>();
-
-    for (const item of proyectoDias) {
-      const current = byDate.get(item.fecha) ?? { fecha: item.fecha, proyectoDias: [], pedidoEventos: [] };
-      current.proyectoDias.push(item);
-      byDate.set(item.fecha, current);
-    }
-
-    for (const item of pedidoEventos) {
-      const current = byDate.get(item.fecha) ?? { fecha: item.fecha, proyectoDias: [], pedidoEventos: [] };
-      current.pedidoEventos.push(item);
-      byDate.set(item.fecha, current);
-    }
-
-    return Array.from(byDate.values())
-      .map((group) => ({
-        ...group,
-        proyectoDias: [...group.proyectoDias].sort((a, b) => a.proyecto.localeCompare(b.proyecto)),
-        pedidoEventos: [...group.pedidoEventos].sort((a, b) => (a.hora || '').localeCompare(b.hora || ''))
-      }))
-      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  get rangeFromYmd(): string | null {
+    return this.dashboardHome?.range?.fromYmd ?? this.dashboardHome?.dashboard?.agenda?.range?.from ?? null;
   }
 
-  get capacidadPorDia(): DashboardCapacidadPorDia[] {
-    return this.dashboardHome?.dashboard.capacidad.capacidadPorDia ?? [];
+  get rangeToYmd(): string | null {
+    return this.dashboardHome?.range?.toYmd ?? this.dashboardHome?.dashboard?.agenda?.range?.to ?? null;
+  }
+
+  get tarjetasHoy(): DashboardOperacionDiaTarjetas {
+    return this.dashboardHome?.operacionDia?.tarjetas ?? {
+      serviciosProgramadosHoy: 0,
+      eventosHoy: 0,
+      proyectosEnCursoHoy: 0,
+      proyectosPendientesInicioHoy: 0,
+      equiposPorDevolverHoy: 0,
+      pagosConSaldoHoy: 0
+    };
+  }
+
+  get todayYmd(): string | null {
+    return this.normalizeYmd(this.dashboardHome?.operacionDia?.fecha) ?? this.normalizeYmd(new Date().toISOString());
+  }
+
+  private get fechaPorDiaId(): Map<number, string> {
+    const result = new Map<number, string>();
+    const proyectoDias = this.dashboardHome?.dashboard?.agenda?.agenda?.proyectoDias ?? [];
+    proyectoDias.forEach(dia => {
+      const ymd = this.normalizeYmd(dia?.fecha);
+      if (ymd) {
+        result.set(dia.diaId, ymd);
+      }
+    });
+    return result;
+  }
+
+  get capacidadHoySegura() {
+    const capacidad = this.dashboardHome?.operacionDia?.capacidadHoy;
+    const fechaHoy = this.todayYmd;
+    const fechaCapacidad = this.normalizeYmd(capacidad?.fecha);
+    if (!capacidad || !fechaHoy || fechaCapacidad !== fechaHoy) {
+      return {
+        staff: { usado: 0, saturacionPct: 0 },
+        equipo: { usado: 0, saturacionPct: 0 }
+      };
+    }
+    return capacidad;
+  }
+
+  get agendaHoyItems(): DashboardOperacionDiaAgendaItem[] {
+    const items = this.dashboardHome?.operacionDia?.agendaHoy?.items ?? [];
+    if (!items.length) {
+      return [];
+    }
+
+    const fechaHoy = this.todayYmd;
+    if (!fechaHoy) {
+      return [];
+    }
+
+    const fechaPorDiaId = this.fechaPorDiaId;
+    if (!fechaPorDiaId.size) {
+      return [];
+    }
+
+    return items.filter(item => fechaPorDiaId.get(item.diaId) === fechaHoy);
+  }
+
+  get colaPendientesHoy(): DashboardOperacionDiaColaPendienteItem[] {
+    const items = this.dashboardHome?.operacionDia?.colaPendientesHoy ?? [];
+    if (!items.length) {
+      return [];
+    }
+    const fechaHoy = this.todayYmd;
+    if (!fechaHoy) {
+      return [];
+    }
+    const fechaPorDiaId = this.fechaPorDiaId;
+    return items.filter(item => {
+      if (!item.diaId) {
+        return true;
+      }
+      return fechaPorDiaId.get(item.diaId) === fechaHoy;
+    });
+  }
+
+  get totalProyectosHoy(): number {
+    return new Set(this.agendaHoyItems.map(item => item.proyectoId)).size;
+  }
+
+  get totalPedidosHoy(): number {
+    return new Set(this.agendaHoyItems.map(item => item.pedidoId)).size;
+  }
+
+  get estadosProyectoHoy(): DashboardEstadoConteo[] {
+    return this.groupEstado(this.agendaHoyItems.map(item => item.estadoProyecto));
+  }
+
+  get estadosPedidoHoy(): DashboardEstadoConteo[] {
+    return this.groupEstado(this.agendaHoyItems.map(item => item.estadoPedido));
+  }
+
+  get estadosDiaHoy(): DashboardEstadoConteo[] {
+    return this.groupEstado(this.agendaHoyItems.map(item => item.estadoDia));
+  }
+
+  private groupEstado(values: Array<string | null | undefined>): DashboardEstadoConteo[] {
+    const map = new Map<string, number>();
+    values.forEach(value => {
+      const nombre = (value ?? '').toString().trim();
+      if (!nombre) {
+        return;
+      }
+      map.set(nombre, (map.get(nombre) ?? 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([nombre, total], index) => ({ id: index + 1, nombre, total }))
+      .sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre));
+  }
+
+  private normalizeYmd(value: string | null | undefined): string | null {
+    if (!value) {
+      return null;
+    }
+    const raw = value.toString().trim();
+    if (!raw) {
+      return null;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return raw;
+    }
+    const parsed = new Date(raw.replace(' ', 'T'));
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    return parsed.toISOString().slice(0, 10);
   }
 }

@@ -374,7 +374,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         return of([]); // fallback
       })
     ).subscribe((responde: unknown) => {
-      this.evento = Array.isArray(responde) ? responde : [];
+      this.evento = Array.isArray(responde)
+        ? responde
+            .map(item => this.normalizeEventoCatalogo(item))
+            .filter((item): item is AnyRecord => item != null)
+        : [];
     });
   }
 
@@ -2964,6 +2968,31 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
     const parsed = Number(String(value).trim());
     return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private normalizeEventoCatalogo(item: unknown): AnyRecord | null {
+    const record = this.asRecord(item);
+    const id = this.parseNumber(
+      record['id']
+      ?? record['PK_E_Cod']
+      ?? record['idEvento']
+      ?? record['idTipoEvento']
+      ?? record['ID']
+    );
+    if (id == null || id <= 0) {
+      return null;
+    }
+
+    const nombre = (
+      record['nombre']
+      ?? record['E_Nombre']
+      ?? record['name']
+      ?? record['tipoEvento']
+      ?? record['evento']
+      ?? 'Evento'
+    ).toString().trim();
+
+    return { ...record, id, nombre };
   }
 }
 

@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { AbstractControl, UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, ValidatorFn, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, finalize, switchMap, takeUntil } from 'rxjs';
-import { Cotizacion, CotizacionPayload, CotizacionAdminItemPayload, CotizacionAdminUpdatePayload, CotizacionAdminEventoPayload, CotizacionAdminServicioFechaPayload } from '../model/cotizacion.model';
+import { Cotizacion, CotizacionPayload, CotizacionItemPayload, CotizacionAdminItemPayload, CotizacionAdminUpdatePayload, CotizacionAdminEventoPayload, CotizacionAdminServicioFechaPayload } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { formatIsoDate, parseDateInput } from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
@@ -410,6 +410,35 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       });
       return;
     }
+    this.onEventoChange(nextEventoId);
+  }
+
+  onEventoModelChange(nextEventoId: number | null): void {
+    this.eventoSelectTouched = true;
+    const prevEventoId = this.selectedEventoId;
+
+    if (this.selectedPaquetes.length && nextEventoId !== prevEventoId) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Cambiar tipo de evento',
+        text: 'Cambiar el tipo de evento eliminará toda la selección de paquetes.',
+        confirmButtonText: 'Cambiar',
+        cancelButtonText: 'Cancelar',
+        showCancelButton: true,
+        reverseButtons: true
+      }).then(result => {
+        if (!result.isConfirmed) {
+          return;
+        }
+        this.selectedPaquetes = [];
+        this.serviciosFechasSeleccionadas = [];
+        this.tmpIdSequence = 0;
+        this.refreshSelectedPaquetesColumns();
+        this.onEventoChange(nextEventoId);
+      });
+      return;
+    }
+
     this.onEventoChange(nextEventoId);
   }
 
@@ -1113,52 +1142,41 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
     const servicioId = this.parseNumber(contexto?.servicioId ?? cotizacion.servicioId);
     this.pendingServicioId = servicioId != null && servicioId > 0 ? servicioId : null;
-    const contextoRecord = this.asRecord(contexto);
-    const eventoId = this.parseNumber(
-      detalle?.eventoId ??
-      detalle?.idTipoEvento ??
-      contextoRecord['eventoId'] ??
-      cotizacion.eventoId
-    );
+    const itemsBase = (raw?.items ?? cotizacion.items ?? []) as unknown[];
+    const eventoId = this.parseNumber(detalle?.idTipoEvento);
     this.pendingEventoId = eventoId != null && eventoId > 0 ? eventoId : null;
     this.selectedServicioId = this.pendingServicioId;
     this.selectedServicioNombre = contexto?.servicioNombre ?? cotizacion.servicio ?? '';
     this.selectedEventoId = this.pendingEventoId;
     this.selectedEventoIdValue = this.selectedEventoId != null ? String(this.selectedEventoId) : '';
-    this.selectedEventoNombre = contexto?.eventoNombre ?? detalle?.tipoEvento ?? cotizacion.evento ?? '';
-
-    const itemsBase = (raw?.items ?? cotizacion.items ?? []) as unknown[];
+    this.selectedEventoNombre = detalle?.tipoEvento ?? '';
     this.selectedPaquetes = itemsBase.map((item, index) => {
       const record = this.asRecord(item);
-      const horas = this.getHoras(item);
-      const staff = this.getStaff(item);
-      const fotosImpresas = this.getFotosImpresas(item);
-      const trailerMin = this.getTrailerMin(item);
-      const filmMin = this.getFilmMin(item);
-      const precioUnitario = Number(record['precio'] ?? record['precioUnitario'] ?? 0) || 0;
-      const cantidad = Number(record['cantidad'] ?? 1) || 1;
-      const paqueteServicioId = this.getPaqueteServicioId(item);
-      const paqueteServicioNombre = this.getPaqueteServicioNombre(item);
-      const idCotizacionServicio = record['idCotizacionServicio'];
+      const itemPayload = item as CotizacionItemPayload;
+      const precioUnitario = Number(itemPayload.precioUnitario ?? 0) || 0;
+      const cantidad = Number(itemPayload.cantidad ?? 1) || 1;
+      const paqueteServicioId = this.parseNumber(itemPayload.servicioId);
+      const paqueteServicioNombre = this.selectedServicioNombre || cotizacion.servicio || undefined;
+      const idCotizacionServicio = itemPayload.idCotizacionServicio;
       return {
         key: this.getPkgKey(item),
         tmpId: idCotizacionServicio != null ? `i${idCotizacionServicio}` : `i${index + 1}`,
-        titulo: this.getTitulo(item),
-        descripcion: this.getDescripcion(item),
+        titulo: itemPayload.titulo,
+        descripcion: itemPayload.descripcion ?? itemPayload.titulo,
         precio: precioUnitario,
         cantidad,
-        moneda: this.getMoneda(item) ?? undefined,
-        grupo: this.getGrupo(item),
-        opcion: this.parseNumber(record['opcion']) ?? index + 1,
-        eventoServicioId: this.getEventoServicioId(item) ?? undefined,
-        notas: record['notas'] as string | undefined,
-        horas: horas ?? undefined,
-        staff: staff ?? undefined,
-        fotosImpresas: fotosImpresas ?? undefined,
-        trailerMin: trailerMin ?? undefined,
-        filmMin: filmMin ?? undefined,
-        descuento: this.getDescuento(item),
-        recargo: this.getRecargo(item),
+        moneda: itemPayload.moneda ?? undefined,
+        grupo: itemPayload.grupo ?? null,
+        opcion: this.parseNumber(itemPayload.opcion) ?? index + 1,
+        eventoServicioId: itemPayload.idEventoServicio ?? undefined,
+        notas: itemPayload.notas,
+        horas: itemPayload.horas ?? undefined,
+        staff: itemPayload.personal ?? undefined,
+        fotosImpresas: itemPayload.fotosImpresas ?? undefined,
+        trailerMin: itemPayload.trailerMin ?? undefined,
+        filmMin: itemPayload.filmMin ?? undefined,
+        descuento: itemPayload.descuento ?? null,
+        recargo: itemPayload.recargo ?? null,
         servicioId: paqueteServicioId,
         servicioNombre: paqueteServicioNombre ?? contexto?.servicioNombre ?? cotizacion.servicio ?? undefined,
         origen: item,
@@ -1175,37 +1193,18 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const rawRecord = this.asRecord(raw ?? cotizacion.raw);
     const serviciosFechasRaw = rawRecord['serviciosFechas'];
     if (Array.isArray(serviciosFechasRaw)) {
-      const tmpIdMap = new Map<string, string>();
-      const idCotizacionServicioMap = new Map<string, string>();
-      itemsBase.forEach((item, index) => {
-        const record = this.asRecord(item);
-        const tmpId = record['tmpId'];
-        if (typeof tmpId === 'string' && tmpId.trim()) {
-          tmpIdMap.set(tmpId, `i${index + 1}`);
-        }
-        const idCotizacionServicio = record['idCotizacionServicio'];
-        if (idCotizacionServicio != null) {
-          idCotizacionServicioMap.set(String(idCotizacionServicio), `i${idCotizacionServicio}`);
-        }
-      });
       this.serviciosFechasSeleccionadas = serviciosFechasRaw
         .map(entry => {
           const record = this.asRecord(entry);
           const fecha = String(record['fecha'] ?? '').trim();
-          const itemTmpIdRaw = record['itemTmpId'];
-          const idCotizacionServicioRaw = record['idCotizacionServicio'];
-          if (!fecha) {
+          const idCotizacionServicio = this.parseNumber(record['idCotizacionServicio']);
+          if (!fecha || idCotizacionServicio == null) {
             return null;
           }
-          if (typeof itemTmpIdRaw === 'string') {
-            const mapped = tmpIdMap.get(itemTmpIdRaw) ?? itemTmpIdRaw;
-            return mapped ? { itemTmpId: mapped, fecha } : null;
-          }
-          if (idCotizacionServicioRaw != null) {
-            const mapped = idCotizacionServicioMap.get(String(idCotizacionServicioRaw));
-            return mapped ? { itemTmpId: mapped, fecha } : null;
-          }
-          return null;
+          return {
+            itemTmpId: `i${idCotizacionServicio}`,
+            fecha
+          };
         })
         .filter((entry): entry is CotizacionAdminServicioFechaPayload => entry != null);
     } else {

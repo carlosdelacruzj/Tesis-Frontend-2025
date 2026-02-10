@@ -115,12 +115,14 @@
               <div class="col-sm-6">
                 <div class="form-group">
                   <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
-                  <select id="eventoSelect" class="form-control" [value]="selectedEventoIdValue"
-                    (change)="onEventoDropdownChange($event)" [disabled]="!eventos.length"
+                  <select id="eventoSelect" class="form-control"
+                    [ngModel]="selectedEventoId"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="onEventoModelChange($event)" [disabled]="!eventos.length"
                     [ngClass]="{'is-invalid': eventoSelectTouched && !selectedEventoId}">
-                    <option value="" disabled>Selecciona un tipo de evento</option>
+                    <option [ngValue]="null" disabled>Selecciona un tipo de evento</option>
                     @for (evento of eventos; track evento.id !== null && evento.id !== undefined ? evento.id : $index) {
-                    <option [value]="evento.id.toString()">
+                    <option [ngValue]="evento.id">
                       {{ evento.nombre }}
                     </option>
                     }
