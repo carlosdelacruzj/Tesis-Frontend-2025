@@ -30,6 +30,30 @@ import { ProyectoService } from '../service/proyecto.service';
 import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
 type EstadoAsignacionDia = 'Sin asignar' | 'Pendiente' | 'Asignaciones completas' | '—';
+type CancelacionResponsable = 'CLIENTE' | 'INTERNO';
+
+type CancelacionDiaContexto = {
+  responsable: CancelacionResponsable;
+  motivo: string;
+  notas: string;
+};
+
+type CancelacionMotivoOption = {
+  value: string;
+  label: string;
+};
+
+const CANCELACION_MOTIVOS: Record<CancelacionResponsable, CancelacionMotivoOption[]> = {
+  CLIENTE: [
+    { value: 'DESISTE_EVENTO', label: 'El cliente desiste del evento' },
+    { value: 'FUERZA_MAYOR_CLIENTE', label: 'Fuerza mayor' },
+    { value: 'OTRO_CLIENTE', label: 'Otro' }
+  ],
+  INTERNO: [
+    { value: 'FUERZA_MAYOR_INTERNA', label: 'Fuerza mayor' },
+    { value: 'OTRO_INTERNO', label: 'Otro' }
+  ]
+};
 
 type IncidenciaResumen = {
   tipo: string;
@@ -315,7 +339,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.estadoDiaMenuOpenId = this.estadoDiaMenuOpenId === diaId ? null : diaId;
   }
 
-  onEstadoDiaSelect(dia: ProyectoDia, estadoDiaId: number | null): void {
+  async onEstadoDiaSelect(dia: ProyectoDia, estadoDiaId: number | null): Promise<void> {
     this.estadoDiaMenuOpenId = null;
     if (!estadoDiaId || this.estadoDiaLoading[dia.diaId]) {
       return;
@@ -347,16 +371,38 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     if (!confirmConfig) {
       return;
     }
+    let contextoCancelacion: CancelacionDiaContexto | null = null;
+    if (estadoNuevo === 'cancelado') {
+      contextoCancelacion = await this.pedirContextoCancelacionDia(dia);
+      if (!contextoCancelacion) {
+        return;
+      }
+    }
+    const fechaDia = this.toIsoDateOnly(dia.fecha);
+    const hoy = this.toIsoDateOnly(new Date());
+    const esInicioAnticipado = estadoActual === 'pendiente'
+      && estadoNuevo === 'en curso'
+      && !!fechaDia
+      && !!hoy
+      && fechaDia > hoy;
+    const confirmTitle = esInicioAnticipado ? '¿Iniciar antes de la fecha programada?' : confirmConfig.title;
+    const confirmText = esInicioAnticipado
+      ? `El día está programado para ${this.formatFechaLarga(dia.fecha)}. Si continúas, se marcará como En curso desde hoy.`
+      : confirmConfig.text;
+    const confirmButtonText = esInicioAnticipado ? 'Sí, iniciar igual' : confirmConfig.confirmText;
+    const confirmTextFinal = contextoCancelacion
+      ? `${confirmText}\nMotivo: ${this.getCancelacionMotivoLabel(contextoCancelacion.responsable, contextoCancelacion.motivo)}.`
+      : confirmText;
     const prevId = dia.estadoDiaId;
     const prevNombre = dia.estadoDiaNombre;
     this.estadoDiaLoading[dia.diaId] = true;
 
     void Swal.fire({
       icon: 'warning',
-      title: confirmConfig.title,
-      text: confirmConfig.text,
+      title: confirmTitle,
+      text: confirmTextFinal,
       showCancelButton: true,
-      confirmButtonText: confirmConfig.confirmText,
+      confirmButtonText: confirmButtonText,
       cancelButtonText: 'Cancelar',
       reverseButtons: true
     }).then(result => {
@@ -365,7 +411,15 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.proyectoService.actualizarEstadoDia(dia.diaId, estadoDiaId)
+      const request$ = estadoNuevo === 'cancelado' && contextoCancelacion
+        ? this.proyectoService.cancelarDia(dia.diaId, {
+            responsable: contextoCancelacion.responsable,
+            motivo: contextoCancelacion.motivo,
+            notas: contextoCancelacion.notas || null
+          })
+        : this.proyectoService.actualizarEstadoDia(dia.diaId, estadoDiaId);
+
+      request$
         .pipe(
           takeUntil(this.destroy$),
           finalize(() => {
@@ -2909,6 +2963,97 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     if (estadoNuevo === 'suspendido') return 'Día suspendido';
     if (estadoNuevo === 'pendiente') return 'Día en pendiente';
     return 'Estado actualizado';
+  }
+
+  private getCancelacionMotivoLabel(responsable: CancelacionResponsable, motivo: string): string {
+    const option = CANCELACION_MOTIVOS[responsable].find(item => item.value === motivo);
+    return option?.label ?? motivo;
+  }
+
+  private async pedirContextoCancelacionDia(dia: ProyectoDia): Promise<CancelacionDiaContexto | null> {
+    const toOptionsHtml = (options: CancelacionMotivoOption[]): string =>
+      options.map(option => `<option value="${option.value}">${option.label}</option>`).join('');
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Antes de cancelar este día',
+      html: `
+        <div style="text-align:left;display:grid;gap:10px;">
+          <p style="margin:0;color:#475569;font-size:13px;">
+            Día: <strong>${this.formatFechaLarga(dia.fecha)}</strong>
+          </p>
+          <label style="font-size:13px;font-weight:600;color:#0f172a;">Responsable de la cancelación</label>
+          <select id="cancelacionResponsable" class="swal2-select" style="width:100%;margin:0;">
+            <option value="CLIENTE">Cliente</option>
+            <option value="INTERNO">Interno (nosotros)</option>
+          </select>
+          <label style="font-size:13px;font-weight:600;color:#0f172a;">Motivo</label>
+          <select id="cancelacionMotivo" class="swal2-select" style="width:100%;margin:0;">
+            ${toOptionsHtml(CANCELACION_MOTIVOS.CLIENTE)}
+          </select>
+          <label style="font-size:13px;font-weight:600;color:#0f172a;">Notas (opcional)</label>
+          <textarea id="cancelacionNotas" class="swal2-textarea" style="width:100%;margin:0;" maxlength="500" placeholder="Detalle adicional para auditoría interna."></textarea>
+          <small id="cancelacionHint" style="color:#64748b;">
+            Si la cancelación es interna, luego podrás gestionar nota de crédito en cobros.
+          </small>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Continuar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+      didOpen: () => {
+        const responsableEl = document.getElementById('cancelacionResponsable') as HTMLSelectElement | null;
+        const motivoEl = document.getElementById('cancelacionMotivo') as HTMLSelectElement | null;
+        const notasEl = document.getElementById('cancelacionNotas') as HTMLTextAreaElement | null;
+        const hintEl = document.getElementById('cancelacionHint') as HTMLElement | null;
+        if (!responsableEl || !motivoEl || !notasEl) return;
+
+        const refreshMotivos = () => {
+          const responsable = (responsableEl.value === 'INTERNO' ? 'INTERNO' : 'CLIENTE') as CancelacionResponsable;
+          motivoEl.innerHTML = toOptionsHtml(CANCELACION_MOTIVOS[responsable]);
+          if (hintEl) {
+            hintEl.textContent = responsable === 'INTERNO'
+              ? 'Esta cancelación interna puede requerir nota de crédito.'
+              : 'Esta cancelación por cliente no requiere nota de crédito.';
+          }
+          if (responsable === 'INTERNO' && !notasEl.value.trim()) {
+            notasEl.placeholder = 'Explica brevemente el contexto interno de la cancelación.';
+          } else {
+            notasEl.placeholder = 'Detalle adicional para auditoría interna.';
+          }
+        };
+
+        responsableEl.addEventListener('change', refreshMotivos);
+        refreshMotivos();
+      },
+      preConfirm: () => {
+        const responsableEl = document.getElementById('cancelacionResponsable') as HTMLSelectElement | null;
+        const motivoEl = document.getElementById('cancelacionMotivo') as HTMLSelectElement | null;
+        const notasEl = document.getElementById('cancelacionNotas') as HTMLTextAreaElement | null;
+
+        const responsable = (responsableEl?.value === 'INTERNO' ? 'INTERNO' : 'CLIENTE') as CancelacionResponsable;
+        const motivo = (motivoEl?.value ?? '').toString().trim();
+        const notas = (notasEl?.value ?? '').toString().trim();
+
+        if (!motivo) {
+          Swal.showValidationMessage('Selecciona un motivo de cancelación.');
+          return null;
+        }
+        if ((motivo === 'OTRO_CLIENTE' || motivo === 'OTRO_INTERNO') && notas.length < 8) {
+          Swal.showValidationMessage('Cuando eliges "Otro", agrega al menos 8 caracteres en notas.');
+          return null;
+        }
+
+        return {
+          responsable,
+          motivo,
+          notas
+        } as CancelacionDiaContexto;
+      }
+    });
+
+    return result.isConfirmed ? (result.value as CancelacionDiaContexto) : null;
   }
 
   getAsignacionDiaLabel(): string {

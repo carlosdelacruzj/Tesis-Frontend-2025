@@ -16,7 +16,9 @@ import {
   ProyectoDevolucionAsyncStartResponse,
   ProyectoDevolucionAsyncJobStatusResponse,
   ProyectoDevolucionPreviewRequest,
-  ProyectoDevolucionPreviewResponse
+  ProyectoDevolucionPreviewResponse,
+  ProyectoCancelarDiaPayload,
+  ProyectoCancelarDiaResponse
 } from '../model/proyecto.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { ProyectoDisponibilidad } from '../model/proyecto-disponibilidad.model';
@@ -158,6 +160,13 @@ export class ProyectoService {
     return this.http.patch<{ status: string; diaId: number; estadoDiaId: number }>(
       `${this.API}/dias/${diaId}/estado`,
       { estadoDiaId }
+    );
+  }
+
+  cancelarDia(diaId: number, payload: ProyectoCancelarDiaPayload): Observable<ProyectoCancelarDiaResponse> {
+    return this.http.post<ProyectoCancelarDiaResponse>(
+      `${this.API}/dias/${diaId}/cancelar`,
+      payload
     );
   }
 

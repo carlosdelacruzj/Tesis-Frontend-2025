@@ -386,6 +386,18 @@ export interface ProyectoIncidenciaPayload {
   usuarioId?: number | null;
 }
 
+export interface ProyectoCancelarDiaPayload {
+  responsable: 'CLIENTE' | 'INTERNO';
+  motivo: string;
+  notas?: string | null;
+}
+
+export interface ProyectoCancelarDiaResponse {
+  status: string;
+  diaId: number;
+  estadoDiaId?: number;
+}
+
 export type ProyectoPayload = {
   pedidoId?: number | null;
   responsableId?: number | null;

@@ -48,24 +48,11 @@
           Cotización
         </button>
       </li>
-      @if (!isAuthenticated) {
-        <li>
-          <button
-            class="site-header__login"
-            type="button"
-            (click)="openLogin()"
-          >
-            Login
-          </button>
-        </li>
-      }
-      @if (isAuthenticated) {
-        <li>
-          <button class="site-header__login" type="button" (click)="logout()">
-            Salir
-          </button>
-        </li>
-      }
+      <li>
+        <button class="site-header__login" type="button" (click)="openLogin()">
+          Ingresar
+        </button>
+      </li>
     </ul>
   </div>
 </nav>

@@ -43,11 +43,10 @@ export class LandingHeaderComponent {
   }
 
   openLogin(): void {
+    if (this.isAuthenticated) {
+      void this.router.navigate(['/home/dashboard']);
+      return;
+    }
     void this.router.navigate(['/auth/login']);
-  }
-
-  logout(): void {
-    this.authService.logout();
-    void this.router.navigate(['/inicio']);
   }
 }
