@@ -48,10 +48,70 @@
           Cotización
         </button>
       </li>
-      <li>
-        <button class="site-header__login" type="button" (click)="openLogin()">
-          Ingresar
+      @if (isAuthenticated) {
+        <li>
+          <button
+            class="nav-link nav-user__button nav-user__button--stack"
+            type="button"
+            (click)="openLogin()"
+          >
+            <i class="fas fa-gauge-high" aria-hidden="true"></i>
+            <span>
+              <span class="nav-user__label">Ir a panel</span>
+              <span class="nav-user__name">administrativo</span>
+            </span>
+          </button>
+        </li>
+      }
+      <li class="nav-item dropdown nav-user" [class.show]="dropdownOpen">
+        <button
+          type="button"
+          class="nav-link nav-user__button"
+          (click)="toggleDropdown()"
+          [attr.aria-expanded]="dropdownOpen"
+          aria-haspopup="true"
+        >
+          <span class="nav-user__avatar" aria-hidden="true">
+            @if (isAuthenticated) {
+              {{ userInitials }}
+            } @else {
+              <i class="fas fa-user"></i>
+            }
+          </span>
+          <span class="nav-user__text">
+            <span class="nav-user__name">
+              @if (isAuthenticated) {
+                <span class="nav-user__label">Hola, </span>{{ displayName }}
+              } @else {
+                Iniciar sesión
+              }
+            </span>
+          </span>
+          <span class="nav-user__caret" aria-hidden="true"></span>
         </button>
+        @if (isAuthenticated) {
+          <div
+            class="dropdown-menu dropdown-menu-right nav-user-dropdown"
+            [class.show]="dropdownOpen"
+          >
+            <button
+              class="dropdown-item pointer"
+              type="button"
+              (click)="openLogin()"
+            >
+              <i class="fas fa-gauge-high"></i>
+              <span>Ir al panel administrativo</span>
+            </button>
+            <button
+              class="dropdown-item pointer logout-item"
+              type="button"
+              (click)="logout()"
+            >
+              <i class="fas fa-power-off"></i>
+              <span>Cerrar sesión</span>
+            </button>
+          </div>
+        }
       </li>
     </ul>
   </div>

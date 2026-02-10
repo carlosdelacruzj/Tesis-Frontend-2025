@@ -19,6 +19,7 @@
   padding: 0.5rem 1rem;
   background: transparent;
   border: 0;
+  color: var(--danger);
 }
 
 .nav-user-dropdown .logout-item:hover {

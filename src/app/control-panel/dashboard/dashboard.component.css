@@ -7,16 +7,7 @@
 }
 
 .ops-clinic-like {
-  --card: #ffffff;
-  --line: #d4deea;
-  --ink: #0f2236;
-  --muted: #617a91;
-  --red: #b42318;
-  --amber: #b54708;
-  --green: #18794e;
   padding: 3rem 4rem;
-
-  color: var(--ink);
 }
 
 .dash-topbar {
@@ -85,7 +76,6 @@
 }
 
 .card.shell {
-  background: var(--card);
   grid-template-columns: 1fr 1fr;
   padding: 0 0.85rem 2rem;
   box-shadow: none;
@@ -252,7 +242,7 @@
 .chip-red {
   background: #fee2e2;
   border-color: #f1b4b4;
-  color: var(--red);
+  color: var(--danger);
 }
 
 .chip-amber {
@@ -264,7 +254,7 @@
 .chip-green {
   background: #e4f7eb;
   border-color: #b8e1c7;
-  color: var(--green);
+  color: var(--success);
 }
 
 .skeleton-line {
