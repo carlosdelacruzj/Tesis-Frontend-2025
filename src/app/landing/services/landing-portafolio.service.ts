@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { Observable, map } from 'rxjs';
 
 export interface PortafolioPublicoImagen {
   id: number;
@@ -27,6 +27,28 @@ export class LandingPortafolioService {
   private readonly http = inject(HttpClient);
 
   getPortafolioPublico(): Observable<PortafolioPublicoEvento[]> {
-    return this.http.get<PortafolioPublicoEvento[]>(`${this.baseUrl}/portafolio/publico`);
+    return this.http
+      .get<PortafolioPublicoEvento[]>(`${this.baseUrl}/portafolio/publico`)
+      .pipe(
+        map((items) =>
+          items.map((e) => ({
+            ...e,
+            nombre: corregirNombre(e.nombre),
+          })),
+        ),
+      );
   }
+}
+
+function corregirNombre(nombre: string): string {
+  if (!nombre) return nombre;
+
+  // Corrige solo si viene exactamente "cumpleanos" (con cualquier mayúscula/minúscula)
+  if (nombre.toLowerCase() === 'cumpleanos') {
+    if (nombre === nombre.toUpperCase()) return 'CUMPLEAÑOS';
+    if (nombre[0] === nombre[0].toUpperCase()) return 'Cumpleaños';
+    return 'cumpleaños';
+  }
+
+  return nombre;
 }

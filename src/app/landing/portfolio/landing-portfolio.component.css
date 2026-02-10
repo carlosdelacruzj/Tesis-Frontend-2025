@@ -240,12 +240,13 @@
   font-size: 0.75rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgba(143, 179, 226, 0.9);
+  color: var(--text);
 }
 
 .portfolio__title {
   margin: 0.35rem 0 0;
   font-size: 1.15rem;
+  color: var(--text);
 }
 
 .lightbox {
