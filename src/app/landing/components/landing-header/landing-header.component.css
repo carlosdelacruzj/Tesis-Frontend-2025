@@ -3,7 +3,7 @@
   top: 0;
   z-index: 1400;
   backdrop-filter: blur(14px);
-  background: rgba(15, 23, 42, 0.85);
+  background: #101d2f;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   margin-bottom: -1px;
 }
@@ -65,7 +65,10 @@
   font-weight: 600;
   text-decoration: none;
   border: 1px solid rgba(15, 23, 42, 0.12);
-  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .site-header__login:hover {
