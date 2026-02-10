@@ -5,7 +5,8 @@
     [searchPlaceholder]="'Buscar: proyecto, pedido, estado...'"
     [searchValue]="searchTerm"
     (searchChange)="onSearchChange($event)"
-    [showCreateButton]="false">
+    [showCreateButton]="false"
+  >
   </app-list-toolbar>
 
   <div class="project-kpis">
@@ -14,7 +15,7 @@
       <div class="kpi-value">{{ totalProyectos }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">En ejecucion</div>
+      <div class="kpi-label">En ejecución</div>
       <div class="kpi-value">{{ totalEnEjecucion }}</div>
     </div>
     <div class="kpi-card">
@@ -38,7 +39,11 @@
   <div class="project-filters row g-2">
     <div class="col-12 col-md-3">
       <label class="form-label">Estado</label>
-      <select class="form-select" [ngModel]="estadoFilter" (ngModelChange)="onEstadoFilterChange($event)">
+      <select
+        class="form-select"
+        [ngModel]="estadoFilter"
+        (ngModelChange)="onEstadoFilterChange($event)"
+      >
         <option value="todos">Todos</option>
         @for (estado of estadosFiltro; track estado) {
           <option [value]="estado">{{ estado | titlecase }}</option>
@@ -47,7 +52,11 @@
     </div>
     <div class="col-12 col-md-3">
       <label class="form-label">Pago</label>
-      <select class="form-select" [ngModel]="pagoFilter" (ngModelChange)="onPagoFilterChange($event)">
+      <select
+        class="form-select"
+        [ngModel]="pagoFilter"
+        (ngModelChange)="onPagoFilterChange($event)"
+      >
         <option value="todos">Todos</option>
         @for (estado of pagosFiltro; track estado) {
           <option [value]="estado">{{ estado | titlecase }}</option>
@@ -56,7 +65,11 @@
     </div>
     <div class="col-12 col-md-3">
       <label class="form-label">Pendientes</label>
-      <select class="form-select" [ngModel]="pendientesFilter" (ngModelChange)="onPendientesFilterChange($event)">
+      <select
+        class="form-select"
+        [ngModel]="pendientesFilter"
+        (ngModelChange)="onPendientesFilterChange($event)"
+      >
         <option value="todos">Todos</option>
         <option value="con">Con pendientes</option>
         <option value="sin">Sin pendientes</option>
@@ -75,23 +88,27 @@
       [showCreateButton]="false"
       [showSearch]="false"
       [externalSearchTerm]="''"
-      emptyText="Sin proyectos registrados">
-
+      emptyText="Sin proyectos registrados"
+    >
       <ng-template appCell="proyectoNombre" let-row>
-        <div class="fw-semibold">{{ row.proyectoNombre || '-' }}</div>
+        <div class="fw-semibold">{{ row.proyectoNombre || "-" }}</div>
         @if (row.codigo) {
           <div class="text-muted small">{{ row.codigo }}</div>
         }
       </ng-template>
 
       <ng-template appCell="pedidoCodigo" let-row>
-        <div class="text-center">{{ row.pedidoCodigo || row.pedidoId || '-' }}</div>
+        <div class="text-center">
+          {{ row.pedidoCodigo || row.pedidoId || "-" }}
+        </div>
       </ng-template>
 
       <ng-template appCell="evento" let-row>
         <div class="d-flex flex-column">
           <span>{{ formatCalendarDate(row.eventoFecha) }}</span>
-          <small class="text-muted">{{ row.ubicacion || row.lugar || '-' }}</small>
+          <small class="text-muted">{{
+            row.ubicacion || row.lugar || "-"
+          }}</small>
           @if (row.diasParaEvento != null) {
             <small class="text-muted">En {{ row.diasParaEvento }} dias</small>
           }
@@ -99,10 +116,20 @@
       </ng-template>
 
       <ng-template appCell="postproduccion" let-row>
-        @if (row.postproduccion?.fechaInicioEdicion || row.postproduccion?.fechaFinEdicion) {
+        @if (
+          row.postproduccion?.fechaInicioEdicion ||
+          row.postproduccion?.fechaFinEdicion
+        ) {
           <div class="d-flex flex-column">
-            <span>{{ formatCalendarDate(row.postproduccion?.fechaInicioEdicion || null) }}</span>
-            <small class="text-muted">Hasta {{ formatCalendarDate(row.postproduccion?.fechaFinEdicion || null) }}</small>
+            <span>{{
+              formatCalendarDate(row.postproduccion?.fechaInicioEdicion || null)
+            }}</span>
+            <small class="text-muted"
+              >Hasta
+              {{
+                formatCalendarDate(row.postproduccion?.fechaFinEdicion || null)
+              }}</small
+            >
           </div>
         } @else {
           <div class="text-muted">-</div>
@@ -113,22 +140,26 @@
         <app-estado-badge
           [estado]="row.estadoNombre || getEstadoNombre(row.estadoId)"
           [mapaColores]="{
-            'planificado': 'info',
+            planificado: 'info',
             'en ejecucion': 'warning',
             'en ejecución': 'warning',
             'en postproduccion': 'primary',
             'en postproducción': 'primary',
             'listo para entrega': 'success-light',
-            'entregado': 'success-light',
-            'cerrado': 'success'
+            entregado: 'success-light',
+            cerrado: 'success',
           }"
         ></app-estado-badge>
       </ng-template>
 
       <ng-template appCell="pago" let-row>
         <div class="d-flex flex-column text-center">
-          <span>{{ row.estadoPagoNombre || '-' }}</span>
-          <small class="text-muted">{{ row.saldoPendiente != null ? (row.saldoPendiente | usd:'1.2-2') : '-' }}</small>
+          <span>{{ row.estadoPagoNombre || "-" }}</span>
+          <small class="text-muted">{{
+            row.saldoPendiente != null
+              ? (row.saldoPendiente | usd: "1.2-2")
+              : "-"
+          }}</small>
         </div>
       </ng-template>
 
@@ -147,19 +178,26 @@
 
       <ng-template appCell="acciones" let-row>
         <div class="d-flex justify-content-center gap-1">
-          <button mat-icon-button color="primary" type="button" (click)="irADetalle(row)" matTooltip="Ver detalle">
+          <button
+            mat-icon-button
+            color="primary"
+            type="button"
+            (click)="irADetalle(row)"
+            matTooltip="Ver detalle"
+          >
             <mat-icon>open_in_new</mat-icon>
           </button>
         </div>
       </ng-template>
     </app-table-base>
   } @else {
-    <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+    <div
+      class="d-flex flex-column align-items-center justify-content-center py-5 text-muted"
+    >
       <mat-spinner diameter="40"></mat-spinner>
       <p class="mt-3 mb-0">Cargando proyectos...</p>
     </div>
   }
-
 </div>
 
 <app-modal-base
@@ -168,40 +206,77 @@
   [disableClose]="modal.guardando"
   [useDefaultFooter]="false"
   [loading]="modal.guardando"
-  (closed)="cerrarModal()">
-
+  (closed)="cerrarModal()"
+>
   <form [formGroup]="form" class="row g-3" (ngSubmit)="guardar()">
     <div class="col-12 col-md-6">
       <label class="col-form-label" for="pedidoId">Pedido asociado</label>
-      <input id="pedidoId" type="number" class="form-control" formControlName="pedidoId" min="1" required>
+      <input
+        id="pedidoId"
+        type="number"
+        class="form-control"
+        formControlName="pedidoId"
+        min="1"
+        required
+      />
     </div>
 
     <div class="col-12 col-md-6">
       <label class="col-form-label" for="responsableId">Responsable</label>
-      <input id="responsableId" type="number" class="form-control" formControlName="responsableId">
+      <input
+        id="responsableId"
+        type="number"
+        class="form-control"
+        formControlName="responsableId"
+      />
     </div>
 
     <div class="col-12 col-md-6">
       <label class="col-form-label" for="enlace">Enlace</label>
-      <input id="enlace" type="url" class="form-control" formControlName="enlace" placeholder="https://...">
+      <input
+        id="enlace"
+        type="url"
+        class="form-control"
+        formControlName="enlace"
+        placeholder="https://..."
+      />
     </div>
 
     <div class="col-12">
       <label class="col-form-label" for="notas">Notas</label>
-      <textarea id="notas" class="form-control" rows="2" formControlName="notas"></textarea>
+      <textarea
+        id="notas"
+        class="form-control"
+        rows="2"
+        formControlName="notas"
+      ></textarea>
     </div>
 
     <div class="text-end">
-      <button type="button" class="btn btn-outline-secondary me-2" (click)="cerrarModal()" [disabled]="modal.guardando">Cancelar</button>
-      <button type="submit" class="btn btn-primary" [disabled]="modal.guardando || form.invalid">
+      <button
+        type="button"
+        class="btn btn-outline-secondary me-2"
+        (click)="cerrarModal()"
+        [disabled]="modal.guardando"
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="modal.guardando || form.invalid"
+      >
         @if (!modal.guardando) {
           <span>Guardar</span>
         }
         @if (modal.guardando) {
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
         }
       </button>
     </div>
   </form>
 </app-modal-base>
-
