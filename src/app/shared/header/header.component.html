@@ -1,33 +1,57 @@
 <div class="dashboard-header">
-    <nav class="navbar navbar-expand-lg fixed-top background-nav">
-        <a class="navbar-brand" routerLink="dashboard" style="padding-left: 0px; padding-right: 0px;"><img src="/assets/images/logo.png" class="logo" alt="Logo" /></a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
-            <ul class="navbar-nav ml-auto navbar-right-top">
-                <li class="nav-item dropdown nav-user" [class.show]="dropdownOpen">
-                    <button
-                        type="button"
-                        class="nav-link nav-user-img btn btn-link p-0"
-                        id="navbarDropdownMenuLink2"
-                        (click)="toggleDropdown()"
-                        [attr.aria-expanded]="dropdownOpen"
-                    >
-                        <img src="assets/images/avatar-1.jpg" alt="Usuario" class="user-avatar-md rounded-circle">
-                    </button>
-                    <div
-                        class="dropdown-menu dropdown-menu-right nav-user-dropdown"
-                        [class.show]="dropdownOpen"
-                        aria-labelledby="navbarDropdownMenuLink2"
-                    >
-                        <button class="dropdown-item pointer logout-item" type="button" (click)="logout()">
-                            <i class="fas fa-power-off"></i>
-                            <span>Logout</span>
-                        </button>
-                    </div>
-                </li>
-            </ul>
-        </div>
-    </nav>
+  <nav class="navbar navbar-expand-lg fixed-top background-nav">
+    <a
+      class="navbar-brand"
+      routerLink="dashboard"
+      style="padding-left: 0px; padding-right: 0px"
+      ><img src="/assets/images/logo-white.png" class="logo" alt="Logo"
+    /></a>
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-toggle="collapse"
+      data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div
+      class="collapse navbar-collapse justify-content-end"
+      id="navbarSupportedContent"
+    >
+      <ul class="navbar-nav ml-auto navbar-right-top">
+        <li class="nav-item dropdown nav-user" [class.show]="dropdownOpen">
+          <button
+            type="button"
+            class="nav-link nav-user-img btn btn-link p-0"
+            id="navbarDropdownMenuLink2"
+            (click)="toggleDropdown()"
+            [attr.aria-expanded]="dropdownOpen"
+          >
+            <img
+              src="assets/images/avatar-1.jpg"
+              alt="Usuario"
+              class="user-avatar-md rounded-circle"
+            />
+          </button>
+          <div
+            class="dropdown-menu dropdown-menu-right nav-user-dropdown"
+            [class.show]="dropdownOpen"
+            aria-labelledby="navbarDropdownMenuLink2"
+          >
+            <button
+              class="dropdown-item pointer logout-item"
+              type="button"
+              (click)="logout()"
+            >
+              <i class="fas fa-power-off"></i>
+              <span>Logout</span>
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
 </div>

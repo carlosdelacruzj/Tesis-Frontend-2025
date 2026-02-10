@@ -5,14 +5,21 @@
       routerLink="/inicio"
       aria-label="D' La Cruz inicio"
     >
-      <img src="assets/images/logo.png" alt="D' La Cruz video y fotografía" />
+      <img
+        src="assets/images/logo-white.png"
+        alt="D' La Cruz video y fotografía"
+      />
     </a>
     <ul class="site-header__nav" aria-label="Navegación principal">
       <li>
-        <a href="#" (click)="navigateToSection($event, 'servicios')">Servicios</a>
+        <a href="#" (click)="navigateToSection($event, 'servicios')"
+          >Servicios</a
+        >
       </li>
       <li>
-        <a href="#" (click)="navigateToSection($event, 'portafolio')">Portafolio</a>
+        <a href="#" (click)="navigateToSection($event, 'portafolio')"
+          >Portafolio</a
+        >
       </li>
       <li>
         <a href="#" (click)="navigateToSection($event, 'paquetes')">Paquetes</a>
@@ -32,13 +39,24 @@
         </li>
       }
       <li>
-        <button mat-stroked-button color="primary" type="button" (click)="handleCotizacion()">
+        <button
+          mat-stroked-button
+          color="primary"
+          type="button"
+          (click)="handleCotizacion()"
+        >
           Cotización
         </button>
       </li>
       @if (!isAuthenticated) {
         <li>
-          <button class="site-header__login" type="button" (click)="openLogin()">Login</button>
+          <button
+            class="site-header__login"
+            type="button"
+            (click)="openLogin()"
+          >
+            Login
+          </button>
         </li>
       }
       @if (isAuthenticated) {

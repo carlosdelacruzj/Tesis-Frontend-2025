@@ -1,53 +1,57 @@
 <div class="list-toolbar">
   @if (title || description) {
-  <div class="text-block">
-    @if (title) {
-    <h1>{{ title }}</h1>
-    }
-    @if (description) {
-    <p>{{ description }}</p>
-    }
-  </div>
+    <div class="text-block">
+      @if (title) {
+        <h1>{{ title }}</h1>
+      }
+      @if (description) {
+        <p>{{ description }}</p>
+      }
+    </div>
   }
 
   <div class="actions">
     @if (showSearch) {
-    <div class="input-group search-group">
-      <span class="input-group-text gap-1">
-        <mat-icon fontIcon="search" aria-hidden="true"></mat-icon>
-        <span class="visually-hidden">Buscar</span>
-      </span>
-      <input
-        type="text"
-        class="form-control"
-        [placeholder]="searchPlaceholder"
-        [(ngModel)]="searchValue"
-        (ngModelChange)="onSearchChange($event || '')"
-      />
-      @if (searchValue) {
-      <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()">
-        Limpiar
-      </button>
-      }
-    </div>
+      <div class="input-group search-group">
+        <span class="input-group-text gap-1">
+          <mat-icon fontIcon="search" aria-hidden="true"></mat-icon>
+          <span class="visually-hidden">Buscar</span>
+        </span>
+        <input
+          type="text"
+          class="form-control"
+          [placeholder]="searchPlaceholder"
+          [(ngModel)]="searchValue"
+          (ngModelChange)="onSearchChange($event || '')"
+        />
+        @if (searchValue) {
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            (click)="clearSearch()"
+          >
+            Limpiar
+          </button>
+        }
+      </div>
     }
 
     <div class="extra-actions">
       <ng-content select="div[actions]"></ng-content>
       @if (showCreateButton) {
-      <div class="create-btn-wrapper">
-        <button
-          class="btn btn-outline-dark btn-md"
-          type="button"
-          [disabled]="disableCreate"
-          (click)="onCreate()"
-        >
-          @if (createButtonIcon) {
-          <mat-icon [fontIcon]="createButtonIcon"></mat-icon>
-          }
-          {{ createButtonLabel }}
-        </button>
-      </div>
+        <div class="create-btn-wrapper">
+          <button
+            class="btn btn-primary btn-sm"
+            type="button"
+            [disabled]="disableCreate"
+            (click)="onCreate()"
+          >
+            @if (createButtonIcon) {
+              <mat-icon [fontIcon]="createButtonIcon"></mat-icon>
+            }
+            {{ createButtonLabel }}
+          </button>
+        </div>
       }
     </div>
   </div>
