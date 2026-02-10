@@ -18,7 +18,9 @@ import {
   ProyectoDevolucionPreviewRequest,
   ProyectoDevolucionPreviewResponse,
   ProyectoCancelarDiaPayload,
-  ProyectoCancelarDiaResponse
+  ProyectoCancelarDiaResponse,
+  ProyectoCancelarGlobalPayload,
+  ProyectoCancelarGlobalResponse
 } from '../model/proyecto.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { ProyectoDisponibilidad } from '../model/proyecto-disponibilidad.model';
@@ -166,6 +168,16 @@ export class ProyectoService {
   cancelarDia(diaId: number, payload: ProyectoCancelarDiaPayload): Observable<ProyectoCancelarDiaResponse> {
     return this.http.post<ProyectoCancelarDiaResponse>(
       `${this.API}/dias/${diaId}/cancelar`,
+      payload
+    );
+  }
+
+  cancelarGlobalProyecto(
+    proyectoId: number,
+    payload: ProyectoCancelarGlobalPayload
+  ): Observable<ProyectoCancelarGlobalResponse> {
+    return this.http.post<ProyectoCancelarGlobalResponse>(
+      `${this.API}/${proyectoId}/cancelar-global`,
       payload
     );
   }

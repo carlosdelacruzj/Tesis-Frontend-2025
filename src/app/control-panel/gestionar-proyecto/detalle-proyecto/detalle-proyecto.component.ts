@@ -188,6 +188,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   estadoDiaLoading: Record<number, boolean> = {};
   estadoDiaMenuOpenId: number | null = null;
   iniciarEnCursoTrasAsignarDiaId: number | null = null;
+  cancelandoGlobalProyecto = false;
   private diasOrdenadosCache: ProyectoDia[] = [];
   private bloquesDiaMap = new Map<number, BloqueDia[]>();
   private serviciosDiaMap = new Map<number, ServicioDia[]>();
@@ -446,12 +447,134 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
             void Swal.fire({
               icon: 'error',
               title: 'No se pudo actualizar',
-              text: 'Intenta nuevamente.',
+              text: this.getMensajeErrorCancelacion(err, false),
               confirmButtonText: 'Entendido'
             });
           }
         });
     });
+  }
+
+  async cancelarProyectoGlobal(): Promise<void> {
+    const proyectoId = this.proyecto?.proyectoId;
+    if (!proyectoId || this.cancelandoGlobalProyecto) {
+      return;
+    }
+    const diasYaCancelados = this.diasYaCanceladosCount;
+    const diasPorCancelar = this.diasNoCanceladosCount;
+    const montoNcEstimado = this.montoNcEstimadoGlobal;
+
+    const toOptionsHtml = (options: CancelacionMotivoOption[]): string =>
+      options.map(option => `<option value="${option.value}">${option.label}</option>`).join('');
+
+    const formulario = await Swal.fire({
+      icon: 'warning',
+      title: 'Cancelar proyecto globalmente',
+      html: `
+        <div style="text-align:left;display:grid;gap:10px;">
+          <div style="border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;padding:10px;">
+            <p style="margin:0 0 4px 0;font-size:13px;color:#0f172a;"><strong>Resumen previo</strong></p>
+            <p style="margin:0;font-size:12px;color:#334155;">Días ya cancelados: <strong>${diasYaCancelados}</strong></p>
+            <p style="margin:0;font-size:12px;color:#334155;">Días que se cancelarán ahora: <strong>${diasPorCancelar}</strong></p>
+            <p id="cancelacionGlobalNcHint" style="margin:4px 0 0 0;font-size:12px;color:#334155;">
+              Si cancela el cliente, no se generará nota de crédito.
+            </p>
+          </div>
+          <p style="margin:0;color:#475569;font-size:13px;">
+            Esta acción cancelará todos los días no cancelados del proyecto y registrará la causa.
+          </p>
+          <label style="font-size:13px;font-weight:600;color:#0f172a;">Responsable</label>
+          <select id="cancelacionGlobalResponsable" class="swal2-select" style="width:100%;margin:0;">
+            <option value="CLIENTE">Cliente</option>
+            <option value="INTERNO">Interno (nosotros)</option>
+          </select>
+          <label style="font-size:13px;font-weight:600;color:#0f172a;">Motivo</label>
+          <select id="cancelacionGlobalMotivo" class="swal2-select" style="width:100%;margin:0;">
+            ${toOptionsHtml(CANCELACION_MOTIVOS.CLIENTE)}
+          </select>
+          <label style="font-size:13px;font-weight:600;color:#0f172a;">Notas (opcional)</label>
+          <textarea id="cancelacionGlobalNotas" class="swal2-textarea" style="width:100%;margin:0;" maxlength="500" placeholder="Detalle adicional para auditoría interna."></textarea>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Continuar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+      didOpen: () => {
+        const responsableEl = document.getElementById('cancelacionGlobalResponsable') as HTMLSelectElement | null;
+        const motivoEl = document.getElementById('cancelacionGlobalMotivo') as HTMLSelectElement | null;
+        const ncHintEl = document.getElementById('cancelacionGlobalNcHint') as HTMLElement | null;
+        if (!responsableEl || !motivoEl) return;
+        const refreshMotivos = () => {
+          const responsable = (responsableEl.value === 'INTERNO' ? 'INTERNO' : 'CLIENTE') as CancelacionResponsable;
+          motivoEl.innerHTML = toOptionsHtml(CANCELACION_MOTIVOS[responsable]);
+          if (ncHintEl) {
+            ncHintEl.textContent = responsable === 'INTERNO'
+              ? `Si es cancelación interna, NC estimada: ${montoNcEstimado}.`
+              : 'Si cancela el cliente, no se generará nota de crédito.';
+          }
+        };
+        responsableEl.addEventListener('change', refreshMotivos);
+        refreshMotivos();
+      },
+      preConfirm: () => {
+        const responsableEl = document.getElementById('cancelacionGlobalResponsable') as HTMLSelectElement | null;
+        const motivoEl = document.getElementById('cancelacionGlobalMotivo') as HTMLSelectElement | null;
+        const notasEl = document.getElementById('cancelacionGlobalNotas') as HTMLTextAreaElement | null;
+        const responsable = (responsableEl?.value === 'INTERNO' ? 'INTERNO' : 'CLIENTE') as CancelacionResponsable;
+        const motivo = (motivoEl?.value ?? '').toString().trim();
+        const notas = (notasEl?.value ?? '').toString().trim();
+        if (!motivo) {
+          Swal.showValidationMessage('Selecciona un motivo de cancelación.');
+          return null;
+        }
+        if ((motivo === 'OTRO_CLIENTE' || motivo === 'OTRO_INTERNO') && notas.length < 8) {
+          Swal.showValidationMessage('Cuando eliges "Otro", agrega al menos 8 caracteres en notas.');
+          return null;
+        }
+        return { responsable, motivo, notas } as CancelacionDiaContexto;
+      }
+    });
+
+    if (!formulario.isConfirmed) {
+      return;
+    }
+
+    const contexto = formulario.value as CancelacionDiaContexto;
+    this.cancelandoGlobalProyecto = true;
+
+    this.proyectoService.cancelarGlobalProyecto(proyectoId, {
+      responsable: contexto.responsable,
+      motivo: contexto.motivo,
+      notas: contexto.notas || null
+    })
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => { this.cancelandoGlobalProyecto = false; })
+      )
+      .subscribe({
+        next: (response) => {
+          this.refrescarProyectoDetalle();
+          const detalleNc = response.ncRequerida === 1
+            ? `\nNC requerida: Sí${response.voucherId ? ` (Voucher #${response.voucherId})` : ''}\nMonto NC total: ${response.montoNcTotal ?? 0}`
+            : '\nNC requerida: No';
+          void Swal.fire({
+            icon: 'success',
+            title: 'Proyecto cancelado',
+            text: `Días cancelados en esta operación: ${response.diasCanceladosOperacion}\nDías ya cancelados: ${response.diasYaCancelados}${detalleNc}`,
+            confirmButtonText: 'Entendido'
+          });
+        },
+        error: (err) => {
+          console.error('[proyecto] cancelar global', err);
+          void Swal.fire({
+            icon: 'error',
+            title: 'No se pudo cancelar',
+            text: this.getMensajeErrorCancelacion(err, true),
+            confirmButtonText: 'Entendido'
+          });
+        }
+      });
   }
 
   setAsignacionDia(
@@ -2956,6 +3079,29 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return 'control-kpi--neutral';
   }
 
+  get diasYaCanceladosCount(): number {
+    return (this.detalle?.dias ?? []).filter(dia =>
+      (dia.estadoDiaNombre ?? '').toString().trim().toLowerCase() === 'cancelado'
+    ).length;
+  }
+
+  get diasNoCanceladosCount(): number {
+    const total = this.detalle?.dias?.length ?? 0;
+    return Math.max(total - this.diasYaCanceladosCount, 0);
+  }
+
+  get montoNcEstimadoGlobal(): number {
+    const saldo = Number(this.proyecto?.saldoPendiente ?? 0);
+    if (Number.isNaN(saldo)) return 0;
+    return Math.max(0, saldo);
+  }
+
+  get saldoNetoEsCero(): boolean {
+    const saldo = Number(this.proyecto?.saldoPendiente ?? 0);
+    if (Number.isNaN(saldo)) return false;
+    return saldo <= 0;
+  }
+
   private getToastEstadoDiaTitle(estadoNuevo: string): string {
     if (estadoNuevo === 'en curso') return 'Día iniciado';
     if (estadoNuevo === 'terminado') return 'Día terminado';
@@ -2968,6 +3114,58 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private getCancelacionMotivoLabel(responsable: CancelacionResponsable, motivo: string): string {
     const option = CANCELACION_MOTIVOS[responsable].find(item => item.value === motivo);
     return option?.label ?? motivo;
+  }
+
+  private getMensajeErrorCancelacion(err: any, global: boolean): string {
+    const rawMessage = (err?.error?.message ?? err?.error?.status ?? '').toString().trim();
+    const msg = rawMessage.toLowerCase();
+    if (msg.includes('no válido') || msg.includes('no valido') || msg.includes('no existe') || msg.includes('inválido') || msg.includes('invalido')) {
+      return global ? 'El proyecto no es válido o no existe.' : 'El día no es válido o no existe.';
+    }
+    if (msg.includes('ya cancelado') || msg.includes('ya se encuentra cancelado')) {
+      return global ? 'El proyecto ya está cancelado.' : 'El día ya está cancelado.';
+    }
+    if (global && (msg.includes('terminado') || msg.includes('finalizado'))) {
+      return 'Hay días terminados y no se permite la cancelación global.';
+    }
+    if (msg.includes('motivo') || msg.includes('nota') || msg.includes('validación') || msg.includes('validacion')) {
+      return 'Revisa motivo y notas: hay un error de validación.';
+    }
+    return rawMessage || 'Intenta nuevamente.';
+  }
+
+  getDiaCancelacionResponsableLabel(dia: ProyectoDia): string {
+    const raw = (dia.cancelResponsable ?? '').toString().trim().toUpperCase();
+    if (raw === 'INTERNO') return 'Interno';
+    if (raw === 'CLIENTE') return 'Cliente';
+    return 'No registrado';
+  }
+
+  getDiaCancelacionMotivoLabel(dia: ProyectoDia): string {
+    const responsableRaw = (dia.cancelResponsable ?? 'CLIENTE').toString().trim().toUpperCase();
+    const responsable = (responsableRaw === 'INTERNO' ? 'INTERNO' : 'CLIENTE') as CancelacionResponsable;
+    const motivo = (dia.cancelMotivo ?? '').toString().trim();
+    if (!motivo) return 'No registrado';
+    return this.getCancelacionMotivoLabel(responsable, motivo);
+  }
+
+  getDiaCancelacionNotas(dia: ProyectoDia): string {
+    return (dia.cancelNotas ?? '').toString().trim();
+  }
+
+  getDiaCancelacionFecha(dia: ProyectoDia): string | null {
+    const fecha = dia.cancelFecha ?? null;
+    return fecha && String(fecha).trim() ? String(fecha) : null;
+  }
+
+  isDiaNcRequerida(dia: ProyectoDia): boolean {
+    return Number(dia.ncRequerida ?? null) === 1;
+  }
+
+  getDiaVoucherId(dia: ProyectoDia): number | null {
+    const raw = dia.ncVoucherId ?? null;
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? value : null;
   }
 
   private async pedirContextoCancelacionDia(dia: ProyectoDia): Promise<CancelacionDiaContexto | null> {

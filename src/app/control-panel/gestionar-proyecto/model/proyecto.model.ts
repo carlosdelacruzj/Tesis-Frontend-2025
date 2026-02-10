@@ -64,6 +64,15 @@ export interface ProyectoDia {
   fecha: string;
   estadoDiaId: number | null;
   estadoDiaNombre: string | null;
+  cancelResponsable?: 'CLIENTE' | 'INTERNO' | null;
+  cancelMotivo?: 'DESISTE_EVENTO' | 'FUERZA_MAYOR_CLIENTE' | 'OTRO_CLIENTE' | 'FUERZA_MAYOR_INTERNA' | 'OTRO_INTERNO' | null;
+  cancelNotas?: string | null;
+  cancelFecha?: string | null;
+  ncRequerida?: number | null;
+  ncVoucherId?: number | null;
+  montoBase?: number | null;
+  igv?: number | null;
+  montoTotal?: number | null;
 }
 
 export interface BloqueDia {
@@ -396,6 +405,26 @@ export interface ProyectoCancelarDiaResponse {
   status: string;
   diaId: number;
   estadoDiaId?: number;
+}
+
+export interface ProyectoCancelarGlobalPayload {
+  responsable: 'CLIENTE' | 'INTERNO';
+  motivo: string;
+  notas?: string | null;
+}
+
+export interface ProyectoCancelarGlobalResponse {
+  status: string;
+  proyectoId: number;
+  pedidoId: number;
+  responsable: 'CLIENTE' | 'INTERNO';
+  motivo: string;
+  ncRequerida: number;
+  voucherId: number | null;
+  diasTotales: number;
+  diasCanceladosOperacion: number;
+  diasYaCancelados: number;
+  montoNcTotal: number;
 }
 
 export type ProyectoPayload = {

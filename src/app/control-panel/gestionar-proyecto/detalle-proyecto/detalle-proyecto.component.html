@@ -83,8 +83,17 @@
               Ir a devoluciones pendientes
             </button>
           }
+          @if ((proyecto.estadoNombre || '').toLowerCase() !== 'cancelado') {
+            <button
+              mat-stroked-button
+              color="warn"
+              type="button"
+              [disabled]="cancelandoGlobalProyecto"
+              (click)="cancelarProyectoGlobal()">
+              {{ cancelandoGlobalProyecto ? 'Cancelando proyecto…' : 'Cancelar proyecto global' }}
+            </button>
+          }
         </div>
-
         <div class="control-kpis" aria-label="Indicadores de control operativo">
           <article class="control-kpi control-kpi--primary">
             <p class="control-kpi__label">Avance de asignación</p>
@@ -195,35 +204,54 @@
                 <div class="timeline-side">
                   <div class="timeline-dot"></div>
                   <span class="timeline-expand">{{ openDiaId === dia.diaId ? 'Ocultar' : 'Ver detalle' }}</span>
-                  <div class="estado-dia-action-wrap estado-dia-action-wrap--right" (click)="$event.stopPropagation()">
-                    <button
-                      class="estado-dia-action"
-                      type="button"
-                      [disabled]="!getEstadosDiaPermitidos(dia).length || estadoDiaLoading[dia.diaId]"
-                      (click)="toggleEstadoDiaMenu(dia.diaId, $event)">
-                      <app-estado-badge
-                        [estado]="'Cambiar estado'"
-                        [mapaColores]="{ 'cambiar estado': 'info' }"
-                      ></app-estado-badge>
-                    </button>
-                    @if (estadoDiaMenuOpenId === dia.diaId) {
-                      <div class="estado-dia-menu" (click)="$event.stopPropagation()">
-                        @for (estado of getEstadosDiaPermitidos(dia); track estado.estadoDiaId) {
-                          <button
-                            class="estado-dia-menu__item"
-                            type="button"
-                            [class.is-active]="estado.estadoDiaId === dia.estadoDiaId"
-                            [disabled]="estadoDiaLoading[dia.diaId]"
-                            (click)="onEstadoDiaSelect(dia, estado.estadoDiaId)">
-                            <span>{{ estado.estadoDiaNombre }}</span>
-                          </button>
-                        }
-                      </div>
-                    }
-                  </div>
+                  @if (getEstadosDiaPermitidos(dia).length) {
+                    <div class="estado-dia-action-wrap estado-dia-action-wrap--right" (click)="$event.stopPropagation()">
+                      <button
+                        class="estado-dia-action"
+                        type="button"
+                        [disabled]="estadoDiaLoading[dia.diaId]"
+                        (click)="toggleEstadoDiaMenu(dia.diaId, $event)">
+                        <app-estado-badge
+                          [estado]="'Cambiar estado'"
+                          [mapaColores]="{ 'cambiar estado': 'info' }"
+                        ></app-estado-badge>
+                      </button>
+                      @if (estadoDiaMenuOpenId === dia.diaId) {
+                        <div class="estado-dia-menu" (click)="$event.stopPropagation()">
+                          @for (estado of getEstadosDiaPermitidos(dia); track estado.estadoDiaId) {
+                            <button
+                              class="estado-dia-menu__item"
+                              type="button"
+                              [class.is-active]="estado.estadoDiaId === dia.estadoDiaId"
+                              [disabled]="estadoDiaLoading[dia.diaId]"
+                              (click)="onEstadoDiaSelect(dia, estado.estadoDiaId)">
+                              <span>{{ estado.estadoDiaNombre }}</span>
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
                 </div>
               </summary>
               <div class="timeline-content">
+                @if ((dia.estadoDiaNombre || '').toLowerCase() === 'cancelado') {
+                  <div class="cancelacion-traza">
+                    <div class="cancelacion-traza__title">Detalle de cancelación</div>
+                    <div class="cancelacion-traza__meta">
+                      <span>Responsable: <strong>{{ getDiaCancelacionResponsableLabel(dia) }}</strong></span>
+                      <span>Motivo: <strong>{{ getDiaCancelacionMotivoLabel(dia) }}</strong></span>
+                      @if (getDiaCancelacionFecha(dia); as fechaCancelacion) {
+                        <span>Fecha de expiración: <strong>{{ formatFechaLarga(fechaCancelacion) }}</strong></span>
+                      }
+                    </div>
+                    @if (getDiaCancelacionNotas(dia)) {
+                      <p class="cancelacion-traza__notas">
+                        <strong>Comentario o mensaje ingresado:</strong> {{ getDiaCancelacionNotas(dia) }}
+                      </p>
+                    }
+                  </div>
+                }
                 <div class="dia-grid">
                   <div class="dia-col">
                     <div class="locacion-list">
