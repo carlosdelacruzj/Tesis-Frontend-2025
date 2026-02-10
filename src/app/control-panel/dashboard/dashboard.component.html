@@ -8,18 +8,6 @@
       </div>
 
       <div class="dash-topbar__actions">
-        <div class="horizon-selector" role="group" aria-label="Horizonte de agenda">
-          @for (days of horizonOptions; track days) {
-            <button
-              type="button"
-              class="horizon-btn"
-              [class.is-active]="agendaDays === days"
-              (click)="onAgendaDaysChange(days)">
-              {{ days }} dias
-            </button>
-          }
-        </div>
-
         <button type="button" class="btn btn-primary btn-sm" (click)="refreshNow()" [disabled]="isRefreshing">
           {{ isRefreshing ? 'Actualizando...' : 'Actualizar ahora' }}
         </button>
@@ -124,7 +112,7 @@
           <div class="section-head section-head--tight">
             <div>
               <h2>Operacion de hoy</h2>
-              <p>{{ formatFechaCorta(dashboardHome?.operacionDia?.fecha || null) }}</p>
+              <p>{{ formatFechaCorta(dashboardHome?.fecha || null) }}</p>
             </div>
             <span class="range-pill">{{ formatFechaCorta(todayYmd) }}</span>
           </div>
@@ -154,6 +142,16 @@
               <strong>{{ tarjetasHoy.pagosConSaldoHoy }}</strong>
               <span>Pedidos</span>
             </article>
+            <article>
+              <p>Staff ocupado</p>
+              <strong>{{ ocupacionHoyResumen.personasOcupadas }}</strong>
+              <span>{{ ocupacionHoyResumen.porcentajeStaffOcupado | number:'1.0-1' }}%</span>
+            </article>
+            <article>
+              <p>Equipo ocupado</p>
+              <strong>{{ ocupacionHoyResumen.equiposOcupados }}</strong>
+              <span>{{ ocupacionHoyResumen.porcentajeEquipoOcupado | number:'1.0-1' }}%</span>
+            </article>
           </div>
         </section>
       </aside>
@@ -171,19 +169,19 @@
       <div class="payment-grid">
         <article>
           <p>Pendiente</p>
-          <strong>{{ dashboardHome?.operacionDia?.cobrosHoy?.pedidosPendientePago ?? 0 }}</strong>
+          <strong>{{ dashboardHome?.resumenHoy?.cobrosHoy?.pedidosPendientePago ?? 0 }}</strong>
         </article>
         <article>
           <p>Parcial</p>
-          <strong>{{ dashboardHome?.operacionDia?.cobrosHoy?.pedidosParcialPago ?? 0 }}</strong>
+          <strong>{{ dashboardHome?.resumenHoy?.cobrosHoy?.pedidosParcialPago ?? 0 }}</strong>
         </article>
         <article>
           <p>Pagado</p>
-          <strong>{{ dashboardHome?.operacionDia?.cobrosHoy?.pedidosPagado ?? 0 }}</strong>
+          <strong>{{ dashboardHome?.resumenHoy?.cobrosHoy?.pedidosPagado ?? 0 }}</strong>
         </article>
         <article>
           <p>Con saldo</p>
-          <strong>{{ dashboardHome?.operacionDia?.cobrosHoy?.pedidosConSaldo ?? 0 }}</strong>
+          <strong>{{ dashboardHome?.resumenHoy?.cobrosHoy?.pedidosConSaldo ?? 0 }}</strong>
         </article>
       </div>
     </section>

@@ -440,3 +440,86 @@ export interface DashboardOperacionDia {
   };
   colaPendientesHoy: DashboardOperacionDiaColaPendienteItem[];
 }
+
+export interface DashboardOperativoDiaCards {
+  eventosHoy: number;
+  eventosEnCursoHoy: number;
+  eventosPendientesInicioHoy: number;
+  serviciosProgramadosHoy: number;
+}
+
+export interface DashboardOperativoDiaResumen {
+  totalProyectosConDiaHoy: number;
+  totalProyectoDiasHoy: number;
+  estadoDia: {
+    pendiente: number;
+    enCurso: number;
+    terminado: number;
+    suspendido: number;
+    cancelado: number;
+  };
+  cobrosHoy: {
+    pedidosPendientePago: number;
+    pedidosParcialPago: number;
+    pedidosPagado: number;
+    pedidosConSaldo: number;
+  };
+}
+
+export interface DashboardOperativoDiaColaPendienteItem {
+  tipo: string;
+  prioridad: string;
+  proyectoId: number | null;
+  diaId: number | null;
+  pedidoId: number | null;
+  mensaje: string;
+}
+
+export interface DashboardOperativoDiaResponse {
+  generatedAt: string;
+  fecha: string;
+  range: {
+    from: string;
+    to: string;
+    fromYmd: string;
+    toYmd: string;
+  };
+  strictDay: boolean;
+  cards: DashboardOperativoDiaCards;
+  resumenHoy: DashboardOperativoDiaResumen;
+  agendaHoy: {
+    total: number;
+    items: DashboardOperacionDiaAgendaItem[];
+  };
+  colaPendientesHoy: {
+    total: number;
+    items: DashboardOperativoDiaColaPendienteItem[];
+  };
+  ocupacionHoy: {
+    resumen: {
+      personasOcupadas: number;
+      equiposOcupados: number;
+      capacidadStaffTotal: number;
+      capacidadEquipoTotal: number;
+      porcentajeStaffOcupado: number;
+      porcentajeEquipoOcupado: number;
+    };
+    personas: Array<{
+      empleadoId: number;
+      empleado: string;
+      rol: string | null;
+      proyectoId: number | null;
+      proyecto: string | null;
+      diaId: number | null;
+    }>;
+    equipos: Array<{
+      equipoId: number;
+      equipo: string;
+      serie: string | null;
+      proyectoId: number | null;
+      proyecto: string | null;
+      diaId: number | null;
+    }>;
+  };
+  capacidadHoy: DashboardCapacidadPorDia;
+}

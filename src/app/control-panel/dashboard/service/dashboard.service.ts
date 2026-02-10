@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { DashboardHomeResponse } from '../model/dashboard.model';
+import { DashboardOperativoDiaResponse } from '../model/dashboard.model';
 
 @Injectable({
   providedIn: 'root'
@@ -11,11 +11,11 @@ export class DashboardService {
   private readonly http = inject(HttpClient);
   private readonly API = `${environment.baseUrl}/operaciones`;
 
-  getDashboardHome(): Observable<DashboardHomeResponse> {
+  getDashboardHome(): Observable<DashboardOperativoDiaResponse> {
     const params = new HttpParams()
       .set('baseDate', this.getCurrentLocalYmd());
 
-    return this.http.get<DashboardHomeResponse>(`${this.API}/dashboard/home`, { params });
+    return this.http.get<DashboardOperativoDiaResponse>(`${this.API}/dashboard/operativo-dia`, { params });
   }
 
   private getCurrentLocalYmd(): string {

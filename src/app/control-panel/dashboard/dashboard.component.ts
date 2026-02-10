@@ -3,9 +3,9 @@ import { Router } from '@angular/router';
 import { Subscription, interval } from 'rxjs';
 import {
   DashboardEstadoConteo,
-  DashboardHomeResponse,
+  DashboardOperativoDiaResponse,
   DashboardOperacionDiaAgendaItem,
-  DashboardOperacionDiaColaPendienteItem,
+  DashboardOperativoDiaColaPendienteItem,
   DashboardOperacionDiaTarjetas
 } from './model/dashboard.model';
 import { DashboardService } from './service/dashboard.service';
@@ -22,14 +22,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private autoRefreshSub: Subscription | null = null;
   private requestSub: Subscription | null = null;
 
-  readonly horizonOptions = [7, 14, 30];
-  agendaDays = 14;
-
   isInitialLoading = true;
   isRefreshing = false;
   errorMessage = '';
 
-  dashboardHome: DashboardHomeResponse | null = null;
+  dashboardHome: DashboardOperativoDiaResponse | null = null;
 
   ngOnInit(): void {
     this.loadDashboard(true);
@@ -67,12 +64,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.errorMessage = 'No se pudo cargar dashboard operativo';
       }
     });
-  }
-
-  onAgendaDaysChange(days: number): void {
-    if (this.agendaDays === days) return;
-    this.agendaDays = days;
-    this.loadDashboard(false);
   }
 
   refreshNow(): void {
@@ -158,42 +149,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get rangeFromYmd(): string | null {
-    return this.dashboardHome?.range?.fromYmd ?? this.dashboardHome?.dashboard?.agenda?.range?.from ?? null;
+    return this.dashboardHome?.range?.fromYmd ?? this.dashboardHome?.range?.from ?? null;
   }
 
   get rangeToYmd(): string | null {
-    return this.dashboardHome?.range?.toYmd ?? this.dashboardHome?.dashboard?.agenda?.range?.to ?? null;
+    return this.dashboardHome?.range?.toYmd ?? this.dashboardHome?.range?.to ?? null;
   }
 
   get tarjetasHoy(): DashboardOperacionDiaTarjetas {
-    return this.dashboardHome?.operacionDia?.tarjetas ?? {
-      serviciosProgramadosHoy: 0,
-      eventosHoy: 0,
-      proyectosEnCursoHoy: 0,
-      proyectosPendientesInicioHoy: 0,
-      equiposPorDevolverHoy: 0,
-      pagosConSaldoHoy: 0
+    const cards = this.dashboardHome?.cards;
+    const cobros = this.dashboardHome?.resumenHoy?.cobrosHoy;
+    const capacidad = this.dashboardHome?.capacidadHoy?.equipo;
+    if (!cards) {
+      return {
+        serviciosProgramadosHoy: 0,
+        eventosHoy: 0,
+        proyectosEnCursoHoy: 0,
+        proyectosPendientesInicioHoy: 0,
+        equiposPorDevolverHoy: 0,
+        pagosConSaldoHoy: 0
+      };
+    }
+    return {
+      serviciosProgramadosHoy: cards.serviciosProgramadosHoy ?? 0,
+      eventosHoy: cards.eventosHoy ?? 0,
+      proyectosEnCursoHoy: cards.eventosEnCursoHoy ?? 0,
+      proyectosPendientesInicioHoy: cards.eventosPendientesInicioHoy ?? 0,
+      equiposPorDevolverHoy: capacidad?.pendientesDevolucion ?? 0,
+      pagosConSaldoHoy: cobros?.pedidosConSaldo ?? 0
     };
   }
 
   get todayYmd(): string | null {
-    return this.normalizeYmd(this.dashboardHome?.operacionDia?.fecha) ?? this.normalizeYmd(new Date().toISOString());
-  }
-
-  private get fechaPorDiaId(): Map<number, string> {
-    const result = new Map<number, string>();
-    const proyectoDias = this.dashboardHome?.dashboard?.agenda?.agenda?.proyectoDias ?? [];
-    proyectoDias.forEach(dia => {
-      const ymd = this.normalizeYmd(dia?.fecha);
-      if (ymd) {
-        result.set(dia.diaId, ymd);
-      }
-    });
-    return result;
+    return this.normalizeYmd(this.dashboardHome?.fecha) ?? this.normalizeYmd(new Date().toISOString());
   }
 
   get capacidadHoySegura() {
-    const capacidad = this.dashboardHome?.operacionDia?.capacidadHoy;
+    const capacidad = this.dashboardHome?.capacidadHoy;
     const fechaHoy = this.todayYmd;
     const fechaCapacidad = this.normalizeYmd(capacidad?.fecha);
     if (!capacidad || !fechaHoy || fechaCapacidad !== fechaHoy) {
@@ -206,44 +198,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get agendaHoyItems(): DashboardOperacionDiaAgendaItem[] {
-    const items = this.dashboardHome?.operacionDia?.agendaHoy?.items ?? [];
-    if (!items.length) {
-      return [];
-    }
-
-    const fechaHoy = this.todayYmd;
-    if (!fechaHoy) {
-      return [];
-    }
-
-    const fechaPorDiaId = this.fechaPorDiaId;
-    if (!fechaPorDiaId.size) {
-      return [];
-    }
-
-    return items.filter(item => fechaPorDiaId.get(item.diaId) === fechaHoy);
+    return this.dashboardHome?.agendaHoy?.items ?? [];
   }
 
-  get colaPendientesHoy(): DashboardOperacionDiaColaPendienteItem[] {
-    const items = this.dashboardHome?.operacionDia?.colaPendientesHoy ?? [];
-    if (!items.length) {
-      return [];
-    }
-    const fechaHoy = this.todayYmd;
-    if (!fechaHoy) {
-      return [];
-    }
-    const fechaPorDiaId = this.fechaPorDiaId;
-    return items.filter(item => {
-      if (!item.diaId) {
-        return true;
-      }
-      return fechaPorDiaId.get(item.diaId) === fechaHoy;
-    });
+  get colaPendientesHoy(): DashboardOperativoDiaColaPendienteItem[] {
+    return this.dashboardHome?.colaPendientesHoy?.items ?? [];
   }
 
   get totalProyectosHoy(): number {
-    return new Set(this.agendaHoyItems.map(item => item.proyectoId)).size;
+    return this.dashboardHome?.resumenHoy?.totalProyectosConDiaHoy ?? 0;
   }
 
   get totalPedidosHoy(): number {
@@ -259,7 +222,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get estadosDiaHoy(): DashboardEstadoConteo[] {
-    return this.groupEstado(this.agendaHoyItems.map(item => item.estadoDia));
+    const estado = this.dashboardHome?.resumenHoy?.estadoDia;
+    if (!estado) {
+      return [];
+    }
+    return [
+      { id: 1, nombre: 'Pendiente', total: estado.pendiente ?? 0 },
+      { id: 2, nombre: 'En curso', total: estado.enCurso ?? 0 },
+      { id: 3, nombre: 'Terminado', total: estado.terminado ?? 0 },
+      { id: 4, nombre: 'Suspendido', total: estado.suspendido ?? 0 },
+      { id: 5, nombre: 'Cancelado', total: estado.cancelado ?? 0 }
+    ].filter(item => item.total > 0);
+  }
+
+  get ocupacionHoyResumen() {
+    return this.dashboardHome?.ocupacionHoy?.resumen ?? {
+      personasOcupadas: 0,
+      equiposOcupados: 0,
+      capacidadStaffTotal: 0,
+      capacidadEquipoTotal: 0,
+      porcentajeStaffOcupado: 0,
+      porcentajeEquipoOcupado: 0
+    };
   }
 
   private groupEstado(values: Array<string | null | undefined>): DashboardEstadoConteo[] {
