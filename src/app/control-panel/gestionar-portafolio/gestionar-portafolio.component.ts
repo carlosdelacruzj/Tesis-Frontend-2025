@@ -1,5 +1,9 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import {
+  UntypedFormBuilder,
+  UntypedFormGroup,
+  Validators,
+} from '@angular/forms';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
@@ -25,13 +29,26 @@ interface ModalState {
 @Component({
   selector: 'app-gestionar-portafolio',
   templateUrl: './gestionar-portafolio.component.html',
-  styleUrls: ['./gestionar-portafolio.component.css']
+  styleUrls: ['./gestionar-portafolio.component.css'],
 })
 export class GestionarPortafolioComponent implements OnInit, OnDestroy {
   columnasEventos: TableColumn<PortafolioEvento>[] = [
-    { key: 'iconUrl', header: 'Icono', sortable: false, filterable: false, width: '90px' },
+    {
+      key: 'iconUrl',
+      header: 'Icono',
+      sortable: false,
+      filterable: false,
+      width: '90px',
+    },
     { key: 'nombre', header: 'Evento', sortable: true, width: '45%' },
-    { key: 'mostrarPortafolio', header: 'Visible', sortable: false, filterable: false, width: '120px', class: 'text-center' }
+    {
+      key: 'mostrarPortafolio',
+      header: 'Visible',
+      sortable: false,
+      filterable: false,
+      width: '120px',
+      class: 'text-center',
+    },
   ];
 
   eventos: PortafolioEvento[] = [];
@@ -53,7 +70,10 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
   soloSinDescripcion = false;
   pendingOrderChanges = false;
   ordenSyncing = false;
-  lightbox: { open: boolean; item: PortafolioImagenRow | null } = { open: false, item: null };
+  lightbox: { open: boolean; item: PortafolioImagenRow | null } = {
+    open: false,
+    item: null,
+  };
 
   form: UntypedFormGroup;
   modal: ModalState = {
@@ -62,7 +82,7 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
     titulo: '',
     editId: null,
     files: [],
-    fileNames: []
+    fileNames: [],
   };
 
   private readonly fb = inject(UntypedFormBuilder);
@@ -75,7 +95,7 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
       eventoId: [null, Validators.required],
       titulo: [''],
       descripcion: [''],
-      orden: [null]
+      orden: [null],
     });
   }
 
@@ -91,7 +111,12 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
   }
 
   get isUiLocked(): boolean {
-    return this.modal.open || this.modal.guardando || this.lightbox.open || this.ordenSyncing;
+    return (
+      this.modal.open ||
+      this.modal.guardando ||
+      this.lightbox.open ||
+      this.ordenSyncing
+    );
   }
 
   onSearchChange(term: string): void {
@@ -115,7 +140,7 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
       eventoId: null,
       titulo: '',
       descripcion: '',
-      orden: null
+      orden: null,
     });
     this.modal = {
       open: true,
@@ -123,7 +148,7 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
       titulo: 'Nueva imagen de portafolio',
       editId: null,
       files: [],
-      fileNames: []
+      fileNames: [],
     };
   }
 
@@ -132,7 +157,7 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
       eventoId: row.eventoId ?? null,
       titulo: row.titulo ?? '',
       descripcion: row.descripcion ?? '',
-      orden: row.orden ?? null
+      orden: row.orden ?? null,
     });
     this.modal = {
       open: true,
@@ -140,14 +165,20 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
       titulo: 'Editar imagen de portafolio',
       editId: row.id,
       files: [],
-      fileNames: []
+      fileNames: [],
     };
   }
 
   cerrarModal(): void {
     if (this.modal.guardando) return;
     this.revokePreviews();
-    this.modal = { ...this.modal, open: false, editId: null, files: [], fileNames: [] };
+    this.modal = {
+      ...this.modal,
+      open: false,
+      editId: null,
+      files: [],
+      fileNames: [],
+    };
   }
 
   onFileChange(event: Event): void {
@@ -160,7 +191,7 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
     }
     const archivos = Array.from(input.files);
     this.modal.files = archivos;
-    this.modal.fileNames = archivos.map(file => file.name);
+    this.modal.fileNames = archivos.map((file) => file.name);
     this.buildPreviews(archivos);
   }
 
@@ -180,12 +211,17 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
       void Swal.fire({
         icon: 'warning',
         title: 'Falta la imagen',
-        text: 'Adjunta un archivo antes de guardar.'
+        text: 'Adjunta un archivo antes de guardar.',
       });
       return;
     }
 
-    const payload = this.form.value as { eventoId: number; titulo?: string; descripcion?: string; orden?: number };
+    const payload = this.form.value as {
+      eventoId: number;
+      titulo?: string;
+      descripcion?: string;
+      orden?: number;
+    };
     this.modal = { ...this.modal, guardando: true };
 
     const request$ = this.modal.editId
@@ -194,14 +230,14 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
           titulo: payload.titulo,
           descripcion: payload.descripcion,
           orden: payload.orden,
-          file: this.modal.files[0] ?? null
+          file: this.modal.files[0] ?? null,
         })
       : this.portafolioService.crearImagen({
           eventoId: payload.eventoId,
           tituloBase: payload.titulo,
           descripcion: payload.descripcion,
           ordenBase: payload.orden,
-          files: this.modal.files
+          files: this.modal.files,
         });
 
     request$.pipe(takeUntil(this.destroy$)).subscribe({
@@ -209,7 +245,7 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
         void Swal.fire({
           icon: 'success',
           title: this.modal.editId ? 'Imagen actualizada' : 'Imagen registrada',
-          confirmButtonText: 'Entendido'
+          confirmButtonText: 'Entendido',
         });
         this.modal = { ...this.modal, guardando: false };
         this.cerrarModal();
@@ -222,9 +258,9 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
           icon: 'error',
           title: 'No se pudo guardar',
           text: 'Revisa los datos e intenta nuevamente.',
-          confirmButtonText: 'Entendido'
+          confirmButtonText: 'Entendido',
         });
-      }
+      },
     });
   }
 
@@ -235,19 +271,20 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
       text: 'Esta accion no se puede deshacer.',
       showCancelButton: true,
       confirmButtonText: 'Si, eliminar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
     });
 
     if (!confirm.isConfirmed) return;
 
-    this.portafolioService.eliminarImagen(row.id)
+    this.portafolioService
+      .eliminarImagen(row.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           void Swal.fire({
             icon: 'success',
             title: 'Imagen eliminada',
-            confirmButtonText: 'Entendido'
+            confirmButtonText: 'Entendido',
           });
           this.loadImagenes();
         },
@@ -257,15 +294,16 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
             icon: 'error',
             title: 'No se pudo eliminar',
             text: 'Intenta nuevamente en unos minutos.',
-            confirmButtonText: 'Entendido'
+            confirmButtonText: 'Entendido',
           });
-        }
+        },
       });
   }
 
   toggleEvento(evento: PortafolioEvento, mostrar: boolean): void {
     const nuevo = mostrar ? 1 : 0;
-    this.portafolioService.actualizarVisibilidadEvento(evento.id, nuevo)
+    this.portafolioService
+      .actualizarVisibilidadEvento(evento.id, nuevo)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
@@ -277,9 +315,9 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
             icon: 'error',
             title: 'No se pudo actualizar',
             text: 'Intenta nuevamente.',
-            confirmButtonText: 'Entendido'
+            confirmButtonText: 'Entendido',
           });
-        }
+        },
       });
   }
 
@@ -294,7 +332,8 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
   private loadEventos(): void {
     this.loadingEventos = true;
     this.errorEventos = null;
-    this.portafolioService.getEventos()
+    this.portafolioService
+      .getEventos()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (lista) => {
@@ -308,14 +347,15 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
           this.errorEventos = 'No pudimos cargar los eventos.';
           this.eventos = [];
           this.loadingEventos = false;
-        }
+        },
       });
   }
 
   private loadImagenes(): void {
     this.loadingImagenes = true;
     this.errorImagenes = null;
-    this.portafolioService.getImagenes(this.filtroEventoId)
+    this.portafolioService
+      .getImagenes(this.filtroEventoId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (lista) => {
@@ -330,15 +370,15 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
           this.imagenes = [];
           this.imagenesRaw = [];
           this.loadingImagenes = false;
-        }
+        },
       });
   }
 
   private decorateImagenes(lista: PortafolioImagen[]): PortafolioImagenRow[] {
-    return (lista ?? []).map(item => ({
+    return (lista ?? []).map((item) => ({
       ...item,
       imagenUrl: this.resolveImageUrl(item.url),
-      eventoNombre: this.getEventoNombre(item.eventoId)
+      eventoNombre: this.getEventoNombre(item.eventoId),
     }));
   }
 
@@ -361,13 +401,13 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
   private getImagenesFiltradasBase(): PortafolioImagenRow[] {
     let lista = this.imagenes;
     if (this.filtroEventoId != null) {
-      lista = lista.filter(item => item.eventoId === this.filtroEventoId);
+      lista = lista.filter((item) => item.eventoId === this.filtroEventoId);
     }
     if (this.soloSinTitulo) {
-      lista = lista.filter(item => !item.titulo);
+      lista = lista.filter((item) => !item.titulo);
     }
     if (this.soloSinDescripcion) {
-      lista = lista.filter(item => !item.descripcion);
+      lista = lista.filter((item) => !item.descripcion);
     }
     return lista;
   }
@@ -376,11 +416,15 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
     const term = this.searchTerm.trim().toLowerCase();
     const lista = this.getImagenesFiltradasBase();
     if (!term) return lista;
-    return lista.filter(item => {
+    return lista.filter((item) => {
       const titulo = (item.titulo ?? '').toString().toLowerCase();
       const descripcion = (item.descripcion ?? '').toString().toLowerCase();
       const evento = (item.eventoNombre ?? '').toString().toLowerCase();
-      return titulo.includes(term) || descripcion.includes(term) || evento.includes(term);
+      return (
+        titulo.includes(term) ||
+        descripcion.includes(term) ||
+        evento.includes(term)
+      );
     });
   }
 
@@ -389,7 +433,7 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
       void Swal.fire({
         icon: 'info',
         title: 'Selecciona un evento',
-        text: 'Para reordenar primero filtra por un evento especifico.'
+        text: 'Para reordenar primero filtra por un evento especifico.',
       });
       return;
     }
@@ -403,23 +447,30 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
 
   guardarOrden(): void {
     if (!this.pendingOrderChanges || !this.galleryItems.length) return;
-    const updates = this.galleryItems.map(item =>
-      this.portafolioService.actualizarImagen(item.id, { orden: item.orden ?? null })
+    const updates = this.galleryItems.map((item) =>
+      this.portafolioService.actualizarImagen(item.id, {
+        orden: item.orden ?? null,
+      }),
     );
     this.ordenSyncing = true;
-    forkJoin(updates).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.pendingOrderChanges = false;
-        this.ordenSyncing = false;
-        void Swal.fire({ icon: 'success', title: 'Orden actualizado' });
-        this.loadImagenes();
-      },
-      error: (err) => {
-        console.error('[portafolio] orden', err);
-        this.ordenSyncing = false;
-        void Swal.fire({ icon: 'error', title: 'No se pudo guardar el orden' });
-      }
-    });
+    forkJoin(updates)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.pendingOrderChanges = false;
+          this.ordenSyncing = false;
+          void Swal.fire({ icon: 'success', title: 'Orden actualizado' });
+          this.loadImagenes();
+        },
+        error: (err) => {
+          console.error('[portafolio] orden', err);
+          this.ordenSyncing = false;
+          void Swal.fire({
+            icon: 'error',
+            title: 'No se pudo guardar el orden',
+          });
+        },
+      });
   }
 
   toggleSeleccion(row: PortafolioImagenRow): void {
@@ -436,7 +487,7 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
 
   seleccionarTodo(): void {
     this.clearSelection();
-    this.galleryItems.forEach(item => this.selectedIds.add(item.id));
+    this.galleryItems.forEach((item) => this.selectedIds.add(item.id));
   }
 
   clearSelection(): void {
@@ -447,14 +498,14 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
   getEventosParaMover(): PortafolioEvento[] {
     const selectedEventoId = this.getEventoIdSeleccionUnica();
     if (selectedEventoId == null) return this.eventos;
-    return this.eventos.filter(evento => evento.id !== selectedEventoId);
+    return this.eventos.filter((evento) => evento.id !== selectedEventoId);
   }
 
   private getEventoIdSeleccionUnica(): number | null {
     if (this.selectedIds.size === 0) return null;
     let current: number | null = null;
     for (const id of this.selectedIds) {
-      const item = this.imagenes.find(img => img.id === id);
+      const item = this.imagenes.find((img) => img.id === id);
       if (!item) continue;
       if (current == null) {
         current = item.eventoId;
@@ -470,24 +521,28 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
     const confirm = await Swal.fire({
       icon: 'warning',
       title: 'Eliminar seleccion',
-      text: `Se eliminaran ${this.selectedIds.size} imagenes.`,
+      text: `Se eliminaran ${this.selectedIds.size} imágenes.`,
       showCancelButton: true,
       confirmButtonText: 'Si, eliminar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
     });
     if (!confirm.isConfirmed) return;
-    const updates = Array.from(this.selectedIds).map(id => this.portafolioService.eliminarImagen(id));
-    forkJoin(updates).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        void Swal.fire({ icon: 'success', title: 'Imagenes eliminadas' });
-        this.clearSelection();
-        this.loadImagenes();
-      },
-      error: (err) => {
-        console.error('[portafolio] eliminar seleccion', err);
-        void Swal.fire({ icon: 'error', title: 'No se pudo eliminar' });
-      }
-    });
+    const updates = Array.from(this.selectedIds).map((id) =>
+      this.portafolioService.eliminarImagen(id),
+    );
+    forkJoin(updates)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          void Swal.fire({ icon: 'success', title: 'Imágenes eliminadas' });
+          this.clearSelection();
+          this.loadImagenes();
+        },
+        error: (err) => {
+          console.error('[portafolio] eliminar seleccion', err);
+          void Swal.fire({ icon: 'error', title: 'No se pudo eliminar' });
+        },
+      });
   }
 
   moverSeleccionadas(): void {
@@ -496,20 +551,24 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
       void Swal.fire({ icon: 'info', title: 'Selecciona un evento destino' });
       return;
     }
-    const updates = Array.from(this.selectedIds).map(id =>
-      this.portafolioService.actualizarImagen(id, { eventoId: this.bulkEventoId })
+    const updates = Array.from(this.selectedIds).map((id) =>
+      this.portafolioService.actualizarImagen(id, {
+        eventoId: this.bulkEventoId,
+      }),
     );
-    forkJoin(updates).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        void Swal.fire({ icon: 'success', title: 'Imagenes actualizadas' });
-        this.clearSelection();
-        this.loadImagenes();
-      },
-      error: (err) => {
-        console.error('[portafolio] mover seleccion', err);
-        void Swal.fire({ icon: 'error', title: 'No se pudo actualizar' });
-      }
-    });
+    forkJoin(updates)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          void Swal.fire({ icon: 'success', title: 'Imágenes actualizadas' });
+          this.clearSelection();
+          this.loadImagenes();
+        },
+        error: (err) => {
+          console.error('[portafolio] mover seleccion', err);
+          void Swal.fire({ icon: 'error', title: 'No se pudo actualizar' });
+        },
+      });
   }
 
   abrirLightbox(row: PortafolioImagenRow): void {
@@ -521,13 +580,16 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
   }
 
   private getEventoNombre(eventoId: number): string {
-    const found = this.eventos.find(evt => evt.id === eventoId);
+    const found = this.eventos.find((evt) => evt.id === eventoId);
     return found?.nombre ?? `Evento ${eventoId}`;
   }
 
   private getAssetBase(): string {
     const raw = environment.baseUrl;
-    const normalized = raw.startsWith('http://') || raw.startsWith('https://') ? raw : `http://${raw}`;
+    const normalized =
+      raw.startsWith('http://') || raw.startsWith('https://')
+        ? raw
+        : `http://${raw}`;
     try {
       return normalized.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
     } catch (error) {
@@ -538,14 +600,14 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
 
   private buildPreviews(files: File[]): void {
     this.revokePreviews();
-    this.filePreviews = files.map(file => ({
+    this.filePreviews = files.map((file) => ({
       name: file.name,
-      url: URL.createObjectURL(file)
+      url: URL.createObjectURL(file),
     }));
   }
 
   private revokePreviews(): void {
-    this.filePreviews.forEach(preview => URL.revokeObjectURL(preview.url));
+    this.filePreviews.forEach((preview) => URL.revokeObjectURL(preview.url));
     this.filePreviews = [];
   }
 
@@ -555,7 +617,12 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
   }
 
   private normalizeOrdersIfNeeded(): void {
-    if (!this.filtroEventoId || this.ordenSyncing || this.galleryItems.length === 0) return;
+    if (
+      !this.filtroEventoId ||
+      this.ordenSyncing ||
+      this.galleryItems.length === 0
+    )
+      return;
     const changes: { id: number; orden: number }[] = [];
     this.galleryItems.forEach((item, index) => {
       const nuevoOrden = index + 1;
@@ -566,20 +633,22 @@ export class GestionarPortafolioComponent implements OnInit, OnDestroy {
     });
     if (changes.length === 0) return;
     this.ordenSyncing = true;
-    const updates = changes.map(item =>
-      this.portafolioService.actualizarImagen(item.id, { orden: item.orden })
+    const updates = changes.map((item) =>
+      this.portafolioService.actualizarImagen(item.id, { orden: item.orden }),
     );
-    forkJoin(updates).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.ordenSyncing = false;
-        this.pendingOrderChanges = false;
-      },
-      error: (err) => {
-        console.error('[portafolio] normalizar orden', err);
-        this.ordenSyncing = false;
-        this.pendingOrderChanges = true;
-      }
-    });
+    forkJoin(updates)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.ordenSyncing = false;
+          this.pendingOrderChanges = false;
+        },
+        error: (err) => {
+          console.error('[portafolio] normalizar orden', err);
+          this.ordenSyncing = false;
+          this.pendingOrderChanges = true;
+        },
+      });
   }
 
   onEventoIconError(evento: PortafolioEvento): void {

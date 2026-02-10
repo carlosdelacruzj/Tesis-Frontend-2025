@@ -603,6 +603,7 @@ textarea:focus::-webkit-input-placeholder {
   .mat-icon {
     height: 18px;
     width: 18px;
+    font-size: 18px;
   }
 }
 
@@ -7417,4 +7418,18 @@ html .mat-mdc-icon-button.mat-accent {
   --mdc-icon-button-icon-color: var(--secondary);
   --mat-icon-button-state-layer-color: var(--secondary);
   --mat-icon-button-ripple-color: var(--secondary-rgb);
+}
+
+html .mat-mdc-slide-toggle.mat-accent {
+  --mdc-switch-selected-focus-state-layer-color: var(--secondary);
+  --mdc-switch-selected-handle-color: var(--secondary);
+  --mdc-switch-selected-hover-state-layer-color: var(--secondary);
+  --mdc-switch-selected-pressed-state-layer-color: var(--secondary);
+  --mdc-switch-selected-focus-handle-color: #0f5060e3;
+  --mdc-switch-selected-hover-handle-color: #0f5060e3;
+  --mdc-switch-selected-pressed-handle-color: #0f5060e3;
+  --mdc-switch-selected-focus-track-color: #0f5060e3;
+  --mdc-switch-selected-hover-track-color: #74aebc;
+  --mdc-switch-selected-pressed-track-color: #74aebc;
+  --mdc-switch-selected-track-color: #74aebc;
 }

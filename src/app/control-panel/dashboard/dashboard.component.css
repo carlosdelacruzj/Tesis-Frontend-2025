@@ -70,7 +70,7 @@
   border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: 0 12px 24px -24px rgba(36, 49, 66, 0.55);
-  padding: 2rem 1rem;
+  padding: 1.5rem 1rem;
   margin-top: 0.75rem;
   background-color: white;
 }
