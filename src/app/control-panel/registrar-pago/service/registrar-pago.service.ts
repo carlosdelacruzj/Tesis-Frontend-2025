@@ -49,6 +49,9 @@ export class RegistrarPagoService {
   getPedidosPagados(): Observable<PedidoLite[]> {
     return this.http.get<PedidoLite[]>(`${this.API}/pagos/pagados`);
   }
+  getPedidosCerrados(): Observable<PedidoLite[]> {
+    return this.http.get<PedidoLite[]>(`${this.API}/pagos/cerrados`);
+  }
 
   // === Resumen y vouchers del pedido ===
   getResumenPedido(id: number): Observable<ResumenPago> {

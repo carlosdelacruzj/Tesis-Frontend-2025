@@ -6,7 +6,7 @@ import { RegistrarPagoService, PedidoLite, ResumenPago, VoucherVM } from '../reg
 import { formatIsoDate, parseDateInput } from '../../shared/utils/date-utils';
 import { ComprobantesService } from '../comprobantes/service/comprobantes.service';
 
-type TabKey = 'pendientes' | 'parciales' | 'pagados';
+type TabKey = 'pendientes' | 'parciales' | 'pagados' | 'cerrados';
 
 interface PagoRow {
   id: number | null;
@@ -34,7 +34,8 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
   readonly tabs: { key: TabKey; label: string }[] = [
     { key: 'pendientes', label: 'Pendientes' },
     { key: 'parciales', label: 'Parciales' },
-    { key: 'pagados', label: 'Pagados' }
+    { key: 'pagados', label: 'Pagados' },
+    { key: 'cerrados', label: 'Cerrados' }
   ];
 
   selectedTab: TabKey = 'pendientes';
@@ -44,7 +45,8 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
   data: Record<TabKey, PagoRow[]> = {
     pendientes: [],
     parciales: [],
-    pagados: []
+    pagados: [],
+    cerrados: []
   };
   modal = {
     open: false,
@@ -112,7 +114,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
 
   isPagado(row: PagoRow | null | undefined): boolean {
     const key = (row?.estado || '').toLowerCase();
-    return ['pagado', 'pagados', 'pagado total', 'completo'].includes(key);
+    return ['pagado', 'pagados', 'pagado total', 'completo', 'cerrado', 'cerrados'].includes(key);
   }
 
   abrirGestionPago(row: PagoRow): void {
@@ -598,13 +600,21 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
       obs = this.pagoService.getPedidosPendientes();
     } else if (tab === 'parciales') {
       obs = this.pagoService.getPedidosParciales();
+    } else if (tab === 'cerrados') {
+      obs = this.pagoService.getPedidosCerrados();
     } else {
       obs = this.pagoService.getPedidosPagados();
     }
 
     obs.pipe(takeUntil(this.destroy$)).subscribe({
       next: (resp: PedidoLite[] | null) => {
-        const estadoLabel = tab === 'pendientes' ? 'Pendiente' : tab === 'parciales' ? 'Parcial' : 'Pagado';
+        const estadoLabel = tab === 'pendientes'
+          ? 'Pendiente'
+          : tab === 'parciales'
+            ? 'Parcial'
+            : tab === 'cerrados'
+              ? 'Cerrado'
+              : 'Pagado';
         this.data[tab] = this.mapPedidos(resp ?? [], estadoLabel);
         this.loading = false;
       },
