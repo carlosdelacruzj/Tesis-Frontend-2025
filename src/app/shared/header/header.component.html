@@ -25,25 +25,22 @@
         <li class="nav-item dropdown nav-user" [class.show]="dropdownOpen">
           <button
             type="button"
-            class="nav-link nav-user-img btn btn-link p-0"
+            class="nav-link nav-user__button"
             id="navbarDropdownMenuLink2"
             (click)="toggleDropdown()"
             [attr.aria-expanded]="dropdownOpen"
+            aria-haspopup="true"
           >
-            <!-- <img
-              src="assets/images/avatar-1.jpg"
-              alt="Usuario"
-              class="user-avatar-md rounded-circle"
-            /> -->
-          </button>
-
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            (click)="toggleDropdown()"
-            [attr.aria-expanded]="dropdownOpen"
-          >
-            Nombre del usuario
+            <span class="nav-user__avatar" aria-hidden="true">
+              {{ userInitials }}
+            </span>
+            <span class="nav-user__text">
+              <span class="nav-user__name">
+                <span class="nav-user__label">Hola, </span
+                >{{ displayName }}</span
+              >
+            </span>
+            <span class="nav-user__caret" aria-hidden="true"></span>
           </button>
 
           <div
@@ -57,7 +54,7 @@
               (click)="logout()"
             >
               <i class="fas fa-power-off"></i>
-              <span>Logout</span>
+              <span>Cerrar sesión</span>
             </button>
           </div>
         </li>

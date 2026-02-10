@@ -25,23 +25,59 @@ interface TipoDocumento {
 @Component({
   selector: 'app-gestionar-cotizaciones',
   templateUrl: './gestionar-cotizaciones.component.html',
-  styleUrls: ['./gestionar-cotizaciones.component.css']
+  styleUrls: ['./gestionar-cotizaciones.component.css'],
 })
 export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private static readonly NOMBRE_PATTERN = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,20}$';
   private static readonly APELLIDO_PATTERN = '^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ ]{2,30}$';
   private static readonly DOC_PATTERN = '^[0-9]{1}[0-9]{7}$';
   private static readonly CELULAR_PATTERN = '^[1-9]{1}[0-9]{6,8}$';
-  private static readonly CORREO_PATTERN = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
+  private static readonly CORREO_PATTERN =
+    '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
 
   columns: TableColumn<Cotizacion>[] = [
-    { key: "codigo", header: "Codigo", sortable: true, width: "120px", class: "text-center text-nowrap" },
-    { key: "cliente", header: "Cliente", sortable: true, width: "180px", class: "cliente-col text-center" },
-    { key: "evento", header: "Evento", sortable: true, width: "180px" },
-    { key: "fecha", header: "Fecha del evento", sortable: true, width: "180px" },
-    { key: "createdAt", header: "Fecha de creación", sortable: true, width: "160px" },
-    { key: "estado", header: "Estado", sortable: true, width: "140px", class: "text-center" },
-    { key: "acciones", header: "Acciones", sortable: false, filterable: false, width: "160px", class: "text-center" }
+    {
+      key: 'codigo',
+      header: 'Código',
+      sortable: true,
+      width: '120px',
+      class: 'text-center text-nowrap',
+    },
+    {
+      key: 'cliente',
+      header: 'Cliente',
+      sortable: true,
+      width: '180px',
+      class: 'cliente-col text-center',
+    },
+    { key: 'evento', header: 'Evento', sortable: true, width: '180px' },
+    {
+      key: 'fecha',
+      header: 'Fecha del evento',
+      sortable: true,
+      width: '180px',
+    },
+    {
+      key: 'createdAt',
+      header: 'Fecha de creación',
+      sortable: true,
+      width: '160px',
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      sortable: true,
+      width: '140px',
+      class: 'text-center',
+    },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      sortable: false,
+      filterable: false,
+      width: '160px',
+      class: 'text-center',
+    },
   ];
 
   rows: Cotizacion[] = [];
@@ -60,15 +96,19 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   registroClienteError: string | null = null;
   registroClienteFormModel = this.createRegistroClienteFormModel();
 
-  readonly registroNombrePattern = GestionarCotizacionesComponent.NOMBRE_PATTERN;
-  readonly registroApellidoPattern = GestionarCotizacionesComponent.APELLIDO_PATTERN;
+  readonly registroNombrePattern =
+    GestionarCotizacionesComponent.NOMBRE_PATTERN;
+  readonly registroApellidoPattern =
+    GestionarCotizacionesComponent.APELLIDO_PATTERN;
   registroDocPattern = GestionarCotizacionesComponent.DOC_PATTERN;
   registroDocMinLength = 8;
   registroDocMaxLength = 8;
   registroDocInputMode: 'text' | 'numeric' = 'numeric';
   registroDocPatternMessage = 'Solo numeros (8 digitos)';
-  readonly registroCelularPattern = GestionarCotizacionesComponent.CELULAR_PATTERN;
-  readonly registroCorreoPattern = GestionarCotizacionesComponent.CORREO_PATTERN;
+  readonly registroCelularPattern =
+    GestionarCotizacionesComponent.CELULAR_PATTERN;
+  readonly registroCorreoPattern =
+    GestionarCotizacionesComponent.CORREO_PATTERN;
   tiposDocumento: TipoDocumento[] = [];
   selectedTipoDocumento: TipoDocumento | null = null;
   isRucSelected = false;
@@ -92,7 +132,10 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.loadTiposDocumento();
   }
 
-  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   navigateToCreate(): void {
     this.router.navigate(['/home/gestionar-cotizaciones/registrar']);
@@ -102,14 +145,24 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.searchTerm = term ?? '';
   }
 
-  ver(row: Cotizacion): void { void row; }
+  ver(row: Cotizacion): void {
+    void row;
+  }
 
   editCotizacion(cotizacion: Cotizacion): void {
-    if (cotizacion.estado === 'Aceptada' || cotizacion.estado === 'Rechazada' || cotizacion.estado === 'Expirada') {
-      this.error = 'No puedes editar una Cotización que ya fue aceptada, rechazada o expirada.';
+    if (
+      cotizacion.estado === 'Aceptada' ||
+      cotizacion.estado === 'Rechazada' ||
+      cotizacion.estado === 'Expirada'
+    ) {
+      this.error =
+        'No puedes editar una Cotización que ya fue aceptada, rechazada o expirada.';
       return;
     }
-    this.router.navigate(['/home/gestionar-cotizaciones/editar', cotizacion.id]);
+    this.router.navigate([
+      '/home/gestionar-cotizaciones/editar',
+      cotizacion.id,
+    ]);
   }
 
   // === DESCARGAR PDF usando el SERVICE (NO HttpClient directo) ===
@@ -129,14 +182,14 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
       const payload = {
         company: {
-          logoBase64: logoDataUrl,    // data:image/png;base64,...
-          firmaBase64: firmaDataUrl,  // data:image/png;base64,...
+          logoBase64: logoDataUrl, // data:image/png;base64,...
+          firmaBase64: firmaDataUrl, // data:image/png;base64,...
         },
         videoEquipo: '35 mm y sistema 4K',
       };
 
       const blob = await firstValueFrom(
-        this.cotizacionService.downloadPdf(cotizacion.id, payload)
+        this.cotizacionService.downloadPdf(cotizacion.id, payload),
       );
 
       const fileUrl = window.URL.createObjectURL(blob);
@@ -147,16 +200,21 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       window.URL.revokeObjectURL(fileUrl);
     } catch (err) {
       console.error('[cotizacion] pdf', err);
-      this.error = 'No se pudo descargar el PDF. Revisa que /api/v1/cotizaciones/:id/pdf o el alias /api/cotizacion/:id/pdf respondan en el backend.';
+      this.error =
+        'No se pudo descargar el PDF. Revisa que /api/v1/cotizaciones/:id/pdf o el alias /api/cotizacion/:id/pdf respondan en el backend.';
     } finally {
       this.downloadingId = null;
     }
   }
 
-  openEstadoModal(cotizacion: Cotizacion, destino: 'Enviada' | 'Aceptada' | 'Rechazada'): void {
+  openEstadoModal(
+    cotizacion: Cotizacion,
+    destino: 'Enviada' | 'Aceptada' | 'Rechazada',
+  ): void {
     this.error = null;
     if (!cotizacion || !cotizacion.total || cotizacion.total <= 0) {
-      this.error = 'La Cotización debe tener un total mayor a cero para cambiar de estado.';
+      this.error =
+        'La Cotización debe tener un total mayor a cero para cambiar de estado.';
       return;
     }
 
@@ -173,15 +231,22 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
   confirmEstadoChange(): void {
     if (!this.estadoTarget || !this.estadoDestino) {
-      this.closeEstadoModal(); return;
+      this.closeEstadoModal();
+      return;
     }
 
     if (!this.estadoTarget.total || this.estadoTarget.total <= 0) {
-      this.error = 'La Cotización debe tener un total mayor a cero para cambiar de estado.';
-      this.closeEstadoModal(); return;
+      this.error =
+        'La Cotización debe tener un total mayor a cero para cambiar de estado.';
+      this.closeEstadoModal();
+      return;
     }
 
-    if (this.estadoDestino === 'Aceptada' && this.esLead(this.estadoTarget) && !this.leadConversionPending) {
+    if (
+      this.estadoDestino === 'Aceptada' &&
+      this.esLead(this.estadoTarget) &&
+      !this.leadConversionPending
+    ) {
       this.leadConversionPending = true;
       this.estadoModalOpen = false;
       this.openLeadRegistroModal(this.estadoTarget);
@@ -200,7 +265,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
         estadoTarget: this.estadoTarget,
         leadConversionTarget: this.leadConversionTarget,
         estadoDestinoActual: this.estadoDestino,
-        leadConversionDestino: this.leadConversionDestino
+        leadConversionDestino: this.leadConversionDestino,
       });
       return;
     }
@@ -216,26 +281,39 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
 
     this.leadConversionPending = false;
 
-    this.cotizacionService.updateEstado(id, destino, estadoActual)
+    this.cotizacionService
+      .updateEstado(id, destino, estadoActual)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (actualizada) => {
           this.error = null;
           if (actualizada) {
-            this.rows = this.rows.map(item =>
-              item.id === actualizada.id ? this.mergeCotizacion(item, actualizada) : item
+            this.rows = this.rows.map((item) =>
+              item.id === actualizada.id
+                ? this.mergeCotizacion(item, actualizada)
+                : item,
             );
             this.rows = [...this.rows];
             if (this.estadoTarget && this.estadoTarget.id === actualizada.id) {
-              this.estadoTarget = this.mergeCotizacion(this.estadoTarget, actualizada);
+              this.estadoTarget = this.mergeCotizacion(
+                this.estadoTarget,
+                actualizada,
+              );
             }
-            if (this.leadConversionTarget && this.leadConversionTarget.id === actualizada.id) {
-              this.leadConversionTarget = this.mergeCotizacion(this.leadConversionTarget, actualizada);
+            if (
+              this.leadConversionTarget &&
+              this.leadConversionTarget.id === actualizada.id
+            ) {
+              this.leadConversionTarget = this.mergeCotizacion(
+                this.leadConversionTarget,
+                actualizada,
+              );
             }
 
             if (destino === 'Aceptada') {
               // TODO: reemplazar el empleadoId fijo y enviar nombrePedido cuando tengamos esos datos.
-              this.cotizacionService.createPedidoDesdeCotizacion(actualizada.id, { empleadoId: 1 })
+              this.cotizacionService
+                .createPedidoDesdeCotizacion(actualizada.id, { empleadoId: 1 })
                 .pipe(takeUntil(this.destroy$))
                 .subscribe({
                   next: ({ pedidoId }) => {
@@ -248,19 +326,19 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                     Swal.fire({
                       icon: 'success',
                       title: 'Proceso completado',
-                      text: texto
+                      text: texto,
                     });
                     this.clienteCreadoEnAceptacion = false;
                   },
-                  error: err => {
+                  error: (err) => {
                     console.error('[cotizaciones] migrar a pedido falló', err);
                     Swal.fire({
                       icon: 'error',
                       title: 'No pudimos crear el pedido',
-                      text: err?.message ?? 'Intenta nuevamente más tarde.'
+                      text: err?.message ?? 'Intenta nuevamente más tarde.',
                     });
                     this.clienteCreadoEnAceptacion = false;
-                  }
+                  },
                 });
             } else {
               let title = 'Estado actualizado';
@@ -287,14 +365,17 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
           this.estadoDestino = '';
           this.leadConversionDestino = '';
 
-          this.cotizacionService.getCotizacion(id)
+          this.cotizacionService
+            .getCotizacion(id)
             .pipe(take(1), takeUntil(this.destroy$))
             .subscribe({
-              next: detalle => {
+              next: (detalle) => {},
+              error: (err) => {
+                console.error(
+                  '[cotizaciones] getCotizacion error al obtener detalle actualizado',
+                  err,
+                );
               },
-              error: err => {
-                console.error('[cotizaciones] getCotizacion error al obtener detalle actualizado', err);
-              }
             });
         },
         error: (err) => {
@@ -302,48 +383,61 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
           console.error('[cotizaciones] updateEstado payload fallido', {
             id,
             destino,
-            estadoActual
+            estadoActual,
           });
-          this.error = 'No pudimos actualizar el estado. Verifica e intenta nuevamente.';
+          this.error =
+            'No pudimos actualizar el estado. Verifica e intenta nuevamente.';
           this.closeEstadoModal();
           this.leadConversionDestino = '';
-        }
+        },
       });
   }
 
   get estadoModalMessage(): string {
     if (!this.estadoTarget) return '';
-    const nombre = this.estadoTarget.codigo ?? `Cotización #${this.estadoTarget.id}`;
+    const nombre =
+      this.estadoTarget.codigo ?? `Cotización #${this.estadoTarget.id}`;
     const estadoActual = this.estadoTarget.estado ?? 'Borrador';
     if (estadoActual === 'Borrador') return `Marcar ${nombre} como enviada.`;
     return `Selecciona el nuevo estado para ${nombre}. Estado actual: ${estadoActual}`;
   }
 
-  onSortChange(evt: { key: string; direction: 'asc' | 'desc' | '' }): void { void evt; }
-  onPageChange(evt: { page: number; pageSize: number }): void { void evt; }
+  onSortChange(evt: { key: string; direction: 'asc' | 'desc' | '' }): void {
+    void evt;
+  }
+  onPageChange(evt: { page: number; pageSize: number }): void {
+    void evt;
+  }
 
-  reload(): void { this.loadCotizaciones(); }
+  reload(): void {
+    this.loadCotizaciones();
+  }
 
   private loadCotizaciones(): void {
     this.loadingList = true;
     this.error = null;
 
-    this.cotizacionService.listCotizaciones()
+    this.cotizacionService
+      .listCotizaciones()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (cotizaciones) => {
-          this.rows = (cotizaciones ?? []).map(c => this.withClienteDisplay(c));
+          this.rows = (cotizaciones ?? []).map((c) =>
+            this.withClienteDisplay(c),
+          );
           this.loadingList = false;
         },
         error: (err) => {
           console.error('[cotizaciones] list', err);
           this.error = 'No pudimos cargar las cotizaciones.';
           this.loadingList = false;
-        }
+        },
       });
   }
 
-  private createRegistroClienteFormModel(initial?: Partial<RegistroClienteFormModel>): RegistroClienteFormModel {
+  private createRegistroClienteFormModel(
+    initial?: Partial<RegistroClienteFormModel>,
+  ): RegistroClienteFormModel {
     return {
       razonSocial: '',
       nombre: '',
@@ -352,7 +446,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       doc: '',
       celular: '',
       direccion: '',
-      ...initial
+      ...initial,
     };
   }
 
@@ -360,19 +454,25 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.leadConversionTarget = cotizacion;
     this.leadConversionDestino = this.estadoDestino;
     const contacto = cotizacion.contacto ?? null;
-    const nombreCompleto = (contacto?.nombre ?? cotizacion.cliente ?? '').toString().trim();
-    const partesNombre = nombreCompleto ? nombreCompleto.split(/\s+/).filter(Boolean) : [];
+    const nombreCompleto = (contacto?.nombre ?? cotizacion.cliente ?? '')
+      .toString()
+      .trim();
+    const partesNombre = nombreCompleto
+      ? nombreCompleto.split(/\s+/).filter(Boolean)
+      : [];
     const nombre = partesNombre.shift() ?? '';
     const apellido = partesNombre.join(' ');
 
-    const celularSanitizado = this.sanitizarCelular(contacto?.celular ?? cotizacion.contactoResumen ?? '');
+    const celularSanitizado = this.sanitizarCelular(
+      contacto?.celular ?? cotizacion.contactoResumen ?? '',
+    );
 
     this.onTipoDocumentoChange(null);
     this.registroClienteFormModel = this.createRegistroClienteFormModel({
       nombre,
       apellido,
       correo: contacto?.correo ?? '',
-      celular: celularSanitizado
+      celular: celularSanitizado,
     });
     this.registroClienteError = null;
     this.registroClienteLoading = false;
@@ -450,7 +550,8 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     const target = this.estadoTarget ?? this.leadConversionTarget;
     const contactoId = target.contacto?.id ?? null;
     if (contactoId == null) {
-      this.registroClienteError = 'No pudimos identificar el lead asociado a la Cotización.';
+      this.registroClienteError =
+        'No pudimos identificar el lead asociado a la Cotización.';
       this.leadConversionPending = false;
       return;
     }
@@ -463,30 +564,41 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       correo: form.value.correo,
       numDoc: form.value.doc,
       celular: form.value.celular,
-      direccion: form.value.direccion
+      direccion: form.value.direccion,
     };
 
     this.registroClienteLoading = true;
     this.registroClienteError = null;
 
-    this.cotizacionService.convertLeadToCliente(contactoId, payload)
+    this.cotizacionService
+      .convertLeadToCliente(contactoId, payload)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (resp) => {
-          const response = resp as { usuarioAccion?: unknown; clienteAccion?: unknown } | null;
+          const response = resp as {
+            usuarioAccion?: unknown;
+            clienteAccion?: unknown;
+          } | null;
           const usuarioAccion = response?.usuarioAccion;
           const clienteAccion = response?.clienteAccion;
           const acciones = [usuarioAccion, clienteAccion]
-            .map(valor => (valor ?? '').toString().trim().toUpperCase())
+            .map((valor) => (valor ?? '').toString().trim().toUpperCase())
             .filter(Boolean);
-          const conversionExitosa = !acciones.length
-            || acciones.every(accion => accion === 'CREADO' || accion === 'ACTUALIZADO');
+          const conversionExitosa =
+            !acciones.length ||
+            acciones.every(
+              (accion) => accion === 'CREADO' || accion === 'ACTUALIZADO',
+            );
 
           if (!conversionExitosa) {
-            console.warn('[cotizaciones] convertLeadToCliente con estados inesperados', acciones);
+            console.warn(
+              '[cotizaciones] convertLeadToCliente con estados inesperados',
+              acciones,
+            );
             this.registroClienteLoading = false;
             this.leadConversionPending = false;
-            this.registroClienteError = 'La respuesta del backend no confirma la conversión del lead.';
+            this.registroClienteError =
+              'La respuesta del backend no confirma la conversión del lead.';
             return;
           }
           this.clienteCreadoEnAceptacion = true;
@@ -498,10 +610,12 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
         error: (err) => {
           this.registroClienteLoading = false;
           this.clienteCreadoEnAceptacion = false;
-          const msg = err?.error?.message ?? 'No pudimos registrar al cliente. Intenta nuevamente.';
+          const msg =
+            err?.error?.message ??
+            'No pudimos registrar al cliente. Intenta nuevamente.';
           this.registroClienteError = msg;
           console.error('[cotizaciones] convertLeadToCliente error', err);
-        }
+        },
       });
   }
 
@@ -517,11 +631,12 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   }
 
   private loadTiposDocumento(): void {
-    this.http.get<TipoDocumento[]>(`${environment.baseUrl}/tipos-documento`)
+    this.http
+      .get<TipoDocumento[]>(`${environment.baseUrl}/tipos-documento`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (tipos) => {
-          const activos = (tipos ?? []).filter(tipo => tipo.activo === 1);
+          const activos = (tipos ?? []).filter((tipo) => tipo.activo === 1);
           this.tiposDocumento = activos;
           this.onTipoDocumentoChange(null);
         },
@@ -529,7 +644,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
           console.error('[cotizaciones] tipos-documento', err);
           this.tiposDocumento = [];
           this.onTipoDocumentoChange(null);
-        }
+        },
       });
   }
 
@@ -560,7 +675,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     const range = min === max ? `${min}` : `${min}-${max}`;
     const unit = isNumeric ? 'digitos' : 'caracteres';
     this.registroDocPatternMessage = `${label} (${range} ${unit})`;
-
   }
 
   private esLead(cotizacion: Cotizacion | null): boolean {
@@ -569,14 +683,17 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     return origen === 'LEAD';
   }
 
-  private mergeCotizacion(base: Cotizacion, actualizada: Cotizacion): Cotizacion {
+  private mergeCotizacion(
+    base: Cotizacion,
+    actualizada: Cotizacion,
+  ): Cotizacion {
     const contacto = actualizada.contacto ?? base.contacto;
     const contactoResumen = actualizada.contactoResumen ?? base.contactoResumen;
     return this.withClienteDisplay({
       ...base,
       ...actualizada,
       contacto,
-      contactoResumen
+      contactoResumen,
     });
   }
 
@@ -586,28 +703,37 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     return {
       ...cotizacion,
       cliente: label,
-      contactoResumen: subtitle || undefined
+      contactoResumen: subtitle || undefined,
     };
   }
 
-  private buildClienteDisplay(cotizacion: Cotizacion): { label: string; subtitle?: string } {
+  private buildClienteDisplay(cotizacion: Cotizacion): {
+    label: string;
+    subtitle?: string;
+  } {
     const contacto = cotizacion.contacto ?? {};
     const nombre = this.toOptionalString(contacto.nombre);
-    const apellido = this.toOptionalString((contacto as { apellido?: unknown }).apellido);
+    const apellido = this.toOptionalString(
+      (contacto as { apellido?: unknown }).apellido,
+    );
     const nombreCompleto = [nombre, apellido].filter(Boolean).join(' ').trim();
     const clienteBase = this.toOptionalString(cotizacion.cliente);
     const contactoResumen = this.toOptionalString(cotizacion.contactoResumen);
     const celular = this.toOptionalString(contacto.celular);
 
-    const etiqueta = nombreCompleto
-      || nombre
-      || clienteBase
-      || contactoResumen
-      || `Cliente #${contacto.id ?? cotizacion.id}`;
+    const etiqueta =
+      nombreCompleto ||
+      nombre ||
+      clienteBase ||
+      contactoResumen ||
+      `Cliente #${contacto.id ?? cotizacion.id}`;
 
-    const subtitulo = contactoResumen
-      || celular
-      || (nombre && clienteBase && nombre !== clienteBase ? clienteBase : undefined);
+    const subtitulo =
+      contactoResumen ||
+      celular ||
+      (nombre && clienteBase && nombre !== clienteBase
+        ? clienteBase
+        : undefined);
 
     return { label: etiqueta, subtitle: subtitulo };
   }
