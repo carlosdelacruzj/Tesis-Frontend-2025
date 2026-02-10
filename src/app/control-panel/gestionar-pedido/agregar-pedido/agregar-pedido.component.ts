@@ -1055,7 +1055,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
       { key: 'precio', header: 'Precio', sortable: false, class: 'text-end text-nowrap', width: '140px' }
     ];
     if (this.isMultipleDias()) {
-      base.push({ key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' });
+      base.push({ key: 'cantidad', header: 'Dias', sortable: false, class: 'text-center', width: '90px' });
     }
     base.push(
       { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-end text-nowrap', width: '140px' },

@@ -245,13 +245,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   addProgramacionItem(fechaForzada?: string): void {
-    const siguienteIndice = this.programacion.length + 1;
-    const nombreAuto = `Locación ${siguienteIndice}`;
     const fechaConfig = this.getFechaProgramacionNuevaFila(fechaForzada);
     if (!fechaConfig) {
       this.showAlert('warning', 'Fecha requerida', 'Primero define una fecha de trabajo para agregar locaciones.');
       return;
     }
+
     const actuales = this.getProgramacionIndicesPorFecha(fechaConfig).length;
     if (actuales >= this.maxLocacionesPorDia) {
       this.showAlert(
@@ -261,14 +260,29 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       );
       return;
     }
-    const grupo = this.createProgramacionItem({ nombre: nombreAuto, fecha: fechaConfig, esPrincipal: siguienteIndice <= this.programacionMinimaRecomendada });
+
+    // ✅ el principal debe depender de cuántas locaciones ya hay en ESA fecha (no del length global)
+    const ordenEnDia = actuales + 1;
+    const esPrincipal = ordenEnDia <= this.programacionMinimaRecomendada;
+
+    // ✅ NO autollenar nombre, para que se vea placeholder
+    const grupo = this.createProgramacionItem({
+      nombre: '',                 // <-- clave
+      fecha: fechaConfig,
+      esPrincipal
+    });
+
     this.programacion.push(grupo);
-    this.setProgramacionExpandida(grupo, this.programacion.length === 1);
+
+    // si quieres que se expanda el recién agregado:
+    this.setProgramacionExpandida(grupo, true);
+
     this.ensureProgramacionPrincipales();
     this.syncProgramacionFechas(fechaConfig);
     this.programacion.markAsDirty();
     this.programacion.updateValueAndValidity();
   }
+
 
   duplicarProgramacionItem(index: number): void {
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
@@ -2905,7 +2919,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     ];
 
     if (this.isMultipleDias()) {
-      base.splice(1, 0, { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' });
+      base.splice(1, 0, { key: 'cantidad', header: 'Dias', sortable: false, class: 'text-center', width: '90px' });
     }
 
     if (this.shouldShowPrecioOriginal()) {

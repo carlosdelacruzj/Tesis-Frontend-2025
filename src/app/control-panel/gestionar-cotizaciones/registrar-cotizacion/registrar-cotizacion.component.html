@@ -508,27 +508,27 @@
                       </button>
                     </div>
                   </div>
-
                   @if (isProgramacionExpandida(index)) {
                     <div class="row g-3 mt-2">
                       <div class="col-md-6">
                         <div class="form-group">
-                          <label
-                            class="col-form-label"
-                            [attr.for]="'programacionNombre' + index"
-                            >Nombre de la locación</label
-                          >
+                          <label class="col-form-label" [attr.for]="'programacionNombre' + index">
+                            Nombre de la locación <span class="text-muted">(Locación {{ index + 1 }})</span>
+                          </label>
                           <input
                             [attr.id]="'programacionNombre' + index"
                             type="text"
                             class="form-control"
                             formControlName="nombre"
                             placeholder="Ej. Recepción en casona"
+                            maxlength="50"
+                            (blur)="grupo.get('nombre')?.setValue((grupo.get('nombre')?.value || '').trim())"
                             [class.is-invalid]="
                               grupo.get('nombre')?.invalid &&
                               grupo.get('nombre')?.touched
                             "
                           />
+                          
                           @if (
                             grupo.get("nombre")?.hasError("required") &&
                             grupo.get("nombre")?.touched
@@ -552,7 +552,8 @@
                             class="form-control"
                             formControlName="direccion"
                             placeholder="Ej. Av. La Marina 1234"
-                            [class.is-invalid]="
+                             maxlength="50"
+                             [class.is-invalid]="
                               grupo.get('direccion')?.invalid &&
                               grupo.get('direccion')?.touched
                             "

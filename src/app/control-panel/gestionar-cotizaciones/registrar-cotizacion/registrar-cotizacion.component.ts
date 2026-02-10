@@ -330,6 +330,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.showAlert('warning', 'Fecha requerida', 'Primero define una fecha de trabajo para agregar locaciones.');
       return;
     }
+
     const actuales = this.getProgramacionIndicesPorFecha(fechaConfig).length;
     if (actuales >= this.maxLocacionesPorDia) {
       this.showAlert(
@@ -339,16 +340,20 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       );
       return;
     }
-    const siguienteIndice = this.programacion.length + 1;
-    const nombreAuto = `Locación ${siguienteIndice}`;
+
+    // ✅ NO autollenar el nombre
     const nuevoGrupo = this.createProgramacionItem({
-      nombre: nombreAuto,
+      nombre: '',          // <-- vacío para que se vea el placeholder
       fecha: fechaConfig
     });
+
     this.setProgramacionExpandida(nuevoGrupo, this.programacion.length === 0);
     this.programacion.push(nuevoGrupo);
-    this.ensureProgramacionPrincipales();    this.syncProgramacionFechas();
+
+    this.ensureProgramacionPrincipales();
+    this.syncProgramacionFechas();
   }
+
 
   duplicarProgramacionItem(index: number): void {
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
@@ -2498,7 +2503,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     ];
 
     if (this.isMultipleDias()) {
-      base.splice(1, 0, { key: 'cantidad', header: 'Cant.', sortable: false, class: 'text-center', width: '90px' });
+      base.splice(1, 0, { key: 'cantidad', header: 'Dias', sortable: false, class: 'text-center', width: '90px' });
     }
 
     if (this.shouldShowPrecioOriginal()) {
