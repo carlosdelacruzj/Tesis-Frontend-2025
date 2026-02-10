@@ -4,269 +4,272 @@
       <div>
         <p class="dash-topbar__eyebrow">Panel administrativo</p>
         <h1>Dashboard operativo</h1>
-        <p>Gestion interna de operaciones, agenda y cobros del dia.</p>
+        <p>Gestión interna de operaciones, agenda y cobros del día.</p>
       </div>
 
       <div class="dash-topbar__actions">
-        <button type="button" class="btn btn-primary btn-sm" (click)="refreshNow()" [disabled]="isRefreshing">
-          {{ isRefreshing ? 'Actualizando...' : 'Actualizar ahora' }}
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          (click)="refreshNow()"
+          [disabled]="isRefreshing"
+        >
+          {{ isRefreshing ? "Actualizando..." : "Actualizar ahora" }}
         </button>
 
-        <p class="dash-topbar__stamp">Ultima actualizacion: {{ formatDateTime(dashboardHome?.generatedAt || null) }}</p>
+        <p class="dash-topbar__stamp">
+          Última actualización:
+          {{ formatDateTime(dashboardHome?.generatedAt || null) }}
+        </p>
       </div>
     </header>
 
     @if (errorMessage) {
       <section class="error-banner">
         <span>{{ errorMessage }}</span>
-        <button type="button" class="btn btn-outline-danger btn-sm" (click)="onRetry()">Reintentar</button>
+        <button
+          type="button"
+          class="btn btn-outline-danger btn-sm"
+          (click)="onRetry()"
+        >
+          Reintentar
+        </button>
       </section>
     }
 
-    <section class="content-grid">
-      <div class="left-column">
-        <section class="card shell mini-kpis">
-          <button type="button" class="mini-kpi" (click)="goToProyectos()">
-            <p>Servicios del dia</p>
-            <strong>{{ tarjetasHoy.serviciosProgramadosHoy }}</strong>
-            <span>Hoy</span>
-          </button>
-          <button type="button" class="mini-kpi" (click)="goToPedidos()">
-            <p>Eventos del dia</p>
-            <strong>{{ tarjetasHoy.eventosHoy }}</strong>
-            <span>Hoy</span>
-          </button>
-          <button type="button" class="mini-kpi" (click)="goToProyectos()">
-            <p>En curso</p>
-            <strong>{{ tarjetasHoy.proyectosEnCursoHoy }}</strong>
-            <span>Hoy</span>
-          </button>
-          <button type="button" class="mini-kpi" (click)="goToProyectos()">
-            <p>Pendientes inicio</p>
-            <strong>{{ tarjetasHoy.proyectosPendientesInicioHoy }}</strong>
-            <span>Hoy</span>
-          </button>
-        </section>
-
-        <section class="card shell section-block">
-          <div class="section-head">
-            <div>
-              <h2>Agenda de hoy</h2>
-              <p>Items accionables para el equipo operativo.</p>
-            </div>
-            <button type="button" class="btn btn-outline-primary btn-sm" (click)="goToProyectos()">Ver proyectos</button>
-          </div>
-
-          @if (isInitialLoading) {
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-          } @else {
-            <div class="table-wrap">
-              <table class="table table-sm table-clean">
-                <thead>
-                  <tr>
-                    <th>Hora</th>
-                    <th>Proyecto</th>
-                    <th>Pedido</th>
-                    <th>Estado</th>
-                    <th>Pago</th>
-                    <th>Riesgo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (item of agendaHoyItems; track item.diaId) {
-                    <tr>
-                      <td>{{ formatHora(item.horaInicio) }}</td>
-                      <td>
-                        <button type="button" class="link-inline" (click)="goToProyecto(item.proyectoId, item.diaId)">
-                          {{ item.proyecto }}
-                        </button>
-                      </td>
-                      <td>
-                        <button type="button" class="link-inline" (click)="goToPedido(item.pedidoId)">
-                          {{ item.pedido }}
-                        </button>
-                      </td>
-                      <td>{{ item.estadoDia }} / {{ item.estadoProyecto }}</td>
-                      <td>{{ item.estadoPago || '-' }}</td>
-                      <td>
-                        <span class="status-chip" [ngClass]="getRiesgoClass(item.riesgoCount)">
-                          {{ item.riesgoCount }} riesgo(s)
-                        </span>
-                      </td>
-                    </tr>
-                  } @empty {
-                    <tr>
-                      <td colspan="6" class="empty-cell">Sin agenda registrada para hoy.</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </section>
-      </div>
-
-      <aside class="right-column">
-        <section class="card shell day-panel">
-          <div class="section-head section-head--tight">
-            <div>
-              <h2>Operacion de hoy</h2>
-              <p>{{ formatFechaCorta(dashboardHome?.fecha || null) }}</p>
-            </div>
-            <span class="range-pill">{{ formatFechaCorta(todayYmd) }}</span>
-          </div>
-
-          <div class="day-stats">
-            <article>
-              <p>Staff usado</p>
-              <strong>{{ capacidadHoySegura.staff.usado }}</strong>
-              <span class="status-chip" [ngClass]="getSaturacionClass(capacidadHoySegura.staff.saturacionPct ?? 0)">
-                {{ capacidadHoySegura.staff.saturacionPct ?? 0 | number:'1.0-1' }}%
-              </span>
-            </article>
-            <article>
-              <p>Equipo usado</p>
-              <strong>{{ capacidadHoySegura.equipo.usado }}</strong>
-              <span class="status-chip" [ngClass]="getSaturacionClass(capacidadHoySegura.equipo.saturacionPct ?? 0)">
-                {{ capacidadHoySegura.equipo.saturacionPct ?? 0 | number:'1.0-1' }}%
-              </span>
-            </article>
-            <article>
-              <p>Por devolver</p>
-              <strong>{{ tarjetasHoy.equiposPorDevolverHoy }}</strong>
-              <span>Equipos</span>
-            </article>
-            <article>
-              <p>Pagos con saldo</p>
-              <strong>{{ tarjetasHoy.pagosConSaldoHoy }}</strong>
-              <span>Pedidos</span>
-            </article>
-            <article>
-              <p>Staff ocupado</p>
-              <strong>{{ ocupacionHoyResumen.personasOcupadas }}</strong>
-              <span>{{ ocupacionHoyResumen.porcentajeStaffOcupado | number:'1.0-1' }}%</span>
-            </article>
-            <article>
-              <p>Equipo ocupado</p>
-              <strong>{{ ocupacionHoyResumen.equiposOcupados }}</strong>
-              <span>{{ ocupacionHoyResumen.porcentajeEquipoOcupado | number:'1.0-1' }}%</span>
-            </article>
-          </div>
-        </section>
-      </aside>
-    </section>
-
-    <section class="card shell section-block section-block--full">
-      <div class="section-head">
-        <div>
-          <h2>Cobros del dia</h2>
-          <p>Seguimiento de estado de pago para pedidos activos.</p>
-        </div>
-        <button type="button" class="btn btn-outline-primary btn-sm" (click)="goToPagos()">Ver pagos</button>
-      </div>
-
-      <div class="payment-grid">
-        <article>
-          <p>Pendiente</p>
-          <strong>{{ dashboardHome?.resumenHoy?.cobrosHoy?.pedidosPendientePago ?? 0 }}</strong>
-        </article>
-        <article>
-          <p>Parcial</p>
-          <strong>{{ dashboardHome?.resumenHoy?.cobrosHoy?.pedidosParcialPago ?? 0 }}</strong>
-        </article>
-        <article>
-          <p>Pagado</p>
-          <strong>{{ dashboardHome?.resumenHoy?.cobrosHoy?.pedidosPagado ?? 0 }}</strong>
-        </article>
-        <article>
-          <p>Con saldo</p>
-          <strong>{{ dashboardHome?.resumenHoy?.cobrosHoy?.pedidosConSaldo ?? 0 }}</strong>
-        </article>
-      </div>
-    </section>
-
-    <section class="bottom-grid">
-      <article class="card shell section-block">
+    <section class="card-content">
+      <section class="card shell section-block section-block--full">
         <div class="section-head">
           <div>
-            <h2>Cola de pendientes de hoy</h2>
-            <p>Prioridad operativa para resolver bloqueos del dia.</p>
-          </div>
-          <button type="button" class="btn btn-outline-primary btn-sm" (click)="goToProyectos()">Ver todos</button>
-        </div>
-
-        <div class="pending-list">
-          @for (item of colaPendientesHoy; track $index) {
-            <div class="pending-item">
-              <div>
-                <p class="pending-item__title">{{ item.tipo }}</p>
-                <p class="pending-item__msg">{{ item.mensaje }}</p>
-              </div>
-              <div class="pending-item__actions">
-                <span class="status-chip" [ngClass]="getPrioridadClass(item.prioridad)">{{ item.prioridad }}</span>
-                @if (item.proyectoId) {
-                  <button type="button" class="btn btn-sm btn-light" (click)="goToProyecto(item.proyectoId, item.diaId)">Abrir</button>
-                }
-              </div>
-            </div>
-          } @empty {
-            <p class="empty-cell">Sin pendientes criticos hoy.</p>
-          }
-        </div>
-      </article>
-
-      <article class="card shell section-block">
-        <div class="section-head">
-          <div>
-            <h2>Resumen de hoy</h2>
+            <h2>Resumen del día</h2>
             <p>Estados y volumen operativo del día actual.</p>
           </div>
-          <button type="button" class="btn btn-outline-primary btn-sm" (click)="goToProyectos()">Ver proyectos</button>
         </div>
 
-        <div class="funnel-mini-grid">
-          <div>
-            <p>Servicios</p>
-            <strong>{{ tarjetasHoy.serviciosProgramadosHoy }}</strong>
-          </div>
-          <div>
+        <div class="kpi-grid">
+          <article class="kpi-card__icon--secondary">
+            <i class="fa-solid fa-folder-open"></i>
             <p>Pedidos</p>
             <strong>{{ totalPedidosHoy }}</strong>
-          </div>
-          <div>
+          </article>
+          <article class="kpi-card__icon--success">
+            <i class="fa-solid fa-diagram-project"></i>
+
             <p>Proyectos</p>
-            <strong>{{ totalProyectosHoy }}</strong>
+            <strong>{{ totalProyectosHoy ?? 0 }}</strong>
+          </article>
+          <article class="kpi-card__icon--tertiary">
+            <i class="fa-solid fa-photo-film"></i>
+            <p>Servicios programados</p>
+            <strong>{{ tarjetasHoy.serviciosProgramadosHoy }}</strong>
+          </article>
+          <article class="kpi-card__icon--warning">
+            <i class="fa-regular fa-camera"></i>
+            <p>En curso</p>
+            <strong>{{ tarjetasHoy.proyectosEnCursoHoy }}</strong>
+          </article>
+        </div>
+      </section>
+      <section class="card shell section-block">
+        <div class="section-head">
+          <div>
+            <h2>Agenda de hoy</h2>
+            <p>Items accionables para el equipo operativo.</p>
           </div>
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            (click)="goToProyectos()"
+          >
+            Ver proyectos
+          </button>
         </div>
 
-        <div class="state-list-grid">
-          <div>
-            <h4>Días ({{ getEstadoListaTotal(estadosDiaHoy) }})</h4>
-            @for (item of estadosDiaHoy; track item.id) {
-              <p>{{ item.nombre }}: <strong>{{ item.total }}</strong></p>
+        @if (isInitialLoading) {
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line"></div>
+        } @else {
+          <div class="table-wrap">
+            <table class="table table-sm table-clean">
+              <thead>
+                <tr>
+                  <th>Hora</th>
+                  <th>Proyecto</th>
+                  <th>Pedido</th>
+                  <th>Estado</th>
+                  <th>Pago</th>
+                  <th>Riesgo</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of agendaHoyItems; track item.diaId) {
+                  <tr>
+                    <td>{{ formatHora(item.horaInicio) }}</td>
+                    <td>
+                      <button
+                        type="button"
+                        class="link-inline"
+                        (click)="goToProyecto(item.proyectoId, item.diaId)"
+                      >
+                        {{ item.proyecto }}
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        class="link-inline"
+                        (click)="goToPedido(item.pedidoId)"
+                      >
+                        {{ item.pedido }}
+                      </button>
+                    </td>
+                    <td>{{ item.estadoDia }} / {{ item.estadoProyecto }}</td>
+                    <td>{{ item.estadoPago || "-" }}</td>
+                    <td>
+                      <span
+                        class="status-chip"
+                        [ngClass]="getRiesgoClass(item.riesgoCount)"
+                      >
+                        {{ item.riesgoCount }} riesgo(s)
+                      </span>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="empty-cell">
+                      Sin agenda registrada para hoy.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+      <section class="bottom-grid">
+        <article class="card shell section-block m-0">
+          <div class="section-head">
+            <div>
+              <h2>Cola de pendientes de hoy</h2>
+              <p>Prioridad operativa para resolver bloqueos del día.</p>
+            </div>
+            <button
+              type="button"
+              class="btn btn-primary btn-sm"
+              (click)="goToProyectos()"
+            >
+              Ver todos
+            </button>
+          </div>
+
+          <div class="pending-list">
+            @for (item of colaPendientesHoy; track $index) {
+              <div class="pending-item">
+                <div>
+                  <p class="pending-item__title">{{ item.tipo }}</p>
+                  <p class="pending-item__msg">{{ item.mensaje }}</p>
+                </div>
+                <div class="pending-item__actions">
+                  <span
+                    class="status-chip"
+                    [ngClass]="getPrioridadClass(item.prioridad)"
+                    >{{ item.prioridad }}</span
+                  >
+                  @if (item.proyectoId) {
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-light"
+                      (click)="goToProyecto(item.proyectoId, item.diaId)"
+                    >
+                      Abrir
+                    </button>
+                  }
+                </div>
+              </div>
             } @empty {
-              <p class="empty-cell">Sin datos</p>
+              <p class="empty-cell">Sin pendientes críticos hoy.</p>
             }
           </div>
-          <div>
-            <h4>Pedidos ({{ getEstadoListaTotal(estadosPedidoHoy) }})</h4>
-            @for (item of estadosPedidoHoy; track item.id) {
-              <p>{{ item.nombre }}: <strong>{{ item.total }}</strong></p>
-            } @empty {
-              <p class="empty-cell">Sin datos</p>
-            }
-          </div>
-          <div>
-            <h4>Proyectos ({{ getEstadoListaTotal(estadosProyectoHoy) }})</h4>
-            @for (item of estadosProyectoHoy; track item.id) {
-              <p>{{ item.nombre }}: <strong>{{ item.total }}</strong></p>
-            } @empty {
-              <p class="empty-cell">Sin datos</p>
-            }
-          </div>
-        </div>
-      </article>
+        </article>
+
+        <article class="card shell day-panel m-0">
+          <section>
+            <div class="section-head section-head--tight">
+              <div>
+                <h2>Operación de hoy</h2>
+              </div>
+              <span class="range-pill">{{ formatFechaCorta(todayYmd) }}</span>
+            </div>
+
+            <div class="day-stats">
+              <article>
+                <p>Staff usado</p>
+                <strong>{{ capacidadHoySegura.staff.usado }}</strong>
+                <span
+                  class="status-chip"
+                  [ngClass]="
+                    getSaturacionClass(
+                      capacidadHoySegura.staff.saturacionPct ?? 0
+                    )
+                  "
+                >
+                  {{
+                    capacidadHoySegura.staff.saturacionPct ?? 0
+                      | number: "1.0-1"
+                  }}%
+                </span>
+              </article>
+              <article>
+                <p>Equipo usado</p>
+                <strong>{{ capacidadHoySegura.equipo.usado }}</strong>
+                <span
+                  class="status-chip"
+                  [ngClass]="
+                    getSaturacionClass(
+                      capacidadHoySegura.equipo.saturacionPct ?? 0
+                    )
+                  "
+                >
+                  {{
+                    capacidadHoySegura.equipo.saturacionPct ?? 0
+                      | number: "1.0-1"
+                  }}%
+                </span>
+              </article>
+              <article>
+                <p>Por devolver</p>
+                <strong>{{ tarjetasHoy.equiposPorDevolverHoy }}</strong>
+                <span>Equipos</span>
+              </article>
+              <article>
+                <p>Pagos con saldo</p>
+                <strong>{{ tarjetasHoy.pagosConSaldoHoy }}</strong>
+                <span>Pedidos</span>
+              </article>
+              <article>
+                <p>Staff ocupado</p>
+                <strong>{{ ocupacionHoyResumen.personasOcupadas }}</strong>
+                <span
+                  >{{
+                    ocupacionHoyResumen.porcentajeStaffOcupado
+                      | number: "1.0-1"
+                  }}%</span
+                >
+              </article>
+              <article>
+                <p>Equipo ocupado</p>
+                <strong>{{ ocupacionHoyResumen.equiposOcupados }}</strong>
+                <span
+                  >{{
+                    ocupacionHoyResumen.porcentajeEquipoOcupado
+                      | number: "1.0-1"
+                  }}%</span
+                >
+              </article>
+            </div>
+          </section>
+        </article>
+      </section>
     </section>
   </div>
 </div>

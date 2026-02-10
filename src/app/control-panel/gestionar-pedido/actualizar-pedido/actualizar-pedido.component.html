@@ -1,5 +1,9 @@
 ﻿<div class="dashboard-content" [class.is-saving]="saving">
-  <app-list-toolbar [title]="'Actualizar pedido'" [showSearch]="false" [showCreateButton]="false">
+  <app-list-toolbar
+    [title]="'Actualizar pedido'"
+    [showSearch]="false"
+    [showCreateButton]="false"
+  >
   </app-list-toolbar>
 
   <form class="cotizacion-form" #EmpleadoForm="ngForm">
@@ -11,14 +15,30 @@
           </mat-card-header>
           <mat-card-content>
             <div class="form-group">
-              <label class="col-form-label" for="clienteNombreCompleto">Nombre completo</label>
-              <input id="clienteNombreCompleto" type="text" class="form-control"
-                [value]="clienteNombreCompleto" placeholder="Nombre y apellidos" disabled>
+              <label class="col-form-label" for="clienteNombreCompleto"
+                >Nombre completo</label
+              >
+              <input
+                id="clienteNombreCompleto"
+                type="text"
+                class="form-control"
+                [value]="clienteNombreCompleto"
+                placeholder="Nombre y apellidos"
+                disabled
+              />
             </div>
             <div class="form-group">
-              <label class="col-form-label" for="clienteCelular">WhatsApp / contacto</label>
-              <input id="clienteCelular" type="text" class="form-control" [value]="clienteCelular"
-                placeholder="Ej. 999 999 999" disabled>
+              <label class="col-form-label" for="clienteCelular"
+                >WhatsApp / contacto</label
+              >
+              <input
+                id="clienteCelular"
+                type="text"
+                class="form-control"
+                [value]="clienteCelular"
+                placeholder="Ej. 999 999 999"
+                disabled
+              />
             </div>
           </mat-card-content>
         </mat-card>
@@ -33,113 +53,183 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <div class="form-group">
-                  <label class="col-form-label" for="pedidoNombre">Pedido</label>
-                  <input id="pedidoNombre" type="text" class="form-control" name="NombrePedido"
-                    [(ngModel)]="visualizarService.selectAgregarPedido.NombrePedido"
-                    #pedidoNombre="ngModel" required
-                    [class.is-invalid]="pedidoNombre.invalid && pedidoNombre.touched">
+                  <label class="col-form-label" for="pedidoNombre"
+                    >Pedido</label
+                  >
+                  <input
+                    id="pedidoNombre"
+                    type="text"
+                    class="form-control"
+                    name="NombrePedido"
+                    [(ngModel)]="
+                      visualizarService.selectAgregarPedido.NombrePedido
+                    "
+                    #pedidoNombre="ngModel"
+                    required
+                    [class.is-invalid]="
+                      pedidoNombre.invalid && pedidoNombre.touched
+                    "
+                  />
                   @if (pedidoNombre.invalid && pedidoNombre.touched) {
-                  <small class="text-danger">
-                    Ingresa el nombre del pedido.
-                  </small>
+                    <small class="text-danger">
+                      Ingresa el nombre del pedido.
+                    </small>
                   }
                 </div>
               </div>
               <div class="col-md-4">
                 <div class="form-group">
-                  <label class="col-form-label" for="departamentoPedido">Departamento</label>
-                  <select id="departamentoPedido" class="form-control" name="departamentoPedido"
-                    [(ngModel)]="visualizarService.selectAgregarPedido.departamento"
-                    (ngModelChange)="onDepartamentoChange($event)" #departamentoPedido="ngModel" required
-                    [class.is-invalid]="departamentoPedido.invalid && departamentoPedido.touched">
+                  <label class="col-form-label" for="departamentoPedido"
+                    >Departamento</label
+                  >
+                  <select
+                    id="departamentoPedido"
+                    class="form-control"
+                    name="departamentoPedido"
+                    [(ngModel)]="
+                      visualizarService.selectAgregarPedido.departamento
+                    "
+                    (ngModelChange)="onDepartamentoChange($event)"
+                    #departamentoPedido="ngModel"
+                    required
+                    [class.is-invalid]="
+                      departamentoPedido.invalid && departamentoPedido.touched
+                    "
+                  >
                     <option value="">Selecciona un departamento</option>
                     @for (dep of departamentos; track dep) {
-                    <option [value]="dep">{{ dep }}</option>
+                      <option [value]="dep">{{ dep }}</option>
                     }
                   </select>
-                  @if (departamentoPedido.invalid && departamentoPedido.touched) {
-                  <small class="text-danger">
-                    Selecciona el departamento del evento.
-                  </small>
+                  @if (
+                    departamentoPedido.invalid && departamentoPedido.touched
+                  ) {
+                    <small class="text-danger">
+                      Selecciona el departamento del evento.
+                    </small>
                   }
                 </div>
               </div>
               <div class="col-md-4">
                 <div class="form-group">
-                  <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
-                  <select id="eventoSelect" class="form-control"
+                  <label class="col-form-label" for="eventoSelect"
+                    >Tipo de evento</label
+                  >
+                  <select
+                    id="eventoSelect"
+                    class="form-control"
                     [value]="(eventoSeleccionado ?? '').toString()"
-                    (change)="onEventoDropdownChange($event)" (blur)="eventoSelectTouched = true"
+                    (change)="onEventoDropdownChange($event)"
+                    (blur)="eventoSelectTouched = true"
                     [disabled]="!evento.length"
-                    [ngClass]="{'is-invalid': eventoSelectTouched && !eventoSeleccionado}">
-                    <option value="" disabled>Selecciona un tipo de evento</option>
-                    @for (e of evento; track e.id !== null && e.id !== undefined ? e.id : $index) {
-                    <option [value]="(e.id ?? '').toString()">
-                      {{ e.nombre }}
+                    [ngClass]="{
+                      'is-invalid': eventoSelectTouched && !eventoSeleccionado,
+                    }"
+                  >
+                    <option value="" disabled>
+                      Selecciona un tipo de evento
                     </option>
+                    @for (
+                      e of evento;
+                      track e.id !== null && e.id !== undefined ? e.id : $index
+                    ) {
+                      <option [value]="(e.id ?? '').toString()">
+                        {{ e.nombre }}
+                      </option>
                     }
                   </select>
                   @if (eventoSelectTouched && !eventoSeleccionado) {
-                  <small class="text-danger">
-                    Selecciona un tipo de evento.
-                  </small>
+                    <small class="text-danger">
+                      Selecciona un tipo de evento.
+                    </small>
                   }
                 </div>
               </div>
-
             </div>
 
             <div class="row g-3 mt-1">
               <div class="col-md-6">
                 <div class="form-group">
-                  <label class="col-form-label" for="diasTrabajo">Cantidad de dias</label>
-                  <select id="diasTrabajo" class="form-control" name="diasTrabajo"
+                  <label class="col-form-label" for="diasTrabajo"
+                    >Cantidad de dias</label
+                  >
+                  <select
+                    id="diasTrabajo"
+                    class="form-control"
+                    name="diasTrabajo"
                     [(ngModel)]="visualizarService.selectAgregarPedido.dias"
-                    (ngModelChange)="onDiasChange($event)" #diasTrabajo="ngModel" required
-                    [class.is-invalid]="diasTrabajo.invalid && diasTrabajo.touched">
+                    (ngModelChange)="onDiasChange($event)"
+                    #diasTrabajo="ngModel"
+                    required
+                    [class.is-invalid]="
+                      diasTrabajo.invalid && diasTrabajo.touched
+                    "
+                  >
                     <option [ngValue]="null" disabled>Selecciona dias</option>
-                    @for (diaOption of [1,2,3,4,5,6,7]; track diaOption) {
-                    <option [ngValue]="diaOption">{{ diaOption }}</option>
+                    @for (diaOption of [1, 2, 3, 4, 5, 6, 7]; track diaOption) {
+                      <option [ngValue]="diaOption">{{ diaOption }}</option>
                     }
                   </select>
-                  @if (diasTrabajo.hasError('required') && diasTrabajo.touched) {
-                  <small class="text-danger">
-                    Selecciona la cantidad de dias.
-                  </small>
+                  @if (
+                    diasTrabajo.hasError("required") && diasTrabajo.touched
+                  ) {
+                    <small class="text-danger">
+                      Selecciona la cantidad de dias.
+                    </small>
                   }
                 </div>
               </div>
 
               <div class="col-md-6">
                 <div class="form-group">
-                  <label class="col-form-label" for="horasEstimadas">Horas estimadas por dia</label>
-                  <input id="horasEstimadas" type="number" class="form-control" name="horasEstimadas"
-                    [(ngModel)]="visualizarService.selectAgregarPedido.horasEstimadas"
-                    min="1" step="1" inputmode="numeric" pattern="^[0-9]+$"
-                    #horasEstimadas="ngModel" required
-                    [class.is-invalid]="horasEstimadas.invalid && horasEstimadas.touched">
-                  @if (horasEstimadas.hasError('required') && horasEstimadas.touched) {
-                  <small class="text-danger">
-                    Ingresa las horas estimadas por dia.
-                  </small>
+                  <label class="col-form-label" for="horasEstimadas"
+                    >Horas estimadas por dia</label
+                  >
+                  <input
+                    id="horasEstimadas"
+                    type="number"
+                    class="form-control"
+                    name="horasEstimadas"
+                    [(ngModel)]="
+                      visualizarService.selectAgregarPedido.horasEstimadas
+                    "
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    pattern="^[0-9]+$"
+                    #horasEstimadas="ngModel"
+                    required
+                    [class.is-invalid]="
+                      horasEstimadas.invalid && horasEstimadas.touched
+                    "
+                  />
+                  @if (
+                    horasEstimadas.hasError("required") &&
+                    horasEstimadas.touched
+                  ) {
+                    <small class="text-danger">
+                      Ingresa las horas estimadas por dia.
+                    </small>
                   }
-                  @if (horasEstimadas.hasError('pattern') && horasEstimadas.touched) {
-                  <small class="text-danger">
-                    Usa solo numeros enteros.
-                  </small>
+                  @if (
+                    horasEstimadas.hasError("pattern") && horasEstimadas.touched
+                  ) {
+                    <small class="text-danger">
+                      Usa solo numeros enteros.
+                    </small>
                   }
-                  @if (horasEstimadas.hasError('min') && horasEstimadas.touched) {
-                  <small class="text-danger">
-                    Ingresa un numero mayor a 0.
-                  </small>
+                  @if (
+                    horasEstimadas.hasError("min") && horasEstimadas.touched
+                  ) {
+                    <small class="text-danger">
+                      Ingresa un numero mayor a 0.
+                    </small>
                   }
                 </div>
               </div>
             </div>
-
           </mat-card-content>
-            </mat-card>
-
+        </mat-card>
       </div>
 
       <div class="col-12">
@@ -147,8 +237,9 @@
           <mat-card-header class="programacion-header">
             <mat-card-title>Programacion del evento</mat-card-title>
             <mat-card-subtitle>
-              Define las locaciones clave y los horarios estimados. Siempre considera al menos {{
-              programacionMinimaRecomendada }} puntos principales.
+              Define las locaciones clave y los horarios estimados. Siempre
+              considera al menos {{ programacionMinimaRecomendada }} puntos
+              principales.
             </mat-card-subtitle>
           </mat-card-header>
 
@@ -157,164 +248,306 @@
               <label class="col-form-label mb-2">Fechas de trabajo</label>
               <div class="row g-2">
                 @for (fecha of fechasTrabajo; track $index) {
-                <div class="col-md-4">
-                  <div class="form-group">
-                    <label class="small text-muted mb-1 d-block">Dia {{ $index + 1 }}</label>
-                    <input [attr.id]="'fechaTrabajo' + $index" type="date" class="form-control"
-                      [min]="fechaMinimaEvento" [max]="fechaMaximaEvento"
-                      [ngModel]="fecha"
-                      (ngModelChange)="onFechaTrabajoChange($index, $event)"
-                      [ngModelOptions]="{standalone:true}">
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label class="small text-muted mb-1 d-block"
+                        >Dia {{ $index + 1 }}</label
+                      >
+                      <input
+                        [attr.id]="'fechaTrabajo' + $index"
+                        type="date"
+                        class="form-control"
+                        [min]="fechaMinimaEvento"
+                        [max]="fechaMaximaEvento"
+                        [ngModel]="fecha"
+                        (ngModelChange)="onFechaTrabajoChange($index, $event)"
+                        [ngModelOptions]="{ standalone: true }"
+                      />
+                    </div>
                   </div>
-                </div>
                 }
               </div>
             </div>
 
             <div class="programacion-list">
               @if (!fechasTrabajoValores.length) {
-              <div class="programacion-empty">
-                Define primero la cantidad de dias y sus fechas de trabajo.
-              </div>
+                <div class="programacion-empty">
+                  Define primero la cantidad de dias y sus fechas de trabajo.
+                </div>
               }
 
-              @for (fecha of fechasTrabajoValores; track fecha; let diaIndex = $index) {
-              <div class="programacion-day">
-                <div class="programacion-day__header d-flex align-items-center justify-content-between gap-2">
-                  <div>
-                    <h5 class="mb-1">Dia {{ diaIndex + 1 }} · {{ formatFechaConDia(fecha) }}</h5>
-                    @let resumenDia = getResumenDia(fecha);
-                    <div class="programacion-day__summary">
-                      <span class="programacion-chip programacion-chip--soft">{{ resumenDia.total }} locacion(es)</span>
-                      <span class="programacion-chip programacion-chip--soft">Inicio: {{ resumenDia.primera }}</span>
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center gap-2">
-                    @if (canCopiarDiaAnterior(diaIndex)) {
-                    <button type="button" class="btn btn-outline-secondary btn-sm"
-                      (click)="copiarLocacionesDiaAnterior(diaIndex, fecha)">
-                      Copiar dia anterior
-                    </button>
-                    }
-                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="addUbicacionPorDia(diaIndex, fecha)"
-                      [disabled]="!canAgregarEvento || !canAgregarLocacion(fecha)"
-                      [attr.title]="!canAgregarLocacion(fecha) ? ('Maximo ' + maxLocacionesPorDia + ' locaciones por dia') : 'Agregar locacion'">
-                      Agregar locacion
-                    </button>
-                  </div>
-                </div>
-
-                @let indices = getProgramacionIndicesPorFecha(fecha);
-                @if (!indices.length) {
-                <div class="programacion-empty">
-                  Aun no hay locaciones para este dia.
-                </div>
-                }
-
-                @for (index of indices; track index) {
-                <div class="programacion-item">
-                  <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2 programacion-item__header--clickable"
-                    (click)="toggleProgramacionExpandida(index)">
-                    <div class="programacion-item__summary">
-                      <div class="d-flex align-items-center gap-2">
-                        <h4 class="mb-0">{{ ubicacion[index].Direccion || ('Locacion ' + (index + 1)) }}</h4>
-                        @if (!isProgramacionExpandida(index)) {
-                        <span class="programacion-chip" [ngClass]="getProgramacionEstadoClass(index)">
-                          {{ getProgramacionEstadoLabel(index) }}
-                        </span>
-                        }
+              @for (
+                fecha of fechasTrabajoValores;
+                track fecha;
+                let diaIndex = $index
+              ) {
+                <div class="programacion-day">
+                  <div
+                    class="programacion-day__header d-flex align-items-center justify-content-between gap-2"
+                  >
+                    <div>
+                      <h5 class="mb-1">
+                        Dia {{ diaIndex + 1 }} · {{ formatFechaConDia(fecha) }}
+                      </h5>
+                      @let resumenDia = getResumenDia(fecha);
+                      <div class="programacion-day__summary">
+                        <span class="programacion-chip programacion-chip--soft"
+                          >{{ resumenDia.total }} locacion(es)</span
+                        >
+                        <span class="programacion-chip programacion-chip--soft"
+                          >Inicio: {{ resumenDia.primera }}</span
+                        >
                       </div>
-                      @if (!isProgramacionExpandida(index)) {
-                      <div class="programacion-item__meta">
-                        <span class="programacion-chip programacion-chip--soft">{{ getProgramacionHoraResumen(index) }}</span>
-                        <span class="programacion-chip programacion-chip--soft">{{ getProgramacionDireccionResumen(index) }}</span>
-                      </div>
-                      }
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                      <button type="button" class="btn btn-outline-secondary btn-sm"
-                        (click)="$event.stopPropagation(); duplicarUbicacionById(ubicacion[index].ID)">
-                        Duplicar
-                      </button>
-                      <button type="button" class="btn btn-outline-danger btn-sm programacion-item__remove"
-                        (click)="$event.stopPropagation(); deleteUbicacionById(ubicacion[index].ID)" [disabled]="ubicacion.length <= 1"
-                        [attr.aria-label]="'Eliminar locacion ' + (ubicacion[index].Direccion || ('Locacion ' + (index + 1)))"
-                        [attr.title]="ubicacion.length <= 1 ? 'Manten al menos una locacion' : 'Eliminar locacion'">
-                        Quitar
+                      @if (canCopiarDiaAnterior(diaIndex)) {
+                        <button
+                          type="button"
+                          class="btn btn-outline-secondary btn-sm"
+                          (click)="copiarLocacionesDiaAnterior(diaIndex, fecha)"
+                        >
+                          Copiar dia anterior
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm"
+                        (click)="addUbicacionPorDia(diaIndex, fecha)"
+                        [disabled]="
+                          !canAgregarEvento || !canAgregarLocacion(fecha)
+                        "
+                        [attr.title]="
+                          !canAgregarLocacion(fecha)
+                            ? 'Maximo ' +
+                              maxLocacionesPorDia +
+                              ' locaciones por dia'
+                            : 'Agregar locacion'
+                        "
+                      >
+                        Agregar locacion
                       </button>
                     </div>
                   </div>
 
-                  @if (isProgramacionExpandida(index)) {
-                  <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                      <div class="form-group">
-                        <label class="col-form-label" [attr.for]="'programacionNombre' + index">Nombre de la locacion</label>
-                        <input [attr.id]="'programacionNombre' + index" type="text" class="form-control"
-                          [(ngModel)]="ubicacion[index].Direccion" [ngModelOptions]="{standalone:true}"
-                          placeholder="Ej. Recepcion en casona">
-                      </div>
+                  @let indices = getProgramacionIndicesPorFecha(fecha);
+                  @if (!indices.length) {
+                    <div class="programacion-empty">
+                      Aun no hay locaciones para este dia.
                     </div>
-                    <div class="col-md-6">
-                      <div class="form-group">
-                        <label class="col-form-label" [attr.for]="'programacionDireccion' + index">Direccion o punto de encuentro</label>
-                        <input [attr.id]="'programacionDireccion' + index" type="text" class="form-control"
-                          [(ngModel)]="ubicacion[index].DireccionExacta" [ngModelOptions]="{standalone:true}"
-                          placeholder="Ej. Av. La Marina 1234">
-                      </div>
-                    </div>
-                    <div class="col-sm-6 col-md-6">
-                      <div class="form-group">
-                        <label class="col-form-label" [attr.for]="'programacionHora' + index">Hora</label>
-                        <div class="d-flex gap-2">
-                          <select class="form-select" [(ngModel)]="ubicacion[index].hora12" [ngModelOptions]="{standalone:true}"
-                            (ngModelChange)="syncHora(ubicacion[index])">
-                            <option [ngValue]="null" disabled>Hora</option>
-                            @for (hora of horaOptions; track hora) {
-                              <option [ngValue]="hora">{{ hora }}</option>
+                  }
+
+                  @for (index of indices; track index) {
+                    <div class="programacion-item">
+                      <div
+                        class="programacion-item__header d-flex align-items-center justify-content-between gap-2 programacion-item__header--clickable"
+                        (click)="toggleProgramacionExpandida(index)"
+                      >
+                        <div class="programacion-item__summary">
+                          <div class="d-flex align-items-center gap-2">
+                            <h4 class="mb-0">
+                              {{
+                                ubicacion[index].Direccion ||
+                                  "Locacion " + (index + 1)
+                              }}
+                            </h4>
+                            @if (!isProgramacionExpandida(index)) {
+                              <span
+                                class="programacion-chip"
+                                [ngClass]="getProgramacionEstadoClass(index)"
+                              >
+                                {{ getProgramacionEstadoLabel(index) }}
+                              </span>
                             }
-                          </select>
-                          <select class="form-select" [(ngModel)]="ubicacion[index].minuto" [ngModelOptions]="{standalone:true}"
-                            (ngModelChange)="syncHora(ubicacion[index])">
-                            <option [ngValue]="null" disabled>Min</option>
-                            @for (minuto of minutoOptions; track minuto) {
-                              <option [ngValue]="minuto">{{ minuto }}</option>
-                            }
-                          </select>
-                          <select class="form-select" [(ngModel)]="ubicacion[index].ampm" [ngModelOptions]="{standalone:true}"
-                            (ngModelChange)="syncHora(ubicacion[index])">
-                            <option [ngValue]="null" disabled>AM/PM</option>
-                            @for (meridiem of ampmOptions; track meridiem) {
-                              <option [ngValue]="meridiem">{{ meridiem }}</option>
-                            }
-                          </select>
+                          </div>
+                          @if (!isProgramacionExpandida(index)) {
+                            <div class="programacion-item__meta">
+                              <span
+                                class="programacion-chip programacion-chip--soft"
+                                >{{ getProgramacionHoraResumen(index) }}</span
+                              >
+                              <span
+                                class="programacion-chip programacion-chip--soft"
+                                >{{
+                                  getProgramacionDireccionResumen(index)
+                                }}</span
+                              >
+                            </div>
+                          }
                         </div>
-                        <input type="hidden" [(ngModel)]="ubicacion[index].Hora" [ngModelOptions]="{standalone:true}">
-                        @if ((ubicacion[index].hora12 == null || ubicacion[index].minuto == null || ubicacion[index].ampm == null)
-                          && (ubicacion[index].hora12 != null || ubicacion[index].minuto != null || ubicacion[index].ampm != null)) {
-                          <small class="text-danger">Ingresa la hora.</small>
-                        }
-                        @if (isHoraFueraRango(ubicacion[index])) {
-                          <small class="text-danger">La hora debe estar entre 06:00 y 22:00.</small>
-                        }
+                        <div class="d-flex align-items-center gap-2">
+                          <button
+                            type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            (click)="
+                              $event.stopPropagation();
+                              duplicarUbicacionById(ubicacion[index].ID)
+                            "
+                          >
+                            Duplicar
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-outline-danger btn-sm programacion-item__remove"
+                            (click)="
+                              $event.stopPropagation();
+                              deleteUbicacionById(ubicacion[index].ID)
+                            "
+                            [disabled]="ubicacion.length <= 1"
+                            [attr.aria-label]="
+                              'Eliminar locacion ' +
+                              (ubicacion[index].Direccion ||
+                                'Locacion ' + (index + 1))
+                            "
+                            [attr.title]="
+                              ubicacion.length <= 1
+                                ? 'Manten al menos una locacion'
+                                : 'Eliminar locacion'
+                            "
+                          >
+                            Quitar
+                          </button>
+                        </div>
                       </div>
+
+                      @if (isProgramacionExpandida(index)) {
+                        <div class="row g-3 mt-2">
+                          <div class="col-md-6">
+                            <div class="form-group">
+                              <label
+                                class="col-form-label"
+                                [attr.for]="'programacionNombre' + index"
+                                >Nombre de la locacion</label
+                              >
+                              <input
+                                [attr.id]="'programacionNombre' + index"
+                                type="text"
+                                class="form-control"
+                                [(ngModel)]="ubicacion[index].Direccion"
+                                [ngModelOptions]="{ standalone: true }"
+                                placeholder="Ej. Recepcion en casona"
+                              />
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <div class="form-group">
+                              <label
+                                class="col-form-label"
+                                [attr.for]="'programacionDireccion' + index"
+                                >Direccion o punto de encuentro</label
+                              >
+                              <input
+                                [attr.id]="'programacionDireccion' + index"
+                                type="text"
+                                class="form-control"
+                                [(ngModel)]="ubicacion[index].DireccionExacta"
+                                [ngModelOptions]="{ standalone: true }"
+                                placeholder="Ej. Av. La Marina 1234"
+                              />
+                            </div>
+                          </div>
+                          <div class="col-sm-6 col-md-6">
+                            <div class="form-group">
+                              <label
+                                class="col-form-label"
+                                [attr.for]="'programacionHora' + index"
+                                >Hora</label
+                              >
+                              <div class="d-flex gap-2">
+                                <select
+                                  class="form-select"
+                                  [(ngModel)]="ubicacion[index].hora12"
+                                  [ngModelOptions]="{ standalone: true }"
+                                  (ngModelChange)="syncHora(ubicacion[index])"
+                                >
+                                  <option [ngValue]="null" disabled>
+                                    Hora
+                                  </option>
+                                  @for (hora of horaOptions; track hora) {
+                                    <option [ngValue]="hora">{{ hora }}</option>
+                                  }
+                                </select>
+                                <select
+                                  class="form-select"
+                                  [(ngModel)]="ubicacion[index].minuto"
+                                  [ngModelOptions]="{ standalone: true }"
+                                  (ngModelChange)="syncHora(ubicacion[index])"
+                                >
+                                  <option [ngValue]="null" disabled>Min</option>
+                                  @for (minuto of minutoOptions; track minuto) {
+                                    <option [ngValue]="minuto">
+                                      {{ minuto }}
+                                    </option>
+                                  }
+                                </select>
+                                <select
+                                  class="form-select"
+                                  [(ngModel)]="ubicacion[index].ampm"
+                                  [ngModelOptions]="{ standalone: true }"
+                                  (ngModelChange)="syncHora(ubicacion[index])"
+                                >
+                                  <option [ngValue]="null" disabled>
+                                    AM/PM
+                                  </option>
+                                  @for (
+                                    meridiem of ampmOptions;
+                                    track meridiem
+                                  ) {
+                                    <option [ngValue]="meridiem">
+                                      {{ meridiem }}
+                                    </option>
+                                  }
+                                </select>
+                              </div>
+                              <input
+                                type="hidden"
+                                [(ngModel)]="ubicacion[index].Hora"
+                                [ngModelOptions]="{ standalone: true }"
+                              />
+                              @if (
+                                (ubicacion[index].hora12 == null ||
+                                  ubicacion[index].minuto == null ||
+                                  ubicacion[index].ampm == null) &&
+                                (ubicacion[index].hora12 != null ||
+                                  ubicacion[index].minuto != null ||
+                                  ubicacion[index].ampm != null)
+                              ) {
+                                <small class="text-danger"
+                                  >Ingresa la hora.</small
+                                >
+                              }
+                              @if (isHoraFueraRango(ubicacion[index])) {
+                                <small class="text-danger"
+                                  >La hora debe estar entre 06:00 y
+                                  22:00.</small
+                                >
+                              }
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <div class="form-group mb-0">
+                              <label
+                                class="col-form-label"
+                                [attr.for]="'programacionNotas' + index"
+                                >Notas internas</label
+                              >
+                              <textarea
+                                [attr.id]="'programacionNotas' + index"
+                                class="form-control"
+                                rows="2"
+                                [(ngModel)]="ubicacion[index].Notas"
+                                [ngModelOptions]="{ standalone: true }"
+                                placeholder="Detalles adicionales para el equipo (opcional)"
+                              ></textarea>
+                            </div>
+                          </div>
+                        </div>
+                      }
                     </div>
-                    <div class="col-md-6">
-                      <div class="form-group mb-0">
-                        <label class="col-form-label" [attr.for]="'programacionNotas' + index">Notas internas</label>
-                        <textarea [attr.id]="'programacionNotas' + index" class="form-control" rows="2"
-                          [(ngModel)]="ubicacion[index].Notas" [ngModelOptions]="{standalone:true}"
-                          placeholder="Detalles adicionales para el equipo (opcional)"></textarea>
-                      </div>
-                    </div>
-                  </div>
                   }
                 </div>
-                }
-              </div>
               }
             </div>
-</mat-card-content>
+          </mat-card-content>
         </mat-card>
       </div>
 
@@ -327,14 +560,25 @@
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <div class="form-group">
-                  <label class="col-form-label" for="servicioSelect">Servicio</label>
-                  <select id="servicioSelect" class="form-control"
+                  <label class="col-form-label" for="servicioSelect"
+                    >Servicio</label
+                  >
+                  <select
+                    id="servicioSelect"
+                    class="form-control"
                     [value]="(servicioSeleccionado ?? '').toString()"
                     (change)="asignarServicio($any($event.target).value)"
-                    [disabled]="!eventoSeleccionado">
+                    [disabled]="!eventoSeleccionado"
+                  >
                     <option value="" disabled>Selecciona un servicio</option>
-                    @for (s of servicios; track s.id !== null && s.id !== undefined ? s.id : $index) {
-                      <option [value]="(s.id ?? '').toString()" [selected]="s.id === servicioSeleccionado">
+                    @for (
+                      s of servicios;
+                      track s.id !== null && s.id !== undefined ? s.id : $index
+                    ) {
+                      <option
+                        [value]="(s.id ?? '').toString()"
+                        [selected]="s.id === servicioSeleccionado"
+                      >
                         {{ s.nombre }}
                       </option>
                     }
@@ -355,49 +599,68 @@
                   [showCreateButton]="false"
                   [pageSize]="paquetesRows.length || 10"
                   [pageSizeOptions]="[paquetesRows.length || 10]"
-                  emptyText="Sin paquetes disponibles">
-
+                  emptyText="Sin paquetes disponibles"
+                >
                   <ng-template appCell="titulo" let-row>
-                    {{ row.titulo || '--' }}
+                    {{ row.titulo || "--" }}
                   </ng-template>
 
                   <ng-template appCell="precio" let-row>
-                    {{ row.precio | usd:'1.2-2' }}
+                    {{ row.precio | usd: "1.2-2" }}
                   </ng-template>
 
                   <ng-template appCell="staff" let-row>
-                    {{ row.staff !== null ? row.staff : '--' }}
+                    {{ row.staff !== null ? row.staff : "--" }}
                   </ng-template>
 
                   <ng-template appCell="horas" let-row>
-                    {{ row.horas !== null ? row.horas : '--' }}
+                    {{ row.horas !== null ? row.horas : "--" }}
                   </ng-template>
 
                   <ng-template appCell="acciones" let-row>
                     <div class="d-flex justify-content-center gap-2">
-                      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="mostrarDetallePaquete(row)">
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        (click)="mostrarDetallePaquete(row)"
+                      >
                         Mostrar
                       </button>
                       @if (!isInSeleccion(row.raw)) {
-                        <button type="button" class="btn btn-outline-primary btn-sm"
-                          [ngClass]="{'btn-outline-warning': hasOtroPaqueteDelServicio(row.raw)}"
+                        <button
+                          type="button"
+                          class="btn btn-primary btn-sm"
+                          [ngClass]="{
+                            'btn-outline-warning': hasOtroPaqueteDelServicio(
+                              row.raw
+                            ),
+                          }"
                           [disabled]="!eventoSeleccionado"
-                          (click)="addPaquete(row.raw)">
-                          {{ hasOtroPaqueteDelServicio(row.raw) ? 'Reemplazar' : 'Agregar' }}
+                          (click)="addPaquete(row.raw)"
+                        >
+                          {{
+                            hasOtroPaqueteDelServicio(row.raw)
+                              ? "Reemplazar"
+                              : "Agregar"
+                          }}
                         </button>
                       } @else {
-                        <button type="button" class="btn btn-outline-danger btn-sm"
-                          (click)="removePaquete(pkgKey(row.raw))">
+                        <button
+                          type="button"
+                          class="btn btn-outline-danger btn-sm"
+                          (click)="removePaquete(pkgKey(row.raw))"
+                        >
                           Quitar
                         </button>
                       }
                     </div>
                   </ng-template>
-
                 </app-table-base>
               </div>
             } @else {
-              <div class="d-flex flex-column align-items-center justify-content-center py-4 text-muted">
+              <div
+                class="d-flex flex-column align-items-center justify-content-center py-4 text-muted"
+              >
                 <mat-spinner diameter="32"></mat-spinner>
                 <span class="mt-2">Cargando paquetes...</span>
               </div>
@@ -405,35 +668,61 @@
 
             @if (selectedPaquetes.length) {
               <div class="mt-3">
-                <div class="d-flex align-items-center justify-content-between w-100">
-                  <h5 class="mb-0 paquetes-selected-title">Paquetes seleccionados ({{ selectedPaquetes.length }})</h5>
+                <div
+                  class="d-flex align-items-center justify-content-between w-100"
+                >
+                  <h5 class="mb-0 paquetes-selected-title">
+                    Paquetes seleccionados ({{ selectedPaquetes.length }})
+                  </h5>
                   @if (isMultipleDias()) {
-                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirAsignacionFechas()"
-                    [disabled]="!eventoSeleccionado">
-                    Asignar fechas
-                  </button>
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm"
+                      (click)="abrirAsignacionFechas()"
+                      [disabled]="!eventoSeleccionado"
+                    >
+                      Asignar fechas
+                    </button>
                   }
                 </div>
                 <div class="table-responsive">
-                  <app-table-base [columns]="selectedPaquetesColumns" [data]="selectedPaquetes" [showSearch]="false"
-                    [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false"
-                    [showCreateButton]="false" [pageSize]="selectedPaquetes.length || 10"
-                    [pageSizeOptions]="[selectedPaquetes.length || 10]" emptyText="Sin paquetes seleccionados">
-
+                  <app-table-base
+                    [columns]="selectedPaquetesColumns"
+                    [data]="selectedPaquetes"
+                    [showSearch]="false"
+                    [showFooterInfo]="false"
+                    [showPagination]="false"
+                    [showPageSizeSelector]="false"
+                    [showCreateButton]="false"
+                    [pageSize]="selectedPaquetes.length || 10"
+                    [pageSizeOptions]="[selectedPaquetes.length || 10]"
+                    emptyText="Sin paquetes seleccionados"
+                  >
                     <ng-template appCell="titulo" let-row>
                       {{ row.titulo }}
                     </ng-template>
 
                     <ng-template appCell="cantidad" let-row>
                       <div class="text-center qty-select-wrap">
-                        <mat-form-field appearance="outline" class="qty-mat-field">
+                        <mat-form-field
+                          appearance="outline"
+                          class="qty-mat-field"
+                        >
                           <mat-select
                             [ngModel]="row.cantidad || 1"
-                            [ngModelOptions]="{standalone:true}"
+                            [ngModelOptions]="{ standalone: true }"
                             (ngModelChange)="onCantidadChange(row, $event)"
-                            panelClass="qty-mat-panel">
-                            @for (cantidad of getCantidadOptions(); track cantidad) {
-                              <mat-option [value]="cantidad" class="qty-mat-option">{{ cantidad }}</mat-option>
+                            panelClass="qty-mat-panel"
+                          >
+                            @for (
+                              cantidad of getCantidadOptions();
+                              track cantidad
+                            ) {
+                              <mat-option
+                                [value]="cantidad"
+                                class="qty-mat-option"
+                                >{{ cantidad }}</mat-option
+                              >
                             }
                           </mat-select>
                         </mat-form-field>
@@ -441,47 +730,65 @@
                     </ng-template>
 
                     <ng-template appCell="precioUnit" let-row>
-              <div class="text-end">
-                {{ row.precio | usd:'1.2-2' }}
-              </div>
-            </ng-template>
+                      <div class="text-end">
+                        {{ row.precio | usd: "1.2-2" }}
+                      </div>
+                    </ng-template>
 
                     <ng-template appCell="precioOriginal" let-row>
                       <div class="text-end">
-                        <div>{{ row.precioOriginal | usd:'1.2-2' }}</div>
+                        <div>{{ row.precioOriginal | usd: "1.2-2" }}</div>
                         @if (getDescuentoPorcentaje(row) !== null) {
                           <div class="text-success small">
-                            -{{ getDescuentoPorcentaje(row) | number:'1.0-1' }}%
+                            -{{
+                              getDescuentoPorcentaje(row) | number: "1.0-1"
+                            }}%
                           </div>
                         }
                       </div>
                     </ng-template>
 
                     <ng-template appCell="horas" let-row>
-                      <div class="text-center">{{ row.horas ?? '--' }}</div>
+                      <div class="text-center">{{ row.horas ?? "--" }}</div>
                     </ng-template>
 
                     <ng-template appCell="staff" let-row>
-                      <div class="text-center">{{ row.personal ?? '--' }}</div>
+                      <div class="text-center">{{ row.personal ?? "--" }}</div>
                     </ng-template>
 
                     <ng-template appCell="subtotal" let-row>
-                      <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | usd:'1.2-2' }}</div>
+                      <div class="text-end">
+                        {{ row.precio * (row.cantidad || 1) | usd: "1.2-2" }}
+                      </div>
                     </ng-template>
 
                     <ng-template appCell="notas" let-row>
-                      <input type="text" class="form-control form-control-sm" [(ngModel)]="row.notas"
-                        [ngModelOptions]="{standalone:true}" maxlength="200" placeholder="Notas opcionales">
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        [(ngModel)]="row.notas"
+                        [ngModelOptions]="{ standalone: true }"
+                        maxlength="200"
+                        placeholder="Notas opcionales"
+                      />
                     </ng-template>
 
                     <ng-template appCell="quitar" let-row>
-                      <button type="button" class="btn btn-link text-danger p-0" (click)="removePaquete(row.key)">Quitar</button>
+                      <button
+                        type="button"
+                        class="btn btn-link text-danger p-0"
+                        (click)="removePaquete(row.key)"
+                      >
+                        Quitar
+                      </button>
                     </ng-template>
-
                   </app-table-base>
                 </div>
                 <div class="text-end mt-2">
-                  <strong>Subtotal paquetes: {{ totalPaquetes | usd:'1.2-2' }}</strong>
+                  <strong
+                    >Subtotal paquetes:
+                    {{ totalPaquetes | usd: "1.2-2" }}</strong
+                  >
                 </div>
               </div>
             }
@@ -491,30 +798,48 @@
 
       <div class="col-12">
         @if (!isDepartamentoLima()) {
-        <mat-card class="card mb-3">
-          <mat-card-header>
-            <mat-card-title>Viaticos</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="form-check mb-3">
-              <input id="viaticosClientePedido" type="checkbox" class="form-check-input"
-                name="viaticosClientePedido"
-                [(ngModel)]="visualizarService.selectAgregarPedido.viaticosCliente"
-                (ngModelChange)="onViaticosClienteChange($event)">
-              <label class="form-check-label" for="viaticosClientePedido">El cliente cubre viaticos</label>
-            </div>
-            @if (!visualizarService.selectAgregarPedido.viaticosCliente) {
-            <div class="form-group">
-              <label class="col-form-label" for="viaticosMontoPedido">Monto de viaticos (USD)</label>
-              <input id="viaticosMontoPedido" type="number" class="form-control"
-                name="viaticosMontoPedido"
-                [(ngModel)]="visualizarService.selectAgregarPedido.viaticosMonto" min="1" step="1"
-                (blur)="onViaticosMontoBlur($any($event.target).value)"
-                inputmode="numeric">
-            </div>
-            }
-          </mat-card-content>
-        </mat-card>
+          <mat-card class="card mb-3">
+            <mat-card-header>
+              <mat-card-title>Viaticos</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="form-check mb-3">
+                <input
+                  id="viaticosClientePedido"
+                  type="checkbox"
+                  class="form-check-input"
+                  name="viaticosClientePedido"
+                  [(ngModel)]="
+                    visualizarService.selectAgregarPedido.viaticosCliente
+                  "
+                  (ngModelChange)="onViaticosClienteChange($event)"
+                />
+                <label class="form-check-label" for="viaticosClientePedido"
+                  >El cliente cubre viaticos</label
+                >
+              </div>
+              @if (!visualizarService.selectAgregarPedido.viaticosCliente) {
+                <div class="form-group">
+                  <label class="col-form-label" for="viaticosMontoPedido"
+                    >Monto de viaticos (USD)</label
+                  >
+                  <input
+                    id="viaticosMontoPedido"
+                    type="number"
+                    class="form-control"
+                    name="viaticosMontoPedido"
+                    [(ngModel)]="
+                      visualizarService.selectAgregarPedido.viaticosMonto
+                    "
+                    min="1"
+                    step="1"
+                    (blur)="onViaticosMontoBlur($any($event.target).value)"
+                    inputmode="numeric"
+                  />
+                </div>
+              }
+            </mat-card-content>
+          </mat-card>
         }
       </div>
 
@@ -524,108 +849,212 @@
             <mat-card-title>Mensaje del solicitante</mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <textarea class="form-control" rows="3" name="Observacion"
+            <textarea
+              class="form-control"
+              rows="3"
+              name="Observacion"
               [(ngModel)]="visualizarService.selectAgregarPedido.Observacion"
-              placeholder="Mensaje proporcionado en la solicitud"></textarea>
+              placeholder="Mensaje proporcionado en la solicitud"
+            ></textarea>
           </mat-card-content>
         </mat-card>
       </div>
-
     </div>
 
     <div class="row mb-3">
       <div class="col-md-4 ms-auto">
-        <small class="d-block text-end text-muted mt-1">Subtotal: {{ subtotalSinIgv | usd:'1.2-2' }}</small>
-        <small class="d-block text-end text-muted">IGV (18%): {{ igvMonto | usd:'1.2-2' }}</small>
-        <label class="col-form-label mt-2" for="totalEstimado">Total final</label>
+        <small class="d-block text-end text-muted mt-1"
+          >Subtotal: {{ subtotalSinIgv | usd: "1.2-2" }}</small
+        >
+        <small class="d-block text-end text-muted"
+          >IGV (18%): {{ igvMonto | usd: "1.2-2" }}</small
+        >
+        <label class="col-form-label mt-2" for="totalEstimado"
+          >Total final</label
+        >
         <div class="input-group">
           <span class="input-group-text">US$</span>
-          <input id="totalEstimado" type="number" class="form-control" [value]="totalConIgv" disabled>
+          <input
+            id="totalEstimado"
+            type="number"
+            class="form-control"
+            [value]="totalConIgv"
+            disabled
+          />
         </div>
       </div>
     </div>
 
     <div class="text-end">
-      <button type="button" class="btn btn-outline-secondary me-2" [routerLink]="['/home/gestionar-pedido']"
-        [disabled]="saving">Cancelar</button>
-      <button type="button" class="btn btn-primary" [disabled]="saving" (click)="updatePedido()">
+      <button
+        type="button"
+        class="btn btn-outline-secondary me-2"
+        [routerLink]="['/home/gestionar-pedido']"
+        [disabled]="saving"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="saving"
+        (click)="updatePedido()"
+      >
         @if (!saving) {
           <span>Guardar cambios</span>
         }
         @if (saving) {
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
         }
       </button>
     </div>
   </form>
 </div>
 
-<app-modal-base [open]="detallePaqueteAbierto" [disableClose]="false" [loading]="false" [useDefaultFooter]="false"
-  size="lg" title="Detalle del paquete" (closed)="cerrarDetallePaquete()">
-
+<app-modal-base
+  [open]="detallePaqueteAbierto"
+  [disableClose]="false"
+  [loading]="false"
+  [useDefaultFooter]="false"
+  size="lg"
+  title="Detalle del paquete"
+  (closed)="cerrarDetallePaquete()"
+>
   @if (detallePaqueteSeleccionado) {
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label" for="detallePaqueteTituloEdit">Titulo</label>
-        <input id="detallePaqueteTituloEdit" class="form-control" [value]="detallePaqueteSeleccionado?.titulo ?? '--'"
-          disabled>
+        <input
+          id="detallePaqueteTituloEdit"
+          class="form-control"
+          [value]="detallePaqueteSeleccionado?.titulo ?? '--'"
+          disabled
+        />
       </div>
       <div class="col-md-3">
         <label class="form-label" for="detallePaquetePrecioEdit">Precio</label>
-        <input id="detallePaquetePrecioEdit" class="form-control"
-          [value]="(detallePaqueteSeleccionado?.precio ?? 0) | usd:'1.0-0'" disabled>
+        <input
+          id="detallePaquetePrecioEdit"
+          class="form-control"
+          [value]="detallePaqueteSeleccionado?.precio ?? 0 | usd: '1.0-0'"
+          disabled
+        />
       </div>
       <div class="col-md-3">
         <label class="form-label" for="detallePaqueteHorasEdit">Horas</label>
-        <input id="detallePaqueteHorasEdit" class="form-control"
-          [value]="detallePaqueteSeleccionado?.horas ?? '--'" disabled>
+        <input
+          id="detallePaqueteHorasEdit"
+          class="form-control"
+          [value]="detallePaqueteSeleccionado?.horas ?? '--'"
+          disabled
+        />
       </div>
       <div class="col-md-6">
-        <label class="form-label" for="detallePaqueteServicioEdit">Servicio</label>
-        <input id="detallePaqueteServicioEdit" class="form-control"
-          [value]="detallePaqueteSeleccionado?.servicioNombre ?? detallePaqueteSeleccionado?.servicio?.nombre ?? '--'"
-          disabled>
+        <label class="form-label" for="detallePaqueteServicioEdit"
+          >Servicio</label
+        >
+        <input
+          id="detallePaqueteServicioEdit"
+          class="form-control"
+          [value]="
+            detallePaqueteSeleccionado?.servicioNombre ??
+            detallePaqueteSeleccionado?.servicio?.nombre ??
+            '--'
+          "
+          disabled
+        />
       </div>
       <div class="col-md-6">
-        <label class="form-label" for="detallePaqueteCategoriaEdit">Categoria</label>
-        <input id="detallePaqueteCategoriaEdit" class="form-control"
-          [value]="detallePaqueteSeleccionado?.categoriaNombre ?? detallePaqueteSeleccionado?.categoriaTipo ?? '--'"
-          disabled>
+        <label class="form-label" for="detallePaqueteCategoriaEdit"
+          >Categoria</label
+        >
+        <input
+          id="detallePaqueteCategoriaEdit"
+          class="form-control"
+          [value]="
+            detallePaqueteSeleccionado?.categoriaNombre ??
+            detallePaqueteSeleccionado?.categoriaTipo ??
+            '--'
+          "
+          disabled
+        />
       </div>
       <div class="col-md-6">
-        <label class="form-label" for="detallePaqueteTipoEdit">Tipo de paquete</label>
-        <input id="detallePaqueteTipoEdit" class="form-control"
-          [value]="detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'" disabled>
+        <label class="form-label" for="detallePaqueteTipoEdit"
+          >Tipo de paquete</label
+        >
+        <input
+          id="detallePaqueteTipoEdit"
+          class="form-control"
+          [value]="
+            detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'
+          "
+          disabled
+        />
       </div>
       <div class="col-12">
-        <label class="form-label" for="detallePaqueteDescripcionEdit">Descripcion</label>
-        <textarea id="detallePaqueteDescripcionEdit" class="form-control" rows="3"
-          [value]="detallePaqueteSeleccionado?.descripcion || '--'" disabled></textarea>
+        <label class="form-label" for="detallePaqueteDescripcionEdit"
+          >Descripcion</label
+        >
+        <textarea
+          id="detallePaqueteDescripcionEdit"
+          class="form-control"
+          rows="3"
+          [value]="detallePaqueteSeleccionado?.descripcion || '--'"
+          disabled
+        ></textarea>
       </div>
       <div class="col-md-4">
-        <label class="form-label" for="detallePaqueteFotosEdit">Fotos impresas</label>
-        <input id="detallePaqueteFotosEdit" class="form-control"
-          [value]="detallePaqueteSeleccionado?.fotosImpresas ?? '--'" disabled>
+        <label class="form-label" for="detallePaqueteFotosEdit"
+          >Fotos impresas</label
+        >
+        <input
+          id="detallePaqueteFotosEdit"
+          class="form-control"
+          [value]="detallePaqueteSeleccionado?.fotosImpresas ?? '--'"
+          disabled
+        />
       </div>
       <div class="col-md-4">
-        <label class="form-label" for="detallePaqueteTrailerEdit">Trailer (min)</label>
-        <input id="detallePaqueteTrailerEdit" class="form-control"
-          [value]="detallePaqueteSeleccionado?.trailerMin ?? '--'" disabled>
+        <label class="form-label" for="detallePaqueteTrailerEdit"
+          >Trailer (min)</label
+        >
+        <input
+          id="detallePaqueteTrailerEdit"
+          class="form-control"
+          [value]="detallePaqueteSeleccionado?.trailerMin ?? '--'"
+          disabled
+        />
       </div>
       <div class="col-md-4">
-        <label class="form-label" for="detallePaqueteFilmEdit">Filmacion (min)</label>
-        <input id="detallePaqueteFilmEdit" class="form-control" [value]="detallePaqueteSeleccionado?.filmMin ?? '--'"
-          disabled>
+        <label class="form-label" for="detallePaqueteFilmEdit"
+          >Filmacion (min)</label
+        >
+        <input
+          id="detallePaqueteFilmEdit"
+          class="form-control"
+          [value]="detallePaqueteSeleccionado?.filmMin ?? '--'"
+          disabled
+        />
       </div>
       <div class="col-12">
         <div class="form-label">Staff</div>
-        <div class="form-control" style="height: auto;" disabled>
+        <div class="form-control" style="height: auto" disabled>
           {{ getDetalleStaffTotal(detallePaqueteSeleccionado) }}
           @if (getDetalleStaffLista(detallePaqueteSeleccionado).length) {
             <div class="small text-muted">
-              @for (miembro of getDetalleStaffLista(detallePaqueteSeleccionado); track $index) {
+              @for (
+                miembro of getDetalleStaffLista(detallePaqueteSeleccionado);
+                track $index
+              ) {
                 <div>
-                  {{ (miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? 'Rol') }}
+                  {{
+                    miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? "Rol"
+                  }}
                   @if (miembro?.cantidad) {
                     <span>({{ miembro?.cantidad }})</span>
                   }
@@ -639,7 +1068,10 @@
         <div class="col-12">
           <div class="form-label">Equipamiento requerido</div>
           <ul class="list-group">
-            @for (eq of getEquiposLista(detallePaqueteSeleccionado); track $index) {
+            @for (
+              eq of getEquiposLista(detallePaqueteSeleccionado);
+              track $index
+            ) {
               <li class="list-group-item py-2">
                 <div class="fw-semibold">{{ eq?.tipoEquipo ?? eq?.tipo }}</div>
                 <div class="small text-muted">
@@ -661,60 +1093,91 @@
   }
 
   <div modal-footer class="d-flex justify-content-end">
-    <button type="button" class="btn btn-outline-secondary" (click)="cerrarDetallePaquete()">Cerrar</button>
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="cerrarDetallePaquete()"
+    >
+      Cerrar
+    </button>
   </div>
 </app-modal-base>
 
-<app-modal-base [open]="asignacionFechasAbierta" [disableClose]="false" [loading]="false" [useDefaultFooter]="false"
-  size="lg" title="Asignar fechas a servicios" (closed)="cerrarAsignacionFechas()">
-
+<app-modal-base
+  [open]="asignacionFechasAbierta"
+  [disableClose]="false"
+  [loading]="false"
+  [useDefaultFooter]="false"
+  size="lg"
+  title="Asignar fechas a servicios"
+  (closed)="cerrarAsignacionFechas()"
+>
   @if (!fechasDisponibles.length) {
-  <p class="text-muted mb-0">No hay fechas disponibles para asignar.</p>
+    <p class="text-muted mb-0">No hay fechas disponibles para asignar.</p>
   } @else {
-  <p class="text-muted mb-2">Selecciona las fechas de trabajo por servicio. Deben coincidir con la cantidad.</p>
+    <p class="text-muted mb-2">
+      Selecciona las fechas de trabajo por servicio. Deben coincidir con la
+      cantidad.
+    </p>
 
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>Servicio</th>
-          @for (fecha of fechasDisponibles; track fecha) {
-          <th class="text-center">{{ formatFechaConDia(fecha) }}</th>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Servicio</th>
+            @for (fecha of fechasDisponibles; track fecha) {
+              <th class="text-center">{{ formatFechaConDia(fecha) }}</th>
+            }
+            <th class="text-center">Asignadas</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of selectedPaquetes; track item.key) {
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ item.titulo }}</div>
+                <div class="small text-muted">
+                  Cantidad: {{ item.cantidad || 1 }}
+                </div>
+              </td>
+              @for (fecha of fechasDisponibles; track fecha) {
+                <td class="text-center">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    [checked]="isFechaAsignada(item.tmpId, fecha)"
+                    [disabled]="
+                      !isFechaAsignada(item.tmpId, fecha) &&
+                      getCantidadAsignada(item.tmpId) >= (item.cantidad || 1)
+                    "
+                    (change)="
+                      toggleFechaAsignada(
+                        item.tmpId,
+                        fecha,
+                        $any($event.target).checked,
+                        item.cantidad || 1
+                      )
+                    "
+                  />
+                </td>
+              }
+              <td class="text-center">
+                {{ getCantidadAsignada(item.tmpId) }}/{{ item.cantidad || 1 }}
+              </td>
+            </tr>
           }
-          <th class="text-center">Asignadas</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (item of selectedPaquetes; track item.key) {
-        <tr>
-          <td>
-            <div class="fw-semibold">{{ item.titulo }}</div>
-            <div class="small text-muted">Cantidad: {{ item.cantidad || 1 }}</div>
-          </td>
-          @for (fecha of fechasDisponibles; track fecha) {
-          <td class="text-center">
-            <input type="checkbox" class="form-check-input"
-              [checked]="isFechaAsignada(item.tmpId, fecha)"
-              [disabled]="!isFechaAsignada(item.tmpId, fecha) && getCantidadAsignada(item.tmpId) >= (item.cantidad || 1)"
-              (change)="toggleFechaAsignada(item.tmpId, fecha, $any($event.target).checked, item.cantidad || 1)">
-          </td>
-          }
-          <td class="text-center">
-            {{ getCantidadAsignada(item.tmpId) }}/{{ item.cantidad || 1 }}
-          </td>
-        </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+        </tbody>
+      </table>
+    </div>
   }
 
   <div modal-footer class="d-flex justify-content-end">
-    <button type="button" class="btn btn-outline-secondary" (click)="cerrarAsignacionFechas()">Cerrar</button>
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="cerrarAsignacionFechas()"
+    >
+      Cerrar
+    </button>
   </div>
 </app-modal-base>
-
-
-
-
-
