@@ -30,12 +30,22 @@
             (click)="toggleDropdown()"
             [attr.aria-expanded]="dropdownOpen"
           >
-            <img
+            <!-- <img
               src="assets/images/avatar-1.jpg"
               alt="Usuario"
               class="user-avatar-md rounded-circle"
-            />
+            /> -->
           </button>
+
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            (click)="toggleDropdown()"
+            [attr.aria-expanded]="dropdownOpen"
+          >
+            Nombre del usuario
+          </button>
+
           <div
             class="dropdown-menu dropdown-menu-right nav-user-dropdown"
             [class.show]="dropdownOpen"

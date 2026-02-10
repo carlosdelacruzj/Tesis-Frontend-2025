@@ -1,599 +1,900 @@
 <div class="dashboard-content">
   <div class="dashboard-ecommerce">
     <div class="container-fluid">
-        <h1>Registrar pedido</h1>
+      <h1>Registrar pedido</h1>
 
-        <form #EmpleadoForm="ngForm">
+      <form #EmpleadoForm="ngForm">
+        <div class="row">
+          <div class="col">
+            <mat-card class="card">
+              <mat-card-header>
+                <mat-card-title>Datos del pedido</mat-card-title>
+              </mat-card-header>
+              <mat-card-content class="card-body">
+                <div class="form-group">
+                  <label class="col-form-label" for="pedidoNombre"
+                    >Pedido</label
+                  >
+                  <input
+                    id="pedidoNombre"
+                    type="text"
+                    class="form-control"
+                    name="NombrePedido"
+                    [(ngModel)]="
+                      visualizarService.selectAgregarPedido.NombrePedido
+                    "
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label" for="codigoEmpleado"
+                    >Empleado</label
+                  >
+                  <input
+                    id="codigoEmpleado"
+                    type="text"
+                    name="CodigoEmpleado"
+                    [(ngModel)]="CodigoEmpleado"
+                    class="form-control"
+                    disabled
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="col-form-label" for="fechaCreate"
+                    >Fecha de registro</label
+                  >
+                  <input
+                    id="fechaCreate"
+                    type="text"
+                    class="form-control"
+                    name="fechaCreate"
+                    [(ngModel)]="
+                      visualizarService.selectAgregarPedido.fechaCreate
+                    "
+                    disabled
+                  />
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <div class="col ms-auto">
+            <mat-card class="card">
+              <mat-card-header>
+                <mat-card-title>Datos del cliente</mat-card-title>
+              </mat-card-header>
+              <mat-card-content class="card-body">
+                <div class="form-group">
+                  <label class="col-form-label" for="clienteBuscar"
+                    >Cliente</label
+                  >
+
+                  <div class="input-group mb-1">
+                    <input
+                      id="clienteBuscar"
+                      type="text"
+                      class="form-control"
+                      placeholder="Buscar por nombre, documento, correo o teléfono"
+                      [formControl]="clienteSearchControl"
+                      [matAutocomplete]="clienteAuto"
+                    />
+                    @if (clienteSearchLoading) {
+                      <span class="input-group-text bg-white">
+                        <span
+                          class="spinner-border spinner-border-sm text-primary"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
+                      </span>
+                    }
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      (click)="limpiarBusqueda()"
+                      [disabled]="
+                        clienteSearchLoading ||
+                        (!clienteSeleccionado && !clienteBusquedaTermino)
+                      "
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                  @if (clienteSearchError) {
+                    <small class="text-danger d-block mt-1">
+                      {{ clienteSearchError }}
+                    </small>
+                  }
+                  @if (
+                    !clienteSearchLoading &&
+                    !clienteSearchError &&
+                    clienteResultados?.length === 0 &&
+                    clienteBusquedaTermino?.length > 1 &&
+                    !clienteSeleccionado
+                  ) {
+                    <small class="text-muted d-block mt-1">
+                      Sin resultados para “{{ clienteBusquedaTermino }}”.
+                    </small>
+                  }
+
+                  <mat-autocomplete
+                    #clienteAuto="matAutocomplete"
+                    [displayWith]="clienteDisplayFn"
+                    (optionSelected)="onClienteSelected($event.option.value)"
+                  >
+                    @for (cliente of clienteResultados; track $index) {
+                      <mat-option [value]="cliente">
+                        <div class="d-flex flex-column">
+                          <span class="fw-semibold">
+                            {{ resolveClienteNombre(cliente) }}
+                          </span>
+                          <small class="text-muted">
+                            {{ resolveClienteContacto(cliente) }}
+                            @if (resolveClienteDocumento(cliente)) {
+                              <span>
+                                · {{ resolveClienteDocumento(cliente) }}
+                              </span>
+                            }
+                          </small>
+                        </div>
+                      </mat-option>
+                    }
+                    @if (
+                      !clienteSearchLoading &&
+                      clienteResultados?.length === 0 &&
+                      clienteBusquedaTermino?.length > 1
+                    ) {
+                      <mat-option disabled>
+                        Sin resultados para “{{ clienteBusquedaTermino }}”
+                      </mat-option>
+                    }
+                  </mat-autocomplete>
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label" for="clienteDocumento"
+                    >Documento de identidad</label
+                  >
+                  <input
+                    id="clienteDocumento"
+                    type="text"
+                    class="form-control"
+                    [value]="infoCliente?.documento || '-'"
+                    disabled
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="col-form-label" for="clienteCelular"
+                    >Celular</label
+                  >
+                  <input
+                    id="clienteCelular"
+                    type="text"
+                    class="form-control"
+                    [value]="infoCliente?.celular || '-'"
+                    disabled
+                  />
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title>Programación del evento</mat-card-title>
+          </mat-card-header>
+
+          <mat-card-content class="card-body">
+            <div class="row g-3">
+              <div
+                [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'"
+              >
+                <div class="form-group">
+                  <label class="col-form-label" for="diasTrabajo"
+                    >Cantidad de días</label
+                  >
+                  <input
+                    id="diasTrabajo"
+                    type="number"
+                    class="form-control"
+                    name="diasTrabajo"
+                    [(ngModel)]="visualizarService.selectAgregarPedido.dias"
+                    (ngModelChange)="onDiasChange($event)"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    required
+                  />
+                </div>
+              </div>
+              <div
+                [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'"
+              >
+                <div class="form-group">
+                  <label class="col-form-label" for="horaEvent">Hora</label>
+                  <input
+                    id="horaEvent"
+                    type="time"
+                    class="form-control"
+                    name="horaEvent"
+                    [(ngModel)]="
+                      visualizarService.selectAgregarPedido.horaEvent
+                    "
+                    required
+                  />
+                </div>
+              </div>
+              @if (shouldShowFechaEvento()) {
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label class="col-form-label" for="fechaEvent">Fecha</label>
+                    <!-- #3: usar bindings para min/max -->
+                    <input
+                      id="fechaEvent"
+                      type="date"
+                      class="form-control"
+                      [min]="minimo"
+                      [max]="maximo"
+                      name="fechaEvent"
+                      [(ngModel)]="
+                        visualizarService.selectAgregarPedido.fechaEvent
+                      "
+                      required
+                    />
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="col-form-label" for="departamentoPedido"
+                    >Departamento</label
+                  >
+                  <select
+                    id="departamentoPedido"
+                    class="form-control"
+                    [(ngModel)]="
+                      visualizarService.selectAgregarPedido.departamento
+                    "
+                    (ngModelChange)="onDepartamentoChange($event)"
+                  >
+                    <option value="">Selecciona un departamento</option>
+                    @for (dep of departamentos; track dep) {
+                      <option [value]="dep">{{ dep }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+            </div>
+
             <div class="row">
+              <div class="col ms-auto">
+                <div class="form-group">
+                  <label class="col-form-label" for="ubicacionDirec"
+                    >Ubicacion</label
+                  >
+                  <div class="input-group mb-3">
+                    <input
+                      id="ubicacionDirec"
+                      type="text"
+                      class="form-control"
+                      name="Direc"
+                      [(ngModel)]="Direccion"
+                      autocomplete="off"
+                      (keyup.enter)="onQuickAdd()"
+                    />
+                    <div class="input-group-append"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-2">
+              <div class="col ms-auto">
+                <div class="form-group">
+                  <label class="col-form-label" for="direccionExacta"
+                    >Dirección exacta</label
+                  >
+                  <input
+                    id="direccionExacta"
+                    type="text"
+                    class="form-control"
+                    name="DireccionExacta"
+                    [(ngModel)]="DireccionExacta"
+                    autocomplete="off"
+                  />
+                </div>
+              </div>
+              <div class="col ms-auto">
+                <div class="form-group">
+                  <label class="col-form-label" for="notasEvento">Notas</label>
+                  <input
+                    id="notasEvento"
+                    type="text"
+                    class="form-control"
+                    name="NotasEvento"
+                    [(ngModel)]="NotasEvento"
+                    autocomplete="off"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col text-end">
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  [disabled]="!canAgregarEvento"
+                  (click)="onQuickAdd()"
+                >
+                  Agregar
+                </button>
+              </div>
+            </div>
+
+            <div class="row">
+              <!-- #1: referenciar sort de esta tabla -->
+              <table
+                mat-table
+                [dataSource]="dataSource"
+                matSort
+                #sortUbic="matSort"
+                class="table"
+                cdkDropList
+                (cdkDropListDropped)="drop($event)"
+              >
+                <ng-container matColumnDef="Nro">
+                  <th mat-header-cell *matHeaderCellDef>#</th>
+                  <td mat-cell *matCellDef="let element">
+                    {{ (dataSource?.data?.indexOf(element) ?? 0) + 1 }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="Fecha">
+                  <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                  <td mat-cell *matCellDef="let element">
+                    @if (!element.editing) {
+                      {{ formatProgramDate(element.Fecha) }} ({{
+                        weekdayPeru(element.Fecha)
+                      }})
+                    } @else {
+                      <input
+                        type="date"
+                        class="form-control form-control-sm"
+                        [(ngModel)]="element.Fecha"
+                        [ngModelOptions]="{ standalone: true }"
+                        (ngModelChange)="
+                          onUbicacionFechaChange(element, $event)
+                        "
+                        [min]="minimo"
+                        [max]="maximo"
+                        required
+                      />
+                      @if (!element.Fecha) {
+                        <small class="text-danger">Requerido</small>
+                      }
+                    }
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="Hora">
+                  <th mat-header-cell *matHeaderCellDef>Hora</th>
+                  <td mat-cell *matCellDef="let element">
+                    @if (!element.editing) {
+                      {{ element.Hora }}
+                    } @else {
+                      <input
+                        type="time"
+                        class="form-control form-control-sm"
+                        [(ngModel)]="element.Hora"
+                        [ngModelOptions]="{ standalone: true }"
+                        required
+                      />
+                      @if (!element.Hora) {
+                        <small class="text-danger">Requerido</small>
+                      }
+                    }
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="Direccion">
+                  <th mat-header-cell *matHeaderCellDef>Direccion</th>
+                  <td mat-cell *matCellDef="let element">
+                    @if (!element.editing) {
+                      {{ element.Direccion }}
+                    } @else {
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        [(ngModel)]="element.Direccion"
+                        [ngModelOptions]="{ standalone: true }"
+                        required
+                      />
+                      @if (!element.Direccion) {
+                        <small class="text-danger">Requerido</small>
+                      }
+                    }
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="DireccionExacta">
+                  <th mat-header-cell *matHeaderCellDef>Dirección exacta</th>
+                  <td mat-cell *matCellDef="let element">
+                    @if (!element.editing) {
+                      {{ element.DireccionExacta }}
+                    } @else {
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        [(ngModel)]="element.DireccionExacta"
+                        [ngModelOptions]="{ standalone: true }"
+                        minlength="8"
+                        required
+                      />
+                      @if ((element.DireccionExacta || "").trim().length < 8) {
+                        <small class="text-danger"> Mínimo 8 caracteres </small>
+                      }
+                    }
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="Notas">
+                  <th mat-header-cell *matHeaderCellDef>Notas</th>
+                  <td mat-cell *matCellDef="let element">
+                    @if (!element.editing) {
+                      {{ element.Notas }}
+                    } @else {
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        [(ngModel)]="element.Notas"
+                        maxlength="255"
+                        [ngModelOptions]="{ standalone: true }"
+                      />
+                    }
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="Editar">
+                  <th mat-header-cell *matHeaderCellDef>Editar</th>
+                  <td mat-cell *matCellDef="let element">
+                    @if (!element.editing) {
+                      <button class="btn p-0" (click)="startEdit(element)">
+                        ✏️ Editar
+                      </button>
+                    } @else {
+                      <button
+                        class="btn p-0 me-2"
+                        (click)="saveEdit(element)"
+                        [disabled]="rowInvalid(element)"
+                      >
+                        💾 Guardar
+                      </button>
+                      <button
+                        class="btn text-danger p-0"
+                        (click)="cancelEdit(element)"
+                      >
+                        ✖ Cancelar
+                      </button>
+                    }
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="Quitar">
+                  <th mat-header-cell *matHeaderCellDef>Quitar</th>
+                  <td mat-cell *matCellDef="let element">
+                    <button
+                      class="btn mx-auto"
+                      style="background-color: transparent"
+                      (click)="deleteElement(element.Direccion, element.Hora)"
+                    >
+                      <i class="fa fa-trash fa-2x"></i>
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
+                <tr
+                  mat-row
+                  *matRowDef="let row; columns: columnsToDisplay"
+                  cdkDrag
+                ></tr>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title>Servicios disponibles</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="card-body">
+            <div class="row">
+              <div class="col ms-auto">
+                <div class="form-group">
+                  <label class="col-form-label" for="servicioSelect"
+                    >Servicio</label
+                  >
+                  <!-- #2: corregir atributo required -->
+                  <select
+                    type="text"
+                    class="form-control form-control-sm"
+                    name="servicio"
+                    [(ngModel)]="servicioSeleccionado"
+                    (ngModelChange)="asignarServicio($event)"
+                    required
+                    id="servicioSelect"
+                  >
+                    @for (
+                      s of servicios;
+                      track s.id !== null && s.id !== undefined ? s.id : $index
+                    ) {
+                      <option [value]="s.id">{{ s.nombre }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+              <div class="col ms-auto">
+                <div class="form-group">
+                  <label class="col-form-label" for="eventoSelect"
+                    >Evento</label
+                  >
+                  <!-- #2: corregir atributo required -->
+                  <select
+                    type="text"
+                    class="form-control form-control-sm"
+                    name="evento"
+                    [(ngModel)]="eventoSeleccionado"
+                    (ngModelChange)="asignarEvento($event)"
+                    required
+                    id="eventoSelect"
+                  >
+                    @for (
+                      e of evento;
+                      track e.PK_E_Cod !== null && e.PK_E_Cod !== undefined
+                        ? e.PK_E_Cod
+                        : $index
+                    ) {
+                      <option [value]="e.PK_E_Cod">{{ e.E_Nombre }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <app-table-base
+                [columns]="paquetesColumns"
+                [data]="paquetesRows"
+                [showSearch]="false"
+                [showFooterInfo]="false"
+                [showPagination]="false"
+                [showPageSizeSelector]="false"
+                [showCreateButton]="false"
+                [pageSize]="paquetesRows.length || 10"
+                [pageSizeOptions]="[paquetesRows.length || 10]"
+                emptyText="Sin paquetes disponibles"
+              >
+                <ng-template appCell="descripcion" let-row>
+                  {{ row.descripcion || "—" }}
+                </ng-template>
+
+                <ng-template appCell="precio" let-row>
+                  {{ row.precio | usd: "1.2-2" }}
+                </ng-template>
+
+                <ng-template appCell="staff" let-row>
+                  {{
+                    row.staff !== null && row.staff !== undefined
+                      ? row.staff
+                      : "—"
+                  }}
+                </ng-template>
+
+                <ng-template appCell="horas" let-row>
+                  {{
+                    row.horas !== null && row.horas !== undefined
+                      ? row.horas
+                      : "—"
+                  }}
+                </ng-template>
+
+                <ng-template appCell="acciones" let-row>
+                  <div class="d-flex justify-content-center">
+                    @if (!isInSeleccion(row.raw)) {
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm"
+                        (click)="addPaquete(row.raw)"
+                      >
+                        Agregar
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn btn-outline-danger btn-sm"
+                        (click)="removePaquete(pkgKey(row.raw))"
+                      >
+                        Quitar
+                      </button>
+                    }
+                  </div>
+                </ng-template>
+              </app-table-base>
+            </div>
+            @if (selectedPaquetes.length) {
+              <div class="row mt-3">
                 <div class="col">
-                    <mat-card class="card">
-                        <mat-card-header>
-                            <mat-card-title>Datos del pedido</mat-card-title>
-                        </mat-card-header>
-                        <mat-card-content class="card-body">
-                            <div class="form-group">
-                                <label class="col-form-label" for="pedidoNombre">Pedido</label>
-                                <input id="pedidoNombre" type="text" class="form-control" name="NombrePedido"
-                                    [(ngModel)]="visualizarService.selectAgregarPedido.NombrePedido" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label" for="codigoEmpleado">Empleado</label>
-                                <input id="codigoEmpleado" type="text" name="CodigoEmpleado" [(ngModel)]="CodigoEmpleado"
-                                    class="form-control" disabled>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="col-form-label" for="fechaCreate">Fecha de registro</label>
-                                <input id="fechaCreate" type="text" class="form-control" name="fechaCreate"
-                                    [(ngModel)]="visualizarService.selectAgregarPedido.fechaCreate" disabled>
-                            </div>
-                        </mat-card-content>
-                    </mat-card>
-                </div>
-
-                <div class="col ms-auto">
-                    <mat-card class="card">
-                        <mat-card-header>
-                            <mat-card-title>Datos del cliente</mat-card-title>
-                        </mat-card-header>
-                        <mat-card-content class="card-body">
-                            <div class="form-group">
-                                <label class="col-form-label" for="clienteBuscar">Cliente</label>
-
-                                <div class="input-group mb-1">
-                                    <input
-                                        id="clienteBuscar"
-                                        type="text"
-                                        class="form-control"
-                                        placeholder="Buscar por nombre, documento, correo o teléfono"
-                                        [formControl]="clienteSearchControl"
-                                        [matAutocomplete]="clienteAuto">
-                                    @if (clienteSearchLoading) {
-                                        <span class="input-group-text bg-white">
-                                            <span
-                                                class="spinner-border spinner-border-sm text-primary"
-                                                role="status"
-                                                aria-hidden="true"></span>
-                                        </span>
-                                    }
-                                    <button
-                                        type="button"
-                                        class="btn btn-outline-secondary"
-                                        (click)="limpiarBusqueda()"
-                                        [disabled]="clienteSearchLoading || (!clienteSeleccionado && !clienteBusquedaTermino)">
-                                        Limpiar
-                                    </button>
-                                </div>
-                                @if (clienteSearchError) {
-                                    <small class="text-danger d-block mt-1">
-                                        {{ clienteSearchError }}
-                                    </small>
-                                }
-                                @if (!clienteSearchLoading && !clienteSearchError && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1 && !clienteSeleccionado) {
-                                    <small class="text-muted d-block mt-1">
-                                        Sin resultados para “{{ clienteBusquedaTermino }}”.
-                                    </small>
-                                }
-
-                                <mat-autocomplete
-                                    #clienteAuto="matAutocomplete"
-                                    [displayWith]="clienteDisplayFn"
-                                    (optionSelected)="onClienteSelected($event.option.value)">
-                                    @for (cliente of clienteResultados; track $index) {
-                                        <mat-option [value]="cliente">
-                                            <div class="d-flex flex-column">
-                                                <span class="fw-semibold">
-                                                    {{ resolveClienteNombre(cliente) }}
-                                                </span>
-                                                <small class="text-muted">
-                                                    {{ resolveClienteContacto(cliente) }}
-                                                    @if (resolveClienteDocumento(cliente)) {
-                                                        <span>
-                                                            · {{ resolveClienteDocumento(cliente) }}
-                                                        </span>
-                                                    }
-                                                </small>
-                                            </div>
-                                        </mat-option>
-                                    }
-                                    @if (!clienteSearchLoading && clienteResultados?.length === 0 && clienteBusquedaTermino?.length > 1) {
-                                        <mat-option disabled>
-                                            Sin resultados para “{{ clienteBusquedaTermino }}”
-                                        </mat-option>
-                                    }
-                                </mat-autocomplete>
-
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label" for="clienteDocumento">Documento de identidad</label>
-                                <input
-                                    id="clienteDocumento"
-                                    type="text"
-                                    class="form-control"
-                                    [value]="infoCliente?.documento || '-'"
-                                    disabled>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label" for="clienteCelular">Celular</label>
-                                <input
-                                    id="clienteCelular"
-                                    type="text"
-                                    class="form-control"
-                                    [value]="infoCliente?.celular || '-'"
-                                    disabled>
-                            </div>
-                        </mat-card-content>
-                    </mat-card>
-                </div>
-            </div>
-
-            <mat-card class="card">
-                <mat-card-header>
-                    <mat-card-title>Programación del evento</mat-card-title>
-                </mat-card-header>
-
-                <mat-card-content class="card-body">
-                    <div class="row g-3">
-                        <div [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'">
-                            <div class="form-group">
-                                <label class="col-form-label" for="diasTrabajo">Cantidad de días</label>
-                                <input id="diasTrabajo" type="number" class="form-control" name="diasTrabajo"
-                                    [(ngModel)]="visualizarService.selectAgregarPedido.dias"
-                                    (ngModelChange)="onDiasChange($event)" min="1" step="1" inputmode="numeric"
-                                    required>
-                            </div>
-                        </div>
-                        <div [ngClass]="shouldShowFechaEvento() ? 'col-md-4' : 'col-md-6'">
-                            <div class="form-group">
-                                <label class="col-form-label" for="horaEvent">Hora</label>
-                                <input id="horaEvent" type="time" class="form-control" name="horaEvent"
-                                    [(ngModel)]="visualizarService.selectAgregarPedido.horaEvent" required>
-                            </div>
-                        </div>
-                        @if (shouldShowFechaEvento()) {
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label class="col-form-label" for="fechaEvent">Fecha</label>
-                                <!-- #3: usar bindings para min/max -->
-                                <input id="fechaEvent" type="date" class="form-control" [min]="minimo" [max]="maximo"
-                                    name="fechaEvent" [(ngModel)]="visualizarService.selectAgregarPedido.fechaEvent"
-                                    required>
-                            </div>
-                        </div>
-                        }
-                    </div>
-                    <div class="row g-3 mt-2">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="col-form-label" for="departamentoPedido">Departamento</label>
-                                <select id="departamentoPedido" class="form-control"
-                                    [(ngModel)]="visualizarService.selectAgregarPedido.departamento"
-                                    (ngModelChange)="onDepartamentoChange($event)">
-                                    <option value="">Selecciona un departamento</option>
-                                    @for (dep of departamentos; track dep) {
-                                        <option [value]="dep">{{ dep }}</option>
-                                    }
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col ms-auto">
-                            <div class="form-group">
-                                <label class="col-form-label" for="ubicacionDirec">Ubicacion</label>
-                                <div class="input-group mb-3">
-                                    <input id="ubicacionDirec" type="text" class="form-control" name="Direc"
-                                        [(ngModel)]="Direccion" autocomplete="off" (keyup.enter)="onQuickAdd()">
-                                    <div class="input-group-append"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-2">
-                        <div class="col ms-auto">
-                            <div class="form-group">
-                                <label class="col-form-label" for="direccionExacta">Dirección exacta</label>
-                                <input id="direccionExacta" type="text" class="form-control" name="DireccionExacta"
-                                    [(ngModel)]="DireccionExacta" autocomplete="off">
-                            </div>
-                        </div>
-                        <div class="col ms-auto">
-                            <div class="form-group">
-                                <label class="col-form-label" for="notasEvento">Notas</label>
-                                <input id="notasEvento" type="text" class="form-control" name="NotasEvento"
-                                    [(ngModel)]="NotasEvento"
-                                    autocomplete="off">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mt-2">
-                        <div class="col text-end">
-                            <button type="button" class="btn btn-danger" [disabled]="!canAgregarEvento"
-                                (click)="onQuickAdd()">Agregar</button>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <!-- #1: referenciar sort de esta tabla -->
-                        <table mat-table [dataSource]="dataSource" matSort #sortUbic="matSort" class="table" cdkDropList
-                            (cdkDropListDropped)="drop($event)">
-                            <ng-container matColumnDef="Nro">
-                                <th mat-header-cell *matHeaderCellDef> # </th>
-                                <td mat-cell *matCellDef="let element">
-                                    {{ (dataSource?.data?.indexOf(element) ?? 0) + 1 }}
-                                </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="Fecha">
-                                <th mat-header-cell *matHeaderCellDef> Fecha </th>
-                                <td mat-cell *matCellDef="let element">
-                                    @if (!element.editing) {
-                                        {{ formatProgramDate(element.Fecha) }} ({{ weekdayPeru(element.Fecha) }})
-                                    } @else {
-                                        <input type="date" class="form-control form-control-sm"
-                                            [(ngModel)]="element.Fecha" [ngModelOptions]="{standalone:true}"
-                                            (ngModelChange)="onUbicacionFechaChange(element, $event)"
-                                            [min]="minimo" [max]="maximo" required>
-                                        @if (!element.Fecha) {
-                                            <small class="text-danger">Requerido</small>
-                                        }
-                                    }
-                                </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="Hora">
-                                <th mat-header-cell *matHeaderCellDef> Hora </th>
-                                <td mat-cell *matCellDef="let element">
-                                    @if (!element.editing) {
-                                        {{ element.Hora }}
-                                    } @else {
-                                        <input type="time" class="form-control form-control-sm"
-                                            [(ngModel)]="element.Hora" [ngModelOptions]="{standalone:true}" required>
-                                        @if (!element.Hora) {
-                                            <small class="text-danger">Requerido</small>
-                                        }
-                                    }
-                                </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="Direccion">
-                                <th mat-header-cell *matHeaderCellDef> Direccion </th>
-                                <td mat-cell *matCellDef="let element">
-                                    @if (!element.editing) {
-                                        {{ element.Direccion }}
-                                    } @else {
-                                        <input type="text" class="form-control form-control-sm"
-                                            [(ngModel)]="element.Direccion" [ngModelOptions]="{standalone:true}"
-                                            required>
-                                        @if (!element.Direccion) {
-                                            <small class="text-danger">Requerido</small>
-                                        }
-                                    }
-                                </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="DireccionExacta">
-                                <th mat-header-cell *matHeaderCellDef> Dirección exacta </th>
-                                <td mat-cell *matCellDef="let element">
-                                    @if (!element.editing) {
-                                        {{ element.DireccionExacta }}
-                                    } @else {
-                                        <input type="text" class="form-control form-control-sm"
-                                            [(ngModel)]="element.DireccionExacta" [ngModelOptions]="{standalone:true}"
-                                            minlength="8" required>
-                                        @if ((element.DireccionExacta || '').trim().length < 8) {
-                                            <small class="text-danger">
-                                                Mínimo 8 caracteres
-                                            </small>
-                                        }
-                                    }
-                                </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="Notas">
-                                <th mat-header-cell *matHeaderCellDef> Notas </th>
-                                <td mat-cell *matCellDef="let element">
-                                    @if (!element.editing) {
-                                        {{ element.Notas }}
-                                    } @else {
-                                        <input type="text" class="form-control form-control-sm"
-                                            [(ngModel)]="element.Notas" maxlength="255"
-                                            [ngModelOptions]="{standalone:true}">
-                                    }
-                                </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="Editar">
-                                <th mat-header-cell *matHeaderCellDef> Editar </th>
-                                <td mat-cell *matCellDef="let element">
-                                    @if (!element.editing) {
-                                        <button class="btn p-0" (click)="startEdit(element)">✏️ Editar</button>
-                                    } @else {
-                                        <button class="btn p-0 me-2" (click)="saveEdit(element)"
-                                            [disabled]="rowInvalid(element)">💾 Guardar</button>
-                                        <button class="btn text-danger p-0" (click)="cancelEdit(element)">✖
-                                            Cancelar</button>
-                                    }
-                                </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="Quitar">
-                                <th mat-header-cell *matHeaderCellDef> Quitar </th>
-                                <td mat-cell *matCellDef="let element">
-                                    <button class="btn mx-auto" style="background-color:transparent"
-                                        (click)="deleteElement(element.Direccion,element.Hora)">
-                                        <i class="fa fa-trash fa-2x"></i>
-                                    </button>
-                                </td>
-                            </ng-container>
-
-                            <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
-                            <tr mat-row *matRowDef="let row; columns: columnsToDisplay;" cdkDrag></tr>
-                        </table>
-                    </div>
-                </mat-card-content>
-            </mat-card>
-
-            <mat-card class="card">
-                <mat-card-header>
-                    <mat-card-title>Servicios disponibles</mat-card-title>
-                </mat-card-header>
-                <mat-card-content class="card-body">
-                    <div class="row">
-                        <div class="col ms-auto">
-                            <div class="form-group">
-                                <label class="col-form-label" for="servicioSelect">Servicio</label>
-                                <!-- #2: corregir atributo required -->
-                                <select type="text" class="form-control form-control-sm" name="servicio"
-                                    [(ngModel)]="servicioSeleccionado" (ngModelChange)="asignarServicio($event)"
-                                    required id="servicioSelect">
-                                    @for (s of servicios; track s.id !== null && s.id !== undefined ? s.id : $index) {
-                                        <option [value]="s.id">{{ s.nombre }}</option>
-                                    }
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col ms-auto">
-                            <div class="form-group">
-                                <label class="col-form-label" for="eventoSelect">Evento</label>
-                                <!-- #2: corregir atributo required -->
-                                <select type="text" class="form-control form-control-sm" name="evento"
-                                    [(ngModel)]="eventoSeleccionado" (ngModelChange)="asignarEvento($event)" required
-                                    id="eventoSelect">
-                                    @for (e of evento; track e.PK_E_Cod !== null && e.PK_E_Cod !== undefined ? e.PK_E_Cod : $index) {
-                                        <option [value]="e.PK_E_Cod">{{ e.E_Nombre }}</option>
-                                    }
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <app-table-base
-                            [columns]="paquetesColumns"
-                            [data]="paquetesRows"
-                            [showSearch]="false"
-                            [showFooterInfo]="false"
-                            [showPagination]="false"
-                            [showPageSizeSelector]="false"
-                            [showCreateButton]="false"
-                            [pageSize]="paquetesRows.length || 10"
-                            [pageSizeOptions]="[paquetesRows.length || 10]"
-                            emptyText="Sin paquetes disponibles">
-
-                            <ng-template appCell="descripcion" let-row>
-                                {{ row.descripcion || '—' }}
-                            </ng-template>
-
-                            <ng-template appCell="precio" let-row>
-                                {{ row.precio | usd:'1.2-2' }}
-                            </ng-template>
-
-                            <ng-template appCell="staff" let-row>
-                                {{ row.staff !== null && row.staff !== undefined ? row.staff : '—' }}
-                            </ng-template>
-
-                            <ng-template appCell="horas" let-row>
-                                {{ row.horas !== null && row.horas !== undefined ? row.horas : '—' }}
-                            </ng-template>
-
-                            <ng-template appCell="acciones" let-row>
-                                <div class="d-flex justify-content-center">
-                                    @if (!isInSeleccion(row.raw)) {
-                                        <button type="button" class="btn btn-outline-primary btn-sm"
-                                                (click)="addPaquete(row.raw)">
-                                            Agregar
-                                        </button>
-                                    } @else {
-                                        <button type="button" class="btn btn-outline-danger btn-sm"
-                                                (click)="removePaquete(pkgKey(row.raw))">
-                                            Quitar
-                                        </button>
-                                    }
-                                </div>
-                            </ng-template>
-
-                        </app-table-base>
-                    </div>
-                    @if (selectedPaquetes.length) {
-                    <div class="row mt-3">
-                        <div class="col">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <h6>Seleccionados ({{selectedPaquetes.length}})</h6>
-                                @if (isMultipleDias()) {
-                                <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirAsignacionFechas()">
-                                    Asignar fechas
-                                </button>
-                                }
-                            </div>
-
-                            <app-table-base
-                                [columns]="selectedPaquetesColumns"
-                                [data]="selectedPaquetes"
-                                [showSearch]="false"
-                                [showFooterInfo]="false"
-                                [showPagination]="false"
-                                [showPageSizeSelector]="false"
-                                [showCreateButton]="false"
-                                [pageSize]="selectedPaquetes.length || 10"
-                                [pageSizeOptions]="[selectedPaquetes.length || 10]"
-                                emptyText="Sin paquetes seleccionados">
-
-                                <ng-template appCell="descripcion" let-row>
-                                    {{ row.descripcion }}
-                                </ng-template>
-
-                                <ng-template appCell="precio" let-row>
-                                    <div class="text-end">{{ row.precio | usd:'1.2-2' }}</div>
-                                </ng-template>
-
-                                <ng-template appCell="cantidad" let-row>
-                                    <div class="text-center">
-                                        <input type="number" class="form-control form-control-sm text-center"
-                                            [value]="row.cantidad || 1" min="1" step="1" inputmode="numeric"
-                                            [attr.max]="getCantidadMaximaPorDias() || null"
-                                            (input)="onCantidadChange(row, $any($event.target).value)">
-                                    </div>
-                                </ng-template>
-
-                                <ng-template appCell="subtotal" let-row>
-                                    <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | usd:'1.2-2' }}</div>
-                                </ng-template>
-
-                                <ng-template appCell="notas" let-row>
-                                    <input type="text"
-                                           class="form-control form-control-sm"
-                                           placeholder="Notas del ítem (opcional)"
-                                           [(ngModel)]="row.notas"
-                                           [ngModelOptions]="{standalone:true}"
-                                           maxlength="255">
-                                </ng-template>
-
-                                <ng-template appCell="quitar" let-row>
-                                    <button type="button" class="btn btn-link text-danger p-0" title="Quitar"
-                                            (click)="removePaquete(row.key)">
-                                        ✖
-                                    </button>
-                                </ng-template>
-
-                            </app-table-base>
-                            <div class="text-end mt-2">
-                                <strong>Subtotal paquetes: {{ totalPaquetes | usd:'1.2-2' }}</strong>
-                            </div>
-                        </div>
-                    </div>
+                  <div
+                    class="d-flex align-items-center justify-content-between"
+                  >
+                    <h6>Seleccionados ({{ selectedPaquetes.length }})</h6>
+                    @if (isMultipleDias()) {
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm"
+                        (click)="abrirAsignacionFechas()"
+                      >
+                        Asignar fechas
+                      </button>
                     }
+                  </div>
 
-                </mat-card-content>
-            </mat-card>
+                  <app-table-base
+                    [columns]="selectedPaquetesColumns"
+                    [data]="selectedPaquetes"
+                    [showSearch]="false"
+                    [showFooterInfo]="false"
+                    [showPagination]="false"
+                    [showPageSizeSelector]="false"
+                    [showCreateButton]="false"
+                    [pageSize]="selectedPaquetes.length || 10"
+                    [pageSizeOptions]="[selectedPaquetes.length || 10]"
+                    emptyText="Sin paquetes seleccionados"
+                  >
+                    <ng-template appCell="descripcion" let-row>
+                      {{ row.descripcion }}
+                    </ng-template>
 
-            @if (!isDepartamentoLima()) {
-            <mat-card class="card">
-                <mat-card-header>
-                    <mat-card-title>Viáticos</mat-card-title>
-                </mat-card-header>
-                <mat-card-content class="card-body">
-                    <div class="form-check mb-3">
-                        <input id="viaticosClientePedido" type="checkbox" class="form-check-input"
-                            [(ngModel)]="visualizarService.selectAgregarPedido.viaticosCliente"
-                            (ngModelChange)="onViaticosClienteChange($event)">
-                        <label class="form-check-label" for="viaticosClientePedido">El cliente cubre viáticos</label>
-                    </div>
-                    @if (!visualizarService.selectAgregarPedido.viaticosCliente) {
-                    <div class="form-group">
-                        <label class="col-form-label" for="viaticosMontoPedido">Monto de viáticos (USD)</label>
-                        <input id="viaticosMontoPedido" type="number" class="form-control"
-                            [(ngModel)]="visualizarService.selectAgregarPedido.viaticosMonto" min="1" step="1"
-                            inputmode="numeric">
-                    </div>
-                    }
-                </mat-card-content>
-            </mat-card>
+                    <ng-template appCell="precio" let-row>
+                      <div class="text-end">
+                        {{ row.precio | usd: "1.2-2" }}
+                      </div>
+                    </ng-template>
+
+                    <ng-template appCell="cantidad" let-row>
+                      <div class="text-center">
+                        <input
+                          type="number"
+                          class="form-control form-control-sm text-center"
+                          [value]="row.cantidad || 1"
+                          min="1"
+                          step="1"
+                          inputmode="numeric"
+                          [attr.max]="getCantidadMaximaPorDias() || null"
+                          (input)="
+                            onCantidadChange(row, $any($event.target).value)
+                          "
+                        />
+                      </div>
+                    </ng-template>
+
+                    <ng-template appCell="subtotal" let-row>
+                      <div class="text-end">
+                        {{ row.precio * (row.cantidad || 1) | usd: "1.2-2" }}
+                      </div>
+                    </ng-template>
+
+                    <ng-template appCell="notas" let-row>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        placeholder="Notas del ítem (opcional)"
+                        [(ngModel)]="row.notas"
+                        [ngModelOptions]="{ standalone: true }"
+                        maxlength="255"
+                      />
+                    </ng-template>
+
+                    <ng-template appCell="quitar" let-row>
+                      <button
+                        type="button"
+                        class="btn btn-link text-danger p-0"
+                        title="Quitar"
+                        (click)="removePaquete(row.key)"
+                      >
+                        ✖
+                      </button>
+                    </ng-template>
+                  </app-table-base>
+                  <div class="text-end mt-2">
+                    <strong
+                      >Subtotal paquetes:
+                      {{ totalPaquetes | usd: "1.2-2" }}</strong
+                    >
+                  </div>
+                </div>
+              </div>
             }
+          </mat-card-content>
+        </mat-card>
 
-            <mat-card class="card">
-                <mat-card-header>
-                    <mat-card-title>Mensaje del solicitante</mat-card-title>
-                </mat-card-header>
-                <mat-card-content class="card-body">
-                    <textarea class="form-control" rows="3" name="Observacion"
-                        [(ngModel)]="visualizarService.selectAgregarPedido.Observacion"
-                        placeholder="Mensaje proporcionado en la solicitud"></textarea>
-                </mat-card-content>
-            </mat-card>
-
-            <div class="row mb-3">
-                <div class="col-md-4 ms-auto">
-                    <label class="col-form-label" for="totalFinalPedido">Total final</label>
-                    <div class="input-group">
-                        <span class="input-group-text">US$</span>
-                        <input id="totalFinalPedido" type="number" class="form-control" [value]="totalSeleccion" disabled>
-                    </div>
+        @if (!isDepartamentoLima()) {
+          <mat-card class="card">
+            <mat-card-header>
+              <mat-card-title>Viáticos</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="card-body">
+              <div class="form-check mb-3">
+                <input
+                  id="viaticosClientePedido"
+                  type="checkbox"
+                  class="form-check-input"
+                  [(ngModel)]="
+                    visualizarService.selectAgregarPedido.viaticosCliente
+                  "
+                  (ngModelChange)="onViaticosClienteChange($event)"
+                />
+                <label class="form-check-label" for="viaticosClientePedido"
+                  >El cliente cubre viáticos</label
+                >
+              </div>
+              @if (!visualizarService.selectAgregarPedido.viaticosCliente) {
+                <div class="form-group">
+                  <label class="col-form-label" for="viaticosMontoPedido"
+                    >Monto de viáticos (USD)</label
+                  >
+                  <input
+                    id="viaticosMontoPedido"
+                    type="number"
+                    class="form-control"
+                    [(ngModel)]="
+                      visualizarService.selectAgregarPedido.viaticosMonto
+                    "
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                  />
                 </div>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title>Mensaje del solicitante</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="card-body">
+            <textarea
+              class="form-control"
+              rows="3"
+              name="Observacion"
+              [(ngModel)]="visualizarService.selectAgregarPedido.Observacion"
+              placeholder="Mensaje proporcionado en la solicitud"
+            ></textarea>
+          </mat-card-content>
+        </mat-card>
+
+        <div class="row mb-3">
+          <div class="col-md-4 ms-auto">
+            <label class="col-form-label" for="totalFinalPedido"
+              >Total final</label
+            >
+            <div class="input-group">
+              <span class="input-group-text">US$</span>
+              <input
+                id="totalFinalPedido"
+                type="number"
+                class="form-control"
+                [value]="totalSeleccion"
+                disabled
+              />
             </div>
+          </div>
+        </div>
 
-            <div class="row" style="text-align: center;">
-                <div class="col-6" style="text-align: right;">
-                    <button type="button" class="btn btn-outline-dark" (click)="postPedido()">Registrar</button>
-                </div>
-                <div class="col-6" style="text-align: left;">
-                    <button type="button" class="btn btn-outline-dark"
-                        [routerLink]="['/home/gestionar-pedido']">Atrás</button>
-                </div>
-            </div>
-        </form>
-      </div>
+        <div class="row" style="text-align: center">
+          <div class="col-6" style="text-align: right">
+            <button
+              type="button"
+              class="btn btn-outline-dark"
+              (click)="postPedido()"
+            >
+              Registrar
+            </button>
+          </div>
+          <div class="col-6" style="text-align: left">
+            <button
+              type="button"
+              class="btn btn-outline-dark"
+              [routerLink]="['/home/gestionar-pedido']"
+            >
+              Atrás
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 
-<app-modal-base [open]="asignacionFechasAbierta" [disableClose]="false" [loading]="false" [useDefaultFooter]="false"
-  size="lg" title="Asignar fechas a servicios" (closed)="cerrarAsignacionFechas()">
-
+<app-modal-base
+  [open]="asignacionFechasAbierta"
+  [disableClose]="false"
+  [loading]="false"
+  [useDefaultFooter]="false"
+  size="lg"
+  title="Asignar fechas a servicios"
+  (closed)="cerrarAsignacionFechas()"
+>
   @if (!fechasDisponibles.length) {
-  <p class="text-muted mb-0">No hay fechas disponibles para asignar.</p>
+    <p class="text-muted mb-0">No hay fechas disponibles para asignar.</p>
   } @else {
-  <p class="text-muted mb-2">Selecciona las fechas de trabajo por servicio. Deben coincidir con la cantidad.</p>
+    <p class="text-muted mb-2">
+      Selecciona las fechas de trabajo por servicio. Deben coincidir con la
+      cantidad.
+    </p>
 
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>Servicio</th>
-          @for (fecha of fechasDisponibles; track fecha) {
-          <th class="text-center">{{ formatFechaConDia(fecha) }}</th>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Servicio</th>
+            @for (fecha of fechasDisponibles; track fecha) {
+              <th class="text-center">{{ formatFechaConDia(fecha) }}</th>
+            }
+            <th class="text-center">Asignadas</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of selectedPaquetes; track item.key) {
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ item.descripcion }}</div>
+                <div class="small text-muted">
+                  Cantidad: {{ item.cantidad || 1 }}
+                </div>
+              </td>
+              @for (fecha of fechasDisponibles; track fecha) {
+                <td class="text-center">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    [checked]="isFechaAsignada(item.tmpId, fecha)"
+                    [disabled]="
+                      !isFechaAsignada(item.tmpId, fecha) &&
+                      getCantidadAsignada(item.tmpId) >= (item.cantidad || 1)
+                    "
+                    (change)="
+                      toggleFechaAsignada(
+                        item.tmpId,
+                        fecha,
+                        $any($event.target).checked,
+                        item.cantidad || 1
+                      )
+                    "
+                  />
+                </td>
+              }
+              <td class="text-center">
+                {{ getCantidadAsignada(item.tmpId) }}/{{ item.cantidad || 1 }}
+              </td>
+            </tr>
           }
-          <th class="text-center">Asignadas</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (item of selectedPaquetes; track item.key) {
-        <tr>
-          <td>
-            <div class="fw-semibold">{{ item.descripcion }}</div>
-            <div class="small text-muted">Cantidad: {{ item.cantidad || 1 }}</div>
-          </td>
-          @for (fecha of fechasDisponibles; track fecha) {
-          <td class="text-center">
-            <input type="checkbox" class="form-check-input"
-              [checked]="isFechaAsignada(item.tmpId, fecha)"
-              [disabled]="!isFechaAsignada(item.tmpId, fecha) && getCantidadAsignada(item.tmpId) >= (item.cantidad || 1)"
-              (change)="toggleFechaAsignada(item.tmpId, fecha, $any($event.target).checked, item.cantidad || 1)">
-          </td>
-          }
-          <td class="text-center">
-            {{ getCantidadAsignada(item.tmpId) }}/{{ item.cantidad || 1 }}
-          </td>
-        </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+        </tbody>
+      </table>
+    </div>
   }
 
   <div modal-footer class="d-flex justify-content-end">
-    <button type="button" class="btn btn-outline-secondary" (click)="cerrarAsignacionFechas()">Cerrar</button>
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="cerrarAsignacionFechas()"
+    >
+      Cerrar
+    </button>
   </div>
 </app-modal-base>
-

@@ -1,69 +1,73 @@
 <div class="dashboard-content">
   <div class="detalle-equipos">
-  <app-list-toolbar
-    [title]="toolbarTitle"
-    [description]="toolbarDescription"
-    [showSearch]="true"
-    [searchPlaceholder]="'Marca o modelo'"
-    [searchValue]="busqueda"
-    [showCreateButton]="false"
-    (searchChange)="onBuscar($event)"
-  >
-    <div actions class="toolbar-actions">
-      <button mat-button type="button" class="back-button" (click)="volver()">
-        <mat-icon>arrow_back</mat-icon>
-        Volver al inventario
-      </button>
-      <button
-        mat-stroked-button
-        color="primary"
-        type="button"
-        (click)="verDetalleGeneral()"
-        [disabled]="!resumenModelos.length"
-      >
-        <mat-icon>table_rows</mat-icon>
-        Ver lista completa
-      </button>
-    </div>
-  </app-list-toolbar>
+    <app-list-toolbar
+      [title]="toolbarTitle"
+      [description]="toolbarDescription"
+      [showSearch]="true"
+      [searchPlaceholder]="'Marca o modelo'"
+      [searchValue]="busqueda"
+      [showCreateButton]="false"
+      (searchChange)="onBuscar($event)"
+    >
+      <div actions class="toolbar-actions">
+        <button mat-button type="button" class="back-button" (click)="volver()">
+          <mat-icon>arrow_back</mat-icon>
+          Volver al inventario
+        </button>
+        <button
+          mat-stroked-button
+          color="primary"
+          type="button"
+          (click)="verDetalleGeneral()"
+          [disabled]="!resumenModelos.length"
+        >
+          <mat-icon>table_rows</mat-icon>
+          Ver lista completa
+        </button>
+      </div>
+    </app-list-toolbar>
 
-  @if (cargando) {
-  <div class="detalle-status">
-    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-    <span>Cargando resumen…</span>
-  </div>
-  }
-
-  @if (error) {
-  <div class="detalle-status error">
-    <mat-icon>error_outline</mat-icon>
-    <span>No se pudo cargar la información. Intenta nuevamente.</span>
-  </div>
-  }
-
-  @if (!cargando && !error) {
-    @if (resumenModelos.length) {
-      <app-table-base
-        [columns]="columnasResumen"
-        [data]="gruposFiltrados"
-        [pageSize]="10"
-        [pageSizeOptions]="[10, 25, 50]"
-        [showCreateButton]="false"
-        [showSearch]="false"
-        [emptyText]="'No hay modelos registrados con estos filtros.'"
-      >
-        <ng-template appCell="acciones" let-row>
-          <button class="btn btn-outline-primary btn-sm" type="button" (click)="verDetalleModelo(row)">
-            Ver equipos
-          </button>
-        </ng-template>
-      </app-table-base>
-    } @else {
-      <div class="empty-state">
-        <mat-icon>inventory_2</mat-icon>
-        <p>No hay equipos registrados con estos filtros.</p>
+    @if (cargando) {
+      <div class="detalle-status">
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+        <span>Cargando resumen…</span>
       </div>
     }
-  }
+
+    @if (error) {
+      <div class="detalle-status error">
+        <mat-icon>error_outline</mat-icon>
+        <span>No se pudo cargar la información. Intenta nuevamente.</span>
+      </div>
+    }
+
+    @if (!cargando && !error) {
+      @if (resumenModelos.length) {
+        <app-table-base
+          [columns]="columnasResumen"
+          [data]="gruposFiltrados"
+          [pageSize]="10"
+          [pageSizeOptions]="[10, 25, 50]"
+          [showCreateButton]="false"
+          [showSearch]="false"
+          [emptyText]="'No hay modelos registrados con estos filtros.'"
+        >
+          <ng-template appCell="acciones" let-row>
+            <button
+              class="btn btn-primary btn-sm"
+              type="button"
+              (click)="verDetalleModelo(row)"
+            >
+              Ver equipos
+            </button>
+          </ng-template>
+        </app-table-base>
+      } @else {
+        <div class="empty-state">
+          <mat-icon>inventory_2</mat-icon>
+          <p>No hay equipos registrados con estos filtros.</p>
+        </div>
+      }
+    }
   </div>
 </div>
