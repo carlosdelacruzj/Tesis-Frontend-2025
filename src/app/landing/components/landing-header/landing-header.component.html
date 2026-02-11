@@ -38,15 +38,15 @@
       }
       <li>
         <button
-          mat-stroked-button
-          color="primary"
+          class="btn btn-light btn-sm"
           type="button"
           (click)="handleCotizacion()"
         >
+          <i class="fas fa-fw fa-file-invoice-dollar"></i>
           Cotización
         </button>
       </li>
-      @if (isAuthenticated) {
+      <!-- @if (isAuthenticated) {
         <li>
           <button
             class="nav-link nav-user__button nav-user__button--stack"
@@ -60,7 +60,7 @@
             </span>
           </button>
         </li>
-      }
+      } -->
       <li class="nav-item dropdown nav-user" [class.show]="dropdownOpen">
         <button
           type="button"

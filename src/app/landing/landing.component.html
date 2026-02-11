@@ -18,16 +18,17 @@
             trackEvent('cta_click', { source: 'hero-primary' })
           "
         >
+          <i class="fas fa-fw fa-file-invoice-dollar"></i>
           Pedir cotización
         </button>
         <a
-          mat-stroked-button
-          color="primary"
+          class="btn btn-tertiary"
           href="https://wa.me/51931764349?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
           target="_blank"
           rel="noopener"
           (click)="clickWhatsApp('hero')"
         >
+          <i class="fa-brands fa-whatsapp"></i>
           WhatsApp inmediato
         </a>
       </div>
@@ -162,47 +163,18 @@
         </li>
         <li>Equipo de post-producción in-house con estándar broadcast.</li>
       </ul>
-      <button class="btn btn-primary" (click)="scrollToSection('cotizacion')">
+      <!-- <button class="btn btn-primary" (click)="scrollToSection('cotizacion')">
         ¿Listo para cotizar?
-      </button>
-    </div>
-  </section>
-
-  <section class="cta-band" id="cta-final">
-    <div class="cta-band__content">
-      <h2>¿Listo para cotizar?</h2>
-      <p>
-        Conversemos hoy y recibe una propuesta personalizada con disponibilidad
-        real de fechas.
-      </p>
-      <div class="cta-band__actions">
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="scrollToSection('cotizacion')"
-        >
-          Pedir cotización
-        </button>
-        <a
-          mat-stroked-button
-          color="primary"
-          href="https://wa.me/51931764349?text=Hola%20quiero%20una%20cotizaci%C3%B3n"
-          target="_blank"
-          rel="noopener"
-          (click)="clickWhatsApp('cta-band')"
-        >
-          WhatsApp
-        </a>
-      </div>
+      </button> -->
     </div>
   </section>
 
   <section class="quote" id="cotizacion">
     <div class="section__header">
-      <h2>Solicita tu propuesta</h2>
-      <p>
-        Completa los datos esenciales y te contactamos por WhatsApp en menos de
-        2 horas.
+      <h2>Cotiza con nosotros</h2>
+      <p class="pb-3">
+        Completa los datos esenciales y te contactaremos por WhatsApp en menos
+        de 2 horas.
       </p>
     </div>
 
@@ -475,7 +447,7 @@
           </div>
         </div>
 
-        <mat-expansion-panel class="quote__panel">
+        <!-- <mat-expansion-panel class="quote__panel">
           <mat-expansion-panel-header>
             <mat-panel-title>Información opcional</mat-panel-title>
             <mat-panel-description
@@ -537,7 +509,7 @@
               }
             </select>
           </div>
-        </mat-expansion-panel>
+        </mat-expansion-panel> -->
 
         <div class="form-check quote__consent">
           <input
@@ -568,8 +540,7 @@
 
         <div class="quote__actions">
           <button
-            mat-raised-button
-            color="primary"
+            class="btn btn-primary"
             type="submit"
             [disabled]="isSubmitting || !eventCatalogReady"
           >
@@ -619,13 +590,48 @@
   </section>
 
   <footer class="landing__footer">
-    <div>
-      <strong>D' La Cruz video y fotografía © {{ currentYear }}</strong>
-      <p>Producciones audiovisuales en Lima y todo el Perú.</p>
+    <div class="landing__footer-main">
+      <div class="landing__footer-brand">
+        <img
+          src="assets/images/logo-white.png"
+          alt="D' La Cruz video y fotografía"
+          class="logo"
+        />
+        <span>Video y fotografía profesional</span>
+        <p>
+          Historias que se sienten reales. Cobertura en Lima y todo el Perú con
+          equipo senior y entregas rápidas.
+        </p>
+      </div>
+
+      <div class="landing__footer-columns">
+        <div class="landing__footer-col">
+          <h4>Contacto</h4>
+          <a href="mailto:edwindelacruz03&#64;gmail.com"
+            >edwindelacruz03&#64;gmail.com</a
+          >
+          <a href="tel:+51999999999">+51 999 091 822</a>
+          <span>Atención: Lunes a Sábado, 9:00 - 19:00</span>
+        </div>
+
+        <div class="landing__footer-col">
+          <h4>Ubicación</h4>
+          <span>Lima, Perú</span>
+          <span>Sesiones en estudio y exteriores</span>
+          <a href="#cotizacion">Cotiza tu fecha</a>
+        </div>
+
+        <div class="landing__footer-col">
+          <h4>Explorar</h4>
+          <a href="#servicios">Servicios</a>
+          <a href="#nosotros">Sobre nosotros</a>
+          <a href="#faq">Preguntas frecuentes</a>
+        </div>
+      </div>
     </div>
-    <div class="landing__footer-links">
-      <a href="mailto:hola&#64;dlacruz.com">hola&#64;dlacruz.com</a>
-      <a href="tel:+51999999999">+51 999 999 999</a>
+
+    <div class="landing__footer-bottom">
+      <span>D' La Cruz video y fotografía - {{ currentYear }}</span>
       <a href="#cotizacion">Política de privacidad</a>
     </div>
   </footer>

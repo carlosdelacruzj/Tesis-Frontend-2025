@@ -1,19 +1,19 @@
 <section class="login-layout">
   <div class="login-layout__panel login-layout__panel--intro">
-    <h1 class="login-layout__title">Bienvenido de nuevo</h1>
+    <h1 class="login-layout__title">¡Bienvenido de nuevo!</h1>
     <p class="login-layout__subtitle">
       Ingresa con tu cuenta para continuar administrando los proyectos y dar
       seguimiento a los pedidos desde un mismo lugar.
     </p>
-    <ul class="login-layout__highlights">
-      <li>Información centralizada y actualizada en tiempo real.</li>
-      <li>Herramientas inteligentes para la gestion del proyecto.</li>
-      <li>Gestiona los clientes de la empresa.</li>
-    </ul>
   </div>
 
   <div class="login-layout__panel login-layout__panel--form">
-    <form class="login-form" autocomplete="off" [formGroup]="miFormulario" (ngSubmit)="login()">
+    <form
+      class="login-form"
+      autocomplete="off"
+      [formGroup]="miFormulario"
+      (ngSubmit)="login()"
+    >
       <h2 class="login-form__title">Inicia sesión</h2>
       <p class="login-form__description">
         Utiliza las credenciales proporcionadas para acceder a la plataforma.
@@ -41,7 +41,11 @@
         />
       </div>
 
-      <button class="login-form__button" type="submit" [disabled]="miFormulario.invalid">
+      <button
+        class="login-form__button"
+        type="submit"
+        [disabled]="miFormulario.invalid"
+      >
         Acceder
       </button>
 

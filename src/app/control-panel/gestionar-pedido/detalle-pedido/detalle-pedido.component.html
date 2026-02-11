@@ -1,5 +1,9 @@
 ﻿<div class="dashboard-content">
-  <app-list-toolbar [title]="'Detalle del pedido'" [showSearch]="false" [showCreateButton]="false">
+  <app-list-toolbar
+    [title]="'Detalle del pedido'"
+    [showSearch]="false"
+    [showCreateButton]="false"
+  >
   </app-list-toolbar>
 
   <form class="cotizacion-form">
@@ -11,13 +15,31 @@
           </mat-card-header>
           <mat-card-content>
             <div class="form-group">
-              <label class="col-form-label" for="clienteNombreCompleto">Nombre completo</label>
-              <input id="clienteNombreCompleto" type="text" class="form-control" [value]="clienteNombreCompleto" disabled readonly>
+              <label class="col-form-label" for="clienteNombreCompleto"
+                >Nombre completo</label
+              >
+              <input
+                id="clienteNombreCompleto"
+                type="text"
+                class="form-control"
+                [value]="clienteNombreCompleto"
+                disabled
+                readonly
+              />
             </div>
 
             <div class="form-group">
-              <label class="col-form-label" for="clienteCelular">WhatsApp / contacto</label>
-              <input id="clienteCelular" type="text" class="form-control" [value]="clienteCelular" disabled readonly>
+              <label class="col-form-label" for="clienteCelular"
+                >WhatsApp / contacto</label
+              >
+              <input
+                id="clienteCelular"
+                type="text"
+                class="form-control"
+                [value]="clienteCelular"
+                disabled
+                readonly
+              />
             </div>
           </mat-card-content>
         </mat-card>
@@ -32,27 +54,58 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <div class="form-group">
-                  <label class="col-form-label" for="pedidoNombre">Pedido</label>
-                  <input id="pedidoNombre" type="text" class="form-control"
-                    [value]="visualizarService.selectAgregarPedido.NombrePedido || ''" disabled readonly>
+                  <label class="col-form-label" for="pedidoNombre"
+                    >Pedido</label
+                  >
+                  <input
+                    id="pedidoNombre"
+                    type="text"
+                    class="form-control"
+                    [value]="
+                      visualizarService.selectAgregarPedido.NombrePedido || ''
+                    "
+                    disabled
+                    readonly
+                  />
                 </div>
               </div>
 
               <div class="col-md-4">
                 <div class="form-group">
-                  <label class="col-form-label" for="departamentoPedido">Departamento</label>
-                  <input id="departamentoPedido" type="text" class="form-control"
-                    [value]="visualizarService.selectAgregarPedido.departamento || ''" disabled readonly>
+                  <label class="col-form-label" for="departamentoPedido"
+                    >Departamento</label
+                  >
+                  <input
+                    id="departamentoPedido"
+                    type="text"
+                    class="form-control"
+                    [value]="
+                      visualizarService.selectAgregarPedido.departamento || ''
+                    "
+                    disabled
+                    readonly
+                  />
                 </div>
               </div>
 
               <div class="col-md-4">
                 <div class="form-group">
-                  <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
-                  <select id="eventoSelect" class="form-control" [value]="(eventoSeleccionado ?? '').toString()" disabled>
-                    <option value="" disabled>Selecciona un tipo de evento</option>
+                  <label class="col-form-label" for="eventoSelect"
+                    >Tipo de evento</label
+                  >
+                  <select
+                    id="eventoSelect"
+                    class="form-control"
+                    [value]="(eventoSeleccionado ?? '').toString()"
+                    disabled
+                  >
+                    <option value="" disabled>
+                      Selecciona un tipo de evento
+                    </option>
                     @for (e of evento; track $index) {
-                    <option [value]="(e.id ?? '').toString()">{{ e.nombre }}</option>
+                      <option [value]="(e.id ?? '').toString()">
+                        {{ e.nombre }}
+                      </option>
                     }
                   </select>
                 </div>
@@ -62,17 +115,35 @@
             <div class="row g-3 mt-1">
               <div class="col-md-6">
                 <div class="form-group">
-                  <label class="col-form-label" for="diasTrabajo">Cantidad de dias</label>
-                  <input id="diasTrabajo" type="number" class="form-control"
-                    [value]="visualizarService.selectAgregarPedido.dias ?? 1" disabled readonly>
+                  <label class="col-form-label" for="diasTrabajo"
+                    >Cantidad de dias</label
+                  >
+                  <input
+                    id="diasTrabajo"
+                    type="number"
+                    class="form-control"
+                    [value]="visualizarService.selectAgregarPedido.dias ?? 1"
+                    disabled
+                    readonly
+                  />
                 </div>
               </div>
 
               <div class="col-md-6">
                 <div class="form-group">
-                  <label class="col-form-label" for="horasEstimadas">Horas estimadas por dia</label>
-                  <input id="horasEstimadas" type="number" class="form-control"
-                    [value]="visualizarService.selectAgregarPedido.horasEstimadas ?? ''" disabled readonly>
+                  <label class="col-form-label" for="horasEstimadas"
+                    >Horas estimadas por dia</label
+                  >
+                  <input
+                    id="horasEstimadas"
+                    type="number"
+                    class="form-control"
+                    [value]="
+                      visualizarService.selectAgregarPedido.horasEstimadas ?? ''
+                    "
+                    disabled
+                    readonly
+                  />
                 </div>
               </div>
             </div>
@@ -83,7 +154,7 @@
       <div class="col-12">
         <mat-card class="card mb-3">
           <mat-card-header class="programacion-header">
-            <mat-card-title>Programacion del evento</mat-card-title>
+            <mat-card-title>Programación del evento</mat-card-title>
             <mat-card-subtitle>
               Locaciones y horarios definidos para el pedido.
             </mat-card-subtitle>
@@ -92,100 +163,184 @@
             <div class="programacion-fechas form-group mb-3">
               <label class="col-form-label mb-2">Fechas de trabajo</label>
               <div class="row g-2">
-                @for (fecha of fechasTrabajoValores; track fecha; let i = $index) {
-                <div class="col-md-4">
-                  <div class="form-group">
-                    <label class="small text-muted mb-1 d-block">Dia {{ i + 1 }}</label>
-                    <input type="date" class="form-control" [value]="fecha" disabled readonly>
+                @for (
+                  fecha of fechasTrabajoValores;
+                  track fecha;
+                  let i = $index
+                ) {
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label class="small text-muted mb-1 d-block"
+                        >Dia {{ i + 1 }}</label
+                      >
+                      <input
+                        type="date"
+                        class="form-control"
+                        [value]="fecha"
+                        disabled
+                        readonly
+                      />
+                    </div>
                   </div>
-                </div>
                 }
               </div>
             </div>
 
             <div class="programacion-list">
               @if (!fechasTrabajoValores.length) {
-              <div class="programacion-empty">
-                Aun no hay fechas de trabajo registradas.
-              </div>
+                <div class="programacion-empty">
+                  Aun no hay fechas de trabajo registradas.
+                </div>
               }
 
-              @for (fecha of fechasTrabajoValores; track fecha; let diaIndex = $index) {
-              <div class="programacion-day">
-                <div class="programacion-day__header d-flex align-items-center justify-content-between gap-2">
-                  <div>
-                    <h5 class="mb-1">Dia {{ diaIndex + 1 }} · {{ formatFechaConDia(fecha) }}</h5>
-                    @let resumenDia = getResumenDia(fecha);
-                    <div class="programacion-day__summary">
-                      <span class="programacion-chip programacion-chip--soft">{{ resumenDia.total }} locacion(es)</span>
-                      <span class="programacion-chip programacion-chip--soft">Inicio: {{ resumenDia.primera }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                @let indices = getProgramacionIndicesPorFecha(fecha);
-                @if (!indices.length) {
-                <div class="programacion-empty">
-                  Aun no hay locaciones para este dia.
-                </div>
-                }
-
-                @for (index of indices; track index) {
-                <div class="programacion-item">
-                  <div class="programacion-item__header d-flex align-items-center justify-content-between gap-2">
-                    <div class="programacion-item__summary">
-                      <div class="d-flex align-items-center gap-2">
-                        <h4 class="mb-0">{{ ubicacion[index].Direccion || ('Locacion ' + (index + 1)) }}</h4>
-                        <span class="programacion-chip" [ngClass]="isProgramacionIncompleta(index) ? 'programacion-status--warn' : 'programacion-status--ok'">
-                          {{ isProgramacionIncompleta(index) ? 'Incompleta' : 'Completa' }}
-                        </span>
-                      </div>
-                      <div class="programacion-item__meta">
-                        <span class="programacion-chip programacion-chip--soft">{{ getProgramacionHoraResumen(index) }}</span>
-                        <span class="programacion-chip programacion-chip--soft">{{ getProgramacionDireccionResumen(index) }}</span>
+              @for (
+                fecha of fechasTrabajoValores;
+                track fecha;
+                let diaIndex = $index
+              ) {
+                <div class="programacion-day">
+                  <div
+                    class="programacion-day__header d-flex align-items-center justify-content-between gap-2"
+                  >
+                    <div>
+                      <h5 class="mb-1">
+                        Dia {{ diaIndex + 1 }} · {{ formatFechaConDia(fecha) }}
+                      </h5>
+                      @let resumenDia = getResumenDia(fecha);
+                      <div class="programacion-day__summary">
+                        <span class="programacion-chip programacion-chip--soft"
+                          >{{ resumenDia.total }} locacion(es)</span
+                        >
+                        <span class="programacion-chip programacion-chip--soft"
+                          >Inicio: {{ resumenDia.primera }}</span
+                        >
                       </div>
                     </div>
                   </div>
 
-                  <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                      <div class="form-group">
-                        <label class="col-form-label">Nombre de la locacion</label>
-                        <input type="text" class="form-control" [value]="ubicacion[index].Direccion || ''" disabled readonly>
-                      </div>
+                  @let indices = getProgramacionIndicesPorFecha(fecha);
+                  @if (!indices.length) {
+                    <div class="programacion-empty">
+                      Aun no hay locaciones para este dia.
                     </div>
+                  }
 
-                    <div class="col-md-6">
-                      <div class="form-group">
-                        <label class="col-form-label">Direccion o punto de encuentro</label>
-                        <input type="text" class="form-control" [value]="ubicacion[index].DireccionExacta || ''" disabled readonly>
+                  @for (index of indices; track index) {
+                    <div class="programacion-item">
+                      <div
+                        class="programacion-item__header d-flex align-items-center justify-content-between gap-2"
+                      >
+                        <div class="programacion-item__summary">
+                          <div class="d-flex align-items-center gap-2">
+                            <h4 class="mb-0">
+                              {{
+                                ubicacion[index].Direccion ||
+                                  "Locacion " + (index + 1)
+                              }}
+                            </h4>
+                            <span
+                              class="programacion-chip"
+                              [ngClass]="
+                                isProgramacionIncompleta(index)
+                                  ? 'programacion-status--warn'
+                                  : 'programacion-status--ok'
+                              "
+                            >
+                              {{
+                                isProgramacionIncompleta(index)
+                                  ? "Incompleta"
+                                  : "Completa"
+                              }}
+                            </span>
+                          </div>
+                          <div class="programacion-item__meta">
+                            <span
+                              class="programacion-chip programacion-chip--soft"
+                              >{{ getProgramacionHoraResumen(index) }}</span
+                            >
+                            <span
+                              class="programacion-chip programacion-chip--soft"
+                              >{{
+                                getProgramacionDireccionResumen(index)
+                              }}</span
+                            >
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
-                    <div class="col-sm-6 col-md-3">
-                      <div class="form-group">
-                        <label class="col-form-label">Fecha</label>
-                        <input type="date" class="form-control" [value]="ubicacion[index].Fecha || ''" disabled readonly>
-                      </div>
-                    </div>
+                      <div class="row g-3 mt-2">
+                        <div class="col-md-6">
+                          <div class="form-group">
+                            <label class="col-form-label"
+                              >Nombre de la locacion</label
+                            >
+                            <input
+                              type="text"
+                              class="form-control"
+                              [value]="ubicacion[index].Direccion || ''"
+                              disabled
+                              readonly
+                            />
+                          </div>
+                        </div>
 
-                    <div class="col-sm-6 col-md-3">
-                      <div class="form-group">
-                        <label class="col-form-label">Hora</label>
-                        <input type="time" class="form-control" [value]="ubicacion[index].Hora || ''" disabled readonly>
-                      </div>
-                    </div>
+                        <div class="col-md-6">
+                          <div class="form-group">
+                            <label class="col-form-label"
+                              >Direccion o punto de encuentro</label
+                            >
+                            <input
+                              type="text"
+                              class="form-control"
+                              [value]="ubicacion[index].DireccionExacta || ''"
+                              disabled
+                              readonly
+                            />
+                          </div>
+                        </div>
 
-                    <div class="col-md-6">
-                      <div class="form-group mb-0">
-                        <label class="col-form-label">Notas internas</label>
-                        <textarea class="form-control" rows="2" [value]="ubicacion[index].Notas || ''" disabled readonly></textarea>
+                        <div class="col-sm-6 col-md-3">
+                          <div class="form-group">
+                            <label class="col-form-label">Fecha</label>
+                            <input
+                              type="date"
+                              class="form-control"
+                              [value]="ubicacion[index].Fecha || ''"
+                              disabled
+                              readonly
+                            />
+                          </div>
+                        </div>
+
+                        <div class="col-sm-6 col-md-3">
+                          <div class="form-group">
+                            <label class="col-form-label">Hora</label>
+                            <input
+                              type="time"
+                              class="form-control"
+                              [value]="ubicacion[index].Hora || ''"
+                              disabled
+                              readonly
+                            />
+                          </div>
+                        </div>
+
+                        <div class="col-md-6">
+                          <div class="form-group mb-0">
+                            <label class="col-form-label">Notas internas</label>
+                            <textarea
+                              class="form-control"
+                              rows="2"
+                              [value]="ubicacion[index].Notas || ''"
+                              disabled
+                              readonly
+                            ></textarea>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  }
                 </div>
-                }
-              </div>
               }
             </div>
           </mat-card-content>
@@ -201,12 +356,20 @@
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <div class="form-group">
-                  <label class="col-form-label" for="servicioSelect">Servicio</label>
-                  <select id="servicioSelect" class="form-control" [value]="(servicioSeleccionado ?? '').toString()"
-                    disabled>
+                  <label class="col-form-label" for="servicioSelect"
+                    >Servicio</label
+                  >
+                  <select
+                    id="servicioSelect"
+                    class="form-control"
+                    [value]="(servicioSeleccionado ?? '').toString()"
+                    disabled
+                  >
                     <option value="" disabled>Selecciona un servicio</option>
                     @for (s of servicios; track $index) {
-                    <option [value]="(s['id'] ?? '').toString()">{{ s['nombre'] }}</option>
+                      <option [value]="(s['id'] ?? '').toString()">
+                        {{ s["nombre"] }}
+                      </option>
                     }
                   </select>
                 </div>
@@ -214,80 +377,132 @@
             </div>
 
             @if (selectedPaquetes.length) {
-            <div class="mt-2">
-              <div class="d-flex align-items-center justify-content-between w-100">
-                <h5 class="mb-0 paquetes-selected-title">Paquetes seleccionados ({{ selectedPaquetes.length }})</h5>
+              <div class="mt-2">
+                <div
+                  class="d-flex align-items-center justify-content-between w-100"
+                >
+                  <h5 class="mb-0 paquetes-selected-title">
+                    Paquetes seleccionados ({{ selectedPaquetes.length }})
+                  </h5>
+                </div>
+
+                <div class="table-responsive">
+                  <app-table-base
+                    [columns]="selectedPaquetesColumns"
+                    [data]="selectedPaquetes"
+                    [showSearch]="false"
+                    [showFooterInfo]="false"
+                    [showPagination]="false"
+                    [showPageSizeSelector]="false"
+                    [showCreateButton]="false"
+                    [pageSize]="selectedPaquetes.length || 10"
+                    [pageSizeOptions]="[selectedPaquetes.length || 10]"
+                    emptyText="Sin paquetes seleccionados"
+                  >
+                    <ng-template appCell="titulo" let-row>
+                      {{ row.titulo || row.descripcion }}
+                    </ng-template>
+
+                    <ng-template appCell="cantidad" let-row>
+                      <div class="text-center">
+                        <input
+                          type="number"
+                          class="form-control form-control-sm text-center"
+                          [value]="row.cantidad || 1"
+                          disabled
+                          readonly
+                        />
+                      </div>
+                    </ng-template>
+
+                    <ng-template appCell="precioUnit" let-row>
+                      <div class="text-end">
+                        {{ row.precio | usd: "1.2-2" }}
+                      </div>
+                    </ng-template>
+
+                    <ng-template appCell="horas" let-row>
+                      <div class="text-center">{{ row.horas ?? "-" }}</div>
+                    </ng-template>
+
+                    <ng-template appCell="staff" let-row>
+                      <div class="text-center">{{ row.personal ?? "-" }}</div>
+                    </ng-template>
+
+                    <ng-template appCell="subtotal" let-row>
+                      <div class="text-end">
+                        {{ row.precio * (row.cantidad || 1) | usd: "1.2-2" }}
+                      </div>
+                    </ng-template>
+
+                    <ng-template appCell="notas" let-row>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        [value]="row.notas || ''"
+                        disabled
+                        readonly
+                      />
+                    </ng-template>
+                  </app-table-base>
+                </div>
+
+                <div class="text-end mt-2">
+                  <strong
+                    >Subtotal paquetes:
+                    {{ pedidoSubtotal | usd: "1.2-2" }}</strong
+                  >
+                </div>
               </div>
-
-              <div class="table-responsive">
-                <app-table-base [columns]="selectedPaquetesColumns" [data]="selectedPaquetes" [showSearch]="false"
-                  [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false"
-                  [showCreateButton]="false" [pageSize]="selectedPaquetes.length || 10"
-                  [pageSizeOptions]="[selectedPaquetes.length || 10]" emptyText="Sin paquetes seleccionados">
-
-                  <ng-template appCell="titulo" let-row>
-                    {{ row.titulo || row.descripcion }}
-                  </ng-template>
-
-                  <ng-template appCell="cantidad" let-row>
-                    <div class="text-center">
-                      <input type="number" class="form-control form-control-sm text-center"
-                        [value]="row.cantidad || 1" disabled readonly>
-                    </div>
-                  </ng-template>
-
-                  <ng-template appCell="precioUnit" let-row>
-                    <div class="text-end">{{ row.precio | usd:'1.2-2' }}</div>
-                  </ng-template>
-
-                  <ng-template appCell="horas" let-row>
-                    <div class="text-center">{{ row.horas ?? '-' }}</div>
-                  </ng-template>
-
-                  <ng-template appCell="staff" let-row>
-                    <div class="text-center">{{ row.personal ?? '-' }}</div>
-                  </ng-template>
-
-                  <ng-template appCell="subtotal" let-row>
-                    <div class="text-end">{{ (row.precio * (row.cantidad || 1)) | usd:'1.2-2' }}</div>
-                  </ng-template>
-
-                  <ng-template appCell="notas" let-row>
-                    <input type="text" class="form-control form-control-sm" [value]="row.notas || ''" disabled readonly>
-                  </ng-template>
-                </app-table-base>
-              </div>
-
-              <div class="text-end mt-2">
-                <strong>Subtotal paquetes: {{ pedidoSubtotal | usd:'1.2-2' }}</strong>
-              </div>
-            </div>
             }
           </mat-card-content>
         </mat-card>
       </div>
 
       <div class="col-12">
-        @if ((visualizarService.selectAgregarPedido.departamento || '').toLowerCase() !== 'lima') {
-        <mat-card class="card mb-3">
-          <mat-card-header>
-            <mat-card-title>Viaticos</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="form-check mb-3">
-              <input id="viaticosClientePedido" type="checkbox" class="form-check-input"
-                [checked]="!!visualizarService.selectAgregarPedido.viaticosCliente" disabled>
-              <label class="form-check-label" for="viaticosClientePedido">El cliente cubre viaticos</label>
-            </div>
-            @if (!visualizarService.selectAgregarPedido.viaticosCliente) {
-            <div class="form-group">
-              <label class="col-form-label" for="viaticosMontoPedido">Monto de viaticos (USD)</label>
-              <input id="viaticosMontoPedido" type="number" class="form-control"
-                [value]="visualizarService.selectAgregarPedido.viaticosMonto ?? ''" disabled readonly>
-            </div>
-            }
-          </mat-card-content>
-        </mat-card>
+        @if (
+          (
+            visualizarService.selectAgregarPedido.departamento || ""
+          ).toLowerCase() !== "lima"
+        ) {
+          <mat-card class="card mb-3">
+            <mat-card-header>
+              <mat-card-title>Viaticos</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="form-check mb-3">
+                <input
+                  id="viaticosClientePedido"
+                  type="checkbox"
+                  class="form-check-input"
+                  [checked]="
+                    !!visualizarService.selectAgregarPedido.viaticosCliente
+                  "
+                  disabled
+                />
+                <label class="form-check-label" for="viaticosClientePedido"
+                  >El cliente cubre viaticos</label
+                >
+              </div>
+              @if (!visualizarService.selectAgregarPedido.viaticosCliente) {
+                <div class="form-group">
+                  <label class="col-form-label" for="viaticosMontoPedido"
+                    >Monto de viaticos (USD)</label
+                  >
+                  <input
+                    id="viaticosMontoPedido"
+                    type="number"
+                    class="form-control"
+                    [value]="
+                      visualizarService.selectAgregarPedido.viaticosMonto ?? ''
+                    "
+                    disabled
+                    readonly
+                  />
+                </div>
+              }
+            </mat-card-content>
+          </mat-card>
         }
       </div>
 
@@ -297,7 +512,13 @@
             <mat-card-title>Mensaje del solicitante</mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <textarea class="form-control" rows="3" [value]="visualizarService.selectAgregarPedido.Observacion || ''" disabled readonly></textarea>
+            <textarea
+              class="form-control"
+              rows="3"
+              [value]="visualizarService.selectAgregarPedido.Observacion || ''"
+              disabled
+              readonly
+            ></textarea>
           </mat-card-content>
         </mat-card>
       </div>
@@ -305,19 +526,36 @@
 
     <div class="row mb-3">
       <div class="col-md-4 ms-auto">
-        <small class="d-block text-end text-muted mt-1">Subtotal: {{ pedidoSubtotal | usd:'1.2-2' }}</small>
-        <small class="d-block text-end text-muted">IGV (18%): {{ pedidoIgv | usd:'1.2-2' }}</small>
-        <label class="col-form-label mt-2" for="totalEstimado">Total final</label>
+        <small class="d-block text-end text-muted mt-1"
+          >Subtotal: {{ pedidoSubtotal | usd: "1.2-2" }}</small
+        >
+        <small class="d-block text-end text-muted"
+          >IGV (18%): {{ pedidoIgv | usd: "1.2-2" }}</small
+        >
+        <label class="col-form-label mt-2" for="totalEstimado"
+          >Total final</label
+        >
         <div class="input-group">
           <span class="input-group-text">US$</span>
-          <input id="totalEstimado" type="number" class="form-control" [value]="pedidoTotal" disabled>
+          <input
+            id="totalEstimado"
+            type="number"
+            class="form-control"
+            [value]="pedidoTotal"
+            disabled
+          />
         </div>
       </div>
     </div>
 
     <div class="text-end">
-      <button type="button" class="btn btn-outline-secondary" [routerLink]="['/home/gestionar-pedido']">Atras</button>
+      <button
+        type="button"
+        class="btn btn-outline-secondary"
+        [routerLink]="['/home/gestionar-pedido']"
+      >
+        Atras
+      </button>
     </div>
   </form>
 </div>
-

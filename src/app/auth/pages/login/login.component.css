@@ -1,10 +1,10 @@
 :host {
   display: block;
   min-height: 100vh;
-  background: linear-gradient(135deg, #101828 0%, #312e81 100%);
+  background: linear-gradient(135deg, #101828 0%, var(--secondary) 100%);
   padding: clamp(3rem, 6vw, 6rem) clamp(1.5rem, 5vw, 4rem);
   color: #0f172a;
-  font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif;
+  align-content: center;
 }
 
 .login-layout {
@@ -23,21 +23,28 @@
 }
 
 .login-layout__panel--intro {
-  background: rgba(15, 23, 42, 0.65);
-  color: #f8fafc;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(var(--primary-rgb), 0.78),
+      rgba(var(--secondary-rgb), 0.55)
+    ),
+    url("src/assets/images/home/equipo-2.jpg") center / cover;
+
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
 .login-layout__title {
-  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-size: clamp(2rem, 4vw, 2rem);
   font-weight: 700;
   line-height: 1.1;
+  color: white;
 }
 
 .login-layout__subtitle {
-  font-size: 1.05rem;
+  font-size: 13px;
   line-height: 1.7;
   color: rgba(248, 250, 252, 0.85);
   margin: 0;
@@ -105,13 +112,15 @@
   border-radius: 14px;
   padding: 0.85rem 1rem;
   font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   background: #f8fafc;
 }
 
 .login-form__input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--primary);
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
   background: #ffffff;
 }
@@ -119,19 +128,17 @@
 .login-form__button {
   border: none;
   border-radius: 999px;
-  padding: 0.95rem 1.5rem;
-  font-size: 1rem;
+  padding: 0.9rem;
+  font-size: 14px;
   font-weight: 600;
-  background: linear-gradient(135deg, #6366f1, #4338ca);
+  background: var(--primary);
   color: #ffffff;
-  box-shadow: 0 18px 35px rgba(67, 56, 202, 0.35);
+
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
 .login-form__button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 24px 45px rgba(67, 56, 202, 0.45);
 }
 
 .login-form__button:disabled {
@@ -149,7 +156,7 @@
 }
 
 .login-form__footer a {
-  color: #6366f1;
+  color: var(--primary);
   font-weight: 600;
   text-decoration: none;
 }
