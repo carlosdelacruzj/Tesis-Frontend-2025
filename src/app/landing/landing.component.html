@@ -260,7 +260,7 @@
             >
             <select
               id="quoteTipoEvento"
-              class="form-control"
+              class="form-select"
               formControlName="tipoEvento"
               required
               (change)="onEventSelectionChange($any($event.target).value)"
@@ -408,7 +408,7 @@
             >
             <select
               id="quoteDepartamento"
-              class="form-control"
+              class="form-select"
               formControlName="departamento"
               required
               [class.is-invalid]="

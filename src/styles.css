@@ -356,6 +356,34 @@ label {
   border-radius: 20px;
 }
 
+/* Match Angular Material select with .form-select look */
+.form-select-mat {
+  --mdc-outlined-text-field-container-shape: 20px;
+  --mdc-outlined-text-field-outline-color: #d2d2e4;
+  --mdc-outlined-text-field-hover-outline-color: #d2d2e4;
+  --mdc-outlined-text-field-focus-outline-color: #a7a7f0;
+  --mdc-outlined-text-field-container-color: #ffffff;
+  --mdc-outlined-text-field-input-text-color: var(--primary);
+  --mdc-outlined-text-field-label-text-color: var(--primary);
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--primary);
+}
+
+.form-select-mat .mat-mdc-text-field-wrapper {
+  background-color: #ffffff;
+  border-radius: 20px;
+}
+
+.form-select-mat .mat-mdc-select-trigger {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.form-select-mat.mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
+  box-shadow: var(--focus-ring);
+}
+
 .form-control {
   background-image: none;
 }
@@ -7376,7 +7404,7 @@ Media Query
 @media only screen and (max-width: 320px) {
 }
 
-html,
+/* html,
 body {
   height: 100%;
 }
@@ -7385,7 +7413,7 @@ body {
   font-family: "Poppins", Roboto, "Helvetica Neue", sans-serif;
   background-color: #f5f7fb;
   color: #1a1a1a;
-}
+} */
 
 span.mat-radio-inner-circle {
   background-color: #304a6e !important;

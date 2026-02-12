@@ -304,7 +304,7 @@
               >
               <select
                 id="eventoSelect"
-                class="form-control"
+                class="form-select"
                 [value]="selectedEventoId ?? ''"
                 (change)="onEventoDropdownChange($event)"
                 [disabled]="!eventos.length"
@@ -698,7 +698,7 @@
               >
               <select
                 id="servicioSelect"
-                class="form-control"
+                class="form-select"
                 [value]="selectedServicioId ?? ''"
                 (change)="onServicioDropdownChange($any($event.target).value)"
                 [disabled]="!servicios.length"
@@ -840,7 +840,10 @@
 
               <ng-template appCell="cantidad" let-row>
                 <div class="text-center qty-select-wrap">
-                  <mat-form-field appearance="outline" class="qty-mat-field">
+                  <mat-form-field
+                    appearance="outline"
+                    class="qty-mat-field form-select-mat"
+                  >
                     <mat-select
                       [ngModel]="row.cantidad || 1"
                       [ngModelOptions]="{ standalone: true }"

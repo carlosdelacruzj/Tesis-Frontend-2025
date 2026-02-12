@@ -78,7 +78,7 @@
                   <input
                     id="departamentoPedido"
                     type="text"
-                    class="form-control"
+                    class="form-select"
                     [value]="
                       visualizarService.selectAgregarPedido.departamento || ''
                     "
@@ -95,7 +95,7 @@
                   >
                   <select
                     id="eventoSelect"
-                    class="form-control"
+                    class="form-select"
                     [value]="(eventoSeleccionado ?? '').toString()"
                     disabled
                   >

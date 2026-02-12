@@ -733,7 +733,10 @@
 
                 <ng-template appCell="cantidad" let-row>
                   <div class="text-center qty-select-wrap">
-                    <mat-form-field appearance="outline" class="qty-mat-field">
+                    <mat-form-field
+                      appearance="outline"
+                      class="qty-mat-field form-select-mat"
+                    >
                       <mat-select
                         [ngModel]="row.cantidad || 1"
                         [ngModelOptions]="{ standalone: true }"

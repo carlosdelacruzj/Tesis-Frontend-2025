@@ -84,7 +84,7 @@
                   >
                   <select
                     id="departamentoPedido"
-                    class="form-control"
+                    class="form-select"
                     name="departamentoPedido"
                     [(ngModel)]="
                       visualizarService.selectAgregarPedido.departamento
@@ -117,7 +117,7 @@
                   >
                   <select
                     id="eventoSelect"
-                    class="form-control"
+                    class="form-select"
                     [value]="(eventoSeleccionado ?? '').toString()"
                     (change)="onEventoDropdownChange($event)"
                     (blur)="eventoSelectTouched = true"
@@ -706,7 +706,7 @@
                       <div class="text-center qty-select-wrap">
                         <mat-form-field
                           appearance="outline"
-                          class="qty-mat-field"
+                          class="qty-mat-field form-select-mat"
                         >
                           <mat-select
                             [ngModel]="row.cantidad || 1"
