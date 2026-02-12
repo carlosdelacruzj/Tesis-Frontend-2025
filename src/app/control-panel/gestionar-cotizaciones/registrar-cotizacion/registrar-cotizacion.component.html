@@ -194,7 +194,7 @@
                   >
                   <select
                     id="diasEvento"
-                    class="form-control"
+                    class="form-select"
                     formControlName="dias"
                     [class.is-invalid]="
                       form.get('dias')?.invalid && form.get('dias')?.touched
@@ -276,7 +276,7 @@
               >
               <select
                 id="departamentoSelect"
-                class="form-control"
+                class="form-select"
                 formControlName="departamento"
                 [class.is-invalid]="
                   form.get('departamento')?.invalid &&
@@ -407,9 +407,10 @@
                   @if (canCopiarDiaAnterior(diaIndex)) {
                     <button
                       type="button"
-                      class="btn btn-outline-secondary btn-sm"
+                      class="btn btn-secondary btn-sm"
                       (click)="copiarLocacionesDiaAnterior(diaIndex, fecha)"
                     >
+                      <i class="fa-regular fa-copy"></i>
                       Copiar día anterior
                     </button>
                   }
@@ -512,7 +513,10 @@
                     <div class="row g-3 mt-2">
                       <div class="col-md-6">
                         <div class="form-group">
-                          <label class="col-form-label" [attr.for]="'programacionNombre' + index">
+                          <label
+                            class="col-form-label"
+                            [attr.for]="'programacionNombre' + index"
+                          >
                             Nombre de la locación
                           </label>
                           <input
@@ -522,13 +526,19 @@
                             formControlName="nombre"
                             placeholder="Ej. Recepción en casona"
                             maxlength="50"
-                            (blur)="grupo.get('nombre')?.setValue((grupo.get('nombre')?.value || '').trim())"
+                            (blur)="
+                              grupo
+                                .get('nombre')
+                                ?.setValue(
+                                  (grupo.get('nombre')?.value || '').trim()
+                                )
+                            "
                             [class.is-invalid]="
                               grupo.get('nombre')?.invalid &&
                               grupo.get('nombre')?.touched
                             "
                           />
-                          
+
                           @if (
                             grupo.get("nombre")?.hasError("required") &&
                             grupo.get("nombre")?.touched
@@ -552,8 +562,8 @@
                             class="form-control"
                             formControlName="direccion"
                             placeholder="Ej. Av. La Marina 1234"
-                             maxlength="50"
-                             [class.is-invalid]="
+                            maxlength="50"
+                            [class.is-invalid]="
                               grupo.get('direccion')?.invalid &&
                               grupo.get('direccion')?.touched
                             "
@@ -804,6 +814,7 @@
                 class="btn btn-primary btn-sm"
                 (click)="abrirAsignacionFechas()"
               >
+                <i class="fa-regular fa-calendar"></i>
                 Asignar fechas
               </button>
             }
@@ -1293,5 +1304,3 @@
     </button>
   </div>
 </app-modal-base>
-
-

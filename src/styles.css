@@ -31,7 +31,7 @@
   --success: #2eaa4b;
   --success-rgb: 46, 170, 75;
   --danger: #b42318;
-  --warning: #ffc108;
+  --warning: #ffc108; /*#ffc750*/
   --warning-rgb: 255, 193, 8;
   --amber: #b54708;
   --info: #25d5f2;
@@ -448,7 +448,7 @@ textarea.form-control {
   background-color: #fff;
   background-image: none;
   border: 1px solid #d2d2e4;
-  border-radius: 2px;
+  border-radius: 20px;
   padding: 12px 16px;
 }
 
@@ -1008,7 +1008,7 @@ Background Color / Color
 }
 
 .bg-success {
-  background-color: #2ec551 !important;
+  background-color: var(--success) !important;
 }
 
 .bg-danger {
@@ -1106,7 +1106,7 @@ Borders
 }
 
 .text-success {
-  color: #2ec551 !important;
+  color: var(--success) !important;
 }
 
 .text-danger {
@@ -3072,8 +3072,8 @@ input[type="radio"] {
 
 .btn-success {
   color: #fff;
-  background-color: #2ec551;
-  border-color: #2ec551;
+  background-color: var(--success);
+  border-color: var(--success);
 }
 
 .btn-success:hover {
@@ -3100,33 +3100,31 @@ input[type="radio"] {
 
 /*--- btn danger --*/
 
-/* .btn-danger {
-  color: var(--secondary);
+.btn-danger {
+  color: var(--danger);
   background-color: #fff;
-  border-color: #668dc0;
-  border-radius: 10px;
-} */
+  border-color: var(--danger);
+}
 
 .btn-danger:hover {
   color: #fff;
-  background-color: #668dc0;
-  border-color: #668dc0;
-  border-radius: 10px;
+  background-color: var(--danger);
+  border-color: var(--danger);
 }
 
 .btn-danger.focus,
 .btn-danger:focus {
   color: #fff;
-  background-color: #668dc0;
-  border-color: #668dc0;
-  box-shadow: 0 0 0 1px #6095db;
+  background-color: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px var(--danger);
   border-radius: 10px;
 }
 
 .btn-danger:not(:disabled):not(.disabled).active,
 .btn-danger:not(:disabled):not(.disabled):active,
 .show > .btn-danger.dropdown-toggle {
-  color: #6095db;
+  color: var(--danger);
   background-color: #c2c6ce;
   border-color: #c2c6ce;
   border-radius: 10px;
@@ -3313,22 +3311,22 @@ input[type="radio"] {
 /*--- btn outline success --*/
 
 .btn-outline-success {
-  color: #2ec551;
+  color: var(--success);
   background-color: transparent;
-  border-color: #2ec551;
+  border-color: var(--success);
 }
 
 .btn-outline-success:hover {
   color: #fff;
-  background-color: #2ec551;
-  border-color: #2ec551;
+  background-color: var(--success);
+  border-color: var(--success);
 }
 
 .btn-outline-success.focus,
 .btn-outline-success:focus {
   color: #fff;
-  background-color: #2ec551;
-  border-color: #2ec551;
+  background-color: var(--success);
+  border-color: var(--success);
   box-shadow: 0 0 0 1px rgb(40, 167, 69);
 }
 
@@ -3357,22 +3355,22 @@ input[type="radio"] {
 /*--- btn outline warning --*/
 
 .btn-outline-warning {
-  color: var(--primary);
+  color: var(--warning);
   background-color: transparent;
-  border-color: #ffc108;
+  border-color: var(--warning);
 }
 
 .btn-outline-warning:hover {
   color: var(--primary);
-  background-color: #ffc108;
-  border-color: #ffc108;
+  background-color: var(--warning);
+  border-color: var(--warning);
 }
 
 .btn-outline-warning.focus,
 .btn-outline-warning:focus {
   color: var(--primary);
-  background-color: #ffc108;
-  border-color: #ffc108;
+  background-color: var(--warning);
+  border-color: var(--warning);
   box-shadow: 0 0 0 1px rgb(255, 193, 8);
 }
 
@@ -4477,7 +4475,7 @@ Pills vertical
 }
 
 .label-success {
-  background-color: #2ec551;
+  background-color: var(--success);
 }
 
 .label-danger {
@@ -4583,8 +4581,8 @@ Pills vertical
 }
 
 .spinner-success {
-  border-top-color: #2ec551;
-  border-left-color: #2ec551;
+  border-top-color: var(--success);
+  border-left-color: var(--success);
 }
 
 .spinner-danger {
@@ -4735,7 +4733,7 @@ Pills vertical
 }
 
 .switch-button.switch-button-success input[type="checkbox"]:checked + span {
-  background-color: #2ec551;
+  background-color: var(--success);
 }
 
 .switch-button.switch-button-warning input[type="checkbox"]:checked + span {
@@ -5044,7 +5042,7 @@ Vertical Timeline - by CodyHouse.co
 }
 
 .cd-timeline__img.cd-timeline__img--picture {
-  background: #2ec551;
+  background: var(--success);
 }
 
 .cd-timeline__img.cd-timeline__img--movie {
@@ -7438,4 +7436,9 @@ html .mat-mdc-slide-toggle.mat-accent {
   --mdc-switch-selected-hover-track-color: #74aebc;
   --mdc-switch-selected-pressed-track-color: #74aebc;
   --mdc-switch-selected-track-color: #74aebc;
+}
+
+.form-check-input:checked {
+  background-color: var(--focus);
+  border-color: var(--focus);
 }

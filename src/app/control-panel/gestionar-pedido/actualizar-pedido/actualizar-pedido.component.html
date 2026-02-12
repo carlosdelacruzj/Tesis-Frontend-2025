@@ -155,7 +155,7 @@
                   >
                   <select
                     id="diasTrabajo"
-                    class="form-control"
+                    class="form-select"
                     name="diasTrabajo"
                     [(ngModel)]="visualizarService.selectAgregarPedido.dias"
                     (ngModelChange)="onDiasChange($event)"
@@ -165,7 +165,7 @@
                       diasTrabajo.invalid && diasTrabajo.touched
                     "
                   >
-                    <option [ngValue]="null" disabled>Selecciona dias</option>
+                    <option [ngValue]="null" disabled>Selecciona días</option>
                     @for (diaOption of [1, 2, 3, 4, 5, 6, 7]; track diaOption) {
                       <option [ngValue]="diaOption">{{ diaOption }}</option>
                     }

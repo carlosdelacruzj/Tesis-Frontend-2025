@@ -74,13 +74,13 @@
                     >
                     <select
                       id="diasEvento"
-                      class="form-control"
+                      class="form-select"
                       formControlName="dias"
                       [class.is-invalid]="
                         form.get('dias')?.invalid && form.get('dias')?.touched
                       "
                     >
-                      <option [ngValue]="null" disabled>Selecciona dias</option>
+                      <option [ngValue]="null" disabled>Selecciona días</option>
                       @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
                         <option [ngValue]="dia">{{ dia }}</option>
                       }
@@ -165,7 +165,7 @@
                     >
                     <select
                       id="departamentoSelect"
-                      class="form-control"
+                      class="form-select"
                       formControlName="departamento"
                       [class.is-invalid]="
                         form.get('departamento')?.invalid &&
@@ -194,7 +194,7 @@
                     >
                     <select
                       id="eventoSelect"
-                      class="form-control"
+                      class="form-select"
                       [ngModel]="selectedEventoId"
                       [ngModelOptions]="{ standalone: true }"
                       (ngModelChange)="onEventoModelChange($event)"
@@ -302,9 +302,10 @@
                     @if (canCopiarDiaAnterior(diaIndex)) {
                       <button
                         type="button"
-                        class="btn btn-outline-secondary btn-sm"
+                        class="btn btn-secondary btn-sm"
                         (click)="copiarLocacionesDiaAnterior(diaIndex, fecha)"
                       >
+                        <i class="fa-regular fa-copy"></i>
                         Copiar día anterior
                       </button>
                     }
@@ -321,6 +322,7 @@
                           : 'Agregar locación'
                       "
                     >
+                      <i class="fa-solid fa-location-dot"></i>
                       Agregar locación
                     </button>
                   </div>
@@ -587,7 +589,7 @@
                 >
                 <select
                   id="servicioSelect"
-                  class="form-control"
+                  class="form-select"
                   [value]="selectedServicioId ?? ''"
                   (change)="onServicioDropdownChange($any($event.target).value)"
                   [disabled]="!servicios.length"
@@ -705,6 +707,7 @@
                   class="btn btn-primary btn-sm"
                   (click)="abrirAsignacionFechas()"
                 >
+                  <i class="fa-regular fa-calendar"></i>
                   Asignar fechas
                 </button>
               }
@@ -905,7 +908,7 @@
       <div class="text-end">
         <button
           type="button"
-          class="btn btn-outline-secondary me-2"
+          class="btn btn-danger me-2"
           (click)="cancel()"
           [disabled]="saving"
         >
