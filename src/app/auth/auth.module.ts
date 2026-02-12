@@ -7,7 +7,7 @@ import { RegistroComponent } from './pages/registro/registro.component';
 import { MainComponent } from './pages/main/main.component';
 import { AngularMaterialModule } from '../shared/angular-material/angular-material.module';
 import { RecuperarContrasenaComponent } from './pages/recuperar-contrasena/recuperar-contrasena.component';
-import { NuevaCContrasenaComponent } from './pages/nueva-ccontrasena/nueva-ccontrasena.component';
+import { NuevaCContrasenaComponent } from './pages/nueva-contrasena/nueva-contrasena.component';
 
 @NgModule({
   declarations: [
@@ -15,13 +15,13 @@ import { NuevaCContrasenaComponent } from './pages/nueva-ccontrasena/nueva-ccont
     RegistroComponent,
     MainComponent,
     RecuperarContrasenaComponent,
-    NuevaCContrasenaComponent
+    NuevaCContrasenaComponent,
   ],
   imports: [
     CommonModule,
     AuthRoutingModule,
     ReactiveFormsModule,
-    AngularMaterialModule
-  ]
+    AngularMaterialModule,
+  ],
 })
-export class AuthModule { }
+export class AuthModule {}

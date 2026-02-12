@@ -1,12 +1,16 @@
 import { Component, inject } from '@angular/core';
-import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import {
+  UntypedFormBuilder,
+  UntypedFormGroup,
+  Validators,
+} from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-registro',
   templateUrl: './registro.component.html',
-  styleUrls: ['./registro.component.css']
+  styleUrls: ['./registro.component.css'],
 })
 export class RegistroComponent {
   private readonly fb = inject(UntypedFormBuilder);
@@ -21,22 +25,18 @@ export class RegistroComponent {
     pas4: ['', [Validators.required, Validators.minLength(1)]],
     pas5: ['', [Validators.required, Validators.minLength(1)]],
     pas6: ['', [Validators.required, Validators.minLength(1)]],
-
   });
-  validacion(){
+  validacion() {
     const { pas1, pas2, pas3, pas4, pas5, pas6 } = this.miFormulario.value;
     this.codigo = parseInt(`${pas1}${pas2}${pas3}${pas4}${pas5}${pas6}`);
-    this.authService.validacion(localStorage.getItem('correo'),this.codigo).subscribe(
-      resp => {
-        
-        if (resp.validacion===0) {
+    this.authService
+      .validacion(localStorage.getItem('correo'), this.codigo)
+      .subscribe((resp) => {
+        if (resp.validacion === 0) {
           this.miFormulario.reset();
-
-        }else{
-          this.router.navigateByUrl('/auth/nueva-ccontrasena')
+        } else {
+          this.router.navigateByUrl('/auth/nueva-contrasena');
         }
-      }
-    )
-    
+      });
   }
 }

@@ -1,37 +1,72 @@
-<form class="login100-form" autocomplete="off" [formGroup]="miFormulario" (ngSubmit)="validacion()">
+﻿<section class="login-layout">
+  <div class="login-layout__panel login-layout__panel--intro">
+    <h1 class="login-layout__title">Verifica tu identidad</h1>
+    <p class="login-layout__subtitle">
+      Hemos enviado un código de verificación. Ingrésalo para continuar con el
+      registro.
+    </p>
+  </div>
 
-    <span class="login100-form-subtitle p-b-49">
-        Se ha enviado un codigo a su correo
-     
-    </span>
+  <div class="login-layout__panel login-layout__panel--form">
+    <form
+      class="login-form"
+      autocomplete="off"
+      [formGroup]="miFormulario"
+      (ngSubmit)="validacion()"
+    >
+      <h2 class="login-form__title">Código de verificación</h2>
+      <p class="login-form__description">
+        Escribe los 6 dígitos que recibiste en tu correo.
+      </p>
 
-    <div class="wrap-input15">
-        <input class="input15" type="text" formControlName="pas1" maxlength="1">
-        <input class="input15" type="text" formControlName="pas2" maxlength="1">
-        <input class="input15" type="text" formControlName="pas3" maxlength="1">
-        <input class="input15" type="text" formControlName="pas4" maxlength="1">
-        <input class="input15" type="text" formControlName="pas5" maxlength="1">
-        <input class="input15" type="text" formControlName="pas6" maxlength="1">
-    </div>
-
-    <div class="text-right p-t-8 p-b-31"></div>
-
-    <div class="container-login100-form-btn">
-        <div class="wrap-login100-form-btn">
-            <div class="login100-form-bgbtn"></div>
-            <button class="login100-form-btn">
-                Registro
-            </button>
+      <div class="login-form__group">
+        <label class="login-form__label">Código</label>
+        <div class="login-form__code">
+          <input
+            class="login-form__input"
+            type="text"
+            formControlName="pas1"
+            maxlength="1"
+          />
+          <input
+            class="login-form__input"
+            type="text"
+            formControlName="pas2"
+            maxlength="1"
+          />
+          <input
+            class="login-form__input"
+            type="text"
+            formControlName="pas3"
+            maxlength="1"
+          />
+          <input
+            class="login-form__input"
+            type="text"
+            formControlName="pas4"
+            maxlength="1"
+          />
+          <input
+            class="login-form__input"
+            type="text"
+            formControlName="pas5"
+            maxlength="1"
+          />
+          <input
+            class="login-form__input"
+            type="text"
+            formControlName="pas6"
+            maxlength="1"
+          />
         </div>
-    </div>
+      </div>
 
-    <div class="flex-col-c p-t-60">
-        <span class="txt1 p-b-17">
-            ¿Ya tienes una cuenta?
-        </span>
+      <button class="login-form__button" type="submit">Registro</button>
 
-        <a routerLink="/auth" class="txt2">
-            Ingresa aqui
-        </a>
-    </div>
-</form>
+      <div class="login-form__footer">
+        <span> ¿Ya tienes una cuenta?</span>
+        <a routerLink="/auth">Ingresa aquí</a>
+      </div>
+    </form>
+  </div>
+</section>

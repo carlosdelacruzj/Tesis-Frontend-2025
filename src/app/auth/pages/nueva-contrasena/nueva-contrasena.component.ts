@@ -1,10 +1,14 @@
 import { Component, inject } from '@angular/core';
-import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
+import {
+  UntypedFormGroup,
+  UntypedFormBuilder,
+  Validators,
+} from '@angular/forms';
 
 @Component({
-  selector: 'app-nueva-ccontrasena',
-  templateUrl: './nueva-ccontrasena.component.html',
-  styleUrls: ['./nueva-ccontrasena.component.css']
+  selector: 'app-nueva-contrasena',
+  templateUrl: './nueva-contrasena.component.html',
+  styleUrls: ['./nueva-contrasena.component.css'],
 })
 export class NuevaCContrasenaComponent {
   private readonly fb = inject(UntypedFormBuilder);
@@ -16,5 +20,4 @@ export class NuevaCContrasenaComponent {
       this.miFormulario.markAllAsTouched();
     }
   }
-
 }

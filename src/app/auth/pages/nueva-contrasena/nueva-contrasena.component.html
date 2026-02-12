@@ -1,9 +1,9 @@
 ﻿<section class="login-layout">
   <div class="login-layout__panel login-layout__panel--intro">
-    <h1 class="login-layout__title">Recupera tu contraseña</h1>
+    <h1 class="login-layout__title">Nueva contraseña</h1>
     <p class="login-layout__subtitle">
-      Comparte tu correo para enviarte el enlace de restablecimiento y continuar
-      con tu acceso a la plataforma.
+      Indica el correo asociado a tu cuenta para enviarte el código de
+      verificación y continuar con el proceso.
     </p>
   </div>
 
@@ -14,9 +14,9 @@
       [formGroup]="miFormulario"
       (ngSubmit)="validacion()"
     >
-      <h2 class="login-form__title">Envia el enlace</h2>
+      <h2 class="login-form__title">Solicita el codigo</h2>
       <p class="login-form__description">
-        Recibirás un mensaje con los siguientes pasos para crear una nueva
+        Ingresa tu correo para recibir las instrucciones para generar una nueva
         contraseña.
       </p>
 
@@ -36,11 +36,11 @@
         type="submit"
         [disabled]="miFormulario.invalid"
       >
-        Enviar
+        Enviar código
       </button>
 
       <div class="login-form__footer">
-        <span>¿Ya tienes una cuenta?</span>
+        <span> ¿Ya tienes una cuenta?</span>
         <a routerLink="/auth/login">Ingresa aquí</a>
       </div>
     </form>

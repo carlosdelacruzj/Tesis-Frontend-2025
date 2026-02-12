@@ -544,6 +544,7 @@
             type="submit"
             [disabled]="isSubmitting || !eventCatalogReady"
           >
+            <i class="fa-regular fa-paper-plane"></i>
             {{ isSubmitting ? "Enviando…" : "Enviar solicitud" }}
           </button>
           @if (whatsAppLink) {
