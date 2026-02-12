@@ -3283,31 +3283,31 @@ input[type="radio"] {
 /*--- btn outline secondary --*/
 
 .btn-outline-secondary {
-  color: #c2c6ce;
+  color: var(--secondary);
   background-color: transparent;
-  border-color: #c2c6ce;
+  border-color: var(--secondary);
 }
 
 .btn-outline-secondary:hover {
   color: #fff;
-  background-color: #c2c6ce;
-  border-color: #c2c6ce;
+  background-color: var(--secondary);
+  border-color: var(--secondary);
 }
 
 .btn-outline-secondary.focus,
 .btn-outline-secondary:focus {
   color: #fff;
-  background-color: #c2c6ce;
-  border-color: #c2c6ce;
-  box-shadow: 0 0 0 1px #c2c6ce;
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 1px var(--secondary);
 }
 
 .btn-outline-secondary:not(:disabled):not(.disabled).active,
 .btn-outline-secondary:not(:disabled):not(.disabled):active,
 .show > .btn-outline-secondary.dropdown-toggle {
   color: #fff;
-  background-color: #c2c6ce;
-  border-color: #c2c6ce;
+  background-color: var(--secondary);
+  border-color: var(--secondary);
 }
 
 /*--- btn outline success --*/
@@ -3335,22 +3335,22 @@ input[type="radio"] {
 /*--- btn outline danger --*/
 
 .btn-outline-danger {
-  color: #c2c6ce;
+  color: var(--danger);
   background-color: transparent;
-  border-color: #c2c6ce;
+  border-color: var(--danger);
 }
 
 .btn-outline-danger:hover {
   color: #fff;
-  background-color: #c2c6ce;
-  border-color: #c2c6ce;
+  background-color: var(--danger);
+  border-color: var(--danger);
 }
 
 .btn-outline-danger.focus,
 .btn-outline-danger:focus {
   color: #fff;
-  background-color: #c2c6ce;
-  border-color: #c2c6ce;
+  background-color: var(--danger);
+  border-color: var(--danger);
   box-shadow: 0 0 0 1px #a5a8ad;
 }
 

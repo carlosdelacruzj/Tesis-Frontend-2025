@@ -1,17 +1,45 @@
-import { Component, OnDestroy, OnInit, AfterViewInit, ViewChild, HostListener, ElementRef, inject } from '@angular/core';
-import { AbstractControl, FormBuilder, FormGroup, Validators, FormGroupDirective, ValidationErrors } from '@angular/forms';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  AfterViewInit,
+  ViewChild,
+  HostListener,
+  ElementRef,
+  inject,
+} from '@angular/core';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  FormGroupDirective,
+  ValidationErrors,
+} from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, take, takeUntil } from 'rxjs/operators';
-import { DateInput, formatDisplayDate, formatIsoDate, parseDateInput } from '../shared/utils/date-utils';
-import { LandingCotizacionService, LandingEventDto, LandingPublicCotizacionPayload, LandingPortafolioService, PortafolioPublicoEvento } from './services';
+import {
+  DateInput,
+  formatDisplayDate,
+  formatIsoDate,
+  parseDateInput,
+} from '../shared/utils/date-utils';
+import {
+  LandingCotizacionService,
+  LandingEventDto,
+  LandingPublicCotizacionPayload,
+  LandingPortafolioService,
+  PortafolioPublicoEvento,
+} from './services';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 
 // Landing copy decks for cards and sections
 interface LandingServiceCard {
   id: string;
+  icon: string;
   title: string;
   description: string;
   bullets: string[];
@@ -62,87 +90,97 @@ interface LandingEventOption {
 const FALLBACK_EVENT_OPTIONS: LandingEventOption[] = [
   { id: null, name: 'Boda' },
   { id: null, name: 'Cumpleaños' },
-  { id: null, name: 'Corporativo' }
+  { id: null, name: 'Corporativo' },
 ];
 
 @Component({
   selector: 'app-landing',
   templateUrl: './landing.component.html',
-  styleUrls: ['./landing.component.css']
+  styleUrls: ['./landing.component.css'],
 })
 export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
-
   readonly currentYear = new Date().getFullYear();
 
   // Micro-copy rendered on the hero badges
   readonly heroBadges = [
     { label: '★ 4.9/5', caption: 'Reseñas verificadas' },
     { label: '+320', caption: 'Proyectos realizados' },
-    { label: '12 años', caption: 'Capturando historias' }
+    { label: '12 años', caption: 'Capturando historias' },
   ];
 
   // Service catalog displayed in the first section
   readonly services: LandingServiceCard[] = [
     {
       id: 'bodas',
+      icon: 'fa-solid fa-church',
       title: 'Bodas',
       description: 'Cobertura integral para ceremonia, recepción y fiesta.',
       bullets: [
         'Sesión pre-boda incluida',
         'Video highlight de 3 minutos',
-        'Entrega en galería privada'
-      ]
+        'Entrega en galería privada',
+      ],
     },
     {
       id: 'eventos',
+      icon: 'fa-regular fa-chess-knight ',
       title: 'Eventos Sociales',
-      description: 'Fiestas, aniversarios y celebraciones especiales en Lima y provincias.',
+      description:
+        'Fiestas, aniversarios y celebraciones especiales en Lima y provincias.',
       bullets: [
         'Cobertura flexible desde 2 horas',
         'Video resumen para redes sociales',
-        'Equipo compacto y discreto'
-      ]
+        'Equipo compacto y discreto',
+      ],
     },
     {
       id: 'corporativo',
+      icon: 'fa-regular fa-building',
       title: 'Corporativo',
-      description: 'Eventos empresariales, lanzamientos y branding audiovisual.',
+      description:
+        'Eventos empresariales, lanzamientos y branding audiovisual.',
       bullets: [
         'Cobertura multi-cámara',
         'Testimoniales y backstage',
-        'Entrega express 48h'
-      ]
+        'Entrega express 48h',
+      ],
     },
     {
       id: 'comunion',
+      icon: 'fa-solid fa-cross',
       title: 'Comuniones',
-      description: 'Reportaje íntimo de ceremonias de primera comunión y celebraciones familiares.',
+      description:
+        'Reportaje íntimo de ceremonias de primera comunión y celebraciones familiares.',
       bullets: [
         'Cobertura en iglesia y recepción',
         'Retratos familiares dirigidos',
-        'Galería lista en 5 días'
-      ]
+        'Galería lista en 5 días',
+      ],
     },
     {
       id: 'barmitzva',
+      icon: 'fa-solid fa-book-tanakh',
       title: 'Bar/Bat Mitzvá',
-      description: 'Cobertura respetuosa y creativa de ceremonias judías y celebraciones temáticas.',
+      description:
+        'Cobertura respetuosa y creativa de ceremonias judías y celebraciones temáticas.',
       bullets: [
         'Captura de rituales y tradiciones',
         'Equipo bilingüe disponible',
-        'Edición con versiones para redes'
-      ]
+        'Edición con versiones para redes',
+      ],
     },
     {
       id: 'quinceanera',
+      icon: 'fa-solid fa-crown',
       title: 'Quinceañera',
-      description: 'Cobertura artística para sesiones previas y fiesta central.',
+      description:
+        'Cobertura artística para sesiones previas y fiesta central.',
       bullets: [
         'Sesión temática personalizada',
         'Libro premium en 15 días',
-        'Drone y segundo fotógrafo opcional'
-      ]
-    }
+        'Drone y segundo fotógrafo opcional',
+      ],
+    },
   ];
 
   portfolio: PortfolioItem[] = [];
@@ -163,7 +201,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       video: 'Video highlight 60s',
       delivery: 'Galería privada 5 días',
       addons: ['Drone', '2º fotógrafo', 'Impresiones fine art'],
-      recommendedFor: 'Eventos íntimos y celebraciones familiares'
+      recommendedFor: 'Eventos íntimos y celebraciones familiares',
     },
     {
       id: 'signature',
@@ -175,7 +213,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       delivery: 'USB + galería privada 7 días',
       addons: ['Drone', 'Live streaming', 'Reels verticales'],
       highlight: true,
-      recommendedFor: 'Bodas civiles, quinceañeras y eventos corporativos'
+      recommendedFor: 'Bodas civiles, quinceañeras y eventos corporativos',
     },
     {
       id: 'premium',
@@ -186,47 +224,76 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       video: 'Documental 8 min + highlight',
       delivery: 'Álbum artesanal + backup 1 año',
       addons: ['Drone', 'Equipo documental extra', 'Entrega express 72h'],
-      recommendedFor: 'Bodas destino y producciones de alto impacto'
-    }
+      recommendedFor: 'Bodas destino y producciones de alto impacto',
+    },
   ];
 
   // FAQ entries for the accordion
   readonly faqs: FaqItem[] = [
     {
       question: '¿Cómo funcionan las entregas y revisiones?',
-      answer: 'Entregamos una galería preliminar en 5-7 días hábiles y ofrecemos hasta 2 rondas de ajustes sin costo.'
+      answer:
+        'Entregamos una galería preliminar en 5-7 días hábiles y ofrecemos hasta 2 rondas de ajustes sin costo.',
     },
     {
       question: '¿Requieren adelanto para reservar la fecha?',
-      answer: 'Sí, se reserva con el 30% del paquete contratado. El saldo se cancela el día del evento.'
+      answer:
+        'Sí, se reserva con el 30% del paquete contratado. El saldo se cancela el día del evento.',
     },
     {
       question: '¿Cubren eventos fuera de Lima?',
-      answer: 'Sí, viajamos a todo el Perú. Se cotizan viáticos y logística según destino.'
+      answer:
+        'Sí, viajamos a todo el Perú. Se cotizan viáticos y logística según destino.',
     },
     {
       question: '¿Puedo agregar un segundo fotógrafo o drone?',
-      answer: 'Claro, contamos con operadores certificados para drone y un pool de fotógrafos adicionales.'
+      answer:
+        'Claro, contamos con operadores certificados para drone y un pool de fotógrafos adicionales.',
     },
     {
       question: '¿Puedo solicitar archivos RAW o uso comercial?',
-      answer: 'Sí. Los RAW se entregan bajo acuerdo y aplican tarifas adicionales según licencia de uso.'
+      answer:
+        'Sí. Los RAW se entregan bajo acuerdo y aplican tarifas adicionales según licencia de uso.',
     },
     {
       question: '¿Qué pasa si cambia la fecha?',
-      answer: 'Podemos reprogramar sin penalidad hasta 45 días antes. Luego, aplican cargos por bloqueo de agenda.'
-    }
+      answer:
+        'Podemos reprogramar sin penalidad hasta 45 días antes. Luego, aplican cargos por bloqueo de agenda.',
+    },
   ];
 
   // Optional extras rendered as checkboxes
   readonly extrasCatalog = [
-    { control: 'drone', label: 'Drone 4K', description: 'Piloto certificado DGAC' },
-    { control: 'segundoFotografo', label: 'Segundo fotógrafo', description: 'Cobertura multiángulo' },
-    { control: 'entregaExpress', label: 'Entrega exprés', description: 'Galería en 72 horas' },
-    { control: 'album', label: 'Álbum físico', description: 'Libro fotográfico de 30 páginas' }
+    {
+      control: 'drone',
+      label: 'Drone 4K',
+      description: 'Piloto certificado DGAC',
+    },
+    {
+      control: 'segundoFotografo',
+      label: 'Segundo fotógrafo',
+      description: 'Cobertura multiángulo',
+    },
+    {
+      control: 'entregaExpress',
+      label: 'Entrega exprés',
+      description: 'Galería en 72 horas',
+    },
+    {
+      control: 'album',
+      label: 'Álbum físico',
+      description: 'Libro fotográfico de 30 páginas',
+    },
   ];
 
-  readonly sourceOptions = ['Recomendación', 'Instagram', 'TikTok', 'Google', 'Evento en vivo', 'Otro'];
+  readonly sourceOptions = [
+    'Recomendación',
+    'Instagram',
+    'TikTok',
+    'Google',
+    'Evento en vivo',
+    'Otro',
+  ];
   readonly departamentos: string[] = [
     'Amazonas',
     'Ancash',
@@ -252,7 +319,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     'San Martin',
     'Tacna',
     'Tumbes',
-    'Ucayali'
+    'Ucayali',
   ];
 
   eventOptions: LandingEventOption[] = FALLBACK_EVENT_OPTIONS;
@@ -268,24 +335,36 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   readonly quoteForm = this.fb.group({
     nombreCompleto: ['', [Validators.required, Validators.minLength(3)]],
-    whatsappNumero: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
+    whatsappNumero: [
+      '',
+      [Validators.required, Validators.pattern(/^\d{6,15}$/)],
+    ],
     tipoEvento: ['', Validators.required],
     eventoId: [null],
-    fechaEvento: [null, [Validators.required, this.fechaEventoEnRangoValidator()]],
+    fechaEvento: [
+      null,
+      [Validators.required, this.fechaEventoEnRangoValidator()],
+    ],
     departamento: ['', Validators.required],
     mensaje: [''],
-    dias: [null, [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
-    horas: [{ value: '', disabled: true }, [Validators.required, this.horasValidator.bind(this)]],
+    dias: [
+      null,
+      [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)],
+    ],
+    horas: [
+      { value: '', disabled: true },
+      [Validators.required, this.horasValidator.bind(this)],
+    ],
     invitados: [''],
     presupuesto: [50],
     extras: this.fb.group({
       drone: [false],
       segundoFotografo: [false],
       entregaExpress: [false],
-      album: [false]
+      album: [false],
     }),
     comoNosConociste: [''],
-    consentimiento: [false, Validators.requiredTrue]
+    consentimiento: [false, Validators.requiredTrue],
   });
 
   submissionSuccess = false;
@@ -311,34 +390,37 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       addressLocality: 'Lima',
       addressRegion: 'Lima',
       postalCode: '15023',
-      addressCountry: 'PE'
+      addressCountry: 'PE',
     },
     openingHours: 'Mo-Su 09:00-21:00',
     priceRange: '$$',
     sameAs: [
       'https://www.facebook.com/dlacruz',
       'https://www.instagram.com/dlacruz',
-      'https://www.tiktok.com/@dlacruz'
-    ]
+      'https://www.tiktok.com/@dlacruz',
+    ],
   });
 
   readonly faqSchema = this.createSchemaScript({
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: this.faqs.map(faq => ({
+    mainEntity: this.faqs.map((faq) => ({
       '@type': 'Question',
       name: faq.question,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: faq.answer
-      }
-    }))
+        text: faq.answer,
+      },
+    })),
   });
 
   private readonly destroy$ = new Subject<void>();
-  @ViewChild(FormGroupDirective, { static: false }) private quoteFormDirective?: FormGroupDirective;
-  @ViewChild('categoryTrack', { static: false }) private categoryTrack?: ElementRef<HTMLDivElement>;
-  @ViewChild('serviceTrack', { static: false }) private serviceTrack?: ElementRef<HTMLDivElement>;
+  @ViewChild(FormGroupDirective, { static: false })
+  private quoteFormDirective?: FormGroupDirective;
+  @ViewChild('categoryTrack', { static: false })
+  private categoryTrack?: ElementRef<HTMLDivElement>;
+  @ViewChild('serviceTrack', { static: false })
+  private serviceTrack?: ElementRef<HTMLDivElement>;
   private readonly portafolioService = inject(LandingPortafolioService);
   private readonly portfolioAssetBase = this.getPortfolioAssetBase();
   categoryAtStart = true;
@@ -350,16 +432,15 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.loadEventOptions();
     this.resetServiceScroll();
-    this.route.fragment
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(fragment => {
-        if (fragment) {
-          setTimeout(() => this.scrollToSection(fragment), 0);
-        }
-      });
-    this.quoteForm.get('dias')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(value => this.syncHorasControl(value));
+    this.route.fragment.pipe(takeUntil(this.destroy$)).subscribe((fragment) => {
+      if (fragment) {
+        setTimeout(() => this.scrollToSection(fragment), 0);
+      }
+    });
+    this.quoteForm
+      .get('dias')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((value) => this.syncHorasControl(value));
   }
 
   // Marks the quote as started once any field is focused
@@ -427,16 +508,22 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get selectedCategoryItems(): PortfolioItem[] {
     if (!this.selectedCategory) return [];
-    return this.portfolio.filter(item => item.type === this.selectedCategory);
+    return this.portfolio.filter((item) => item.type === this.selectedCategory);
   }
 
   get pagedCategoryItems(): PortfolioItem[] {
     const start = (this.galleryPage - 1) * this.galleryPageSize;
-    return this.selectedCategoryItems.slice(start, start + this.galleryPageSize);
+    return this.selectedCategoryItems.slice(
+      start,
+      start + this.galleryPageSize,
+    );
   }
 
   get galleryTotalPages(): number {
-    return Math.max(1, Math.ceil(this.selectedCategoryItems.length / this.galleryPageSize));
+    return Math.max(
+      1,
+      Math.ceil(this.selectedCategoryItems.length / this.galleryPageSize),
+    );
   }
 
   nextGalleryPage(): void {
@@ -454,22 +541,30 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private loadPortfolioPublico(): void {
     this.portfolioLoading = true;
     this.portfolioError = null;
-    this.portafolioService.getPortafolioPublico()
+    this.portafolioService
+      .getPortafolioPublico()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: eventos => {
+        next: (eventos) => {
           const listado = Array.isArray(eventos) ? eventos : [];
           this.portfolio = this.mapPortfolioItems(listado);
-          this.portfolioCategories = this.mapPortfolioCategories(this.portfolio);
+          this.portfolioCategories = this.mapPortfolioCategories(
+            this.portfolio,
+          );
           this.portfolioTotalImages = this.portfolio.length;
           this.portfolioTotalCategories = this.portfolioCategories.length;
-          if (this.selectedCategory && !this.portfolioCategories.find(cat => cat.name === this.selectedCategory)) {
+          if (
+            this.selectedCategory &&
+            !this.portfolioCategories.find(
+              (cat) => cat.name === this.selectedCategory,
+            )
+          ) {
             this.selectedCategory = null;
           }
-      this.portfolioLoading = false;
-      this.resetCategoryScroll();
-      this.resetServiceScroll();
-      setTimeout(() => this.updateCategoryBounds(), 0);
+          this.portfolioLoading = false;
+          this.resetCategoryScroll();
+          this.resetServiceScroll();
+          setTimeout(() => this.updateCategoryBounds(), 0);
         },
         error: (err) => {
           console.error('[landing] portafolio', err);
@@ -480,15 +575,18 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           this.portfolioTotalCategories = 0;
           this.selectedCategory = null;
           this.portfolioLoading = false;
-        }
+        },
       });
   }
 
-  private mapPortfolioItems(eventos: PortafolioPublicoEvento[]): PortfolioItem[] {
+  private mapPortfolioItems(
+    eventos: PortafolioPublicoEvento[],
+  ): PortfolioItem[] {
     const items: PortfolioItem[] = [];
-    eventos.forEach(evento => {
-      (evento.imagenes ?? []).forEach(imagen => {
-        const title = imagen.titulo?.trim() || imagen.descripcion?.trim() || evento.nombre;
+    eventos.forEach((evento) => {
+      (evento.imagenes ?? []).forEach((imagen) => {
+        const title =
+          imagen.titulo?.trim() || imagen.descripcion?.trim() || evento.nombre;
         const url = this.resolvePortfolioUrl(imagen.url);
         items.push({
           id: `${evento.id}-${imagen.id}`,
@@ -498,7 +596,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           mediaType: 'image',
           source: url,
           orden: imagen.orden ?? null,
-          fechaCreacion: imagen.fechaCreacion ?? null
+          fechaCreacion: imagen.fechaCreacion ?? null,
         });
       });
     });
@@ -514,28 +612,33 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private mapPortfolioCategories(items: PortfolioItem[]): PortfolioCategory[] {
     const grouped = new Map<string, PortfolioItem[]>();
-    items.forEach(item => {
+    items.forEach((item) => {
       if (!grouped.has(item.type)) {
         grouped.set(item.type, []);
       }
       grouped.get(item.type)!.push(item);
     });
-    return Array.from(grouped.entries()).map(([name, list]) => ({
-      name,
-      items: list.slice().sort((a, b) => {
-        const ordenA = a.orden ?? Number.MAX_SAFE_INTEGER;
-        const ordenB = b.orden ?? Number.MAX_SAFE_INTEGER;
-        if (ordenA !== ordenB) return ordenA - ordenB;
-        return a.title.localeCompare(b.title);
-      }),
-      preview: list.slice().sort((a, b) => {
-        const ordenA = a.orden ?? Number.MAX_SAFE_INTEGER;
-        const ordenB = b.orden ?? Number.MAX_SAFE_INTEGER;
-        if (ordenA !== ordenB) return ordenA - ordenB;
-        return a.title.localeCompare(b.title);
-      }).slice(0, 3),
-      total: list.length
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(grouped.entries())
+      .map(([name, list]) => ({
+        name,
+        items: list.slice().sort((a, b) => {
+          const ordenA = a.orden ?? Number.MAX_SAFE_INTEGER;
+          const ordenB = b.orden ?? Number.MAX_SAFE_INTEGER;
+          if (ordenA !== ordenB) return ordenA - ordenB;
+          return a.title.localeCompare(b.title);
+        }),
+        preview: list
+          .slice()
+          .sort((a, b) => {
+            const ordenA = a.orden ?? Number.MAX_SAFE_INTEGER;
+            const ordenB = b.orden ?? Number.MAX_SAFE_INTEGER;
+            if (ordenA !== ordenB) return ordenA - ordenB;
+            return a.title.localeCompare(b.title);
+          })
+          .slice(0, 3),
+        total: list.length,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   private resolvePortfolioUrl(path?: string | null): string {
@@ -621,7 +724,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     if (typeof window === 'undefined') {
       return;
     }
-    document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document
+      .getElementById(anchor)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // Prefills the form when a service card CTA is clicked
@@ -630,7 +735,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     this.quoteForm.patchValue({ tipoEvento: matchedValue });
     this.syncSelectedEventByName(matchedValue);
     this.selectedPackageId = null;
-    this.trackEvent('cta_click', { source: 'service-card', service: service.id });
+    this.trackEvent('cta_click', {
+      source: 'service-card',
+      service: service.id,
+    });
     this.scrollToSection('cotizacion');
   }
 
@@ -652,10 +760,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   submitQuote(): void {
     this.handleQuoteStart();
     this.whatsAppLink = null;
-    
+
     if (this.quoteForm.invalid) {
       this.quoteForm.markAllAsTouched();
-      this.snackBar.open('Por favor completa los campos obligatorios.', 'Cerrar', { duration: 4000 });
+      this.snackBar.open(
+        'Por favor completa los campos obligatorios.',
+        'Cerrar',
+        { duration: 4000 },
+      );
       return;
     }
 
@@ -664,28 +776,44 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     const currentEventSelection = this.quoteForm.get('tipoEvento')?.value ?? '';
     this.syncSelectedEventByName(currentEventSelection);
     const selectedEventoId = this.quoteForm.get('eventoId')?.value;
-    const eventoId = selectedEventoId !== null && selectedEventoId !== undefined && selectedEventoId !== ''
-      ? Number(selectedEventoId)
-      : null;
-    if (!this.eventCatalogReady || !Number.isFinite(eventoId) || (eventoId ?? 0) <= 0) {
+    const eventoId =
+      selectedEventoId !== null &&
+      selectedEventoId !== undefined &&
+      selectedEventoId !== ''
+        ? Number(selectedEventoId)
+        : null;
+    if (
+      !this.eventCatalogReady ||
+      !Number.isFinite(eventoId) ||
+      (eventoId ?? 0) <= 0
+    ) {
       this.isSubmitting = false;
-      this.snackBar.open('No pudimos validar el tipo de evento. Recarga la página e inténtalo nuevamente.', 'Cerrar', { duration: 5000 });
+      this.snackBar.open(
+        'No pudimos validar el tipo de evento. Recarga la página e inténtalo nuevamente.',
+        'Cerrar',
+        { duration: 5000 },
+      );
       return;
     }
     const formValue = this.quoteForm.getRawValue();
     const payload = this.buildCotizacionPayload(formValue);
 
-    this.cotizacionService.createPublic(payload)
+    this.cotizacionService
+      .createPublic(payload)
       .pipe(
         take(1),
-        catchError(err => {
+        catchError((err) => {
           console.error('[landing] submitQuote', err);
-          this.snackBar.open('No pudimos registrar tu solicitud. Intenta nuevamente.', 'Cerrar', { duration: 5000 });
+          this.snackBar.open(
+            'No pudimos registrar tu solicitud. Intenta nuevamente.',
+            'Cerrar',
+            { duration: 5000 },
+          );
           return of(null);
         }),
-        takeUntil(this.destroy$)
+        takeUntil(this.destroy$),
       )
-      .subscribe(res => {
+      .subscribe((res) => {
         this.isSubmitting = false;
         if (!res) {
           return;
@@ -699,7 +827,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           text: 'Te contactaremos por WhatsApp en las próximas horas.',
           confirmButtonText: 'Listo',
           buttonsStyling: false,
-          customClass: { confirmButton: 'btn btn-success' }
+          customClass: { confirmButton: 'btn btn-success' },
         });
         this.resetQuoteFormState();
         this.syncSelectedEventByName('');
@@ -761,12 +889,16 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private syncServiceCardHeights(): void {
     const track = this.serviceTrack?.nativeElement;
     if (!track) return;
-    const cards = Array.from(track.querySelectorAll<HTMLElement>('.service-card'));
+    const cards = Array.from(
+      track.querySelectorAll<HTMLElement>('.service-card'),
+    );
     if (!cards.length) return;
-    cards.forEach(card => card.style.removeProperty('height'));
-    const max = Math.max(...cards.map(card => card.getBoundingClientRect().height));
+    cards.forEach((card) => card.style.removeProperty('height'));
+    const max = Math.max(
+      ...cards.map((card) => card.getBoundingClientRect().height),
+    );
     if (Number.isFinite(max) && max > 0) {
-      cards.forEach(card => {
+      cards.forEach((card) => {
         card.style.height = `${max}px`;
       });
     }
@@ -801,18 +933,24 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   // Retrieves event names for the select input
   private loadEventOptions(): void {
     this.eventCatalogReady = false;
-    this.cotizacionService.getEventos()
+    this.cotizacionService
+      .getEventos()
       .pipe(
         take(1),
-        catchError(err => {
-          console.error('[LandingComponent] No se pudieron cargar eventos', err);
+        catchError((err) => {
+          console.error(
+            '[LandingComponent] No se pudieron cargar eventos',
+            err,
+          );
           return of([]);
         }),
-        takeUntil(this.destroy$)
+        takeUntil(this.destroy$),
       )
-      .subscribe(events => {
+      .subscribe((events) => {
         const normalized = this.normalizeEventOptions(events);
-        this.eventOptions = normalized.length ? normalized : FALLBACK_EVENT_OPTIONS;
+        this.eventOptions = normalized.length
+          ? normalized
+          : FALLBACK_EVENT_OPTIONS;
         this.eventCatalogReady = normalized.length > 0;
         const currentEventName = this.quoteForm.get('tipoEvento')?.value ?? '';
         this.syncSelectedEventByName(currentEventName);
@@ -822,11 +960,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private createWhatsAppLink(): void {
     const value = this.quoteForm.getRawValue();
     const service = value.tipoEvento || 'servicio de foto y video';
-    const date = this.formatDateDisplay(value.fechaEvento) || 'fecha por definir';
+    const date =
+      this.formatDateDisplay(value.fechaEvento) || 'fecha por definir';
     const district = value.departamento || 'Lima';
     const baseNumber = '51931764349';
     const base = `https://wa.me/${baseNumber}`;
-    const message = encodeURIComponent(`¡Hola! Busco una cotización para ${service} el ${date} en ${district}.`);
+    const message = encodeURIComponent(
+      `¡Hola! Busco una cotización para ${service} el ${date} en ${district}.`,
+    );
     this.whatsAppLink = `${base}?text=${message}`;
   }
 
@@ -847,10 +988,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         drone: false,
         segundoFotografo: false,
         entregaExpress: false,
-        album: false
+        album: false,
       },
       comoNosConociste: '',
-      consentimiento: false
+      consentimiento: false,
     };
 
     if (this.quoteFormDirective) {
@@ -866,7 +1007,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private markControlPristine(control: AbstractControl): void {
     if (control instanceof FormGroup) {
-      Object.values(control.controls).forEach(child => this.markControlPristine(child));
+      Object.values(control.controls).forEach((child) =>
+        this.markControlPristine(child),
+      );
     }
     control.markAsPristine();
     control.markAsUntouched();
@@ -878,9 +1021,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     if (rawValue === null || rawValue === undefined || rawValue === '') {
       return null;
     }
-    const normalizedText = typeof rawValue === 'number'
-      ? rawValue.toString()
-      : rawValue.toString().trim();
+    const normalizedText =
+      typeof rawValue === 'number'
+        ? rawValue.toString()
+        : rawValue.toString().trim();
 
     if (!normalizedText) {
       return null;
@@ -924,7 +1068,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private fechaEventoEnRangoValidator(): (control: AbstractControl) => ValidationErrors | null {
+  private fechaEventoEnRangoValidator(): (
+    control: AbstractControl,
+  ) => ValidationErrors | null {
     return (control: AbstractControl): ValidationErrors | null => {
       if (!control.value) {
         return null;
@@ -935,7 +1081,11 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       const minTime = this.minQuoteDate.getTime();
       const maxTime = this.maxQuoteDate.getTime();
-      const valueTime = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
+      const valueTime = new Date(
+        parsed.getFullYear(),
+        parsed.getMonth(),
+        parsed.getDate(),
+      ).getTime();
 
       if (valueTime < minTime) {
         return { fechaMin: true };
@@ -953,14 +1103,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       { max: 25, label: 'Hasta US$ 1,500' },
       { max: 50, label: 'US$ 1,500 - US$ 3,000' },
       { max: 75, label: 'US$ 3,000 - US$ 5,000' },
-      { max: 100, label: 'Más de US$ 5,000' }
+      { max: 100, label: 'Más de US$ 5,000' },
     ];
-    return ranges.find(range => safeValue <= range.max)?.label ?? 'A definir';
+    return ranges.find((range) => safeValue <= range.max)?.label ?? 'A definir';
   }
 
   private createSchemaScript(schema: object): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(
-      `<script type="application/ld+json">${JSON.stringify(schema)}</script>`
+      `<script type="application/ld+json">${JSON.stringify(schema)}</script>`,
     );
   }
 
@@ -993,33 +1143,49 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Shapes the final DTO that the landing service expects
-  private buildCotizacionPayload(value: Record<string, unknown>): LandingPublicCotizacionPayload {
+  private buildCotizacionPayload(
+    value: Record<string, unknown>,
+  ): LandingPublicCotizacionPayload {
     const nombre = String(value.nombreCompleto ?? '').trim();
     const celular = this.composePhoneNumber(value.whatsappNumero);
-    const fechaEvento = this.formatDate(value.fechaEvento as DateInput) ?? new Date().toISOString().slice(0, 10);
+    const fechaEvento =
+      this.formatDate(value.fechaEvento as DateInput) ??
+      new Date().toISOString().slice(0, 10);
 
     const diasTexto = String(value.dias ?? '').trim();
     const diasNumber = diasTexto ? Number(diasTexto) : null;
     const diasEvento = Number.isFinite(diasNumber) ? diasNumber : null;
 
     const horasTexto = String(value.horas ?? '').trim();
-    const horasNormalizadas = horasTexto.replace(/[^0-9.,]/g, '').replace(/,/g, '.');
+    const horasNormalizadas = horasTexto
+      .replace(/[^0-9.,]/g, '')
+      .replace(/,/g, '.');
     const horasNumber = horasNormalizadas ? Number(horasNormalizadas) : null;
     const horasEstimadas = Number.isFinite(horasNumber) ? horasNumber : null;
 
     const selectedName = String(value.tipoEvento ?? '').trim();
     const rawEventoId = value.eventoId;
-    const parsedEventoId = rawEventoId !== undefined && rawEventoId !== null && rawEventoId !== ''
-      ? Number(rawEventoId)
+    const parsedEventoId =
+      rawEventoId !== undefined && rawEventoId !== null && rawEventoId !== ''
+        ? Number(rawEventoId)
+        : null;
+    const eventoIdFromControl = Number.isFinite(parsedEventoId)
+      ? Number(parsedEventoId)
       : null;
-    const eventoIdFromControl = Number.isFinite(parsedEventoId) ? Number(parsedEventoId) : null;
-    const matchById = eventoIdFromControl != null
-      ? this.eventOptions.find(option => option.id != null && option.id === eventoIdFromControl)
-      : null;
+    const matchById =
+      eventoIdFromControl != null
+        ? this.eventOptions.find(
+            (option) => option.id != null && option.id === eventoIdFromControl,
+          )
+        : null;
     const normalizedSelectedName = this.normalizeEventLabel(selectedName);
-    const matchByName = this.eventOptions.find(option => this.normalizeEventLabel(option.name) === normalizedSelectedName);
+    const matchByName = this.eventOptions.find(
+      (option) =>
+        this.normalizeEventLabel(option.name) === normalizedSelectedName,
+    );
     const eventoId = matchById?.id ?? matchByName?.id ?? null;
-    const tipoEvento = selectedName || matchById?.name || matchByName?.name || 'Evento';
+    const tipoEvento =
+      selectedName || matchById?.name || matchByName?.name || 'Evento';
 
     const lugar = String(value.departamento ?? '').trim();
 
@@ -1029,7 +1195,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       lead: {
         nombre,
         celular,
-        origen
+        origen,
       },
       cotizacion: {
         idTipoEvento: eventoId ?? null,
@@ -1038,8 +1204,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         lugar,
         diasEvento,
         horasEstimadas,
-        mensaje: String(value.mensaje ?? '').trim() || undefined
-      }
+        mensaje: String(value.mensaje ?? '').trim() || undefined,
+      },
     };
 
     return payload;
@@ -1060,14 +1226,18 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       .trim();
   }
 
-  private normalizeEventOptions(data: (LandingEventDto | LandingEventOption)[]): LandingEventOption[] {
+  private normalizeEventOptions(
+    data: (LandingEventDto | LandingEventOption)[],
+  ): LandingEventOption[] {
     if (!Array.isArray(data)) {
       return [];
     }
     const mapped = data
-      .map(item => {
-        const record = (item as unknown) as Record<string, unknown>;
-        const id = Number(record.PK_E_Cod ?? record.id ?? record.ID ?? record.pk);
+      .map((item) => {
+        const record = item as unknown as Record<string, unknown>;
+        const id = Number(
+          record.PK_E_Cod ?? record.id ?? record.ID ?? record.pk,
+        );
         const rawName = record.E_Nombre ?? record.nombre ?? record.name ?? null;
         if (!rawName) {
           return null;
@@ -1081,7 +1251,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         return {
           id,
-          name
+          name,
         } as LandingEventOption;
       })
       .filter((item): item is LandingEventOption => Boolean(item));
@@ -1094,7 +1264,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
     return Array.from(unique.values())
-      .filter(option => {
+      .filter((option) => {
         const normalized = this.normalizeEventLabel(option.name);
         return normalized !== '' && normalized !== 'otro';
       })
@@ -1103,7 +1273,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private pickEventValue(source: string): string {
     const normalizedSource = this.normalizeEventLabel(source);
-    const match = this.eventOptions.find(option => this.normalizeEventLabel(option.name) === normalizedSource);
+    const match = this.eventOptions.find(
+      (option) => this.normalizeEventLabel(option.name) === normalizedSource,
+    );
     if (match) {
       return match.name;
     }
@@ -1115,25 +1287,26 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     const normalizedName = this.normalizeEventLabel(name);
-    const match = this.eventOptions.find(option => this.normalizeEventLabel(option.name) === normalizedName);
+    const match = this.eventOptions.find(
+      (option) => this.normalizeEventLabel(option.name) === normalizedName,
+    );
     const eventoId = match ? match.id : null;
     this.quoteForm.patchValue({ eventoId }, { emitEvent: false });
   }
 
   private normalizeEventLabel(value: string): string {
-    return (value ?? '')
-      .toString()
-      .trim()
-      .toLowerCase()
-      .replace(/[áàäâ]/g, 'a')
-      .replace(/[éèëê]/g, 'e')
-      .replace(/[íìïî]/g, 'i')
-      .replace(/[óòöô]/g, 'o')
-      .replace(/[úùüû]/g, 'u')
-      .replace(/[^a-z0-9]/g, '')
-      .replace(/s$/, '')
-      ?? '';
+    return (
+      (value ?? '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[áàäâ]/g, 'a')
+        .replace(/[éèëê]/g, 'e')
+        .replace(/[íìïî]/g, 'i')
+        .replace(/[óòöô]/g, 'o')
+        .replace(/[úùüû]/g, 'u')
+        .replace(/[^a-z0-9]/g, '')
+        .replace(/s$/, '') ?? ''
+    );
   }
-
 }
-
