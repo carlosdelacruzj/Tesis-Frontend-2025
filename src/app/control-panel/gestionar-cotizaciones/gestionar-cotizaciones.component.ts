@@ -75,7 +75,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       header: 'Acciones',
       sortable: false,
       filterable: false,
-      width: '160px',
+      width: '230px',
       class: 'text-center',
     },
   ];

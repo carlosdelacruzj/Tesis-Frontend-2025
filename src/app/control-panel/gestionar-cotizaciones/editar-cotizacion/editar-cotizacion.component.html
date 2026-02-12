@@ -213,7 +213,7 @@
                           : $index
                       ) {
                         <option [ngValue]="evento.id">
-                          {{ evento.nombre }}
+                          {{ corregirCumple(evento.nombre) }}
                         </option>
                       }
                     </select>

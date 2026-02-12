@@ -11,6 +11,7 @@ import { TableColumn } from 'src/app/components/table-base/table-base.component'
 import { environment } from 'src/environments/environment';
 import { PortafolioEvento, PortafolioImagen } from './model/portafolio.model';
 import { PortafolioService } from './service/portafolio.service';
+import { corregirCumple } from 'src/app/shared/utils/text-utils';
 
 interface PortafolioImagenRow extends PortafolioImagen {
   eventoNombre?: string;
@@ -32,6 +33,7 @@ interface ModalState {
   styleUrls: ['./gestionar-portafolio.component.css'],
 })
 export class GestionarPortafolioComponent implements OnInit, OnDestroy {
+  corregirCumple = corregirCumple;
   columnasEventos: TableColumn<PortafolioEvento>[] = [
     {
       key: 'iconUrl',

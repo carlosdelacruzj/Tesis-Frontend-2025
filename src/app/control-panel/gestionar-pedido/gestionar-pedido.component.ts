@@ -2,10 +2,17 @@
 import { Router } from '@angular/router';
 import { Subject, forkJoin, of, takeUntil } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
-import { DateInput, formatIsoDate, parseDateInput } from '../../shared/utils/date-utils';
+import {
+  DateInput,
+  formatIsoDate,
+  parseDateInput,
+} from '../../shared/utils/date-utils';
 import { PedidoService } from './service/pedido.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
-import { RegistrarPagoService, ResumenPago } from '../registrar-pago/service/registrar-pago.service';
+import {
+  RegistrarPagoService,
+  ResumenPago,
+} from '../registrar-pago/service/registrar-pago.service';
 import { MetodoPago } from '../registrar-pago/model/metodopago.model';
 import { ComprobantesService } from '../comprobantes/service/comprobantes.service';
 import { firstValueFrom } from 'rxjs';
@@ -55,16 +62,59 @@ interface ModalPagoState {
   styleUrls: ['./gestionar-pedido.component.css'],
 })
 export class GestionarPedidoComponent implements OnInit, OnDestroy {
-    columns: TableColumn<PedidoRow>[] = [
-    { key: 'ID', header: 'Codigo', sortable: true, width: '120px', class: 'text-center text-nowrap' },
-    { key: 'Cliente', header: 'Cliente', sortable: true, width: '180px', class: 'cliente-col text-center' },
+  columns: TableColumn<PedidoRow>[] = [
+    {
+      key: 'ID',
+      header: 'Codigo',
+      sortable: true,
+      width: '120px',
+      class: 'text-center text-nowrap',
+    },
+    {
+      key: 'Cliente',
+      header: 'Cliente',
+      sortable: true,
+      width: '180px',
+      class: 'cliente-col text-center',
+    },
     { key: 'TipoEvento', header: 'Evento', sortable: true, width: '180px' },
     { key: 'ProxFecha', header: 'Prox. fecha', sortable: true, width: '180px' },
-    { key: 'ProxHora', header: 'Prox. hora', sortable: true, width: '120px', class: 'text-center' },
-    { key: 'TotalLabel', header: 'Total', sortable: true, width: '140px', class: 'text-end text-nowrap' },
-    { key: 'Pago', header: 'Pago', sortable: true, width: '120px', class: 'text-center' },
-    { key: 'Estado', header: 'Estado', sortable: true, width: '140px', class: 'text-center' },
-    { key: 'acciones', header: 'Acciones', sortable: false, filterable: false, width: '160px', class: 'text-center' }
+    {
+      key: 'ProxHora',
+      header: 'Prox. hora',
+      sortable: true,
+      width: '120px',
+      class: 'text-center',
+    },
+    {
+      key: 'TotalLabel',
+      header: 'Total',
+      sortable: true,
+      width: '140px',
+      class: 'text-end text-nowrap',
+    },
+    {
+      key: 'Pago',
+      header: 'Pago',
+      sortable: true,
+      width: '120px',
+      class: 'text-center',
+    },
+    {
+      key: 'Estado',
+      header: 'Estado',
+      sortable: true,
+      width: '140px',
+      class: 'text-center',
+    },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      sortable: false,
+      filterable: false,
+      width: '230px',
+      class: 'text-center',
+    },
   ];
 
   rows: PedidoRow[] = [];
@@ -100,14 +150,15 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       return;
     }
     this.downloadingId = id;
-    this.pedidoService.getContratoPdf(id)
+    this.pedidoService
+      .getContratoPdf(id)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
           if (this.downloadingId === id) {
             this.downloadingId = null;
           }
-        })
+        }),
       )
       .subscribe({
         next: (blob) => {
@@ -129,9 +180,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
             text: 'No pudimos generar el contrato PDF.',
             confirmButtonText: 'Aceptar',
             buttonsStyling: false,
-            customClass: { confirmButton: 'btn btn-danger' }
+            customClass: { confirmButton: 'btn btn-danger' },
           });
-        }
+        },
       });
   }
 
@@ -177,26 +228,33 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       cargando: true,
       pedido: row,
       fecha: fechaMin,
-      fechaMin
+      fechaMin,
     };
 
     forkJoin({
-      resumen: this.registrarPagoService.getResumenPedido(id).pipe(
-        catchError(() => of<ResumenPago | null>(null))
-      ),
-      metodos: this.registrarPagoService.getMetodosPago().pipe(
-        catchError(() => of<MetodoPago[]>([]))
-      )
+      resumen: this.registrarPagoService
+        .getResumenPedido(id)
+        .pipe(catchError(() => of<ResumenPago | null>(null))),
+      metodos: this.registrarPagoService
+        .getMetodosPago()
+        .pipe(catchError(() => of<MetodoPago[]>([]))),
     })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ({ resumen, metodos }) => {
-          const resumenValido = resumen ?? { CostoBase: 0, Igv: 0, CostoTotal: 0, MontoAbonado: 0, SaldoPendiente: 0 };
+          const resumenValido = resumen ?? {
+            CostoBase: 0,
+            Igv: 0,
+            CostoTotal: 0,
+            MontoAbonado: 0,
+            SaldoPendiente: 0,
+          };
           const total = this.parseMonto(resumenValido.CostoTotal);
           const abonado = this.parseMonto(resumenValido.MontoAbonado);
-          const saldo = resumenValido.SaldoPendiente != null
-            ? this.parseMonto(resumenValido.SaldoPendiente)
-            : Math.max(total - abonado, 0);
+          const saldo =
+            resumenValido.SaldoPendiente != null
+              ? this.parseMonto(resumenValido.SaldoPendiente)
+              : Math.max(total - abonado, 0);
           const faltanteDeposito = Math.max(total * 0.5 - abonado, 0);
           const esPrimerPago = abonado <= 0;
 
@@ -208,7 +266,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
             faltanteDeposito,
             esPrimerPago,
             allowRegistro: saldo > 0,
-            pagadoCompleto: saldo <= 0
+            pagadoCompleto: saldo <= 0,
           };
           this.configurarOpcionPagoInicial();
         },
@@ -217,9 +275,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
           this.modalPago = {
             ...this.modalPago,
             cargando: false,
-            error: 'No se pudo cargar la informacion del pedido.'
+            error: 'No se pudo cargar la informacion del pedido.',
           };
-        }
+        },
       });
   }
 
@@ -270,7 +328,10 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.modalPago.faltanteDeposito > 0 && monto < this.modalPago.faltanteDeposito) {
+    if (
+      this.modalPago.faltanteDeposito > 0 &&
+      monto < this.modalPago.faltanteDeposito
+    ) {
       this.modalPago.montoError = `Debes pagar al menos ${this.faltanteDepositoTexto} en el primer pago.`;
       return;
     }
@@ -320,7 +381,10 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     if (saldo > 0 && monto > saldo + 0.01) {
       return false;
     }
-    if (this.modalPago.faltanteDeposito > 0 && monto < this.modalPago.faltanteDeposito) {
+    if (
+      this.modalPago.faltanteDeposito > 0 &&
+      monto < this.modalPago.faltanteDeposito
+    ) {
       return false;
     }
     return true;
@@ -353,8 +417,8 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       buttonsStyling: false,
       customClass: {
         confirmButton: 'btn btn-primary me-2',
-        cancelButton: 'btn btn-outline-secondary'
-      }
+        cancelButton: 'btn btn-outline-secondary',
+      },
     });
 
     if (!confirm.isConfirmed) {
@@ -371,13 +435,13 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
         monto,
         pedidoId: id,
         metodoPagoId: this.modalPago.metodoId ?? 0,
-        fecha: this.modalPago.fecha || undefined
+        fecha: this.modalPago.fecha || undefined,
       });
 
       if (esPrimerPago) {
         try {
           await this.registrarPagoService.crearProyecto({
-            pedidoId: id
+            pedidoId: id,
           });
         } catch (err) {
           console.error('[proyecto] crear', err);
@@ -387,7 +451,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
             text: 'El proyecto no pudo crearse automaticamente. Intenta crearlo manualmente.',
             confirmButtonText: 'Entendido',
             buttonsStyling: false,
-            customClass: { confirmButton: 'btn btn-warning' }
+            customClass: { confirmButton: 'btn btn-warning' },
           });
         }
       }
@@ -396,29 +460,30 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       void Swal.fire({
         icon: 'success',
         title: 'Pago registrado',
-        text: saldoRestante > 0
-          ? `Pago registrado correctamente. Saldo pendiente: ${this.formatearMoneda(saldoRestante)}.`
-          : 'Pago registrado correctamente. Saldo pendiente: 0.',
+        text:
+          saldoRestante > 0
+            ? `Pago registrado correctamente. Saldo pendiente: ${this.formatearMoneda(saldoRestante)}.`
+            : 'Pago registrado correctamente. Saldo pendiente: 0.',
         confirmButtonText: 'Aceptar',
         buttonsStyling: false,
-        customClass: { confirmButton: 'btn btn-success' }
+        customClass: { confirmButton: 'btn btn-success' },
       });
 
       this.descargarComprobante(response?.voucherId);
-
 
       this.modalPago.open = false;
       this.loadPedidos();
     } catch (error) {
       console.error('[pagos] registrar', error);
-      this.modalPago.error = 'No se pudo registrar el pago. Intenta nuevamente.';
+      this.modalPago.error =
+        'No se pudo registrar el pago. Intenta nuevamente.';
       void Swal.fire({
         icon: 'error',
         title: 'No se pudo registrar',
         text: 'Ocurrio un problema al registrar el pago.',
         confirmButtonText: 'Aceptar',
         buttonsStyling: false,
-        customClass: { confirmButton: 'btn btn-danger' }
+        customClass: { confirmButton: 'btn btn-danger' },
       });
     } finally {
       this.modalPago.guardando = false;
@@ -429,7 +494,8 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     this.loadingList = true;
     this.error = null;
 
-    this.pedidoService.getAllPedidos()
+    this.pedidoService
+      .getAllPedidos()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (rows) => {
@@ -438,30 +504,37 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
             const raw = this.asRecord(item);
             const codigo = this.toOptionalString(
               raw?.codigo ??
-              raw?.codigoPedido ??
-              raw?.codigo_pedido ??
-              raw?.Codigo ??
-              raw?.CodigoPedido ??
-              raw?.cod_pedido
+                raw?.codigoPedido ??
+                raw?.codigo_pedido ??
+                raw?.Codigo ??
+                raw?.CodigoPedido ??
+                raw?.cod_pedido,
             );
-            const id = this.parseNumber(raw?.id ?? raw?.ID ?? raw?.Id ?? raw?.idPedido ?? raw?.pedidoId ?? raw?.id_pedido);
+            const id = this.parseNumber(
+              raw?.id ??
+                raw?.ID ??
+                raw?.Id ??
+                raw?.idPedido ??
+                raw?.pedidoId ??
+                raw?.id_pedido,
+            );
             const { clienteLabel, clienteSub } = this.buildClienteDisplay(raw);
             const totalLabel = this.toOptionalString(
               raw?.TotalLabel ??
-              raw?.Total ??
-              raw?.total ??
-              raw?.Costo_Total ??
-              raw?.costo_total ??
-              raw?.costoTotal ??
-              raw?.total_pedido
+                raw?.Total ??
+                raw?.total ??
+                raw?.Costo_Total ??
+                raw?.costo_total ??
+                raw?.costoTotal ??
+                raw?.total_pedido,
             );
             return {
               ...raw,
               id: id ?? undefined,
-              ID: codigo ?? (id ?? raw?.ID),
+              ID: codigo ?? id ?? raw?.ID,
               Cliente: clienteLabel,
               Documento: clienteSub,
-              TotalLabel: totalLabel ?? undefined
+              TotalLabel: totalLabel ?? undefined,
             } as PedidoRow;
           });
           this.loadingList = false;
@@ -471,7 +544,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
           this.error = 'No pudimos cargar los pedidos.';
           this.rows = [];
           this.loadingList = false;
-        }
+        },
       });
   }
 
@@ -495,36 +568,50 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       error: null,
       fileName: null,
       faltanteDeposito: 0,
-      esPrimerPago: false
+      esPrimerPago: false,
     };
   }
 
-  private buildClienteDisplay(raw: Record<string, unknown>): { clienteLabel: string; clienteSub: string | undefined } {
+  private buildClienteDisplay(raw: Record<string, unknown>): {
+    clienteLabel: string;
+    clienteSub: string | undefined;
+  } {
     const clienteObj = this.asRecord(raw['cliente']);
     const nombre = this.toOptionalString(
       raw['Cliente'] ??
-      raw['cliente'] ??
-      clienteObj['nombres'] ??
-      clienteObj['nombre']
+        raw['cliente'] ??
+        clienteObj['nombres'] ??
+        clienteObj['nombre'],
     );
-    const apellido = this.toOptionalString(clienteObj['apellidos'] ?? clienteObj['apellido']);
-    const razonSocial = this.toOptionalString(clienteObj['razonSocial'] ?? clienteObj['razon_social']);
+    const apellido = this.toOptionalString(
+      clienteObj['apellidos'] ?? clienteObj['apellido'],
+    );
+    const razonSocial = this.toOptionalString(
+      clienteObj['razonSocial'] ?? clienteObj['razon_social'],
+    );
     const doc = this.toOptionalString(
       raw['Documento'] ??
-      raw['documento'] ??
-      clienteObj['documento'] ??
-      clienteObj['doc'] ??
-      clienteObj['dni']
+        raw['documento'] ??
+        clienteObj['documento'] ??
+        clienteObj['doc'] ??
+        clienteObj['dni'],
     );
-    const celular = this.toOptionalString(clienteObj['celular'] ?? raw['celular'] ?? raw['Celular']);
+    const celular = this.toOptionalString(
+      clienteObj['celular'] ?? raw['celular'] ?? raw['Celular'],
+    );
 
     const nombreCompuesto = [nombre, apellido].filter(Boolean).join(' ').trim();
-    const etiqueta = nombreCompuesto || razonSocial || nombre || this.toOptionalString(raw['Cliente']) || '--';
+    const etiqueta =
+      nombreCompuesto ||
+      razonSocial ||
+      nombre ||
+      this.toOptionalString(raw['Cliente']) ||
+      '--';
     const subtitulo = doc || celular || undefined;
 
     return {
       clienteLabel: etiqueta,
-      clienteSub: subtitulo
+      clienteSub: subtitulo,
     };
   }
 
@@ -571,14 +658,22 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       this.modalPago.monto = '';
       return;
     }
-    const preferida: '50' | '100' = this.modalPago.faltanteDeposito > 0 ? '50' : '100';
+    const preferida: '50' | '100' =
+      this.modalPago.faltanteDeposito > 0 ? '50' : '100';
     const montoPreferido = this.calcularMontoPorOpcion(preferida);
     const alternativa: '50' | '100' = preferida === '50' ? '100' : '50';
     const montoAlternativo = this.calcularMontoPorOpcion(alternativa);
 
-    const opcion = montoPreferido > 0 ? preferida : montoAlternativo > 0 ? alternativa : null;
+    const opcion =
+      montoPreferido > 0
+        ? preferida
+        : montoAlternativo > 0
+          ? alternativa
+          : null;
     this.modalPago.opcionPago = opcion;
-    this.modalPago.monto = opcion ? this.calcularMontoPorOpcion(opcion).toFixed(2) : '';
+    this.modalPago.monto = opcion
+      ? this.calcularMontoPorOpcion(opcion).toFixed(2)
+      : '';
     this.ajustarOpcionPagoSiInvalida();
     this.onMontoChange();
   }
@@ -617,7 +712,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     return Math.round(valor * 100) / 100;
   }
 
-  private async descargarComprobante(voucherId: number | undefined | null): Promise<void> {
+  private async descargarComprobante(
+    voucherId: number | undefined | null,
+  ): Promise<void> {
     if (!voucherId) {
       return;
     }
@@ -629,9 +726,11 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
         title: 'Descargando comprobante...',
         showConfirmButton: false,
         timer: 2200,
-        timerProgressBar: true
+        timerProgressBar: true,
       });
-      const blob = await firstValueFrom(this.comprobantesService.getVoucherPdf(voucherId));
+      const blob = await firstValueFrom(
+        this.comprobantesService.getVoucherPdf(voucherId),
+      );
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -647,7 +746,7 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
         title: 'No se pudo descargar el comprobante.',
         showConfirmButton: false,
         timer: 3000,
-        timerProgressBar: true
+        timerProgressBar: true,
       });
     }
   }
@@ -657,14 +756,16 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(valor);
   }
 
   esTransferenciaSeleccionada(): boolean {
     const metodoId = this.modalPago.metodoId;
     if (!metodoId) return false;
-    const metodo = this.modalPago.metodos.find(m => m.idMetodoPago === metodoId);
+    const metodo = this.modalPago.metodos.find(
+      (m) => m.idMetodoPago === metodoId,
+    );
     const nombre = (metodo?.nombre || '').toLowerCase();
     return nombre.includes('transfer');
   }
@@ -704,7 +805,10 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     return monto > 0 ? this.formatearMoneda(monto) : '--';
   }
 
-  getPagoPill(row: PedidoRow | null | undefined): { label: string; className: string } {
+  getPagoPill(row: PedidoRow | null | undefined): {
+    label: string;
+    className: string;
+  } {
     const label = this.toOptionalString(row?.Pago) || '--';
     const key = label.trim().toLowerCase();
     let className = 'badge bg-secondary';
@@ -727,10 +831,10 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     const record = this.asRecord(row);
     const label = this.toOptionalString(
       record['Pago'] ??
-      record['pago'] ??
-      record['EstadoPago'] ??
-      record['estadoPago'] ??
-      record['estado_pago']
+        record['pago'] ??
+        record['EstadoPago'] ??
+        record['estadoPago'] ??
+        record['estado_pago'],
     );
     if (!label) return false;
     const key = label.trim().toLowerCase();
@@ -745,10 +849,10 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
     const record = this.asRecord(row);
     const label = this.toOptionalString(
       record['Pago'] ??
-      record['pago'] ??
-      record['EstadoPago'] ??
-      record['estadoPago'] ??
-      record['estado_pago']
+        record['pago'] ??
+        record['EstadoPago'] ??
+        record['estadoPago'] ??
+        record['estado_pago'],
     );
     if (!label) return false;
     const key = label.trim().toLowerCase();
@@ -758,7 +862,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   private extractId(row: PedidoRow | null | undefined): number | null {
     if (!row) return null;
     const record = this.asRecord(row);
-    const id = this.parseNumber(record['id'] ?? row.ID ?? record['idPedido'] ?? record['pedidoId']);
+    const id = this.parseNumber(
+      record['id'] ?? row.ID ?? record['idPedido'] ?? record['pedidoId'],
+    );
     return id;
   }
 
@@ -788,7 +894,9 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   }
 
   private asRecord(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+    return value && typeof value === 'object'
+      ? (value as Record<string, unknown>)
+      : {};
   }
 
   private toDateInput(value: unknown): DateInput {

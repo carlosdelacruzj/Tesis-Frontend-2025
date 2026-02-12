@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { Observable, map } from 'rxjs';
+import { corregirCumple } from 'src/app/shared/utils/text-utils';
 
 export interface PortafolioPublicoImagen {
   id: number;
@@ -33,22 +34,9 @@ export class LandingPortafolioService {
         map((items) =>
           items.map((e) => ({
             ...e,
-            nombre: corregirNombre(e.nombre),
+            nombre: corregirCumple(e.nombre),
           })),
         ),
       );
   }
-}
-
-function corregirNombre(nombre: string): string {
-  if (!nombre) return nombre;
-
-  // Corrige solo si viene exactamente "cumpleanos" (con cualquier mayúscula/minúscula)
-  if (nombre.toLowerCase() === 'cumpleanos') {
-    if (nombre === nombre.toUpperCase()) return 'CUMPLEAÑOS';
-    if (nombre[0] === nombre[0].toUpperCase()) return 'Cumpleaños';
-    return 'cumpleaños';
-  }
-
-  return nombre;
 }

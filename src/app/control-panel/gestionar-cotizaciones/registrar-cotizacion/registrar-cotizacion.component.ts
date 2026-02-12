@@ -1,13 +1,39 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { AbstractControl, UntypedFormArray, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, ValidatorFn, ValidationErrors, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  UntypedFormArray,
+  UntypedFormBuilder,
+  UntypedFormControl,
+  UntypedFormGroup,
+  ValidatorFn,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
-import { ClienteBusquedaResultado, CotizacionAdminCreatePayload, CotizacionAdminItemPayload, CotizacionAdminEventoPayload, CotizacionAdminServicioFechaPayload } from '../model/cotizacion.model';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  finalize,
+  map,
+  switchMap,
+  takeUntil,
+  tap,
+} from 'rxjs/operators';
+import {
+  ClienteBusquedaResultado,
+  CotizacionAdminCreatePayload,
+  CotizacionAdminItemPayload,
+  CotizacionAdminEventoPayload,
+  CotizacionAdminServicioFechaPayload,
+} from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import { parseDateInput } from '../../../shared/utils/date-utils';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
+import { corregirCumple } from 'src/app/shared/utils/text-utils';
 
 type AlertIcon = 'success' | 'error' | 'warning' | 'info' | 'question';
 type AnyRecord = Record<string, unknown>;
@@ -81,17 +107,25 @@ interface PaqueteDetalle {
 @Component({
   selector: 'app-registrar-cotizacion',
   templateUrl: './registrar-cotizacion.component.html',
-  styleUrls: ['./registrar-cotizacion.component.css']
+  styleUrls: ['./registrar-cotizacion.component.css'],
 })
 export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
-  readonly fechaMinimaEvento = RegistrarCotizacionComponent.computeFechaMinimaEvento();
-  readonly fechaMaximaEvento = RegistrarCotizacionComponent.computeFechaMaximaEvento();
+  readonly fechaMinimaEvento =
+    RegistrarCotizacionComponent.computeFechaMinimaEvento();
+  readonly fechaMaximaEvento =
+    RegistrarCotizacionComponent.computeFechaMaximaEvento();
   readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
-  readonly minutoOptions = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
+  readonly minutoOptions = Array.from({ length: 12 }, (_, index) =>
+    String(index * 5).padStart(2, '0'),
+  );
   readonly ampmOptions = ['AM', 'PM'] as const;
   readonly maxLocacionesPorDia = 6;
   form: UntypedFormGroup;
 
+  corregirCumple = corregirCumple;
+  corregirCumpleSafe(value: unknown): string {
+    return corregirCumple(String(value ?? ''));
+  }
   servicios: AnyRecord[] = [];
   eventos: AnyRecord[] = [];
   selectedServicioId: number | null = null;
@@ -124,7 +158,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     'San Martin',
     'Tacna',
     'Tumbes',
-    'Ucayali'
+    'Ucayali',
   ];
   readonly programacionMinimaRecomendada = 1;
   clienteSearchControl = new UntypedFormControl('');
@@ -134,7 +168,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   clienteSeleccionado: ClienteBusquedaResultado | null = null;
   clienteBusquedaTermino = '';
 
-  readonly clienteDisplay = (cliente?: ClienteBusquedaResultado | string | null): string => {
+  readonly clienteDisplay = (
+    cliente?: ClienteBusquedaResultado | string | null,
+  ): string => {
     if (!cliente) {
       return '';
     }
@@ -146,10 +182,35 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   paquetesColumns: TableColumn<PaqueteRow>[] = [
     { key: 'titulo', header: 'Título', sortable: true, width: '45%' },
-    { key: 'precio', header: 'Precio', sortable: true, class: 'text-center', width: '120px' },
-    { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
-    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
-    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '200px' }
+    {
+      key: 'precio',
+      header: 'Precio',
+      sortable: true,
+      class: 'text-center',
+      width: '120px',
+    },
+    {
+      key: 'horas',
+      header: 'Horas',
+      sortable: true,
+      class: 'text-center',
+      width: '100px',
+    },
+    {
+      key: 'staff',
+      header: 'Staff',
+      sortable: true,
+      class: 'text-center',
+      width: '100px',
+    },
+    {
+      key: 'acciones',
+      header: 'Seleccionar',
+      sortable: false,
+      filterable: false,
+      class: 'text-center',
+      width: '200px',
+    },
   ];
   paquetesRows: PaqueteRow[] = [];
   selectedPaquetes: PaqueteSeleccionado[] = [];
@@ -180,17 +241,30 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   constructor() {
     this.form = this.fb.group({
       clienteNombre: ['', [Validators.required, Validators.minLength(2)]],
-      clienteContacto: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[0-9]{6,15}$/)]],
-      fechaEvento: [RegistrarCotizacionComponent.computeFechaMinimaEvento(), [Validators.required, this.fechaEventoEnRangoValidator()]],
+      clienteContacto: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(6),
+          Validators.pattern(/^[0-9]{6,15}$/),
+        ],
+      ],
+      fechaEvento: [
+        RegistrarCotizacionComponent.computeFechaMinimaEvento(),
+        [Validators.required, this.fechaEventoEnRangoValidator()],
+      ],
       dias: [null, [Validators.required, Validators.min(1), Validators.max(7)]],
       departamento: ['Lima', Validators.required],
       viaticosCliente: [true],
       viaticosMonto: [{ value: null, disabled: true }],
-      horasEstimadas: [{ value: '', disabled: true }, [Validators.pattern(/^\d+$/), Validators.min(1)]],
+      horasEstimadas: [
+        { value: '', disabled: true },
+        [Validators.pattern(/^\d+$/), Validators.min(1)],
+      ],
       descripcion: [''],
       totalEstimado: [{ value: 0, disabled: true }, Validators.min(0)],
       fechasTrabajo: this.fb.array([]),
-      programacion: this.fb.array([])
+      programacion: this.fb.array([]),
     });
   }
 
@@ -200,21 +274,28 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.initClienteBusqueda();
     this.refreshSelectedPaquetesColumns();
     this.syncProgramacionFechas();
-    this.form.get('fechaEvento')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(fecha => this.syncProgramacionFechas(fecha));
-    this.form.get('dias')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(value => this.onDiasChange(value));
-    this.lastDepartamento = (this.form.get('departamento')?.value ?? '').toString().trim();
-    this.form.get('departamento')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(value => this.handleDepartamentoChange(value));
-    this.form.get('viaticosCliente')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
+    this.form
+      .get('fechaEvento')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((fecha) => this.syncProgramacionFechas(fecha));
+    this.form
+      .get('dias')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((value) => this.onDiasChange(value));
+    this.lastDepartamento = (this.form.get('departamento')?.value ?? '')
+      .toString()
+      .trim();
+    this.form
+      .get('departamento')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((value) => this.handleDepartamentoChange(value));
+    this.form
+      .get('viaticosCliente')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
       .subscribe(() => this.applyViaticosRules());
-    this.form.get('viaticosMonto')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
+    this.form
+      .get('viaticosMonto')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
       .subscribe(() => this.syncTotalEstimado());
     this.applyDiasRules(this.form.get('dias')?.value);
     this.lastDiasAplicado = this.normalizeDias(this.form.get('dias')?.value);
@@ -237,7 +318,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   get fechasTrabajoValores(): string[] {
     return this.fechasTrabajo.controls
-      .map(control => (control.value ?? '').toString().trim())
+      .map((control) => (control.value ?? '').toString().trim())
       .filter(Boolean);
   }
 
@@ -246,16 +327,33 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (!objetivo) {
       return [];
     }
-    const indices = Array.from({ length: this.programacion.length }, (_, index) => index).filter(index => {
+    const indices = Array.from(
+      { length: this.programacion.length },
+      (_, index) => index,
+    ).filter((index) => {
       const grupo = this.programacion.at(index) as UntypedFormGroup | null;
-      const fechaLocacion = (grupo?.get('fecha')?.value ?? '').toString().trim();
+      const fechaLocacion = (grupo?.get('fecha')?.value ?? '')
+        .toString()
+        .trim();
       return fechaLocacion === objetivo;
     });
     indices.sort((a, b) => {
       const aGrupo = this.programacion.at(a) as UntypedFormGroup | null;
       const bGrupo = this.programacion.at(b) as UntypedFormGroup | null;
-      const aHora = ((aGrupo?.getRawValue() as Record<string, unknown> | undefined)?.['hora'] ?? '').toString().trim();
-      const bHora = ((bGrupo?.getRawValue() as Record<string, unknown> | undefined)?.['hora'] ?? '').toString().trim();
+      const aHora = (
+        (aGrupo?.getRawValue() as Record<string, unknown> | undefined)?.[
+          'hora'
+        ] ?? ''
+      )
+        .toString()
+        .trim();
+      const bHora = (
+        (bGrupo?.getRawValue() as Record<string, unknown> | undefined)?.[
+          'hora'
+        ] ?? ''
+      )
+        .toString()
+        .trim();
       const aMin = this.horaToMinutos(aHora);
       const bMin = this.horaToMinutos(bHora);
       if (aMin !== bMin) {
@@ -274,12 +372,19 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const fechaAnterior = (prev[index] ?? '').toString().trim();
     const fecha = (value ?? '').toString().trim();
     const control = this.fechasTrabajo.at(index);
-    const duplicada = this.fechasTrabajo.controls.some((ctrl, i) =>
-      i !== index && (ctrl.value ?? '').toString().trim() === fecha && !!fecha
+    const duplicada = this.fechasTrabajo.controls.some(
+      (ctrl, i) =>
+        i !== index &&
+        (ctrl.value ?? '').toString().trim() === fecha &&
+        !!fecha,
     );
     if (duplicada) {
       control.setValue(prev[index] ?? '', { emitEvent: false });
-      this.showAlert('warning', 'Fecha repetida', 'Cada día de trabajo debe tener una fecha diferente.');
+      this.showAlert(
+        'warning',
+        'Fecha repetida',
+        'Cada día de trabajo debe tener una fecha diferente.',
+      );
       return;
     }
     const changingExistingDate = !!fechaAnterior && fechaAnterior !== fecha;
@@ -309,8 +414,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       `,
       showCancelButton: true,
       confirmButtonText: 'Sí, cambiar',
-      cancelButtonText: 'Cancelar'
-    }).then(result => {
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
       if (!result.isConfirmed) {
         control.setValue(fechaAnterior, { emitEvent: false });
         return;
@@ -327,7 +432,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   addProgramacionItem(fechaForzada?: string): void {
     const fechaConfig = this.getFechaProgramacionNuevaFila(fechaForzada);
     if (!fechaConfig) {
-      this.showAlert('warning', 'Fecha requerida', 'Primero define una fecha de trabajo para agregar locaciones.');
+      this.showAlert(
+        'warning',
+        'Fecha requerida',
+        'Primero define una fecha de trabajo para agregar locaciones.',
+      );
       return;
     }
 
@@ -336,15 +445,15 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.showAlert(
         'warning',
         'Límite alcanzado',
-        `Máximo ${this.maxLocacionesPorDia} locaciones por día (${this.formatFechaConDia(fechaConfig)}).`
+        `Máximo ${this.maxLocacionesPorDia} locaciones por día (${this.formatFechaConDia(fechaConfig)}).`,
       );
       return;
     }
 
     // ✅ NO autollenar el nombre
     const nuevoGrupo = this.createProgramacionItem({
-      nombre: '',          // <-- vacío para que se vea el placeholder
-      fecha: fechaConfig
+      nombre: '', // <-- vacío para que se vea el placeholder
+      fecha: fechaConfig,
     });
 
     this.setProgramacionExpandida(nuevoGrupo, this.programacion.length === 0);
@@ -353,7 +462,6 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.ensureProgramacionPrincipales();
     this.syncProgramacionFechas();
   }
-
 
   duplicarProgramacionItem(index: number): void {
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
@@ -367,7 +475,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
     const actuales = this.getProgramacionIndicesPorFecha(fecha).length;
     if (actuales >= this.maxLocacionesPorDia) {
-      this.showAlert('warning', 'Límite alcanzado', `Máximo ${this.maxLocacionesPorDia} locaciones por día.`);
+      this.showAlert(
+        'warning',
+        'Límite alcanzado',
+        `Máximo ${this.maxLocacionesPorDia} locaciones por día.`,
+      );
       return;
     }
     const duplicado = this.createProgramacionItem({
@@ -375,7 +487,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       direccion: (raw['direccion'] ?? '').toString().trim(),
       hora: (raw['hora'] ?? '').toString().trim(),
       notas: (raw['notas'] ?? '').toString().trim(),
-      fecha
+      fecha,
     });
     this.programacion.insert(index + 1, duplicado);
     this.setProgramacionExpandida(duplicado, true);
@@ -445,7 +557,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
-    const nombre = (grupo?.get('nombre')?.value ?? '').toString().trim() || `Locación ${index + 1}`;
+    const nombre =
+      (grupo?.get('nombre')?.value ?? '').toString().trim() ||
+      `Locación ${index + 1}`;
 
     void Swal.fire({
       icon: 'warning',
@@ -454,14 +568,19 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#dc3545'
-    }).then(result => {
+      confirmButtonColor: '#dc3545',
+    }).then((result) => {
       if (!result.isConfirmed) {
         return;
       }
       this.programacion.removeAt(index);
-      this.ensureProgramacionPrincipales();      this.syncProgramacionFechas();
-      this.showToast('success', 'Locación eliminada', 'Se eliminó la locación seleccionada.');
+      this.ensureProgramacionPrincipales();
+      this.syncProgramacionFechas();
+      this.showToast(
+        'success',
+        'Locación eliminada',
+        'Se eliminó la locación seleccionada.',
+      );
     });
   }
 
@@ -473,22 +592,28 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (diaIndex <= 0) {
       return;
     }
-    const fechaOrigen = (this.fechasTrabajoValores[diaIndex - 1] ?? '').toString().trim();
+    const fechaOrigen = (this.fechasTrabajoValores[diaIndex - 1] ?? '')
+      .toString()
+      .trim();
     const destino = (fechaDestino ?? '').toString().trim();
     if (!fechaOrigen || !destino) {
       return;
     }
     const indicesOrigen = this.getProgramacionIndicesPorFecha(fechaOrigen);
     if (!indicesOrigen.length) {
-      this.showAlert('info', 'Sin datos para copiar', 'El día anterior no tiene locaciones registradas.');
+      this.showAlert(
+        'info',
+        'Sin datos para copiar',
+        'El día anterior no tiene locaciones registradas.',
+      );
       return;
     }
     const indicesDestino = this.getProgramacionIndicesPorFecha(destino);
     const ejecutarCopia = () => {
       const origenRaw = indicesOrigen
-        .map(idx => this.programacion.at(idx) as UntypedFormGroup)
+        .map((idx) => this.programacion.at(idx) as UntypedFormGroup)
         .filter(Boolean)
-        .map(grupo => grupo.getRawValue() as Record<string, unknown>)
+        .map((grupo) => grupo.getRawValue() as Record<string, unknown>)
         .slice(0, this.maxLocacionesPorDia);
       for (let i = indicesDestino.length - 1; i >= 0; i -= 1) {
         this.programacion.removeAt(indicesDestino[i]);
@@ -499,13 +624,17 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           direccion: (raw['direccion'] ?? '').toString().trim(),
           hora: (raw['hora'] ?? '').toString().trim(),
           notas: (raw['notas'] ?? '').toString().trim(),
-          fecha: destino
+          fecha: destino,
         });
         this.programacion.push(nuevo);
         this.setProgramacionExpandida(nuevo, pos === 0);
       });
       this.syncProgramacionFechas();
-      this.showToast('success', 'Locaciones copiadas', 'Se copiaron las locaciones del día anterior.');
+      this.showToast(
+        'success',
+        'Locaciones copiadas',
+        'Se copiaron las locaciones del día anterior.',
+      );
     };
 
     if (indicesDestino.length) {
@@ -515,8 +644,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         text: 'Se reemplazarán las locaciones actuales de este día con las del día anterior.',
         showCancelButton: true,
         confirmButtonText: 'Sí, reemplazar',
-        cancelButtonText: 'Cancelar'
-      }).then(result => {
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
         if (result.isConfirmed) {
           ejecutarCopia();
         }
@@ -529,15 +658,17 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   getResumenDia(fecha: string): { total: number; primera: string } {
     const indices = this.getProgramacionIndicesPorFecha(fecha);
     const horas = indices
-      .map(index => {
+      .map((index) => {
         const grupo = this.programacion.at(index) as UntypedFormGroup;
-        return ((grupo.getRawValue() as Record<string, unknown>)['hora'] ?? '').toString().trim();
+        return ((grupo.getRawValue() as Record<string, unknown>)['hora'] ?? '')
+          .toString()
+          .trim();
       })
       .filter(Boolean)
       .sort();
     return {
       total: indices.length,
-      primera: horas[0] ? this.formatHoraTexto(horas[0]) : '--'
+      primera: horas[0] ? this.formatHoraTexto(horas[0]) : '--',
     };
   }
 
@@ -545,7 +676,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const subtotal = this.selectedPaquetes.reduce((acc, item) => {
       const precio = Number(item.precio) || 0;
       const cantidad = Number(item.cantidad ?? 1) || 1;
-      return acc + (precio * cantidad);
+      return acc + precio * cantidad;
     }, 0);
     return subtotal + this.getViaticosMontoTotal();
   }
@@ -554,7 +685,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return this.selectedPaquetes.reduce((acc, item) => {
       const precio = Number(item.precio) || 0;
       const cantidad = Number(item.cantidad ?? 1) || 1;
-      return acc + (precio * cantidad);
+      return acc + precio * cantidad;
     }, 0);
   }
 
@@ -583,7 +714,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (this.selectedServicioId == null) {
       this.selectedServicioNombre = '';
     } else {
-      const selected = this.servicios.find(s => this.getId(s) === this.selectedServicioId);
+      const selected = this.servicios.find(
+        (s) => this.getId(s) === this.selectedServicioId,
+      );
       this.selectedServicioNombre = this.getNombre(selected);
     }
     this.loadEventosServicio();
@@ -600,7 +733,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const nextEventoId = this.parseNumber(rawValue);
     const prevEventoId = this.selectedEventoId;
     const prevValue = prevEventoId != null ? String(prevEventoId) : '';
-    if (this.selectedPaquetes.length && nextEventoId !== this.selectedEventoId) {
+    if (
+      this.selectedPaquetes.length &&
+      nextEventoId !== this.selectedEventoId
+    ) {
       void Swal.fire({
         icon: 'warning',
         title: 'Cambiar tipo de evento',
@@ -608,8 +744,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         confirmButtonText: 'Cambiar',
         cancelButtonText: 'Cancelar',
         showCancelButton: true,
-        reverseButtons: true
-      }).then(result => {
+        reverseButtons: true,
+      }).then((result) => {
         if (!result.isConfirmed) {
           if (target) {
             target.value = prevValue;
@@ -631,7 +767,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (this.selectedEventoId == null) {
       this.selectedEventoNombre = '';
     } else {
-      const selected = this.eventos.find(e => this.getId(e) === this.selectedEventoId);
+      const selected = this.eventos.find(
+        (e) => this.getId(e) === this.selectedEventoId,
+      );
       this.selectedEventoNombre = this.getNombre(selected);
     }
     this.loadEventosServicio();
@@ -639,7 +777,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   addPaquete(element: AnyRecord): void {
     const key = this.getPkgKey(element);
-    if (this.selectedPaquetes.some(p => p.key === key)) {
+    if (this.selectedPaquetes.some((p) => p.key === key)) {
       return;
     }
     const eventoServicioId = this.getEventoServicioId(element);
@@ -658,19 +796,33 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const descuento = this.getDescuento(element);
     const recargo = this.getRecargo(element);
     const precioBase = Number(element?.precio ?? element?.Precio ?? 0) || 0;
-    const servicioNombreActual = (servicioNombre ?? this.selectedServicioNombre ?? '').toLowerCase();
+    const servicioNombreActual = (
+      servicioNombre ??
+      this.selectedServicioNombre ??
+      ''
+    ).toLowerCase();
     const esMismoServicio = (item: PaqueteSeleccionado): boolean => {
       if (servicioId != null) {
         return (item.servicioId ?? null) === servicioId;
       }
-      return (item.servicioId ?? null) == null &&
-        (item.servicioNombre ?? '').toLowerCase() === servicioNombreActual;
+      return (
+        (item.servicioId ?? null) == null &&
+        (item.servicioNombre ?? '').toLowerCase() === servicioNombreActual
+      );
     };
     const reemplazados = this.selectedPaquetes.filter(esMismoServicio);
-    const restantes = this.selectedPaquetes.filter(item => !esMismoServicio(item));
+    const restantes = this.selectedPaquetes.filter(
+      (item) => !esMismoServicio(item),
+    );
     const cantidadMaxima = this.getCantidadMaximaPorDias();
-    const cantidadBase = Math.max(1, Number(reemplazados[0]?.cantidad ?? 1) || 1);
-    const cantidadInicial = cantidadMaxima != null ? Math.min(cantidadBase, cantidadMaxima) : cantidadBase;
+    const cantidadBase = Math.max(
+      1,
+      Number(reemplazados[0]?.cantidad ?? 1) || 1,
+    );
+    const cantidadInicial =
+      cantidadMaxima != null
+        ? Math.min(cantidadBase, cantidadMaxima)
+        : cantidadBase;
     const nextTmpId = `i${this.tmpIdSequence + 1}`;
 
     this.selectedPaquetes = [
@@ -698,20 +850,26 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         servicioNombre: servicioNombre ?? this.selectedServicioNombre,
         origen: element,
         precioOriginal: precioBase,
-        editandoPrecio: false
-      }
+        editandoPrecio: false,
+      },
     ];
     this.tmpIdSequence += 1;
     if (this.serviciosFechasSeleccionadas.length) {
-      const replacedTmpIds = new Set(reemplazados.map(item => item.tmpId));
-      const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
+      const replacedTmpIds = new Set(reemplazados.map((item) => item.tmpId));
+      const tmpIds = new Set(this.selectedPaquetes.map((item) => item.tmpId));
       const migradas = this.serviciosFechasSeleccionadas
-        .map(entry => replacedTmpIds.has(entry.itemTmpId) ? { ...entry, itemTmpId: nextTmpId } : entry)
-        .filter(entry => tmpIds.has(entry.itemTmpId));
-      const nuevas = migradas.filter(entry => entry.itemTmpId === nextTmpId).slice(0, cantidadInicial);
+        .map((entry) =>
+          replacedTmpIds.has(entry.itemTmpId)
+            ? { ...entry, itemTmpId: nextTmpId }
+            : entry,
+        )
+        .filter((entry) => tmpIds.has(entry.itemTmpId));
+      const nuevas = migradas
+        .filter((entry) => entry.itemTmpId === nextTmpId)
+        .slice(0, cantidadInicial);
       this.serviciosFechasSeleccionadas = [
-        ...migradas.filter(entry => entry.itemTmpId !== nextTmpId),
-        ...nuevas
+        ...migradas.filter((entry) => entry.itemTmpId !== nextTmpId),
+        ...nuevas,
       ];
     }
     this.syncTotalEstimado();
@@ -727,10 +885,13 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   removePaquete(key: string | number): void {
-    const removed = this.selectedPaquetes.find(p => p.key === key);
-    this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
+    const removed = this.selectedPaquetes.find((p) => p.key === key);
+    this.selectedPaquetes = this.selectedPaquetes.filter((p) => p.key !== key);
     if (removed?.tmpId) {
-      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId !== removed.tmpId);
+      this.serviciosFechasSeleccionadas =
+        this.serviciosFechasSeleccionadas.filter(
+          (entry) => entry.itemTmpId !== removed.tmpId,
+        );
     }
     this.syncTotalEstimado();
   }
@@ -749,21 +910,30 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (!this.isMultipleDias()) {
       return;
     }
-    const fechasUnicas = Array.from(new Set(
-      (this.programacion.getRawValue() as Record<string, unknown>[])
-        .map((config) => (config['fecha'] ?? '').toString().trim())
-        .filter(Boolean)
-    )).sort();
+    const fechasUnicas = Array.from(
+      new Set(
+        (this.programacion.getRawValue() as Record<string, unknown>[])
+          .map((config) => (config['fecha'] ?? '').toString().trim())
+          .filter(Boolean),
+      ),
+    ).sort();
     this.fechasDisponibles = fechasUnicas.length
       ? fechasUnicas
-      : (this.form.get('fechaEvento')?.value ? [String(this.form.get('fechaEvento')?.value)] : []);
+      : this.form.get('fechaEvento')?.value
+        ? [String(this.form.get('fechaEvento')?.value)]
+        : [];
     if (!this.fechasDisponibles.length) {
-      this.showAlert('warning', 'Fechas pendientes', 'Registra fechas en la programación para asignarlas a los servicios.');
+      this.showAlert(
+        'warning',
+        'Fechas pendientes',
+        'Registra fechas en la programación para asignarlas a los servicios.',
+      );
       return;
     }
-    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
-      this.fechasDisponibles.includes(entry.fecha)
-    );
+    this.serviciosFechasSeleccionadas =
+      this.serviciosFechasSeleccionadas.filter((entry) =>
+        this.fechasDisponibles.includes(entry.fecha),
+      );
     this.asignacionFechasAbierta = true;
   }
 
@@ -772,29 +942,45 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   isFechaAsignada(itemTmpId: string, fecha: string): boolean {
-    return this.serviciosFechasSeleccionadas.some(entry => entry.itemTmpId === itemTmpId && entry.fecha === fecha);
+    return this.serviciosFechasSeleccionadas.some(
+      (entry) => entry.itemTmpId === itemTmpId && entry.fecha === fecha,
+    );
   }
 
-  toggleFechaAsignada(itemTmpId: string, fecha: string, checked: boolean, maxCantidad: number): void {
+  toggleFechaAsignada(
+    itemTmpId: string,
+    fecha: string,
+    checked: boolean,
+    maxCantidad: number,
+  ): void {
     if (checked) {
-      const count = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
+      const count = this.serviciosFechasSeleccionadas.filter(
+        (entry) => entry.itemTmpId === itemTmpId,
+      ).length;
       if (count >= maxCantidad) {
-        this.showAlert('info', 'Cantidad completa', 'Ya asignaste todas las fechas requeridas para este servicio.');
+        this.showAlert(
+          'info',
+          'Cantidad completa',
+          'Ya asignaste todas las fechas requeridas para este servicio.',
+        );
         return;
       }
       this.serviciosFechasSeleccionadas = [
         ...this.serviciosFechasSeleccionadas,
-        { itemTmpId, fecha }
+        { itemTmpId, fecha },
       ];
       return;
     }
-    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
-      !(entry.itemTmpId === itemTmpId && entry.fecha === fecha)
-    );
+    this.serviciosFechasSeleccionadas =
+      this.serviciosFechasSeleccionadas.filter(
+        (entry) => !(entry.itemTmpId === itemTmpId && entry.fecha === fecha),
+      );
   }
 
   getCantidadAsignada(itemTmpId: string): number {
-    return this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
+    return this.serviciosFechasSeleccionadas.filter(
+      (entry) => entry.itemTmpId === itemTmpId,
+    ).length;
   }
 
   getDetalleStaffLista(paquete: unknown): AnyRecord[] {
@@ -810,7 +996,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return Array.isArray(lista) ? lista : [];
   }
 
-  getDetalleStaffTotal(paquete: PaqueteDetalle | null | undefined): string | number {
+  getDetalleStaffTotal(
+    paquete: PaqueteDetalle | null | undefined,
+  ): string | number {
     if (!paquete) {
       return '—';
     }
@@ -819,7 +1007,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       return staff;
     }
     const eventoStaff = paquete.eventoServicio?.staff;
-    const eventoTotal = typeof eventoStaff === 'number' ? eventoStaff : eventoStaff?.total;
+    const eventoTotal =
+      typeof eventoStaff === 'number' ? eventoStaff : eventoStaff?.total;
     const total = staff?.total ?? eventoTotal ?? paquete.personal;
     return total ?? '—';
   }
@@ -864,65 +1053,75 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private initClienteBusqueda(): void {
-    this.clienteSearchControl.valueChanges.pipe(
-      map(value => typeof value === 'string' ? value.trim() : ''),
-      tap(value => {
-        this.clienteBusquedaTermino = value;
-        this.clienteSearchError = '';
-        if (value.length <= 1) {
-          this.clienteResultados = [];
-          this.clienteSearchLoading = false;
-          if (!value) {
-            this.clienteSeleccionado = null;
-          }
-        }
-      }),
-      filter(value => value.length > 1),
-      debounceTime(300),
-      distinctUntilChanged(),
-      tap(() => {
-        this.clienteSearchLoading = true;
-      }),
-      switchMap(query =>
-        this.cotizacionService.buscarClientes(query).pipe(
-          catchError(err => {
-            console.error('[cotizacion] buscarClientes', err);
-            this.clienteSearchError = 'No pudimos cargar clientes.';
+    this.clienteSearchControl.valueChanges
+      .pipe(
+        map((value) => (typeof value === 'string' ? value.trim() : '')),
+        tap((value) => {
+          this.clienteBusquedaTermino = value;
+          this.clienteSearchError = '';
+          if (value.length <= 1) {
+            this.clienteResultados = [];
             this.clienteSearchLoading = false;
-            this.showAlert('error', 'No pudimos cargar clientes.', 'Inténtalo nuevamente.');
-            return of([]);
-          })
-        )
-      ),
-      takeUntil(this.destroy$)
-    ).subscribe(result => {
-      this.clienteResultados = Array.isArray(result) ? result : [];
-      this.clienteSearchLoading = false;
-    });
+            if (!value) {
+              this.clienteSeleccionado = null;
+            }
+          }
+        }),
+        filter((value) => value.length > 1),
+        debounceTime(300),
+        distinctUntilChanged(),
+        tap(() => {
+          this.clienteSearchLoading = true;
+        }),
+        switchMap((query) =>
+          this.cotizacionService.buscarClientes(query).pipe(
+            catchError((err) => {
+              console.error('[cotizacion] buscarClientes', err);
+              this.clienteSearchError = 'No pudimos cargar clientes.';
+              this.clienteSearchLoading = false;
+              this.showAlert(
+                'error',
+                'No pudimos cargar clientes.',
+                'Inténtalo nuevamente.',
+              );
+              return of([]);
+            }),
+          ),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((result) => {
+        this.clienteResultados = Array.isArray(result) ? result : [];
+        this.clienteSearchLoading = false;
+      });
   }
 
   resolveClienteDocumento(cliente?: ClienteBusquedaResultado | null): string {
     if (!cliente) {
       return '';
     }
-    return (cliente.documento
-      ?? cliente.numeroDocumento
-      ?? cliente.ruc
-      ?? cliente.identificador
-      ?? '').toString();
+    return (
+      cliente.documento ??
+      cliente.numeroDocumento ??
+      cliente.ruc ??
+      cliente.identificador ??
+      ''
+    ).toString();
   }
 
   resolveClienteContacto(cliente?: ClienteBusquedaResultado | null): string {
     if (!cliente) {
       return '';
     }
-    return (cliente.contacto
-      ?? cliente.celular
-      ?? cliente.telefono
-      ?? cliente.whatsapp
-      ?? cliente.email
-      ?? cliente.correo
-      ?? '').toString();
+    return (
+      cliente.contacto ??
+      cliente.celular ??
+      cliente.telefono ??
+      cliente.whatsapp ??
+      cliente.email ??
+      cliente.correo ??
+      ''
+    ).toString();
   }
 
   private sanitizeContacto(valor: string): string {
@@ -930,7 +1129,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private setClienteControlsDisabled(disabled: boolean): void {
-    ['clienteNombre', 'clienteContacto'].forEach(key => {
+    ['clienteNombre', 'clienteContacto'].forEach((key) => {
       const control = this.form.get(key);
       if (!control) {
         return;
@@ -944,19 +1143,21 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   resolveClienteNombre(cliente: ClienteBusquedaResultado): string {
-    return (cliente.nombreCompleto
-      ?? cliente.nombre
-      ?? cliente.razonSocial
-      ?? cliente.contacto
-      ?? cliente.email
-      ?? '').toString();
+    return (
+      cliente.nombreCompleto ??
+      cliente.nombre ??
+      cliente.razonSocial ??
+      cliente.contacto ??
+      cliente.email ??
+      ''
+    ).toString();
   }
 
   pkgKey = (el: AnyRecord) => this.getPkgKey(el);
 
   isInSeleccion(element: AnyRecord): boolean {
     const key = this.getPkgKey(element);
-    return this.selectedPaquetes.some(p => p.key === key);
+    return this.selectedPaquetes.some((p) => p.key === key);
   }
 
   hasOtroPaqueteDelServicio(element: AnyRecord): boolean {
@@ -968,14 +1169,17 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       }
       const key = this.getPkgKey(element);
       const nombreComparacion = servicioNombre.toLowerCase();
-      return this.selectedPaquetes.some(p =>
-        (p.servicioId ?? null) == null &&
-        (p.servicioNombre ?? '').toLowerCase() === nombreComparacion &&
-        p.key !== key
+      return this.selectedPaquetes.some(
+        (p) =>
+          (p.servicioId ?? null) == null &&
+          (p.servicioNombre ?? '').toLowerCase() === nombreComparacion &&
+          p.key !== key,
       );
     }
     const key = this.getPkgKey(element);
-    return this.selectedPaquetes.some(p => (p.servicioId ?? null) === servicioId && p.key !== key);
+    return this.selectedPaquetes.some(
+      (p) => (p.servicioId ?? null) === servicioId && p.key !== key,
+    );
   }
 
   shouldShowPrecioOriginal(): boolean {
@@ -994,7 +1198,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   getDescuentoPorcentaje(paquete: PaqueteSeleccionado): number | null {
     const original = Number(paquete.precioOriginal ?? 0);
     const actual = Number(paquete.precio ?? 0);
-    if (!Number.isFinite(original) || original <= 0 || !Number.isFinite(actual)) {
+    if (
+      !Number.isFinite(original) ||
+      original <= 0 ||
+      !Number.isFinite(actual)
+    ) {
       return null;
     }
     if (actual >= original) {
@@ -1006,15 +1214,18 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   enablePrecioEdit(paquete: PaqueteSeleccionado): void {
     const key = paquete.key;
-    this.selectedPaquetes = this.selectedPaquetes.map(item =>
-      item.key === key ? { ...item, editandoPrecio: true } : item
+    this.selectedPaquetes = this.selectedPaquetes.map((item) =>
+      item.key === key ? { ...item, editandoPrecio: true } : item,
     );
     this.focusPrecioInput(key);
   }
 
-  confirmPrecioEdit(paquete: PaqueteSeleccionado, rawValue: string | number | null | undefined): void {
+  confirmPrecioEdit(
+    paquete: PaqueteSeleccionado,
+    rawValue: string | number | null | undefined,
+  ): void {
     const key = paquete.key;
-    const current = this.selectedPaquetes.find(item => item.key === key);
+    const current = this.selectedPaquetes.find((item) => item.key === key);
     if (!current) {
       return;
     }
@@ -1027,21 +1238,25 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const minimo = this.getPrecioMinimo(current);
     if (value < minimo) {
       value = minimo;
-      this.showAlert('info', 'Ajuste no permitido', 'Solo puedes reducir el precio hasta un 5% respecto al valor base.');
+      this.showAlert(
+        'info',
+        'Ajuste no permitido',
+        'Solo puedes reducir el precio hasta un 5% respecto al valor base.',
+      );
     }
 
-    this.selectedPaquetes = this.selectedPaquetes.map(item =>
+    this.selectedPaquetes = this.selectedPaquetes.map((item) =>
       item.key === key
         ? { ...item, precio: value, editandoPrecio: false }
-        : item
+        : item,
     );
     this.syncTotalEstimado();
   }
 
   cancelPrecioEdit(paquete: PaqueteSeleccionado): void {
     const key = paquete.key;
-    this.selectedPaquetes = this.selectedPaquetes.map(item =>
-      item.key === key ? { ...item, editandoPrecio: false } : item
+    this.selectedPaquetes = this.selectedPaquetes.map((item) =>
+      item.key === key ? { ...item, editandoPrecio: false } : item,
     );
   }
 
@@ -1052,16 +1267,17 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     paquete.cantidad = max != null ? Math.min(base, max) : base;
     if (paquete.tmpId) {
       let count = 0;
-      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => {
-        if (entry.itemTmpId !== paquete.tmpId) {
-          return true;
-        }
-        if (count < paquete.cantidad) {
-          count += 1;
-          return true;
-        }
-        return false;
-      });
+      this.serviciosFechasSeleccionadas =
+        this.serviciosFechasSeleccionadas.filter((entry) => {
+          if (entry.itemTmpId !== paquete.tmpId) {
+            return true;
+          }
+          if (count < paquete.cantidad) {
+            count += 1;
+            return true;
+          }
+          return false;
+        });
     }
     this.syncTotalEstimado();
   }
@@ -1087,7 +1303,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const programacionInvalida = this.programacion.invalid;
     const programacionVacia = this.programacion.length === 0;
 
-    if (formInvalido || eventoInvalido || programacionInvalida || programacionVacia) {
+    if (
+      formInvalido ||
+      eventoInvalido ||
+      programacionInvalida ||
+      programacionVacia
+    ) {
       if (formInvalido) {
         this.form.markAllAsTouched();
       }
@@ -1112,18 +1333,23 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     if (!this.selectedPaquetes.length) {
-      this.showAlert('warning', 'Agrega paquetes', 'Selecciona al menos un paquete para la cotización.');
+      this.showAlert(
+        'warning',
+        'Agrega paquetes',
+        'Selecciona al menos un paquete para la cotización.',
+      );
       return;
     }
 
     const raw = this.form.getRawValue();
     const diasNumero = this.parseNumber(raw.dias);
-    const restriccionesProgramacion = this.validarRestriccionesProgramacion(diasNumero);
+    const restriccionesProgramacion =
+      this.validarRestriccionesProgramacion(diasNumero);
     if (restriccionesProgramacion.length) {
       this.showAlertHtml(
         'warning',
         'Revisa la programación',
-        `<ul class="text-start mb-0">${restriccionesProgramacion.map(item => `<li>${item}</li>`).join('')}</ul>`
+        `<ul class="text-start mb-0">${restriccionesProgramacion.map((item) => `<li>${item}</li>`).join('')}</ul>`,
       );
       return;
     }
@@ -1133,13 +1359,15 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         this.showAlert(
           'warning',
           'Cantidades insuficientes',
-          `Para ${diasNumero} días debes asignar al menos ${diasNumero} servicios en total.`
+          `Para ${diasNumero} días debes asignar al menos ${diasNumero} servicios en total.`,
         );
         return;
       }
     }
     const clienteNombre = (raw.clienteNombre ?? '').toString().trim();
-    const clienteContacto = this.sanitizeContacto((raw.clienteContacto ?? '').toString());
+    const clienteContacto = this.sanitizeContacto(
+      (raw.clienteContacto ?? '').toString(),
+    );
     const fechaEventoForm = raw.fechaEvento;
     const departamento = (raw.departamento ?? '').toString().trim();
     const viaticosCliente = Boolean(raw.viaticosCliente);
@@ -1147,12 +1375,21 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const diasTexto = (raw.dias ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
-    const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotizacion de ${clienteNombre}` : 'Solicitud de cotizacion');
+    const descripcion =
+      descripcionBase ||
+      (clienteNombre
+        ? `Solicitud de cotizacion de ${clienteNombre}`
+        : 'Solicitud de cotizacion');
     const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas);
-    const programacionRaw = this.programacion.getRawValue() as Record<string, unknown>[];
+    const programacionRaw = this.programacion.getRawValue() as Record<
+      string,
+      unknown
+    >[];
     const eventos: CotizacionAdminEventoPayload[] = programacionRaw
       .map((config) => {
-        const fecha = ((config['fecha'] ?? fechaEventoForm) || '').toString().trim();
+        const fecha = ((config['fecha'] ?? fechaEventoForm) || '')
+          .toString()
+          .trim();
         const hora = (config['hora'] ?? '').toString().trim();
         const ubicacion = (config['nombre'] ?? '').toString().trim();
         const direccion = (config['direccion'] ?? '').toString().trim();
@@ -1161,68 +1398,94 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           return null;
         }
         const horaNormalizada = hora
-          ? (/^\d{2}:\d{2}$/.test(hora) ? `${hora}:00` : hora)
+          ? /^\d{2}:\d{2}$/.test(hora)
+            ? `${hora}:00`
+            : hora
           : undefined;
         const evento: CotizacionAdminEventoPayload = {
           fecha: fecha || undefined,
           hora: horaNormalizada,
           ubicacion: ubicacion || undefined,
           direccion: direccion || undefined,
-          notas: notasTexto ? notasTexto : null
+          notas: notasTexto ? notasTexto : null,
         };
         return evento;
       })
-      .filter((evento): evento is CotizacionAdminEventoPayload => evento != null);
+      .filter(
+        (evento): evento is CotizacionAdminEventoPayload => evento != null,
+      );
     const fechaEvento = this.isMultipleDias()
-      ? (eventos.find(ev => ev.fecha)?.fecha ?? '')
+      ? (eventos.find((ev) => ev.fecha)?.fecha ?? '')
       : fechaEventoForm;
 
-    const clienteIdSeleccionado = this.parseNumber(this.clienteSeleccionado?.id);
-    const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map((item, index) => {
-      const notas = (item.notas ?? '').toString().trim();
-      const eventoServicioId = this.getEventoServicioId(item) ?? this.getEventoServicioId(item.origen);
-      const servicioId = this.getPaqueteServicioId(item);
-      const horas = this.parseNumber(item.horas ?? this.getHoras(item.origen));
-      const staff = this.parseNumber(item.staff ?? this.getStaff(item.origen));
-      const fotosImpresas = this.parseNumber(item.fotosImpresas ?? this.getFotosImpresas(item.origen));
-      const trailerMin = this.parseNumber(item.trailerMin ?? this.getTrailerMin(item.origen));
-      const filmMin = this.parseNumber(item.filmMin ?? this.getFilmMin(item.origen));
+    const clienteIdSeleccionado = this.parseNumber(
+      this.clienteSeleccionado?.id,
+    );
+    const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map(
+      (item, index) => {
+        const notas = (item.notas ?? '').toString().trim();
+        const eventoServicioId =
+          this.getEventoServicioId(item) ??
+          this.getEventoServicioId(item.origen);
+        const servicioId = this.getPaqueteServicioId(item);
+        const horas = this.parseNumber(
+          item.horas ?? this.getHoras(item.origen),
+        );
+        const staff = this.parseNumber(
+          item.staff ?? this.getStaff(item.origen),
+        );
+        const fotosImpresas = this.parseNumber(
+          item.fotosImpresas ?? this.getFotosImpresas(item.origen),
+        );
+        const trailerMin = this.parseNumber(
+          item.trailerMin ?? this.getTrailerMin(item.origen),
+        );
+        const filmMin = this.parseNumber(
+          item.filmMin ?? this.getFilmMin(item.origen),
+        );
 
-      const payloadItem: CotizacionAdminItemPayload = {
-        tmpId: item.tmpId ?? `i${index + 1}`,
-        idEventoServicio: eventoServicioId ?? undefined,
-        eventoId: this.selectedEventoId ?? undefined,
-        servicioId: servicioId ?? undefined,
-        titulo: item.titulo,
-        descripcion: item.descripcion || undefined,
-        moneda: item.moneda ?? this.getMoneda(item.origen) ?? 'USD',
-        precioUnitario: Number(item.precio) || 0,
-        cantidad: Number(item.cantidad ?? 1) || 1,
-        notas: notas || undefined,
-        horas: horas ?? undefined,
-        personal: staff ?? undefined,
-        fotosImpresas: fotosImpresas ?? undefined,
-        trailerMin: trailerMin ?? undefined,
-        filmMin: filmMin ?? undefined
-      };
+        const payloadItem: CotizacionAdminItemPayload = {
+          tmpId: item.tmpId ?? `i${index + 1}`,
+          idEventoServicio: eventoServicioId ?? undefined,
+          eventoId: this.selectedEventoId ?? undefined,
+          servicioId: servicioId ?? undefined,
+          titulo: item.titulo,
+          descripcion: item.descripcion || undefined,
+          moneda: item.moneda ?? this.getMoneda(item.origen) ?? 'USD',
+          precioUnitario: Number(item.precio) || 0,
+          cantidad: Number(item.cantidad ?? 1) || 1,
+          notas: notas || undefined,
+          horas: horas ?? undefined,
+          personal: staff ?? undefined,
+          fotosImpresas: fotosImpresas ?? undefined,
+          trailerMin: trailerMin ?? undefined,
+          filmMin: filmMin ?? undefined,
+        };
 
-      return payloadItem;
-    });
-    const fechasUnicas = Array.from(new Set(
-      programacionRaw
-        .map((config) => (config['fecha'] ?? '').toString().trim())
-        .filter(Boolean)
-    )).sort();
-    const fechasBase = fechasUnicas.length ? fechasUnicas : (fechaEventoForm ? [String(fechaEventoForm)] : []);
+        return payloadItem;
+      },
+    );
+    const fechasUnicas = Array.from(
+      new Set(
+        programacionRaw
+          .map((config) => (config['fecha'] ?? '').toString().trim())
+          .filter(Boolean),
+      ),
+    ).sort();
+    const fechasBase = fechasUnicas.length
+      ? fechasUnicas
+      : fechaEventoForm
+        ? [String(fechaEventoForm)]
+        : [];
     const serviciosFechasAuto = items.flatMap((item, index) => {
       const itemTmpId = item.tmpId ?? `i${index + 1}`;
       const cantidad = Math.max(1, Number(item.cantidad ?? 1) || 1);
       const fechas = fechasBase.slice(0, cantidad);
-      return fechas.map(fecha => ({ itemTmpId, fecha }));
+      return fechas.map((fecha) => ({ itemTmpId, fecha }));
     });
     const serviciosFechas = this.isMultipleDias()
-      ? this.serviciosFechasSeleccionadas.filter(entry =>
-          items.some(item => (item.tmpId ?? '') === entry.itemTmpId)
+      ? this.serviciosFechasSeleccionadas.filter((entry) =>
+          items.some((item) => (item.tmpId ?? '') === entry.itemTmpId),
         )
       : serviciosFechasAuto;
 
@@ -1230,25 +1493,27 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       const pendiente = items.find((item, index) => {
         const itemTmpId = item.tmpId ?? `i${index + 1}`;
         const cantidad = Math.max(1, Number(item.cantidad ?? 1) || 1);
-        const asignadas = serviciosFechas.filter(entry => entry.itemTmpId === itemTmpId).length;
+        const asignadas = serviciosFechas.filter(
+          (entry) => entry.itemTmpId === itemTmpId,
+        ).length;
         return asignadas !== cantidad;
       });
       if (pendiente) {
         this.showAlert(
           'warning',
           'Asignación pendiente',
-          'Completa la asignación de fechas para todos los servicios.'
+          'Completa la asignación de fechas para todos los servicios.',
         );
         return;
       }
       const fechasSinAsignar = fechasBase.filter(
-        fecha => !serviciosFechas.some(entry => entry.fecha === fecha)
+        (fecha) => !serviciosFechas.some((entry) => entry.fecha === fecha),
       );
       if (fechasSinAsignar.length) {
         this.showAlert(
           'warning',
           'Fechas sin cobertura',
-          'Debes asignar al menos un servicio a cada día.'
+          'Debes asignar al menos un servicio a cada día.',
         );
         return;
       }
@@ -1257,26 +1522,31 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const payload: CotizacionAdminCreatePayload = {
       cotizacion: {
         idTipoEvento: this.selectedEventoId ?? undefined,
-        tipoEvento: this.selectedEventoNombre || this.selectedServicioNombre || 'Evento',
+        tipoEvento:
+          this.selectedEventoNombre || this.selectedServicioNombre || 'Evento',
         fechaEvento,
         lugar: departamento || undefined,
         dias: diasNumero ?? undefined,
         horasEstimadas: horasEstimadasNumero ?? undefined,
         mensaje: descripcion,
         estado: 'Borrador',
-        viaticosCliente: departamento.toLowerCase() === 'lima' ? true : viaticosCliente,
-        viaticosMonto: departamento.toLowerCase() === 'lima'
-          ? undefined
-          : (viaticosCliente ? undefined : (viaticosMonto ?? undefined))
+        viaticosCliente:
+          departamento.toLowerCase() === 'lima' ? true : viaticosCliente,
+        viaticosMonto:
+          departamento.toLowerCase() === 'lima'
+            ? undefined
+            : viaticosCliente
+              ? undefined
+              : (viaticosMonto ?? undefined),
       },
       lead: {
         nombre: clienteNombre || undefined,
         celular: clienteContacto || undefined,
-        origen: 'Backoffice'
+        origen: 'Backoffice',
       },
       items,
       serviciosFechas: serviciosFechas.length ? serviciosFechas : undefined,
-      eventos: eventos.length ? eventos : undefined
+      eventos: eventos.length ? eventos : undefined,
     };
 
     if (clienteIdSeleccionado != null) {
@@ -1286,23 +1556,28 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     // Detener envío real para pruebas: solo mostramos el payload.
 
     this.loading = true;
-    this.cotizacionService.createCotizacion(payload)
+    this.cotizacionService
+      .createCotizacion(payload)
       .pipe(
-        finalize(() => this.loading = false),
-        takeUntil(this.destroy$)
+        finalize(() => (this.loading = false)),
+        takeUntil(this.destroy$),
       )
       .subscribe({
         next: () => {
           void Swal.fire({
             icon: 'success',
             title: 'Cotización registrada',
-            text: 'La cotización se registró correctamente.'
+            text: 'La cotización se registró correctamente.',
           }).then(() => this.router.navigate(['/home/gestionar-cotizaciones']));
         },
         error: (err) => {
           console.error('[cotizacion] create', err);
-          this.showAlert('error', 'Error al registrar', 'No pudimos registrar la cotización. Inténtalo nuevamente.');
-        }
+          this.showAlert(
+            'error',
+            'Error al registrar',
+            'No pudimos registrar la cotización. Inténtalo nuevamente.',
+          );
+        },
       });
   }
 
@@ -1311,8 +1586,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private syncProgramacionFechas(fecha?: string | null): void {
-    const fechaReferencia = (fecha ?? this.form.get('fechaEvento')?.value ?? '').toString().trim();
-    this.programacion.controls.forEach(control => {
+    const fechaReferencia = (fecha ?? this.form.get('fechaEvento')?.value ?? '')
+      .toString()
+      .trim();
+    this.programacion.controls.forEach((control) => {
       const grupo = control as UntypedFormGroup;
       const fechaControl = grupo.get('fecha');
       if (!fechaControl) {
@@ -1328,19 +1605,28 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     });
   }
 
-  private createProgramacionItem(config: ProgramacionEventoItemConfig = {}): UntypedFormGroup {
+  private createProgramacionItem(
+    config: ProgramacionEventoItemConfig = {},
+  ): UntypedFormGroup {
     const hora24 = this.normalizeHora24(config.hora ?? '');
     const horaParts = this.splitHoraTo12(hora24);
     const grupo = this.fb.group({
       nombre: [config.nombre ?? '', Validators.required],
       direccion: [config.direccion ?? '', Validators.required],
       fecha: [{ value: config.fecha ?? '', disabled: true }],
-      hora: [hora24, [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/), this.horaRangoValidator()]],
+      hora: [
+        hora24,
+        [
+          Validators.required,
+          Validators.pattern(/^\d{2}:\d{2}$/),
+          this.horaRangoValidator(),
+        ],
+      ],
       hora12: [horaParts.hora12, Validators.required],
       minuto: [horaParts.minuto, Validators.required],
       ampm: [horaParts.ampm, Validators.required],
       notas: [config.notas ?? ''],
-      esPrincipal: [config.esPrincipal ?? false]
+      esPrincipal: [config.esPrincipal ?? false],
     });
     this.bindHoraControls(grupo);
     return grupo;
@@ -1355,9 +1641,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       grupo.get('hora')?.setValue(hora24, { emitEvent: false });
     };
 
-    ['hora12', 'minuto', 'ampm'].forEach(controlName => {
-      grupo.get(controlName)?.valueChanges
-        .pipe(takeUntil(this.destroy$))
+    ['hora12', 'minuto', 'ampm'].forEach((controlName) => {
+      grupo
+        .get(controlName)
+        ?.valueChanges.pipe(takeUntil(this.destroy$))
         .subscribe(updateHora);
     });
 
@@ -1372,7 +1659,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     let lastValid = fechaControl.value;
     fechaControl.valueChanges
       .pipe(takeUntil(this.destroy$))
-      .subscribe(value => {
+      .subscribe((value) => {
         if (!this.isMultipleDias()) {
           lastValid = value;
           return;
@@ -1390,19 +1677,24 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         const fechasUnicas = this.getFechasProgramacionUnicas();
         if (fechasUnicas.length <= maxDias) {
           const fechaAnterior = (lastValid ?? '').toString().trim();
-          if (fechaAnterior && fechaAnterior !== fecha && this.serviciosFechasSeleccionadas.length) {
+          if (
+            fechaAnterior &&
+            fechaAnterior !== fecha &&
+            this.serviciosFechasSeleccionadas.length
+          ) {
             const fechasActuales = this.getFechasProgramacionUnicas();
             if (!fechasActuales.includes(fechaAnterior)) {
-              this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
-                entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
-              );
+              this.serviciosFechasSeleccionadas =
+                this.serviciosFechasSeleccionadas.map((entry) =>
+                  entry.fecha === fechaAnterior ? { ...entry, fecha } : entry,
+                );
             }
           }
           lastValid = value;
           return;
         }
         const fechaAnterior = (lastValid ?? '').toString().trim();
-        const fechasPermitidas = fechasUnicas.filter(item => item !== fecha);
+        const fechasPermitidas = fechasUnicas.filter((item) => item !== fecha);
         const fechasTexto = fechasPermitidas.slice(0, maxDias);
         if (!fechaAnterior) {
           fechaControl.setValue(lastValid ?? '', { emitEvent: false });
@@ -1412,10 +1704,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
             html: `
               <p>Ya seleccionaste ${maxDias} día(s):</p>
               <ul class="text-start mb-0">
-                ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
+                ${fechasTexto.map((item) => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
               </ul>
             `,
-            confirmButtonText: 'Entendido'
+            confirmButtonText: 'Entendido',
           });
           return;
         }
@@ -1425,28 +1717,29 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           html: `
             <p>Ya seleccionaste ${maxDias} día(s):</p>
             <ul class="text-start mb-3">
-              ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
+              ${fechasTexto.map((item) => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
             </ul>
             <p class="mb-0">¿Quieres cambiar todas las locaciones del día <b>${this.formatFechaConDia(fechaAnterior)}</b> al día <b>${this.formatFechaConDia(fecha)}</b>?</p>
           `,
           showCancelButton: true,
           confirmButtonText: 'Sí, cambiar todas',
-          cancelButtonText: 'Cancelar'
-        }).then(result => {
+          cancelButtonText: 'Cancelar',
+        }).then((result) => {
           if (!result.isConfirmed) {
             fechaControl.setValue(lastValid ?? '', { emitEvent: false });
             return;
           }
-          this.programacion.controls.forEach(control => {
+          this.programacion.controls.forEach((control) => {
             const controlFecha = (control as UntypedFormGroup).get('fecha');
             if (controlFecha?.value === fechaAnterior) {
               controlFecha.setValue(fecha, { emitEvent: false });
             }
           });
           if (this.serviciosFechasSeleccionadas.length) {
-            this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
-              entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
-            );
+            this.serviciosFechasSeleccionadas =
+              this.serviciosFechasSeleccionadas.map((entry) =>
+                entry.fecha === fechaAnterior ? { ...entry, fecha } : entry,
+              );
           }
           lastValid = fecha;
         });
@@ -1471,13 +1764,16 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   canAgregarLocacion(fecha: string): boolean {
-    return this.getProgramacionIndicesPorFecha(fecha).length < this.maxLocacionesPorDia;
+    return (
+      this.getProgramacionIndicesPorFecha(fecha).length <
+      this.maxLocacionesPorDia
+    );
   }
 
   private getFechasProgramacionUnicas(): string[] {
     const fechas = this.programacion.controls
-      .map(control => (control as UntypedFormGroup).get('fecha')?.value)
-      .map(value => (value ?? '').toString().trim())
+      .map((control) => (control as UntypedFormGroup).get('fecha')?.value)
+      .map((value) => (value ?? '').toString().trim())
       .filter(Boolean);
     return Array.from(new Set(fechas)).sort();
   }
@@ -1491,12 +1787,18 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (fechasTrabajo.length) {
       return fechasTrabajo[0];
     }
-    const fechaEvento = (this.form.get('fechaEvento')?.value ?? '').toString().trim();
-    return fechaEvento || RegistrarCotizacionComponent.computeFechaMinimaEvento();
+    const fechaEvento = (this.form.get('fechaEvento')?.value ?? '')
+      .toString()
+      .trim();
+    return (
+      fechaEvento || RegistrarCotizacionComponent.computeFechaMinimaEvento()
+    );
   }
 
   private getFechasTrabajoRaw(): string[] {
-    return this.fechasTrabajo.controls.map(control => (control.value ?? '').toString().trim());
+    return this.fechasTrabajo.controls.map((control) =>
+      (control.value ?? '').toString().trim(),
+    );
   }
 
   private ordenarFechasTrabajo(): void {
@@ -1511,45 +1813,56 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   private setFechasTrabajoRaw(values: string[]): void {
     this.fechasTrabajo.controls.forEach((control, index) => {
-      control.setValue((values[index] ?? '').toString().trim(), { emitEvent: false });
+      control.setValue((values[index] ?? '').toString().trim(), {
+        emitEvent: false,
+      });
     });
     this.fechasTrabajoSnapshot = this.getFechasTrabajoRaw();
     this.syncFechaEventoDesdeFechasTrabajo();
   }
 
-
   private moverDiasAlFinal(indices: number[]): void {
     const values = this.getFechasTrabajoRaw();
     const validos = Array.from(new Set(indices))
-      .filter(index => Number.isInteger(index) && index >= 0 && index < values.length)
+      .filter(
+        (index) =>
+          Number.isInteger(index) && index >= 0 && index < values.length,
+      )
       .sort((a, b) => a - b);
     if (!validos.length) {
       return;
     }
-    const removidos = validos.map(index => values[index] ?? '');
+    const removidos = validos.map((index) => values[index] ?? '');
     const restantes = values.filter((_, index) => !validos.includes(index));
     this.setFechasTrabajoRaw([...restantes, ...removidos]);
   }
 
-
-  private async seleccionarDiasAEliminar(anterior: number, nuevo: number): Promise<number[] | null> {
+  private async seleccionarDiasAEliminar(
+    anterior: number,
+    nuevo: number,
+  ): Promise<number[] | null> {
     const values = this.getFechasTrabajoRaw();
     const cantidadAEliminar = anterior - nuevo;
     if (cantidadAEliminar <= 0 || values.length <= nuevo) {
       return [];
     }
-    const opcionesHtml = values.map((fecha, index) => {
-      const fechaLabel = fecha ? this.formatFechaConDia(fecha) : 'Sin fecha';
-      const locaciones = fecha ? this.getProgramacionIndicesPorFecha(fecha).length : 0;
-      const checked = index >= nuevo ? 'checked' : '';
-      const estado = locaciones > 0 ? `${locaciones} locaciones` : 'Sin locaciones';
-      return `
+    const opcionesHtml = values
+      .map((fecha, index) => {
+        const fechaLabel = fecha ? this.formatFechaConDia(fecha) : 'Sin fecha';
+        const locaciones = fecha
+          ? this.getProgramacionIndicesPorFecha(fecha).length
+          : 0;
+        const checked = index >= nuevo ? 'checked' : '';
+        const estado =
+          locaciones > 0 ? `${locaciones} locaciones` : 'Sin locaciones';
+        return `
         <label class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
           <input type="checkbox" class="swal2-day-checkbox" value="${index}" ${checked}>
           <span><b>Dia ${index + 1}</b> - ${fechaLabel}<br><small class="text-muted">${estado}</small></span>
         </label>
       `;
-    }).join('');
+      })
+      .join('');
     const result = await Swal.fire({
       icon: 'question',
       title: 'Elige los dias a eliminar',
@@ -1564,24 +1877,33 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Eliminar seleccionados',
       cancelButtonText: 'Cancelar',
       preConfirm: () => {
-        const selected = Array.from(document.querySelectorAll<HTMLInputElement>('.swal2-day-checkbox:checked'))
-          .map(node => Number(node.value))
+        const selected = Array.from(
+          document.querySelectorAll<HTMLInputElement>(
+            '.swal2-day-checkbox:checked',
+          ),
+        )
+          .map((node) => Number(node.value))
           .filter(Number.isFinite);
         if (selected.length !== cantidadAEliminar) {
-          Swal.showValidationMessage(`Selecciona exactamente ${cantidadAEliminar} dia(s).`);
+          Swal.showValidationMessage(
+            `Selecciona exactamente ${cantidadAEliminar} dia(s).`,
+          );
           return null;
         }
         return selected;
-      }
+      },
     });
-    return result.isConfirmed ? ((result.value as number[] | null) ?? []) : null;
+    return result.isConfirmed
+      ? ((result.value as number[] | null) ?? [])
+      : null;
   }
 
-
-
   private hasLocacionesRegistradas(): boolean {
-    return this.programacion.controls.some(control => {
-      const raw = (control as UntypedFormGroup).getRawValue() as Record<string, unknown>;
+    return this.programacion.controls.some((control) => {
+      const raw = (control as UntypedFormGroup).getRawValue() as Record<
+        string,
+        unknown
+      >;
       const nombre = (raw['nombre'] ?? '').toString().trim();
       const direccion = (raw['direccion'] ?? '').toString().trim();
       const hora = (raw['hora'] ?? '').toString().trim();
@@ -1590,39 +1912,52 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     });
   }
 
-  private remapFechaLocacionesYAsignaciones(fechaAnterior: string, fechaNueva: string): void {
+  private remapFechaLocacionesYAsignaciones(
+    fechaAnterior: string,
+    fechaNueva: string,
+  ): void {
     const from = (fechaAnterior ?? '').toString().trim();
     const to = (fechaNueva ?? '').toString().trim();
     if (!from || !to || from === to) {
       return;
     }
-    this.programacion.controls.forEach(control => {
+    this.programacion.controls.forEach((control) => {
       const fechaControl = (control as UntypedFormGroup).get('fecha');
       if ((fechaControl?.value ?? '').toString().trim() === from) {
         fechaControl?.setValue(to, { emitEvent: false });
       }
     });
     if (this.serviciosFechasSeleccionadas.length) {
-      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
-        (entry.fecha ?? '').toString().trim() === from ? { ...entry, fecha: to } : entry
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(
+        (entry) =>
+          (entry.fecha ?? '').toString().trim() === from
+            ? { ...entry, fecha: to }
+            : entry,
       );
     }
   }
 
   private syncFechasTrabajoPorDias(value: unknown): void {
     const dias = this.parseNumber(value);
-    const target = dias != null && dias >= 1 ? Math.min(Math.floor(dias), 7) : 0;
+    const target =
+      dias != null && dias >= 1 ? Math.min(Math.floor(dias), 7) : 0;
     const prev = [...this.fechasTrabajoSnapshot];
     const prevLength = prev.length;
     while (this.fechasTrabajo.length < target) {
-      const control = this.fb.control('', [Validators.required, this.fechaEventoEnRangoValidator()]);
+      const control = this.fb.control('', [
+        Validators.required,
+        this.fechaEventoEnRangoValidator(),
+      ]);
       this.fechasTrabajo.push(control);
     }
     while (this.fechasTrabajo.length > target) {
       this.fechasTrabajo.removeAt(this.fechasTrabajo.length - 1);
     }
-    this.fechasTrabajo.controls.forEach(control => {
-      control.setValidators([Validators.required, this.fechaEventoEnRangoValidator()]);
+    this.fechasTrabajo.controls.forEach((control) => {
+      control.setValidators([
+        Validators.required,
+        this.fechaEventoEnRangoValidator(),
+      ]);
       control.updateValueAndValidity({ emitEvent: false });
     });
     const next = this.getFechasTrabajoRaw();
@@ -1642,16 +1977,20 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private parseDateOrMin(value: unknown): Date {
-    const parsed = parseDateInput((value ?? '') as string | number | Date | null | undefined);
+    const parsed = parseDateInput(
+      (value ?? '') as string | number | Date | null | undefined,
+    );
     const min = parseDateInput(this.fechaMinimaEvento);
     return parsed ?? min ?? new Date();
   }
 
   private remapProgramacionFechas(prev: string[], next: string[]): void {
-    const nextNoVacias = next.map(item => item.trim()).filter(Boolean);
+    const nextNoVacias = next.map((item) => item.trim()).filter(Boolean);
     if (!nextNoVacias.length) {
-      this.programacion.controls.forEach(control => {
-        (control as UntypedFormGroup).get('fecha')?.setValue('', { emitEvent: false });
+      this.programacion.controls.forEach((control) => {
+        (control as UntypedFormGroup)
+          .get('fecha')
+          ?.setValue('', { emitEvent: false });
       });
       return;
     }
@@ -1662,7 +2001,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       if (!oldFecha || !newFecha || oldFecha === newFecha) {
         continue;
       }
-      this.programacion.controls.forEach(control => {
+      this.programacion.controls.forEach((control) => {
         const fechaControl = (control as UntypedFormGroup).get('fecha');
         if ((fechaControl?.value ?? '').toString().trim() === oldFecha) {
           fechaControl?.setValue(newFecha, { emitEvent: false });
@@ -1670,7 +2009,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       });
     }
     const fallback = nextNoVacias[0];
-    this.programacion.controls.forEach(control => {
+    this.programacion.controls.forEach((control) => {
       const fechaControl = (control as UntypedFormGroup).get('fecha');
       const fechaActual = (fechaControl?.value ?? '').toString().trim();
       if (!fechaActual || !nextNoVacias.includes(fechaActual)) {
@@ -1681,9 +2020,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   private syncFechaEventoDesdeFechasTrabajo(): void {
     const primera = this.fechasTrabajoValores[0] ?? '';
-    this.form.get('fechaEvento')?.setValue(primera || null, { emitEvent: false });
+    this.form
+      .get('fechaEvento')
+      ?.setValue(primera || null, { emitEvent: false });
   }
-
 
   formatFechaConDia(fecha: string): string {
     const parsed = parseDateInput(fecha);
@@ -1694,7 +2034,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     }).format(parsed);
     return base.replace(/ de (\d{4})$/, ' del $1');
   }
@@ -1708,7 +2048,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   private applyDiasRules(value: unknown): void {
     const diasControl = this.form.get('dias');
     const parsedRaw = this.parseNumber(value);
-    const parsed = parsedRaw != null && parsedRaw >= 1 ? Math.min(Math.floor(parsedRaw), 7) : parsedRaw;
+    const parsed =
+      parsedRaw != null && parsedRaw >= 1
+        ? Math.min(Math.floor(parsedRaw), 7)
+        : parsedRaw;
     if (parsed !== parsedRaw && diasControl) {
       diasControl.setValue(parsed, { emitEvent: false });
       diasControl.updateValueAndValidity({ emitEvent: false });
@@ -1734,7 +2077,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       horasControl.updateValueAndValidity({ emitEvent: false });
     }
 
-    this.programacion.controls.forEach(control => {
+    this.programacion.controls.forEach((control) => {
       const grupo = control as UntypedFormGroup;
       const fechaProg = grupo.get('fecha');
       if (!fechaProg) return;
@@ -1746,18 +2089,27 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     });
     this.syncProgramacionFechas();
 
-    if (!multiple && this.selectedPaquetes.some(item => (item.cantidad ?? 1) !== 1)) {
-      this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
+    if (
+      !multiple &&
+      this.selectedPaquetes.some((item) => (item.cantidad ?? 1) !== 1)
+    ) {
+      this.selectedPaquetes = this.selectedPaquetes.map((item) => ({
+        ...item,
+        cantidad: 1,
+      }));
       this.syncTotalEstimado();
     }
     if (multiple) {
       const max = this.getCantidadMaximaPorDias();
       if (max != null) {
-        const ajustados = this.selectedPaquetes.map(item => ({
+        const ajustados = this.selectedPaquetes.map((item) => ({
           ...item,
-          cantidad: Math.min(Number(item.cantidad ?? 1) || 1, max)
+          cantidad: Math.min(Number(item.cantidad ?? 1) || 1, max),
         }));
-        const changed = ajustados.some((item, index) => item.cantidad !== this.selectedPaquetes[index]?.cantidad);
+        const changed = ajustados.some(
+          (item, index) =>
+            item.cantidad !== this.selectedPaquetes[index]?.cantidad,
+        );
         if (changed) {
           this.selectedPaquetes = ajustados;
           this.serviciosFechasSeleccionadas = [];
@@ -1781,7 +2133,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
     const diasControl = this.form.get('dias');
     const nuevo = this.normalizeDias(value);
-    const anterior = this.lastDiasAplicado > 0 ? this.lastDiasAplicado : this.fechasTrabajo.length;
+    const anterior =
+      this.lastDiasAplicado > 0
+        ? this.lastDiasAplicado
+        : this.fechasTrabajo.length;
     const valorControl = this.parseNumber(diasControl?.value);
 
     if (diasControl && valorControl !== nuevo) {
@@ -1825,32 +2180,46 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return Math.min(Math.floor(parsed), 7);
   }
 
-  private getImpactoReduccionDias(nuevoDias: number): { total: number; fechas: number; locaciones: number; asignaciones: number } {
+  private getImpactoReduccionDias(nuevoDias: number): {
+    total: number;
+    fechas: number;
+    locaciones: number;
+    asignaciones: number;
+  } {
     const fechasActuales = this.getFechasTrabajoRaw();
-    const fechasPermitidas = new Set(fechasActuales.slice(0, nuevoDias).filter(Boolean));
+    const fechasPermitidas = new Set(
+      fechasActuales.slice(0, nuevoDias).filter(Boolean),
+    );
     const fechasEliminadas = fechasActuales.slice(nuevoDias).filter(Boolean);
 
-    const locacionesEliminadas = this.programacion.controls.filter(control => {
-      const fecha = ((control as UntypedFormGroup).get('fecha')?.value ?? '').toString().trim();
-      return !!fecha && !fechasPermitidas.has(fecha);
-    }).length;
-
-    const asignacionesEliminadas = this.serviciosFechasSeleccionadas.filter(entry =>
-      !fechasPermitidas.has((entry.fecha ?? '').toString().trim())
+    const locacionesEliminadas = this.programacion.controls.filter(
+      (control) => {
+        const fecha = ((control as UntypedFormGroup).get('fecha')?.value ?? '')
+          .toString()
+          .trim();
+        return !!fecha && !fechasPermitidas.has(fecha);
+      },
     ).length;
 
-    const total = fechasEliminadas.length + locacionesEliminadas + asignacionesEliminadas;
+    const asignacionesEliminadas = this.serviciosFechasSeleccionadas.filter(
+      (entry) => !fechasPermitidas.has((entry.fecha ?? '').toString().trim()),
+    ).length;
+
+    const total =
+      fechasEliminadas.length + locacionesEliminadas + asignacionesEliminadas;
     return {
       total,
       fechas: fechasEliminadas.length,
       locaciones: locacionesEliminadas,
-      asignaciones: asignacionesEliminadas
+      asignaciones: asignacionesEliminadas,
     };
   }
 
   private aplicarReduccionDias(nuevoDias: number): void {
     const fechasActuales = this.getFechasTrabajoRaw();
-    const fechasPermitidas = new Set(fechasActuales.slice(0, nuevoDias).filter(Boolean));
+    const fechasPermitidas = new Set(
+      fechasActuales.slice(0, nuevoDias).filter(Boolean),
+    );
 
     for (let i = this.programacion.length - 1; i >= 0; i -= 1) {
       const grupo = this.programacion.at(i) as UntypedFormGroup;
@@ -1860,13 +2229,17 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
-      fechasPermitidas.has((entry.fecha ?? '').toString().trim())
-    );
+    this.serviciosFechasSeleccionadas =
+      this.serviciosFechasSeleccionadas.filter((entry) =>
+        fechasPermitidas.has((entry.fecha ?? '').toString().trim()),
+      );
   }
 
   isDepartamentoLima(): boolean {
-    const depto = (this.form.get('departamento')?.value ?? '').toString().trim().toLowerCase();
+    const depto = (this.form.get('departamento')?.value ?? '')
+      .toString()
+      .trim()
+      .toLowerCase();
     return depto === 'lima';
   }
 
@@ -1920,9 +2293,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       return;
     }
     const monto = this.parseNumber(this.form.get('viaticosMonto')?.value);
-    const avisoMonto = monto != null && monto > 0
-      ? 'El monto de viaticos podria variar si cambias de departamento.'
-      : '';
+    const avisoMonto =
+      monto != null && monto > 0
+        ? 'El monto de viaticos podria variar si cambias de departamento.'
+        : '';
     const texto = avisoMonto
       ? `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"? ${avisoMonto}`
       : `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"?`;
@@ -1933,8 +2307,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       text: texto,
       showCancelButton: true,
       confirmButtonText: 'Cambiar',
-      cancelButtonText: 'Cancelar'
-    }).then(result => {
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
       if (result.isConfirmed) {
         this.lastDepartamento = next;
         this.applyViaticosRules();
@@ -1960,7 +2334,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return `${String(horas).padStart(2, '0')}:${minutos}`;
   }
 
-  private splitHoraTo12(value: string): { hora12: number | null; minuto: string | null; ampm: 'AM' | 'PM' | null } {
+  private splitHoraTo12(value: string): {
+    hora12: number | null;
+    minuto: string | null;
+    ampm: 'AM' | 'PM' | null;
+  } {
     const texto = this.normalizeHora24(value);
     const match = /^(\d{2}):(\d{2})$/.exec(texto);
     if (!match) {
@@ -1976,11 +2354,22 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return { hora12: horas, minuto: minutos, ampm };
   }
 
-  private toHora24(hora12Value: unknown, minutoValue: unknown, ampmValue: unknown): string {
+  private toHora24(
+    hora12Value: unknown,
+    minutoValue: unknown,
+    ampmValue: unknown,
+  ): string {
     const hora12 = Number(hora12Value);
-    const minuto = typeof minutoValue === 'string' ? minutoValue : `${minutoValue ?? ''}`;
+    const minuto =
+      typeof minutoValue === 'string' ? minutoValue : `${minutoValue ?? ''}`;
     const ampm = ampmValue === 'PM' || ampmValue === 'AM' ? ampmValue : '';
-    if (!Number.isFinite(hora12) || hora12 < 1 || hora12 > 12 || minuto.length !== 2 || !ampm) {
+    if (
+      !Number.isFinite(hora12) ||
+      hora12 < 1 ||
+      hora12 > 12 ||
+      minuto.length !== 2 ||
+      !ampm
+    ) {
       return '';
     }
     let horas24 = hora12 % 12;
@@ -2049,7 +2438,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       icon,
       title,
       text,
-      confirmButtonText: 'Entendido'
+      confirmButtonText: 'Entendido',
     });
   }
 
@@ -2058,14 +2447,19 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       icon,
       title,
       html,
-      confirmButtonText: 'Entendido'
+      confirmButtonText: 'Entendido',
     });
   }
 
-  private validarRestriccionesProgramacion(diasNumero: number | null): string[] {
+  private validarRestriccionesProgramacion(
+    diasNumero: number | null,
+  ): string[] {
     const errores: string[] = [];
     const fechasTrabajo = this.fechasTrabajoValores;
-    const diasEsperados = diasNumero != null && diasNumero >= 1 ? Math.min(Math.floor(diasNumero), 7) : 0;
+    const diasEsperados =
+      diasNumero != null && diasNumero >= 1
+        ? Math.min(Math.floor(diasNumero), 7)
+        : 0;
 
     if (diasEsperados > 0 && fechasTrabajo.length !== diasEsperados) {
       errores.push(`Debes registrar ${diasEsperados} fecha(s) de trabajo.`);
@@ -2078,9 +2472,13 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     const ordenadas = [...fechasTrabajo].sort();
-    const desordenadas = fechasTrabajo.some((fecha, index) => fecha !== ordenadas[index]);
+    const desordenadas = fechasTrabajo.some(
+      (fecha, index) => fecha !== ordenadas[index],
+    );
     if (desordenadas) {
-      errores.push('Ordena las fechas de trabajo cronológicamente (de la más próxima a la más lejana).');
+      errores.push(
+        'Ordena las fechas de trabajo cronológicamente (de la más próxima a la más lejana).',
+      );
     }
 
     for (const fecha of fechasTrabajo) {
@@ -2095,7 +2493,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       const locacionKeyConteo = new Map<string, number>();
       let incompletas = 0;
 
-      indices.forEach(index => {
+      indices.forEach((index) => {
         const grupo = this.programacion.at(index) as UntypedFormGroup | null;
         const raw = grupo?.getRawValue() as Record<string, unknown> | undefined;
         const nombre = (raw?.['nombre'] ?? '').toString().trim();
@@ -2111,19 +2509,30 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       });
 
       if (incompletas > 0) {
-        errores.push(`"${fechaLabel}": tienes ${incompletas} locación(es) con datos incompletos.`);
+        errores.push(
+          `"${fechaLabel}": tienes ${incompletas} locación(es) con datos incompletos.`,
+        );
       }
 
-      const duplicadas = Array.from(locacionKeyConteo.values()).some(total => total > 1);
+      const duplicadas = Array.from(locacionKeyConteo.values()).some(
+        (total) => total > 1,
+      );
       if (duplicadas) {
-        errores.push(`"${fechaLabel}": hay locaciones duplicadas (misma locación, dirección y hora).`);
+        errores.push(
+          `"${fechaLabel}": hay locaciones duplicadas (misma locación, dirección y hora).`,
+        );
       }
     }
 
     return errores;
   }
 
-  private showToast(icon: AlertIcon, title: string, text?: string, timer = 2200): void {
+  private showToast(
+    icon: AlertIcon,
+    title: string,
+    text?: string,
+    timer = 2200,
+  ): void {
     void Swal.fire({
       icon,
       title,
@@ -2132,23 +2541,25 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       position: 'top-end',
       timer,
       timerProgressBar: true,
-      showConfirmButton: false
+      showConfirmButton: false,
     });
   }
 
   private loadCatalogos(): void {
     this.loadingCatalogos = true;
 
-    this.cotizacionService.getServicios()
+    this.cotizacionService
+      .getServicios()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: servicios => {
+        next: (servicios) => {
           this.servicios = Array.isArray(servicios) ? servicios : [];
           if (!this.servicios.length) {
             this.selectedServicioId = null;
             this.selectedServicioNombre = '';
           } else if (this.selectedServicioId == null) {
-            const firstValido = this.servicios.find(item => this.getId(item) != null) || null;
+            const firstValido =
+              this.servicios.find((item) => this.getId(item) != null) || null;
             if (firstValido) {
               const id = this.getId(firstValido)!;
               this.selectedServicioId = id;
@@ -2167,19 +2578,22 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           this.loadingCatalogos = false;
           this.loadEventosServicio();
           this.syncProgramacionFechas();
-        }
+        },
       });
 
-    this.cotizacionService.getEventos()
+    this.cotizacionService
+      .getEventos()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: eventos => {
+        next: (eventos) => {
           this.eventos = Array.isArray(eventos) ? eventos : [];
           if (!this.eventos.length) {
             this.selectedEventoId = null;
             this.selectedEventoNombre = '';
           } else if (this.selectedEventoId != null) {
-            const selected = this.eventos.find(e => this.getId(e) === this.selectedEventoId);
+            const selected = this.eventos.find(
+              (e) => this.getId(e) === this.selectedEventoId,
+            );
             this.selectedEventoNombre = this.getEventoNombre(selected);
           }
           this.loadEventosServicio();
@@ -2190,7 +2604,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           this.selectedEventoId = null;
           this.selectedEventoNombre = '';
           this.loadEventosServicio();
-        }
+        },
       });
   }
 
@@ -2202,27 +2616,34 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     this.loadingPaquetes = true;
-    this.cotizacionService.getEventosServicio(this.selectedEventoId, this.selectedServicioId)
+    this.cotizacionService
+      .getEventosServicio(this.selectedEventoId, this.selectedServicioId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: paquetes => {
+        next: (paquetes) => {
           const activos = Array.isArray(paquetes)
-            ? paquetes.filter(item => {
+            ? paquetes.filter((item) => {
                 const record = this.asRecord(item);
                 const estado = this.asRecord(record['estado']);
-                const estadoNombre = String(estado['nombre'] ?? record['estadoNombre'] ?? '').toLowerCase();
-                const estadoId = this.parseNumber(estado['id'] ?? estado['idEstado'] ?? record['estadoId']);
+                const estadoNombre = String(
+                  estado['nombre'] ?? record['estadoNombre'] ?? '',
+                ).toLowerCase();
+                const estadoId = this.parseNumber(
+                  estado['id'] ?? estado['idEstado'] ?? record['estadoId'],
+                );
                 return estadoNombre !== 'inactivo' && estadoId !== 2;
               })
             : [];
-          this.paquetesRows = activos.map(item => this.normalizePaqueteRow(item));
+          this.paquetesRows = activos.map((item) =>
+            this.normalizePaqueteRow(item),
+          );
           this.loadingPaquetes = false;
         },
         error: (err) => {
           console.error('[cotizacion] eventos-servicio', err);
           this.paquetesRows = [];
           this.loadingPaquetes = false;
-        }
+        },
       });
   }
 
@@ -2266,7 +2687,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private fechaEventoEnRangoValidator(): ValidatorFn {
-    return control => {
+    return (control) => {
       const raw = control.value;
       if (!raw) {
         return null;
@@ -2306,7 +2727,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       return null;
     }
     const eventoServicio = this.asRecord(record['eventoServicio']);
-    const num = this.parseNumber(record['eventoServicioId'] ?? record['idEventoServicio'] ?? eventoServicio['id'] ?? record['id']);
+    const num = this.parseNumber(
+      record['eventoServicioId'] ??
+        record['idEventoServicio'] ??
+        eventoServicio['id'] ??
+        record['id'],
+    );
     return num != null && num > 0 ? num : null;
   }
 
@@ -2412,20 +2838,28 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const record = this.asRecord(item);
     const precio = this.parseNumber(record['precio']);
     const staffRecord = this.asRecord(record['staff']);
-    const staffTotal = this.parseNumber(staffRecord['total'] ?? record['staff']);
+    const staffTotal = this.parseNumber(
+      staffRecord['total'] ?? record['staff'],
+    );
     const staff = staffTotal ?? this.getStaff(record);
-    const horas = this.getHoras(record) ?? this.parseHorasToNumber(String(record['horasTexto'] ?? record['HorasTexto'] ?? ''));
+    const horas =
+      this.getHoras(record) ??
+      this.parseHorasToNumber(
+        String(record['horasTexto'] ?? record['HorasTexto'] ?? ''),
+      );
     return {
       titulo: this.getTitulo(record),
       descripcion: this.getDescripcion(record),
       precio: precio != null ? precio : null,
       staff: staff != null ? staff : null,
       horas: horas != null ? horas : null,
-      raw: record
+      raw: record,
     };
   }
 
-  private parseHorasToNumber(value: string | null | undefined): number | undefined {
+  private parseHorasToNumber(
+    value: string | null | undefined,
+  ): number | undefined {
     if (value == null) {
       return undefined;
     }
@@ -2461,12 +2895,15 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return value.trim().toLowerCase().replace(/\s+/g, ' ');
   }
 
-  private setProgramacionExpandida(grupo: UntypedFormGroup, expandida: boolean): void {
+  private setProgramacionExpandida(
+    grupo: UntypedFormGroup,
+    expandida: boolean,
+  ): void {
     this.programacionExpandida.set(grupo, expandida);
   }
 
   private expandirProgramacionConErrores(): void {
-    this.programacion.controls.forEach(control => {
+    this.programacion.controls.forEach((control) => {
       const grupo = control as UntypedFormGroup;
       if (grupo.invalid || this.isProgramacionIncompletaPorGrupo(grupo)) {
         this.setProgramacionExpandida(grupo, true);
@@ -2484,7 +2921,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   private focusPrecioInput(key: string | number): void {
     setTimeout(() => {
-      const element = document.getElementById(this.getPrecioInputIdFromKey(key)) as HTMLInputElement | null;
+      const element = document.getElementById(
+        this.getPrecioInputIdFromKey(key),
+      ) as HTMLInputElement | null;
       if (element) {
         element.focus();
         element.select();
@@ -2499,41 +2938,93 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   private refreshSelectedPaquetesColumns(): void {
     const base: TableColumn<PaqueteSeleccionado>[] = [
       { key: 'titulo', header: 'Título', sortable: false },
-      { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-center', width: '140px' }
+      {
+        key: 'precioUnit',
+        header: 'Precio unit.',
+        sortable: false,
+        class: 'text-center',
+        width: '140px',
+      },
     ];
 
     if (this.isMultipleDias()) {
-      base.splice(1, 0, { key: 'cantidad', header: 'Dias', sortable: false, class: 'text-center', width: '90px' });
+      base.splice(1, 0, {
+        key: 'cantidad',
+        header: 'Dias',
+        sortable: false,
+        class: 'text-center',
+        width: '90px',
+      });
     }
 
     if (this.shouldShowPrecioOriginal()) {
-      base.push({ key: 'precioOriginal', header: 'Original', sortable: false, class: 'text-center', width: '140px' });
+      base.push({
+        key: 'precioOriginal',
+        header: 'Original',
+        sortable: false,
+        class: 'text-center',
+        width: '140px',
+      });
     }
 
     base.push(
-      { key: 'horas', header: 'Horas', sortable: false, class: 'text-center', width: '100px' },
-      { key: 'staff', header: 'Staff', sortable: false, class: 'text-center', width: '110px' },
-      { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-center', width: '140px' },
-      { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
-      { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
+      {
+        key: 'horas',
+        header: 'Horas',
+        sortable: false,
+        class: 'text-center',
+        width: '100px',
+      },
+      {
+        key: 'staff',
+        header: 'Staff',
+        sortable: false,
+        class: 'text-center',
+        width: '110px',
+      },
+      {
+        key: 'subtotal',
+        header: 'Subtotal',
+        sortable: false,
+        class: 'text-center',
+        width: '140px',
+      },
+      {
+        key: 'notas',
+        header: 'Notas',
+        sortable: false,
+        filterable: false,
+        width: '280px',
+      },
+      {
+        key: 'quitar',
+        header: 'Quitar',
+        sortable: false,
+        filterable: false,
+        class: 'text-center',
+        width: '90px',
+      },
     );
 
     this.selectedPaquetesColumns = base;
   }
 
   private resetFormState(): void {
-    this.form.reset({
-      clienteNombre: '',
-      clienteContacto: '',
-      fechaEvento: RegistrarCotizacionComponent.computeFechaMinimaEvento(),
-      dias: null,
-      departamento: 'Lima',
-      viaticosCliente: true,
-      viaticosMonto: null,
-      horasEstimadas: '',
-      descripcion: '',
-      totalEstimado: 0
-    }, { emitEvent: false });
+    this.form.reset(
+      {
+        clienteNombre: '',
+        clienteContacto: '',
+        fechaEvento: RegistrarCotizacionComponent.computeFechaMinimaEvento(),
+        dias: null,
+        departamento: 'Lima',
+        viaticosCliente: true,
+        viaticosMonto: null,
+        horasEstimadas: '',
+        descripcion: '',
+        totalEstimado: 0,
+      },
+      { emitEvent: false },
+    );
 
     const horasControl = this.form.get('horasEstimadas');
     if (horasControl) {
@@ -2577,5 +3068,3 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.syncTotalEstimado();
   }
 }
-
-

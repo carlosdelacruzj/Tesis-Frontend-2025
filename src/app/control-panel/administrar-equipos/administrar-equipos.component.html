@@ -1,7 +1,9 @@
 <div class="dashboard-content">
   <app-list-toolbar
     [title]="'Inventario de equipos'"
-    [description]="'Explora rápidamente los modelos disponibles agrupados por tipo y accede al detalle completo.'"
+    [description]="
+      'Explora rápidamente los modelos disponibles agrupados por tipo y accede al detalle completo.'
+    "
     [showSearch]="true"
     [searchPlaceholder]="'Tipo, marca o modelo'"
     [searchValue]="busqueda"
@@ -10,9 +12,13 @@
   >
     <div actions>
       <div class="toolbar-actions">
-        <button mat-stroked-button color="primary" [matMenuTriggerFor]="menuRegistrar" type="button">
+        <button
+          class="btn btn-outline-secondary btn-sm"
+          [matMenuTriggerFor]="menuRegistrar"
+          type="button"
+        >
           Registrar
-          <mat-icon>expand_more</mat-icon>
+          <i class="fa-solid fa-angle-down"></i>
         </button>
         <mat-menu #menuRegistrar="matMenu">
           <button mat-menu-item (click)="abrirModalTipo()">
@@ -34,50 +40,68 @@
 
   @if (filtradoResumen.length) {
     <div class="card-grid">
-      @for (tipo of filtradoResumen; track tipo.idTipoEquipo !== null && tipo.idTipoEquipo !== undefined ? tipo.idTipoEquipo : $index) {
-      <mat-card class="equipment-card">
-        <mat-card-header>
-          <div mat-card-avatar class="equipment-avatar">
-            {{ tipo.nombreTipoEquipo | slice: 0:1 }}
-          </div>
-          <mat-card-title>{{ tipo.nombreTipoEquipo }}</mat-card-title>
-          <mat-card-subtitle>
-            {{ tipo.totalCantidad }} {{ tipo.totalCantidad === 1 ? 'equipo' : 'equipos' }}
-          </mat-card-subtitle>
-        </mat-card-header>
+      @for (
+        tipo of filtradoResumen;
+        track tipo.idTipoEquipo !== null && tipo.idTipoEquipo !== undefined
+          ? tipo.idTipoEquipo
+          : $index
+      ) {
+        <mat-card class="equipment-card">
+          <mat-card-header>
+            <div mat-card-avatar class="equipment-avatar">
+              {{ tipo.nombreTipoEquipo | slice: 0 : 1 }}
+            </div>
+            <mat-card-title>{{ tipo.nombreTipoEquipo }}</mat-card-title>
+            <mat-card-subtitle>
+              {{ tipo.totalCantidad }}
+              {{ tipo.totalCantidad === 1 ? "equipo" : "equipos" }}
+            </mat-card-subtitle>
+          </mat-card-header>
 
-        <mat-card-content>
-          <ul class="model-list">
-            @for (modelo of tipo.modelos | slice: 0: maxModelosCompactos; track modelo.idModelo !== null && modelo.idModelo !== undefined ? modelo.idModelo : $index) {
-            <li>
-              <button
-                type="button"
-                class="model-item"
-                (click)="verDetallePorModelo(tipo, modelo)"
-              >
-                <span class="model-name">
-                  {{ modelo.nombreMarca }} · {{ modelo.nombreModelo }}
-                </span>
-                <span class="model-count">
-                  {{ modelo.cantidad }}
-                </span>
-              </button>
-            </li>
+          <mat-card-content>
+            <ul class="model-list">
+              @for (
+                modelo of tipo.modelos | slice: 0 : maxModelosCompactos;
+                track modelo.idModelo !== null && modelo.idModelo !== undefined
+                  ? modelo.idModelo
+                  : $index
+              ) {
+                <li>
+                  <button
+                    type="button"
+                    class="model-item"
+                    (click)="verDetallePorModelo(tipo, modelo)"
+                  >
+                    <span class="model-name">
+                      {{ modelo.nombreMarca }} · {{ modelo.nombreModelo }}
+                    </span>
+                    <span class="model-count">
+                      {{ modelo.cantidad }}
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+            @if (tipo.modelos.length > maxModelosCompactos) {
+              <span class="preview-note">
+                + {{ tipo.modelos.length - maxModelosCompactos }} modelo{{
+                  tipo.modelos.length - maxModelosCompactos === 1 ? "" : "s"
+                }}
+                más
+              </span>
             }
-          </ul>
-          @if (tipo.modelos.length > maxModelosCompactos) {
-          <span class="preview-note">
-            + {{ tipo.modelos.length - maxModelosCompactos }} modelo{{ tipo.modelos.length - maxModelosCompactos === 1 ? '' : 's' }} más
-          </span>
-          }
-        </mat-card-content>
+          </mat-card-content>
 
-        <mat-card-actions class="card-actions">
-          <button mat-stroked-button color="primary" (click)="verDetallePorTipo(tipo)">
-            Ver equipos
-          </button>
-        </mat-card-actions>
-      </mat-card>
+          <mat-card-actions class="card-actions">
+            <button
+              mat-stroked-button
+              color="primary"
+              (click)="verDetallePorTipo(tipo)"
+            >
+              Ver equipos
+            </button>
+          </mat-card-actions>
+        </mat-card>
       }
     </div>
   } @else {
@@ -121,16 +145,20 @@
             (ngModelChange)="formTipo.nombre = normalizarEntrada($event)"
             #nombreTipoCtrl="ngModel"
           />
-          @if (nombreTipoCtrl.invalid && (nombreTipoCtrl.dirty || nombreTipoCtrl.touched)) {
-          <div class="invalid-feedback d-block">
-            Ingresa un nombre válido.
-          </div>
+          @if (
+            nombreTipoCtrl.invalid &&
+            (nombreTipoCtrl.dirty || nombreTipoCtrl.touched)
+          ) {
+            <div class="invalid-feedback d-block">
+              Ingresa un nombre válido.
+            </div>
           }
         </div>
 
         <div class="col-12">
           <p class="mb-2">
-            Por favor confirma que el nombre es correcto. Esta acción no podrá deshacerse.
+            Por favor confirma que el nombre es correcto. Esta acción no podrá
+            deshacerse.
           </p>
           <div class="form-check">
             <input
@@ -147,25 +175,36 @@
         </div>
 
         @if (formTipo.exito) {
-        <div class="col-12 mensaje-exito">
-          <mat-icon>check_circle</mat-icon>
-          {{ formTipo.exito }}
-        </div>
+          <div class="col-12 mensaje-exito">
+            <mat-icon>check_circle</mat-icon>
+            {{ formTipo.exito }}
+          </div>
         }
       </form>
     </app-formulario-base>
     <div modal-footer class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary" type="button" (click)="onModalTipoClosed()" [disabled]="formTipo.cargando">
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        (click)="onModalTipoClosed()"
+        [disabled]="formTipo.cargando"
+      >
         Cancelar
       </button>
       <button
         class="btn btn-primary d-inline-flex align-items-center gap-2"
         type="submit"
         form="crearTipoForm"
-        [disabled]="!formTipo.confirmacion || crearTipoForm.invalid || formTipo.cargando"
+        [disabled]="
+          !formTipo.confirmacion || crearTipoForm.invalid || formTipo.cargando
+        "
       >
         @if (formTipo.cargando) {
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
         }
         <span>Crear</span>
       </button>
@@ -205,23 +244,31 @@
             [(ngModel)]="formMarca.nombre"
             #nombreMarcaCtrl="ngModel"
           />
-          @if (nombreMarcaCtrl.invalid && (nombreMarcaCtrl.dirty || nombreMarcaCtrl.touched)) {
-          <div class="invalid-feedback d-block">
-            Ingresa un nombre válido.
-          </div>
+          @if (
+            nombreMarcaCtrl.invalid &&
+            (nombreMarcaCtrl.dirty || nombreMarcaCtrl.touched)
+          ) {
+            <div class="invalid-feedback d-block">
+              Ingresa un nombre válido.
+            </div>
           }
         </div>
 
         @if (formMarca.exito) {
-        <div class="col-12 mensaje-exito">
-          <mat-icon>check_circle</mat-icon>
-          {{ formMarca.exito }}
-        </div>
+          <div class="col-12 mensaje-exito">
+            <mat-icon>check_circle</mat-icon>
+            {{ formMarca.exito }}
+          </div>
         }
       </form>
     </app-formulario-base>
     <div modal-footer class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary" type="button" (click)="onModalMarcaClosed()" [disabled]="formMarca.cargando">
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        (click)="onModalMarcaClosed()"
+        [disabled]="formMarca.cargando"
+      >
         Cancelar
       </button>
       <button
@@ -231,7 +278,11 @@
         [disabled]="crearMarcaForm.invalid || formMarca.cargando"
       >
         @if (formMarca.cargando) {
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
         }
         <span>Crear</span>
       </button>
@@ -271,15 +322,20 @@
             [(ngModel)]="formModelo.nombre"
             #nombreModeloCtrl="ngModel"
           />
-          @if (nombreModeloCtrl.invalid && (nombreModeloCtrl.dirty || nombreModeloCtrl.touched)) {
-          <div class="invalid-feedback d-block">
-            Ingresa un nombre válido.
-          </div>
+          @if (
+            nombreModeloCtrl.invalid &&
+            (nombreModeloCtrl.dirty || nombreModeloCtrl.touched)
+          ) {
+            <div class="invalid-feedback d-block">
+              Ingresa un nombre válido.
+            </div>
           }
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label" for="tipoEquipoSelect">Tipo de equipo</label>
+          <label class="form-label" for="tipoEquipoSelect"
+            >Tipo de equipo</label
+          >
           <select
             id="tipoEquipoSelect"
             name="tipoEquipoSelect"
@@ -289,16 +345,25 @@
             #tipoEquipoCtrl="ngModel"
           >
             <option [ngValue]="null" disabled>Selecciona un tipo</option>
-            @for (tipo of tiposDisponibles; track tipo.idTipoEquipo !== null && tipo.idTipoEquipo !== undefined ? tipo.idTipoEquipo : $index) {
-            <option [ngValue]="tipo.idTipoEquipo">
-              {{ tipo.nombre }}
-            </option>
+            @for (
+              tipo of tiposDisponibles;
+              track tipo.idTipoEquipo !== null &&
+              tipo.idTipoEquipo !== undefined
+                ? tipo.idTipoEquipo
+                : $index
+            ) {
+              <option [ngValue]="tipo.idTipoEquipo">
+                {{ tipo.nombre }}
+              </option>
             }
           </select>
-          @if (tipoEquipoCtrl.invalid && (tipoEquipoCtrl.dirty || tipoEquipoCtrl.touched)) {
-          <div class="invalid-feedback d-block">
-            Selecciona un tipo de equipo.
-          </div>
+          @if (
+            tipoEquipoCtrl.invalid &&
+            (tipoEquipoCtrl.dirty || tipoEquipoCtrl.touched)
+          ) {
+            <div class="invalid-feedback d-block">
+              Selecciona un tipo de equipo.
+            </div>
           }
         </div>
 
@@ -313,29 +378,37 @@
             #marcaCtrl="ngModel"
           >
             <option [ngValue]="null" disabled>Selecciona una marca</option>
-            @for (marca of marcasDisponibles; track marca.idMarca !== null && marca.idMarca !== undefined ? marca.idMarca : $index) {
-            <option [ngValue]="marca.idMarca">
-              {{ marca.nombre }}
-            </option>
+            @for (
+              marca of marcasDisponibles;
+              track marca.idMarca !== null && marca.idMarca !== undefined
+                ? marca.idMarca
+                : $index
+            ) {
+              <option [ngValue]="marca.idMarca">
+                {{ marca.nombre }}
+              </option>
             }
           </select>
           @if (marcaCtrl.invalid && (marcaCtrl.dirty || marcaCtrl.touched)) {
-          <div class="invalid-feedback d-block">
-            Selecciona una marca.
-          </div>
+            <div class="invalid-feedback d-block">Selecciona una marca.</div>
           }
         </div>
 
         @if (formModelo.exito) {
-        <div class="col-12 mensaje-exito">
-          <mat-icon>check_circle</mat-icon>
-          {{ formModelo.exito }}
-        </div>
+          <div class="col-12 mensaje-exito">
+            <mat-icon>check_circle</mat-icon>
+            {{ formModelo.exito }}
+          </div>
         }
       </form>
     </app-formulario-base>
     <div modal-footer class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary" type="button" (click)="onModalModeloClosed()" [disabled]="formModelo.cargando">
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        (click)="onModalModeloClosed()"
+        [disabled]="formModelo.cargando"
+      >
         Cancelar
       </button>
       <button
@@ -345,7 +418,11 @@
         [disabled]="crearModeloForm.invalid || formModelo.cargando"
       >
         @if (formModelo.cargando) {
-        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
         }
         <span>Crear</span>
       </button>

@@ -1,5 +1,5 @@
 .cotizacion-form mat-card {
-  border-radius: 0.75rem;
+  border-radius: 20px;
   box-shadow: 0 0.75rem 1.5rem -1rem rgba(31, 45, 61, 0.35);
 }
 
@@ -37,21 +37,21 @@
 
 .programacion-fechas {
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 0.75rem;
+  border-radius: 20px;
   padding: 0.9rem 1rem;
   background-color: #fff;
 }
 
 .programacion-item {
   padding: 0.9rem 1rem;
-  border-radius: 0.75rem;
+  border-radius: 20px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   background-color: #fff;
 }
 
 .programacion-day {
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 0.75rem;
+  border-radius: 20px;
   background-color: #f9fbff;
   padding: 0.85rem 1rem;
 }
@@ -70,7 +70,7 @@
 
 .programacion-empty {
   border: 1px dashed rgba(0, 0, 0, 0.2);
-  border-radius: 0.75rem;
+  border-radius: 20px;
   padding: 1rem;
   text-align: center;
   color: #5a6474;

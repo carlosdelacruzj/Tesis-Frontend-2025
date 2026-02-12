@@ -134,7 +134,7 @@
                       track e.id !== null && e.id !== undefined ? e.id : $index
                     ) {
                       <option [value]="(e.id ?? '').toString()">
-                        {{ e.nombre }}
+                        {{ corregirCumpleSafe(e.nombre) }}
                       </option>
                     }
                   </select>
@@ -151,7 +151,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label class="col-form-label" for="diasTrabajo"
-                    >Cantidad de dias</label
+                    >Cantidad de días</label
                   >
                   <select
                     id="diasTrabajo"

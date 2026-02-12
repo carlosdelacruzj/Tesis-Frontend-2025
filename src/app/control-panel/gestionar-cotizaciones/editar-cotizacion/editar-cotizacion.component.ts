@@ -1,12 +1,32 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { AbstractControl, UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, ValidatorFn, ValidationErrors, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  UntypedFormArray,
+  UntypedFormBuilder,
+  UntypedFormGroup,
+  ValidatorFn,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, finalize, switchMap, takeUntil } from 'rxjs';
-import { Cotizacion, CotizacionPayload, CotizacionItemPayload, CotizacionAdminItemPayload, CotizacionAdminUpdatePayload, CotizacionAdminEventoPayload, CotizacionAdminServicioFechaPayload } from '../model/cotizacion.model';
+import {
+  Cotizacion,
+  CotizacionPayload,
+  CotizacionItemPayload,
+  CotizacionAdminItemPayload,
+  CotizacionAdminUpdatePayload,
+  CotizacionAdminEventoPayload,
+  CotizacionAdminServicioFechaPayload,
+} from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
-import { formatIsoDate, parseDateInput } from '../../../shared/utils/date-utils';
+import {
+  formatIsoDate,
+  parseDateInput,
+} from '../../../shared/utils/date-utils';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
+import { corregirCumple } from 'src/app/shared/utils/text-utils';
 
 type AlertIcon = 'success' | 'error' | 'warning' | 'info' | 'question';
 type AnyRecord = Record<string, unknown>;
@@ -55,7 +75,9 @@ interface ProgramacionEventoItemConfig {
   esPrincipal?: boolean;
 }
 
-type ProgramacionEventoItem = ProgramacionEventoItemConfig & { esPrincipal: boolean };
+type ProgramacionEventoItem = ProgramacionEventoItemConfig & {
+  esPrincipal: boolean;
+};
 
 interface EventoCatalogo {
   id: number;
@@ -87,13 +109,17 @@ interface PaqueteDetalle {
 @Component({
   selector: 'app-editar-cotizacion',
   templateUrl: './editar-cotizacion.component.html',
-  styleUrls: ['./editar-cotizacion.component.css']
+  styleUrls: ['./editar-cotizacion.component.css'],
 })
 export class EditarCotizacionComponent implements OnInit, OnDestroy {
-  readonly fechaMinimaEvento = EditarCotizacionComponent.computeFechaMinimaEvento();
-  readonly fechaMaximaEvento = EditarCotizacionComponent.computeFechaMaximaEvento();
+  readonly fechaMinimaEvento =
+    EditarCotizacionComponent.computeFechaMinimaEvento();
+  readonly fechaMaximaEvento =
+    EditarCotizacionComponent.computeFechaMaximaEvento();
   readonly horaOptions = Array.from({ length: 12 }, (_, index) => index + 1);
-  readonly minutoOptions = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
+  readonly minutoOptions = Array.from({ length: 12 }, (_, index) =>
+    String(index * 5).padStart(2, '0'),
+  );
   readonly ampmOptions = ['AM', 'PM'] as const;
   readonly maxLocacionesPorDia = 6;
 
@@ -109,10 +135,35 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   paquetesColumns: TableColumn<PaqueteRow>[] = [
     { key: 'titulo', header: 'Título', sortable: true, width: '45%' },
-    { key: 'precio', header: 'Precio', sortable: true, class: 'text-center', width: '120px' },
-    { key: 'horas', header: 'Horas', sortable: true, class: 'text-center', width: '100px' },
-    { key: 'staff', header: 'Staff', sortable: true, class: 'text-center', width: '100px' },
-    { key: 'acciones', header: 'Seleccionar', sortable: false, filterable: false, class: 'text-center', width: '200px' }
+    {
+      key: 'precio',
+      header: 'Precio',
+      sortable: true,
+      class: 'text-center',
+      width: '120px',
+    },
+    {
+      key: 'horas',
+      header: 'Horas',
+      sortable: true,
+      class: 'text-center',
+      width: '100px',
+    },
+    {
+      key: 'staff',
+      header: 'Staff',
+      sortable: true,
+      class: 'text-center',
+      width: '100px',
+    },
+    {
+      key: 'acciones',
+      header: 'Seleccionar',
+      sortable: false,
+      filterable: false,
+      class: 'text-center',
+      width: '200px',
+    },
   ];
   paquetesRows: PaqueteRow[] = [];
   selectedPaquetes: PaqueteSeleccionado[] = [];
@@ -122,6 +173,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   loadingPaquetes = false;
   loading = true;
   saving = false;
+
+  corregirCumple = corregirCumple;
+
   private initialSnapshot = '';
   detallePaqueteAbierto = false;
   detallePaqueteSeleccionado: PaqueteDetalle | null = null;
@@ -171,7 +225,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     'San Martin',
     'Tacna',
     'Tumbes',
-    'Ucayali'
+    'Ucayali',
   ];
   eventoSelectTouched = false;
 
@@ -182,18 +236,30 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   constructor() {
     this.form = this.fb.group({
-      clienteNombre: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(2)]],
-      clienteContacto: [{ value: '', disabled: true }, [Validators.required, Validators.minLength(6)]],
-      fechaEvento: ['', [Validators.required, this.fechaEventoEnRangoValidator()]],
+      clienteNombre: [
+        { value: '', disabled: true },
+        [Validators.required, Validators.minLength(2)],
+      ],
+      clienteContacto: [
+        { value: '', disabled: true },
+        [Validators.required, Validators.minLength(6)],
+      ],
+      fechaEvento: [
+        '',
+        [Validators.required, this.fechaEventoEnRangoValidator()],
+      ],
       dias: [null, [Validators.required, Validators.min(1), Validators.max(7)]],
-      horasEstimadas: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)]],
+      horasEstimadas: [
+        '',
+        [Validators.required, Validators.pattern(/^\d+$/), Validators.min(1)],
+      ],
       departamento: ['', Validators.required],
       viaticosCliente: [true],
       viaticosMonto: [{ value: null, disabled: true }],
       descripcion: [''],
       totalEstimado: [{ value: 0, disabled: true }, Validators.min(0)],
       fechasTrabajo: this.fb.array([]),
-      programacion: this.fb.array([])
+      programacion: this.fb.array([]),
     });
   }
 
@@ -201,25 +267,33 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.loadCatalogos();
     this.loadCotizacion();
     this.refreshSelectedPaquetesColumns();
-    this.form.get('fechaEvento')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(value => {
+    this.form
+      .get('fechaEvento')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((value) => {
         const iso = this.normalizeDateForPayload(value);
-        this.fechaEventoOriginal = iso ?? (typeof value === 'string' ? value : null);
+        this.fechaEventoOriginal =
+          iso ?? (typeof value === 'string' ? value : null);
         this.syncProgramacionFechas(value);
       });
-    this.form.get('dias')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(value => this.onDiasChange(value));
-    this.lastDepartamento = (this.form.get('departamento')?.value ?? '').toString().trim();
-    this.form.get('departamento')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(value => this.handleDepartamentoChange(value));
-    this.form.get('viaticosCliente')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(value => this.handleViaticosClienteChange(value));
-    this.form.get('viaticosMonto')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
+    this.form
+      .get('dias')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((value) => this.onDiasChange(value));
+    this.lastDepartamento = (this.form.get('departamento')?.value ?? '')
+      .toString()
+      .trim();
+    this.form
+      .get('departamento')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((value) => this.handleDepartamentoChange(value));
+    this.form
+      .get('viaticosCliente')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((value) => this.handleViaticosClienteChange(value));
+    this.form
+      .get('viaticosMonto')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
       .subscribe(() => this.syncTotalEstimado());
     this.applyDiasRules(this.form.get('dias')?.value);
     this.lastDiasAplicado = this.normalizeDias(this.form.get('dias')?.value);
@@ -240,14 +314,18 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   get fechasTrabajoValores(): string[] {
     return this.fechasTrabajo.controls
-      .map(control => (control.value ?? '').toString().trim())
+      .map((control) => (control.value ?? '').toString().trim())
       .filter(Boolean);
   }
 
   addProgramacionItem(fechaForzada?: string): void {
     const fechaConfig = this.getFechaProgramacionNuevaFila(fechaForzada);
     if (!fechaConfig) {
-      this.showAlert('warning', 'Fecha requerida', 'Primero define una fecha de trabajo para agregar locaciones.');
+      this.showAlert(
+        'warning',
+        'Fecha requerida',
+        'Primero define una fecha de trabajo para agregar locaciones.',
+      );
       return;
     }
 
@@ -256,7 +334,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.showAlert(
         'warning',
         'Límite alcanzado',
-        `Máximo ${this.maxLocacionesPorDia} locaciones por día (${this.formatFechaConDia(fechaConfig)}).`
+        `Máximo ${this.maxLocacionesPorDia} locaciones por día (${this.formatFechaConDia(fechaConfig)}).`,
       );
       return;
     }
@@ -267,9 +345,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
     // ✅ NO autollenar nombre, para que se vea placeholder
     const grupo = this.createProgramacionItem({
-      nombre: '',                 // <-- clave
+      nombre: '', // <-- clave
       fecha: fechaConfig,
-      esPrincipal
+      esPrincipal,
     });
 
     this.programacion.push(grupo);
@@ -283,7 +361,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.programacion.updateValueAndValidity();
   }
 
-
   duplicarProgramacionItem(index: number): void {
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
     if (!grupo) {
@@ -296,7 +373,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
     const actuales = this.getProgramacionIndicesPorFecha(fecha).length;
     if (actuales >= this.maxLocacionesPorDia) {
-      this.showAlert('warning', 'Límite alcanzado', `Máximo ${this.maxLocacionesPorDia} locaciones por día.`);
+      this.showAlert(
+        'warning',
+        'Límite alcanzado',
+        `Máximo ${this.maxLocacionesPorDia} locaciones por día.`,
+      );
       return;
     }
     const duplicado = this.createProgramacionItem({
@@ -305,7 +386,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       hora: (raw['hora'] ?? '').toString().trim(),
       notas: (raw['notas'] ?? '').toString().trim(),
       fecha,
-      esPrincipal: false
+      esPrincipal: false,
     });
     this.programacion.insert(index + 1, duplicado);
     this.setProgramacionExpandida(duplicado, true);
@@ -317,7 +398,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       return;
     }
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
-    const nombre = (grupo?.get('nombre')?.value ?? '').toString().trim() || `Locación ${index + 1}`;
+    const nombre =
+      (grupo?.get('nombre')?.value ?? '').toString().trim() ||
+      `Locación ${index + 1}`;
 
     void Swal.fire({
       icon: 'warning',
@@ -326,8 +409,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#dc3545'
-    }).then(result => {
+      confirmButtonColor: '#dc3545',
+    }).then((result) => {
       if (!result.isConfirmed) {
         return;
       }
@@ -336,7 +419,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.syncProgramacionFechas();
       this.programacion.markAsDirty();
       this.programacion.updateValueAndValidity();
-      this.showToast('success', 'Locación eliminada', 'Se eliminó la locación seleccionada.');
+      this.showToast(
+        'success',
+        'Locación eliminada',
+        'Se eliminó la locación seleccionada.',
+      );
     });
   }
 
@@ -344,7 +431,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const subtotal = this.selectedPaquetes.reduce((acc, item) => {
       const precio = Number(item.precio) || 0;
       const cantidad = Number(item.cantidad ?? 1) || 1;
-      return acc + (precio * cantidad);
+      return acc + precio * cantidad;
     }, 0);
     return subtotal + this.getViaticosMontoTotal();
   }
@@ -353,7 +440,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return this.selectedPaquetes.reduce((acc, item) => {
       const precio = Number(item.precio) || 0;
       const cantidad = Number(item.cantidad ?? 1) || 1;
-      return acc + (precio * cantidad);
+      return acc + precio * cantidad;
     }, 0);
   }
 
@@ -386,7 +473,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (this.selectedServicioId == null) {
       this.selectedServicioNombre = '';
     } else {
-      const selected = this.servicios.find(s => this.getId(s) === this.selectedServicioId);
+      const selected = this.servicios.find(
+        (s) => this.getId(s) === this.selectedServicioId,
+      );
       this.selectedServicioNombre = this.getNombre(selected);
     }
     this.loadEventosServicio();
@@ -399,7 +488,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const nextEventoId = this.parseNumber(rawValue);
     const prevEventoId = this.selectedEventoId;
     const prevValue = prevEventoId != null ? String(prevEventoId) : '';
-    if (this.selectedPaquetes.length && nextEventoId !== this.selectedEventoId) {
+    if (
+      this.selectedPaquetes.length &&
+      nextEventoId !== this.selectedEventoId
+    ) {
       void Swal.fire({
         icon: 'warning',
         title: 'Cambiar tipo de evento',
@@ -407,8 +499,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         confirmButtonText: 'Cambiar',
         cancelButtonText: 'Cancelar',
         showCancelButton: true,
-        reverseButtons: true
-      }).then(result => {
+        reverseButtons: true,
+      }).then((result) => {
         if (!result.isConfirmed) {
           if (target) {
             target.value = prevValue;
@@ -439,8 +531,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         confirmButtonText: 'Cambiar',
         cancelButtonText: 'Cancelar',
         showCancelButton: true,
-        reverseButtons: true
-      }).then(result => {
+        reverseButtons: true,
+      }).then((result) => {
         if (!result.isConfirmed) {
           return;
         }
@@ -459,11 +551,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   onEventoChange(eventoId: number | null | undefined): void {
     const parsed = this.parseNumber(eventoId);
     this.selectedEventoId = parsed ?? null;
-    this.selectedEventoIdValue = this.selectedEventoId != null ? String(this.selectedEventoId) : '';
+    this.selectedEventoIdValue =
+      this.selectedEventoId != null ? String(this.selectedEventoId) : '';
     if (this.selectedEventoId == null) {
       this.selectedEventoNombre = '';
     } else {
-      const selected = this.eventos.find(e => e.id === this.selectedEventoId);
+      const selected = this.eventos.find((e) => e.id === this.selectedEventoId);
       this.selectedEventoNombre = this.getNombre(selected);
     }
     this.loadEventosServicio();
@@ -471,7 +564,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   addPaquete(element: AnyRecord): void {
     const key = this.getPkgKey(element);
-    if (this.selectedPaquetes.some(p => p.key === key)) {
+    if (this.selectedPaquetes.some((p) => p.key === key)) {
       return;
     }
     const eventoServicioId = this.getEventoServicioId(element);
@@ -490,19 +583,33 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const descuento = this.getDescuento(element);
     const recargo = this.getRecargo(element);
     const precioBase = Number(element?.precio ?? element?.Precio ?? 0) || 0;
-    const servicioNombreActual = (servicioNombre ?? this.selectedServicioNombre ?? '').toLowerCase();
+    const servicioNombreActual = (
+      servicioNombre ??
+      this.selectedServicioNombre ??
+      ''
+    ).toLowerCase();
     const esMismoServicio = (item: PaqueteSeleccionado): boolean => {
       if (servicioId != null) {
         return (item.servicioId ?? null) === servicioId;
       }
-      return (item.servicioId ?? null) == null &&
-        (item.servicioNombre ?? '').toLowerCase() === servicioNombreActual;
+      return (
+        (item.servicioId ?? null) == null &&
+        (item.servicioNombre ?? '').toLowerCase() === servicioNombreActual
+      );
     };
     const reemplazados = this.selectedPaquetes.filter(esMismoServicio);
-    const restantes = this.selectedPaquetes.filter(item => !esMismoServicio(item));
+    const restantes = this.selectedPaquetes.filter(
+      (item) => !esMismoServicio(item),
+    );
     const cantidadMaxima = this.getCantidadMaximaPorDias();
-    const cantidadBase = Math.max(1, Number(reemplazados[0]?.cantidad ?? 1) || 1);
-    const cantidadInicial = cantidadMaxima != null ? Math.min(cantidadBase, cantidadMaxima) : cantidadBase;
+    const cantidadBase = Math.max(
+      1,
+      Number(reemplazados[0]?.cantidad ?? 1) || 1,
+    );
+    const cantidadInicial =
+      cantidadMaxima != null
+        ? Math.min(cantidadBase, cantidadMaxima)
+        : cantidadBase;
     const nextTmpId = `i${this.tmpIdSequence + 1}`;
 
     this.selectedPaquetes = [
@@ -527,23 +634,30 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         notas: '',
         eventoServicioId: eventoServicioId ?? undefined,
         servicioId: servicioId ?? undefined,
-        servicioNombre: servicioNombre ?? this.selectedServicioNombre ?? undefined,
+        servicioNombre:
+          servicioNombre ?? this.selectedServicioNombre ?? undefined,
         origen: element,
         precioOriginal: precioBase,
-        editandoPrecio: false
-      }
+        editandoPrecio: false,
+      },
     ];
     this.tmpIdSequence += 1;
     if (this.serviciosFechasSeleccionadas.length) {
-      const replacedTmpIds = new Set(reemplazados.map(item => item.tmpId));
-      const tmpIds = new Set(this.selectedPaquetes.map(item => item.tmpId));
+      const replacedTmpIds = new Set(reemplazados.map((item) => item.tmpId));
+      const tmpIds = new Set(this.selectedPaquetes.map((item) => item.tmpId));
       const migradas = this.serviciosFechasSeleccionadas
-        .map(entry => replacedTmpIds.has(entry.itemTmpId) ? { ...entry, itemTmpId: nextTmpId } : entry)
-        .filter(entry => tmpIds.has(entry.itemTmpId));
-      const nuevas = migradas.filter(entry => entry.itemTmpId === nextTmpId).slice(0, cantidadInicial);
+        .map((entry) =>
+          replacedTmpIds.has(entry.itemTmpId)
+            ? { ...entry, itemTmpId: nextTmpId }
+            : entry,
+        )
+        .filter((entry) => tmpIds.has(entry.itemTmpId));
+      const nuevas = migradas
+        .filter((entry) => entry.itemTmpId === nextTmpId)
+        .slice(0, cantidadInicial);
       this.serviciosFechasSeleccionadas = [
-        ...migradas.filter(entry => entry.itemTmpId !== nextTmpId),
-        ...nuevas
+        ...migradas.filter((entry) => entry.itemTmpId !== nextTmpId),
+        ...nuevas,
       ];
     }
     this.syncTotalEstimado();
@@ -559,10 +673,13 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   removePaquete(key: string | number): void {
-    const removed = this.selectedPaquetes.find(p => p.key === key);
-    this.selectedPaquetes = this.selectedPaquetes.filter(p => p.key !== key);
+    const removed = this.selectedPaquetes.find((p) => p.key === key);
+    this.selectedPaquetes = this.selectedPaquetes.filter((p) => p.key !== key);
     if (removed?.tmpId) {
-      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId !== removed.tmpId);
+      this.serviciosFechasSeleccionadas =
+        this.serviciosFechasSeleccionadas.filter(
+          (entry) => entry.itemTmpId !== removed.tmpId,
+        );
     }
     this.syncTotalEstimado();
   }
@@ -581,21 +698,30 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (!this.isMultipleDias()) {
       return;
     }
-    const fechasUnicas = Array.from(new Set(
-      (this.programacion.getRawValue() as Record<string, unknown>[])
-        .map((config) => (config['fecha'] ?? '').toString().trim())
-        .filter(Boolean)
-    )).sort();
+    const fechasUnicas = Array.from(
+      new Set(
+        (this.programacion.getRawValue() as Record<string, unknown>[])
+          .map((config) => (config['fecha'] ?? '').toString().trim())
+          .filter(Boolean),
+      ),
+    ).sort();
     this.fechasDisponibles = fechasUnicas.length
       ? fechasUnicas
-      : (this.form.get('fechaEvento')?.value ? [String(this.form.get('fechaEvento')?.value)] : []);
+      : this.form.get('fechaEvento')?.value
+        ? [String(this.form.get('fechaEvento')?.value)]
+        : [];
     if (!this.fechasDisponibles.length) {
-      this.showAlert('warning', 'Fechas pendientes', 'Registra fechas en la programación para asignarlas a los servicios.');
+      this.showAlert(
+        'warning',
+        'Fechas pendientes',
+        'Registra fechas en la programación para asignarlas a los servicios.',
+      );
       return;
     }
-    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
-      this.fechasDisponibles.includes(entry.fecha)
-    );
+    this.serviciosFechasSeleccionadas =
+      this.serviciosFechasSeleccionadas.filter((entry) =>
+        this.fechasDisponibles.includes(entry.fecha),
+      );
     this.asignacionFechasAbierta = true;
   }
 
@@ -604,29 +730,45 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   isFechaAsignada(itemTmpId: string, fecha: string): boolean {
-    return this.serviciosFechasSeleccionadas.some(entry => entry.itemTmpId === itemTmpId && entry.fecha === fecha);
+    return this.serviciosFechasSeleccionadas.some(
+      (entry) => entry.itemTmpId === itemTmpId && entry.fecha === fecha,
+    );
   }
 
-  toggleFechaAsignada(itemTmpId: string, fecha: string, checked: boolean, maxCantidad: number): void {
+  toggleFechaAsignada(
+    itemTmpId: string,
+    fecha: string,
+    checked: boolean,
+    maxCantidad: number,
+  ): void {
     if (checked) {
-      const count = this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
+      const count = this.serviciosFechasSeleccionadas.filter(
+        (entry) => entry.itemTmpId === itemTmpId,
+      ).length;
       if (count >= maxCantidad) {
-        this.showAlert('info', 'Cantidad completa', 'Ya asignaste todas las fechas requeridas para este servicio.');
+        this.showAlert(
+          'info',
+          'Cantidad completa',
+          'Ya asignaste todas las fechas requeridas para este servicio.',
+        );
         return;
       }
       this.serviciosFechasSeleccionadas = [
         ...this.serviciosFechasSeleccionadas,
-        { itemTmpId, fecha }
+        { itemTmpId, fecha },
       ];
       return;
     }
-    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
-      !(entry.itemTmpId === itemTmpId && entry.fecha === fecha)
-    );
+    this.serviciosFechasSeleccionadas =
+      this.serviciosFechasSeleccionadas.filter(
+        (entry) => !(entry.itemTmpId === itemTmpId && entry.fecha === fecha),
+      );
   }
 
   getCantidadAsignada(itemTmpId: string): number {
-    return this.serviciosFechasSeleccionadas.filter(entry => entry.itemTmpId === itemTmpId).length;
+    return this.serviciosFechasSeleccionadas.filter(
+      (entry) => entry.itemTmpId === itemTmpId,
+    ).length;
   }
 
   getDetalleStaffLista(paquete: unknown): AnyRecord[] {
@@ -642,7 +784,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return Array.isArray(lista) ? lista : [];
   }
 
-  getDetalleStaffTotal(paquete: PaqueteDetalle | null | undefined): string | number {
+  getDetalleStaffTotal(
+    paquete: PaqueteDetalle | null | undefined,
+  ): string | number {
     if (!paquete) {
       return '—';
     }
@@ -651,7 +795,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       return staff;
     }
     const eventoStaff = paquete.eventoServicio?.staff;
-    const eventoTotal = typeof eventoStaff === 'number' ? eventoStaff : eventoStaff?.total;
+    const eventoTotal =
+      typeof eventoStaff === 'number' ? eventoStaff : eventoStaff?.total;
     const total = staff?.total ?? eventoTotal ?? paquete.personal;
     return total ?? '—';
   }
@@ -660,7 +805,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   isInSeleccion(element: AnyRecord): boolean {
     const key = this.getPkgKey(element);
-    return this.selectedPaquetes.some(p => p.key === key);
+    return this.selectedPaquetes.some((p) => p.key === key);
   }
 
   hasOtroPaqueteDelServicio(element: AnyRecord): boolean {
@@ -672,14 +817,17 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       }
       const key = this.getPkgKey(element);
       const nombreComparacion = servicioNombre.toLowerCase();
-      return this.selectedPaquetes.some(p =>
-        (p.servicioId ?? null) == null &&
-        (p.servicioNombre ?? '').toLowerCase() === nombreComparacion &&
-        p.key !== key
+      return this.selectedPaquetes.some(
+        (p) =>
+          (p.servicioId ?? null) == null &&
+          (p.servicioNombre ?? '').toLowerCase() === nombreComparacion &&
+          p.key !== key,
       );
     }
     const key = this.getPkgKey(element);
-    return this.selectedPaquetes.some(p => (p.servicioId ?? null) === servicioId && p.key !== key);
+    return this.selectedPaquetes.some(
+      (p) => (p.servicioId ?? null) === servicioId && p.key !== key,
+    );
   }
 
   shouldShowPrecioOriginal(): boolean {
@@ -698,7 +846,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   getDescuentoPorcentaje(paquete: PaqueteSeleccionado): number | null {
     const original = Number(paquete.precioOriginal ?? 0);
     const actual = Number(paquete.precio ?? 0);
-    if (!Number.isFinite(original) || original <= 0 || !Number.isFinite(actual)) {
+    if (
+      !Number.isFinite(original) ||
+      original <= 0 ||
+      !Number.isFinite(actual)
+    ) {
       return null;
     }
     if (actual >= original) {
@@ -710,15 +862,18 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   enablePrecioEdit(paquete: PaqueteSeleccionado): void {
     const key = paquete.key;
-    this.selectedPaquetes = this.selectedPaquetes.map(item =>
-      item.key === key ? { ...item, editandoPrecio: true } : item
+    this.selectedPaquetes = this.selectedPaquetes.map((item) =>
+      item.key === key ? { ...item, editandoPrecio: true } : item,
     );
     this.focusPrecioInput(key);
   }
 
-  confirmPrecioEdit(paquete: PaqueteSeleccionado, rawValue: string | number | null | undefined): void {
+  confirmPrecioEdit(
+    paquete: PaqueteSeleccionado,
+    rawValue: string | number | null | undefined,
+  ): void {
     const key = paquete.key;
-    const current = this.selectedPaquetes.find(item => item.key === key);
+    const current = this.selectedPaquetes.find((item) => item.key === key);
     if (!current) {
       return;
     }
@@ -731,21 +886,25 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const minimo = this.getPrecioMinimo(current);
     if (value < minimo) {
       value = minimo;
-      this.showAlert('info', 'Ajuste no permitido', 'Solo puedes reducir el precio hasta un 5% respecto al valor base.');
+      this.showAlert(
+        'info',
+        'Ajuste no permitido',
+        'Solo puedes reducir el precio hasta un 5% respecto al valor base.',
+      );
     }
 
-    this.selectedPaquetes = this.selectedPaquetes.map(item =>
+    this.selectedPaquetes = this.selectedPaquetes.map((item) =>
       item.key === key
         ? { ...item, precio: value, editandoPrecio: false }
-        : item
+        : item,
     );
     this.syncTotalEstimado();
   }
 
   cancelPrecioEdit(paquete: PaqueteSeleccionado): void {
     const key = paquete.key;
-    this.selectedPaquetes = this.selectedPaquetes.map(item =>
-      item.key === key ? { ...item, editandoPrecio: false } : item
+    this.selectedPaquetes = this.selectedPaquetes.map((item) =>
+      item.key === key ? { ...item, editandoPrecio: false } : item,
     );
   }
 
@@ -756,16 +915,17 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     paquete.cantidad = max != null ? Math.min(base, max) : base;
     if (paquete.tmpId) {
       let count = 0;
-      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry => {
-        if (entry.itemTmpId !== paquete.tmpId) {
-          return true;
-        }
-        if (count < paquete.cantidad) {
-          count += 1;
-          return true;
-        }
-        return false;
-      });
+      this.serviciosFechasSeleccionadas =
+        this.serviciosFechasSeleccionadas.filter((entry) => {
+          if (entry.itemTmpId !== paquete.tmpId) {
+            return true;
+          }
+          if (count < paquete.cantidad) {
+            count += 1;
+            return true;
+          }
+          return false;
+        });
     }
     this.syncTotalEstimado();
   }
@@ -806,18 +966,23 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     if (!this.selectedPaquetes.length) {
-      this.showAlert('warning', 'Agrega paquetes', 'Selecciona al menos un paquete para la cotización.');
+      this.showAlert(
+        'warning',
+        'Agrega paquetes',
+        'Selecciona al menos un paquete para la cotización.',
+      );
       return;
     }
 
     const raw = this.form.getRawValue();
     const diasNumero = this.parseNumber(raw.dias);
-    const restriccionesProgramacion = this.validarRestriccionesProgramacion(diasNumero);
+    const restriccionesProgramacion =
+      this.validarRestriccionesProgramacion(diasNumero);
     if (restriccionesProgramacion.length) {
       this.showAlertHtml(
         'warning',
         'Revisa la programación',
-        `<ul class="text-start mb-0">${restriccionesProgramacion.map(err => `<li>${err}</li>`).join('')}</ul>`
+        `<ul class="text-start mb-0">${restriccionesProgramacion.map((err) => `<li>${err}</li>`).join('')}</ul>`,
       );
       this.expandirProgramacionConErrores();
       return;
@@ -828,76 +993,113 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         this.showAlert(
           'warning',
           'Cantidades insuficientes',
-          `Para ${diasNumero} días debes asignar al menos ${diasNumero} servicios en total.`
+          `Para ${diasNumero} días debes asignar al menos ${diasNumero} servicios en total.`,
         );
         return;
       }
     }
-    const rawPayload = (this.cotizacion.raw as CotizacionPayload | undefined);
+    const rawPayload = this.cotizacion.raw as CotizacionPayload | undefined;
     const rawDetalle = rawPayload?.cotizacion;
     const rawContexto = rawPayload?.contexto;
-    const eventoSeleccionadoId = this.selectedEventoId ?? rawDetalle?.eventoId ?? this.cotizacion?.eventoId ?? null;
+    const eventoSeleccionadoId =
+      this.selectedEventoId ??
+      rawDetalle?.eventoId ??
+      this.cotizacion?.eventoId ??
+      null;
     this.eventoSelectTouched = eventoSeleccionadoId == null;
     if (this.eventoSelectTouched) {
-      this.showAlert('warning', 'Selecciona un evento', 'Elige un tipo de evento para continuar.');
+      this.showAlert(
+        'warning',
+        'Selecciona un evento',
+        'Elige un tipo de evento para continuar.',
+      );
       return;
     }
 
     const clienteNombre = (raw.clienteNombre ?? '').toString().trim();
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
-    const descripcion = descripcionBase || (clienteNombre ? `Solicitud de cotización de ${clienteNombre}` : 'Solicitud de cotización');
-    const fechaEventoBase = this.normalizeDateForPayload(raw.fechaEvento) ??
+    const descripcion =
+      descripcionBase ||
+      (clienteNombre
+        ? `Solicitud de cotización de ${clienteNombre}`
+        : 'Solicitud de cotización');
+    const fechaEventoBase =
+      this.normalizeDateForPayload(raw.fechaEvento) ??
       this.normalizeDateForPayload(this.fechaEventoOriginal);
     if (!fechaEventoBase && !this.isMultipleDias()) {
-      this.showAlert('error', 'Fecha inválida', 'No pudimos interpretar la fecha del evento.');
+      this.showAlert(
+        'error',
+        'Fecha inválida',
+        'No pudimos interpretar la fecha del evento.',
+      );
       return;
     }
     const departamento = (raw.departamento ?? '').toString().trim();
     const viaticosCliente = Boolean(raw.viaticosCliente);
     const viaticosMonto = this.parseNumber(raw.viaticosMonto);
     const clienteId = rawContexto?.clienteId;
-    const horasEstimadasNumero = this.parseHorasToNumber(horasEstimadas ?? rawContexto?.horasEstimadasTexto);
+    const horasEstimadasNumero = this.parseHorasToNumber(
+      horasEstimadas ?? rawContexto?.horasEstimadasTexto,
+    );
     const diasTexto = (raw.dias ?? '').toString().trim();
     const diasNumeroTexto = this.parseNumber(diasTexto);
 
-    const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map((item, index) => {
-      const notas = (item.notas ?? '').toString().trim();
-      const eventoServicioId = this.getEventoServicioId(item) ?? this.getEventoServicioId(item.origen);
-      const servicioId = this.getPaqueteServicioId(item);
-      const horasItem = this.parseNumber(item.horas ?? this.getHoras(item.origen));
-      const staffItem = this.parseNumber(item.staff ?? this.getStaff(item.origen));
-      const fotosImpresas = this.parseNumber(item.fotosImpresas ?? this.getFotosImpresas(item.origen));
-      const trailerMin = this.parseNumber(item.trailerMin ?? this.getTrailerMin(item.origen));
-      const filmMin = this.parseNumber(item.filmMin ?? this.getFilmMin(item.origen));
+    const items: CotizacionAdminItemPayload[] = this.selectedPaquetes.map(
+      (item, index) => {
+        const notas = (item.notas ?? '').toString().trim();
+        const eventoServicioId =
+          this.getEventoServicioId(item) ??
+          this.getEventoServicioId(item.origen);
+        const servicioId = this.getPaqueteServicioId(item);
+        const horasItem = this.parseNumber(
+          item.horas ?? this.getHoras(item.origen),
+        );
+        const staffItem = this.parseNumber(
+          item.staff ?? this.getStaff(item.origen),
+        );
+        const fotosImpresas = this.parseNumber(
+          item.fotosImpresas ?? this.getFotosImpresas(item.origen),
+        );
+        const trailerMin = this.parseNumber(
+          item.trailerMin ?? this.getTrailerMin(item.origen),
+        );
+        const filmMin = this.parseNumber(
+          item.filmMin ?? this.getFilmMin(item.origen),
+        );
 
-      return {
-        tmpId: item.tmpId ?? `i${index + 1}`,
-        idEventoServicio: eventoServicioId ?? undefined,
-        eventoId: eventoSeleccionadoId ?? undefined,
-        servicioId: servicioId ?? undefined,
-        titulo: item.titulo,
-        descripcion: item.descripcion || undefined,
-        moneda: item.moneda ?? this.getMoneda(item.origen) ?? 'USD',
-        precioUnitario: Number(item.precio) || 0,
-        cantidad: Number(item.cantidad ?? 1) || 1,
-        notas: notas || undefined,
-        horas: horasItem ?? undefined,
-        personal: staffItem ?? undefined,
-        fotosImpresas: fotosImpresas ?? undefined,
-        trailerMin: trailerMin ?? undefined,
-        filmMin: filmMin ?? undefined
-      } as CotizacionAdminItemPayload;
-    });
+        return {
+          tmpId: item.tmpId ?? `i${index + 1}`,
+          idEventoServicio: eventoServicioId ?? undefined,
+          eventoId: eventoSeleccionadoId ?? undefined,
+          servicioId: servicioId ?? undefined,
+          titulo: item.titulo,
+          descripcion: item.descripcion || undefined,
+          moneda: item.moneda ?? this.getMoneda(item.origen) ?? 'USD',
+          precioUnitario: Number(item.precio) || 0,
+          cantidad: Number(item.cantidad ?? 1) || 1,
+          notas: notas || undefined,
+          horas: horasItem ?? undefined,
+          personal: staffItem ?? undefined,
+          fotosImpresas: fotosImpresas ?? undefined,
+          trailerMin: trailerMin ?? undefined,
+          filmMin: filmMin ?? undefined,
+        } as CotizacionAdminItemPayload;
+      },
+    );
 
-    const programacionRaw = this.programacion.getRawValue() as ProgramacionEventoItemConfig[];
+    const programacionRaw =
+      this.programacion.getRawValue() as ProgramacionEventoItemConfig[];
     const eventos: CotizacionAdminEventoPayload[] = programacionRaw
-      .filter(config => this.hasProgramacionContent(config))
-      .map(config => {
-        const fechaNormalizada = this.normalizeProgramacionFecha(config.fecha) ?? fechaEventoBase;
+      .filter((config) => this.hasProgramacionContent(config))
+      .map((config) => {
+        const fechaNormalizada =
+          this.normalizeProgramacionFecha(config.fecha) ?? fechaEventoBase;
         const horaBase = this.normalizeProgramacionHora(config.hora);
         const horaSalida = horaBase
-          ? (/^\d{2}:\d{2}$/.test(horaBase) ? `${horaBase}:00` : horaBase)
+          ? /^\d{2}:\d{2}$/.test(horaBase)
+            ? `${horaBase}:00`
+            : horaBase
           : undefined;
         const ubicacion = (config.nombre ?? '').toString().trim();
         const direccion = (config.direccion ?? '').toString().trim();
@@ -907,20 +1109,20 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           hora: horaSalida,
           ubicacion: ubicacion || undefined,
           direccion: direccion || undefined,
-          notas: notasTexto ? notasTexto : null
+          notas: notasTexto ? notasTexto : null,
         } as CotizacionAdminEventoPayload;
       });
     if (diasNumeroTexto != null && diasNumeroTexto > 1) {
       const fechasUnicas = new Set(
         programacionRaw
-          .map(config => (config.fecha ?? '').toString().trim())
-          .filter(Boolean)
+          .map((config) => (config.fecha ?? '').toString().trim())
+          .filter(Boolean),
       );
       if (fechasUnicas.size < diasNumeroTexto) {
         this.showAlert(
           'warning',
           'Fechas insuficientes',
-          `Para ${diasNumeroTexto} días de trabajo debes registrar al menos ${diasNumeroTexto} fechas diferentes en las locaciones.`
+          `Para ${diasNumeroTexto} días de trabajo debes registrar al menos ${diasNumeroTexto} fechas diferentes en las locaciones.`,
         );
         return;
       }
@@ -928,30 +1130,36 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         this.showAlert(
           'warning',
           'Fechas excedidas',
-          `Tienes ${fechasUnicas.size} fechas diferentes. Reduce a ${diasNumeroTexto} fechas para continuar.`
+          `Tienes ${fechasUnicas.size} fechas diferentes. Reduce a ${diasNumeroTexto} fechas para continuar.`,
         );
         return;
       }
     }
     const fechaEvento = this.isMultipleDias()
-      ? (eventos.find(ev => ev.fecha)?.fecha ?? undefined)
+      ? (eventos.find((ev) => ev.fecha)?.fecha ?? undefined)
       : fechaEventoBase;
 
-    const fechasUnicas = Array.from(new Set(
-      programacionRaw
-        .map((config) => (config.fecha ?? '').toString().trim())
-        .filter(Boolean)
-    )).sort();
-    const fechasBase = fechasUnicas.length ? fechasUnicas : (fechaEventoBase ? [String(fechaEventoBase)] : []);
+    const fechasUnicas = Array.from(
+      new Set(
+        programacionRaw
+          .map((config) => (config.fecha ?? '').toString().trim())
+          .filter(Boolean),
+      ),
+    ).sort();
+    const fechasBase = fechasUnicas.length
+      ? fechasUnicas
+      : fechaEventoBase
+        ? [String(fechaEventoBase)]
+        : [];
     const serviciosFechasAuto = items.flatMap((item, index) => {
       const itemTmpId = item.tmpId ?? `i${index + 1}`;
       const cantidad = Math.max(1, Number(item.cantidad ?? 1) || 1);
       const fechas = fechasBase.slice(0, cantidad);
-      return fechas.map(fecha => ({ itemTmpId, fecha }));
+      return fechas.map((fecha) => ({ itemTmpId, fecha }));
     });
     const serviciosFechas = this.isMultipleDias()
-      ? this.serviciosFechasSeleccionadas.filter(entry =>
-          items.some(item => (item.tmpId ?? '') === entry.itemTmpId)
+      ? this.serviciosFechasSeleccionadas.filter((entry) =>
+          items.some((item) => (item.tmpId ?? '') === entry.itemTmpId),
         )
       : serviciosFechasAuto;
 
@@ -959,25 +1167,27 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const pendiente = items.find((item, index) => {
         const itemTmpId = item.tmpId ?? `i${index + 1}`;
         const cantidad = Math.max(1, Number(item.cantidad ?? 1) || 1);
-        const asignadas = serviciosFechas.filter(entry => entry.itemTmpId === itemTmpId).length;
+        const asignadas = serviciosFechas.filter(
+          (entry) => entry.itemTmpId === itemTmpId,
+        ).length;
         return asignadas !== cantidad;
       });
       if (pendiente) {
         this.showAlert(
           'warning',
           'Asignación pendiente',
-          'Completa la asignación de fechas para todos los servicios.'
+          'Completa la asignación de fechas para todos los servicios.',
         );
         return;
       }
       const fechasSinAsignar = fechasBase.filter(
-        fecha => !serviciosFechas.some(entry => entry.fecha === fecha)
+        (fecha) => !serviciosFechas.some((entry) => entry.fecha === fecha),
       );
       if (fechasSinAsignar.length) {
         this.showAlert(
           'warning',
           'Fechas sin cobertura',
-          'Debes asignar al menos un servicio a cada día.'
+          'Debes asignar al menos un servicio a cada día.',
         );
         return;
       }
@@ -986,46 +1196,58 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const payload: CotizacionAdminUpdatePayload = {
       cotizacion: {
         idTipoEvento: eventoSeleccionadoId ?? undefined,
-        tipoEvento: this.selectedEventoNombre || rawContexto?.eventoNombre || rawDetalle?.tipoEvento || this.selectedServicioNombre,
+        tipoEvento:
+          this.selectedEventoNombre ||
+          rawContexto?.eventoNombre ||
+          rawDetalle?.tipoEvento ||
+          this.selectedServicioNombre,
         fechaEvento: fechaEvento ?? undefined,
         lugar: departamento || rawDetalle?.lugar,
         dias: diasNumeroTexto ?? undefined,
         horasEstimadas: horasEstimadasNumero ?? undefined,
         mensaje: descripcion,
         estado: rawDetalle?.estado ?? this.cotizacion?.estado ?? 'Borrador',
-        viaticosCliente: departamento.toLowerCase() === 'lima' ? true : viaticosCliente,
-        viaticosMonto: departamento.toLowerCase() === 'lima'
-          ? undefined
-          : (viaticosCliente ? undefined : (viaticosMonto ?? undefined))
+        viaticosCliente:
+          departamento.toLowerCase() === 'lima' ? true : viaticosCliente,
+        viaticosMonto:
+          departamento.toLowerCase() === 'lima'
+            ? undefined
+            : viaticosCliente
+              ? undefined
+              : (viaticosMonto ?? undefined),
       },
       items,
       serviciosFechas: serviciosFechas.length ? serviciosFechas : undefined,
-      eventos: eventos.length ? eventos : undefined
+      eventos: eventos.length ? eventos : undefined,
     };
 
     if (clienteId != null) {
       payload.cliente = { id: clienteId };
     }
 
-
     this.saving = true;
-    this.cotizacionService.updateCotizacion(this.cotizacion.id, payload)
+    this.cotizacionService
+      .updateCotizacion(this.cotizacion.id, payload)
       .pipe(
-        finalize(() => this.saving = false),
-        takeUntil(this.destroy$)
+        finalize(() => (this.saving = false)),
+        takeUntil(this.destroy$),
       )
       .subscribe({
         next: () => {
           void Swal.fire({
             icon: 'success',
             title: 'Cotización actualizada',
-            text: 'Los cambios se guardaron correctamente.'
+            text: 'Los cambios se guardaron correctamente.',
           }).then(() => this.router.navigate(['/home/gestionar-cotizaciones']));
         },
         error: (err) => {
           console.error('[cotizacion] update', err);
-          this.showAlert('error', 'Error al actualizar', 'No pudimos actualizar la cotización.');
-        }
+          this.showAlert(
+            'error',
+            'Error al actualizar',
+            'No pudimos actualizar la cotización.',
+          );
+        },
       });
   }
 
@@ -1036,10 +1258,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private loadCatalogos(): void {
     this.loadingCatalogos = true;
 
-    this.cotizacionService.getServicios()
+    this.cotizacionService
+      .getServicios()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: servicios => {
+        next: (servicios) => {
           this.servicios = Array.isArray(servicios) ? servicios : [];
           this.loadingCatalogos = false;
           if (!this.servicios.length) {
@@ -1055,15 +1278,18 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           this.selectedServicioId = null;
           this.selectedServicioNombre = '';
           this.applyPendingSelections();
-        }
+        },
       });
 
-    this.cotizacionService.getEventos()
+    this.cotizacionService
+      .getEventos()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: eventos => {
+        next: (eventos) => {
           this.eventos = Array.isArray(eventos)
-            ? eventos.map(ev => this.normalizeEventoCatalogo(ev)).filter((ev): ev is EventoCatalogo => ev != null)
+            ? eventos
+                .map((ev) => this.normalizeEventoCatalogo(ev))
+                .filter((ev): ev is EventoCatalogo => ev != null)
             : [];
           if (!this.eventos.length) {
             this.selectedEventoId = null;
@@ -1079,7 +1305,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           this.selectedEventoIdValue = '';
           this.selectedEventoNombre = '';
           this.applyPendingSelections();
-        }
+        },
       });
   }
 
@@ -1087,22 +1313,26 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.route.paramMap
       .pipe(
         takeUntil(this.destroy$),
-        switchMap(params => {
+        switchMap((params) => {
           const id = Number(params.get('id'));
           return this.cotizacionService.getCotizacion(id);
-        })
+        }),
       )
       .subscribe({
-        next: cotizacion => {
+        next: (cotizacion) => {
           this.cotizacion = cotizacion;
           this.populateForm(cotizacion);
           this.loading = false;
         },
         error: (err) => {
           console.error('[cotizacion] load', err);
-          this.showAlert('error', 'Error al cargar', 'No pudimos cargar la cotización.');
+          this.showAlert(
+            'error',
+            'Error al cargar',
+            'No pudimos cargar la cotización.',
+          );
           this.router.navigate(['/home/gestionar-cotizaciones']);
-        }
+        },
       });
   }
 
@@ -1112,57 +1342,81 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const detalle = raw?.cotizacion;
     const contexto = raw?.contexto;
 
-    const nombre = (contactoRaw?.nombre ?? cotizacion.cliente ?? '').toString().trim();
-    const contacto = (contactoRaw?.celular ?? cotizacion.contactoResumen ?? '').toString().trim();
+    const nombre = (contactoRaw?.nombre ?? cotizacion.cliente ?? '')
+      .toString()
+      .trim();
+    const contacto = (contactoRaw?.celular ?? cotizacion.contactoResumen ?? '')
+      .toString()
+      .trim();
     this.fechaEventoOriginal = detalle?.fechaEvento ?? cotizacion.fecha ?? null;
-    const fechaEventoIso = this.normalizeDateForPayload(this.fechaEventoOriginal) ?? '';
-    const horasEstimadasNumero = this.parseHorasToNumber(contexto?.horasEstimadasTexto)
-      ?? (detalle?.horasEstimadas != null ? Number(detalle.horasEstimadas) : undefined)
-      ?? this.parseHorasToNumber(cotizacion.horasEstimadas ?? '');
-    const horasTexto = horasEstimadasNumero != null && Number.isFinite(horasEstimadasNumero)
-      ? String(horasEstimadasNumero)
-      : '';
+    const fechaEventoIso =
+      this.normalizeDateForPayload(this.fechaEventoOriginal) ?? '';
+    const horasEstimadasNumero =
+      this.parseHorasToNumber(contexto?.horasEstimadasTexto) ??
+      (detalle?.horasEstimadas != null
+        ? Number(detalle.horasEstimadas)
+        : undefined) ??
+      this.parseHorasToNumber(cotizacion.horasEstimadas ?? '');
+    const horasTexto =
+      horasEstimadasNumero != null && Number.isFinite(horasEstimadasNumero)
+        ? String(horasEstimadasNumero)
+        : '';
     const departamento = this.pickFirstString(detalle?.lugar, cotizacion.lugar);
     const detalleRecord = this.asRecord(detalle);
     const cotizacionRecord = this.asRecord(cotizacion as unknown);
-    const viaticosCliente = detalleRecord['viaticosCliente'] ?? cotizacionRecord['viaticosCliente'];
+    const viaticosCliente =
+      detalleRecord['viaticosCliente'] ?? cotizacionRecord['viaticosCliente'];
     const viaticosMonto = this.parseNumber(
-      detalleRecord['viaticosMonto']
-        ?? cotizacionRecord['viaticosMonto']
-        ?? cotizacionRecord['viaticos_monto']
+      detalleRecord['viaticosMonto'] ??
+        cotizacionRecord['viaticosMonto'] ??
+        cotizacionRecord['viaticos_monto'],
     );
-    const viaticosClienteFinal = typeof viaticosCliente === 'boolean'
-      ? viaticosCliente
-      : (viaticosMonto == null || viaticosMonto === 0);
+    const viaticosClienteFinal =
+      typeof viaticosCliente === 'boolean'
+        ? viaticosCliente
+        : viaticosMonto == null || viaticosMonto === 0;
     if (departamento && !this.departamentos.includes(departamento)) {
       this.departamentos.push(departamento);
     }
 
-    this.form.patchValue({
-      clienteNombre: nombre,
-      clienteContacto: contacto,
-      fechaEvento: fechaEventoIso,
-      dias: this.parseNumber(detalle?.dias ?? (cotizacion as unknown as AnyRecord)['dias'] ?? '') ?? '',
-      horasEstimadas: horasTexto,
-      departamento,
-      viaticosCliente: viaticosClienteFinal,
-      viaticosMonto: viaticosClienteFinal ? null : (viaticosMonto ?? null),
-      descripcion: detalle?.mensaje ?? cotizacion.notas ?? '',
-      totalEstimado: detalle?.totalEstimado ?? cotizacion.total ?? 0
-    }, { emitEvent: false });
-    this.lastDepartamento = (this.form.get('departamento')?.value ?? '').toString().trim();
+    this.form.patchValue(
+      {
+        clienteNombre: nombre,
+        clienteContacto: contacto,
+        fechaEvento: fechaEventoIso,
+        dias:
+          this.parseNumber(
+            detalle?.dias ?? (cotizacion as unknown as AnyRecord)['dias'] ?? '',
+          ) ?? '',
+        horasEstimadas: horasTexto,
+        departamento,
+        viaticosCliente: viaticosClienteFinal,
+        viaticosMonto: viaticosClienteFinal ? null : (viaticosMonto ?? null),
+        descripcion: detalle?.mensaje ?? cotizacion.notas ?? '',
+        totalEstimado: detalle?.totalEstimado ?? cotizacion.total ?? 0,
+      },
+      { emitEvent: false },
+    );
+    this.lastDepartamento = (this.form.get('departamento')?.value ?? '')
+      .toString()
+      .trim();
     this.applyViaticosRules();
     this.syncViaticosSnapshot();
 
-    const servicioId = this.parseNumber(contexto?.servicioId ?? cotizacion.servicioId);
-    this.pendingServicioId = servicioId != null && servicioId > 0 ? servicioId : null;
+    const servicioId = this.parseNumber(
+      contexto?.servicioId ?? cotizacion.servicioId,
+    );
+    this.pendingServicioId =
+      servicioId != null && servicioId > 0 ? servicioId : null;
     const itemsBase = (raw?.items ?? cotizacion.items ?? []) as unknown[];
     const eventoId = this.parseNumber(detalle?.idTipoEvento);
     this.pendingEventoId = eventoId != null && eventoId > 0 ? eventoId : null;
     this.selectedServicioId = this.pendingServicioId;
-    this.selectedServicioNombre = contexto?.servicioNombre ?? cotizacion.servicio ?? '';
+    this.selectedServicioNombre =
+      contexto?.servicioNombre ?? cotizacion.servicio ?? '';
     this.selectedEventoId = this.pendingEventoId;
-    this.selectedEventoIdValue = this.selectedEventoId != null ? String(this.selectedEventoId) : '';
+    this.selectedEventoIdValue =
+      this.selectedEventoId != null ? String(this.selectedEventoId) : '';
     this.selectedEventoNombre = detalle?.tipoEvento ?? '';
     this.selectedPaquetes = itemsBase.map((item, index) => {
       const record = this.asRecord(item);
@@ -1170,11 +1424,15 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const precioUnitario = Number(itemPayload.precioUnitario ?? 0) || 0;
       const cantidad = Number(itemPayload.cantidad ?? 1) || 1;
       const paqueteServicioId = this.parseNumber(itemPayload.servicioId);
-      const paqueteServicioNombre = this.selectedServicioNombre || cotizacion.servicio || undefined;
+      const paqueteServicioNombre =
+        this.selectedServicioNombre || cotizacion.servicio || undefined;
       const idCotizacionServicio = itemPayload.idCotizacionServicio;
       return {
         key: this.getPkgKey(item),
-        tmpId: idCotizacionServicio != null ? `i${idCotizacionServicio}` : `i${index + 1}`,
+        tmpId:
+          idCotizacionServicio != null
+            ? `i${idCotizacionServicio}`
+            : `i${index + 1}`,
         titulo: itemPayload.titulo,
         descripcion: itemPayload.descripcion ?? itemPayload.titulo,
         precio: precioUnitario,
@@ -1192,10 +1450,15 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         descuento: itemPayload.descuento ?? null,
         recargo: itemPayload.recargo ?? null,
         servicioId: paqueteServicioId,
-        servicioNombre: paqueteServicioNombre ?? contexto?.servicioNombre ?? cotizacion.servicio ?? undefined,
+        servicioNombre:
+          paqueteServicioNombre ??
+          contexto?.servicioNombre ??
+          cotizacion.servicio ??
+          undefined,
         origen: item,
-        precioOriginal: Number(record['precioOriginal'] ?? precioUnitario) || precioUnitario,
-        editandoPrecio: false
+        precioOriginal:
+          Number(record['precioOriginal'] ?? precioUnitario) || precioUnitario,
+        editandoPrecio: false,
       };
     });
     this.tmpIdSequence = this.selectedPaquetes.reduce((acc, item) => {
@@ -1208,33 +1471,45 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const serviciosFechasRaw = rawRecord['serviciosFechas'];
     if (Array.isArray(serviciosFechasRaw)) {
       this.serviciosFechasSeleccionadas = serviciosFechasRaw
-        .map(entry => {
+        .map((entry) => {
           const record = this.asRecord(entry);
           const fecha = String(record['fecha'] ?? '').trim();
-          const idCotizacionServicio = this.parseNumber(record['idCotizacionServicio']);
+          const idCotizacionServicio = this.parseNumber(
+            record['idCotizacionServicio'],
+          );
           if (!fecha || idCotizacionServicio == null) {
             return null;
           }
           return {
             itemTmpId: `i${idCotizacionServicio}`,
-            fecha
+            fecha,
           };
         })
-        .filter((entry): entry is CotizacionAdminServicioFechaPayload => entry != null);
+        .filter(
+          (entry): entry is CotizacionAdminServicioFechaPayload =>
+            entry != null,
+        );
     } else {
       this.serviciosFechasSeleccionadas = [];
     }
 
-    const programacionEventos = this.extractProgramacionEventos(cotizacion, raw);
+    const programacionEventos = this.extractProgramacionEventos(
+      cotizacion,
+      raw,
+    );
     this.populateProgramacion(programacionEventos);
-    const fechasProgramacion = Array.from(new Set(
-      (this.programacion.getRawValue() as ProgramacionEventoItemConfig[])
-        .map(config => (config.fecha ?? '').toString().trim())
-        .filter(Boolean)
-    )).sort();
+    const fechasProgramacion = Array.from(
+      new Set(
+        (this.programacion.getRawValue() as ProgramacionEventoItemConfig[])
+          .map((config) => (config.fecha ?? '').toString().trim())
+          .filter(Boolean),
+      ),
+    ).sort();
     this.fechasTrabajoSnapshot = fechasProgramacion.length
       ? fechasProgramacion
-      : (fechaEventoIso ? [fechaEventoIso] : []);
+      : fechaEventoIso
+        ? [fechaEventoIso]
+        : [];
 
     this.syncTotalEstimado();
     this.applyPendingSelections();
@@ -1250,8 +1525,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private buildSnapshot(): string {
     const formRaw = this.form.getRawValue();
-    const programacionRaw = this.programacion.getRawValue() as ProgramacionEventoItemConfig[];
-    const paquetes = this.selectedPaquetes.map(item => ({
+    const programacionRaw =
+      this.programacion.getRawValue() as ProgramacionEventoItemConfig[];
+    const paquetes = this.selectedPaquetes.map((item) => ({
       key: item.key,
       titulo: item.titulo,
       descripcion: item.descripcion,
@@ -1264,7 +1540,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       trailerMin: item.trailerMin ?? null,
       filmMin: item.filmMin ?? null,
       servicioId: item.servicioId ?? null,
-      eventoServicioId: item.eventoServicioId ?? null
+      eventoServicioId: item.eventoServicioId ?? null,
     }));
     return JSON.stringify({
       formRaw,
@@ -1272,7 +1548,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       paquetes,
       serviciosFechasSeleccionadas: this.serviciosFechasSeleccionadas,
       selectedEventoId: this.selectedEventoId ?? null,
-      selectedServicioId: this.selectedServicioId ?? null
+      selectedServicioId: this.selectedServicioId ?? null,
     });
   }
 
@@ -1280,17 +1556,22 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const array = this.programacion;
     this.clearFormArray(array);
 
-    const configs: ProgramacionEventoItem[] = eventos.map((config, index) => ({
-      ...config,
-      esPrincipal: config.esPrincipal ?? index < this.programacionMinimaRecomendada
-    })).filter(config => this.hasProgramacionContent(config));
+    const configs: ProgramacionEventoItem[] = eventos
+      .map((config, index) => ({
+        ...config,
+        esPrincipal:
+          config.esPrincipal ?? index < this.programacionMinimaRecomendada,
+      }))
+      .filter((config) => this.hasProgramacionContent(config));
 
-    configs.forEach(config => {
+    configs.forEach((config) => {
       array.push(this.createProgramacionItem(config));
     });
 
     this.ensureProgramacionPrincipales();
-    this.syncProgramacionFechas(this.form.get('fechaEvento')?.value ?? this.fechaEventoOriginal);
+    this.syncProgramacionFechas(
+      this.form.get('fechaEvento')?.value ?? this.fechaEventoOriginal,
+    );
   }
 
   private ensureProgramacionPrincipales(): void {
@@ -1308,7 +1589,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       icon,
       title,
       text,
-      confirmButtonText: 'Entendido'
+      confirmButtonText: 'Entendido',
     });
   }
 
@@ -1317,11 +1598,16 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       icon,
       title,
       html,
-      confirmButtonText: 'Entendido'
+      confirmButtonText: 'Entendido',
     });
   }
 
-  private showToast(icon: AlertIcon, title: string, text?: string, timer = 2200): void {
+  private showToast(
+    icon: AlertIcon,
+    title: string,
+    text?: string,
+    timer = 2200,
+  ): void {
     void Swal.fire({
       icon,
       title,
@@ -1330,14 +1616,19 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       position: 'top-end',
       timer,
       timerProgressBar: true,
-      showConfirmButton: false
+      showConfirmButton: false,
     });
   }
 
-  private validarRestriccionesProgramacion(diasNumero: number | null): string[] {
+  private validarRestriccionesProgramacion(
+    diasNumero: number | null,
+  ): string[] {
     const errores: string[] = [];
     const fechasTrabajo = this.fechasTrabajoValores;
-    const diasEsperados = diasNumero != null && diasNumero >= 1 ? Math.min(Math.floor(diasNumero), 7) : 0;
+    const diasEsperados =
+      diasNumero != null && diasNumero >= 1
+        ? Math.min(Math.floor(diasNumero), 7)
+        : 0;
 
     if (diasEsperados > 0 && fechasTrabajo.length !== diasEsperados) {
       errores.push(`Debes registrar ${diasEsperados} fecha(s) de trabajo.`);
@@ -1350,9 +1641,13 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     const ordenadas = [...fechasTrabajo].sort();
-    const desordenadas = fechasTrabajo.some((fecha, index) => fecha !== ordenadas[index]);
+    const desordenadas = fechasTrabajo.some(
+      (fecha, index) => fecha !== ordenadas[index],
+    );
     if (desordenadas) {
-      errores.push('Ordena las fechas de trabajo cronológicamente (de la más próxima a la más lejana).');
+      errores.push(
+        'Ordena las fechas de trabajo cronológicamente (de la más próxima a la más lejana).',
+      );
     }
 
     for (const fecha of fechasTrabajo) {
@@ -1367,7 +1662,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const locacionKeyConteo = new Map<string, number>();
       let incompletas = 0;
 
-      indices.forEach(index => {
+      indices.forEach((index) => {
         const grupo = this.programacion.at(index) as UntypedFormGroup | null;
         const raw = grupo?.getRawValue() as Record<string, unknown> | undefined;
         const nombre = (raw?.['nombre'] ?? '').toString().trim();
@@ -1383,19 +1678,28 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       });
 
       if (incompletas > 0) {
-        errores.push(`"${fechaLabel}": tienes ${incompletas} locación(es) con datos incompletos.`);
+        errores.push(
+          `"${fechaLabel}": tienes ${incompletas} locación(es) con datos incompletos.`,
+        );
       }
 
-      const duplicadas = Array.from(locacionKeyConteo.values()).some(total => total > 1);
+      const duplicadas = Array.from(locacionKeyConteo.values()).some(
+        (total) => total > 1,
+      );
       if (duplicadas) {
-        errores.push(`"${fechaLabel}": hay locaciones duplicadas (misma locación, dirección y hora).`);
+        errores.push(
+          `"${fechaLabel}": hay locaciones duplicadas (misma locación, dirección y hora).`,
+        );
       }
     }
 
     return errores;
   }
 
-  private extractProgramacionEventos(cotizacion: Cotizacion, raw?: CotizacionPayload | null): ProgramacionEventoItem[] {
+  private extractProgramacionEventos(
+    cotizacion: Cotizacion,
+    raw?: CotizacionPayload | null,
+  ): ProgramacionEventoItem[] {
     const rawRecord = this.asRecord(raw);
     const cotizacionRecord = this.asRecord(cotizacion);
     const cotizacionRawRecord = this.asRecord(cotizacion.raw);
@@ -1404,21 +1708,26 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       detalleRecord['eventos'],
       rawRecord['eventos'],
       cotizacionRecord['eventos'],
-      cotizacionRawRecord['eventos']
+      cotizacionRawRecord['eventos'],
     ];
 
     for (const candidate of candidates) {
       if (Array.isArray(candidate) && candidate.length) {
         return candidate
-          .map((evento: AnyRecord, index: number) => this.mapEventoToConfig(evento, index))
-          .filter(config => this.hasProgramacionContent(config));
+          .map((evento: AnyRecord, index: number) =>
+            this.mapEventoToConfig(evento, index),
+          )
+          .filter((config) => this.hasProgramacionContent(config));
       }
     }
 
     return [];
   }
 
-  private mapEventoToConfig(evento: AnyRecord, index: number): ProgramacionEventoItem {
+  private mapEventoToConfig(
+    evento: AnyRecord,
+    index: number,
+  ): ProgramacionEventoItem {
     if (!evento) {
       return { esPrincipal: index < this.programacionMinimaRecomendada };
     }
@@ -1429,13 +1738,13 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       evento.locacion,
       evento.lugar,
       evento.titulo,
-      evento.descripcion
+      evento.descripcion,
     );
 
     const direccion = this.pickFirstString(
       evento.direccion,
       evento.direccionExacta,
-      evento.address
+      evento.address,
     );
 
     const fecha = this.normalizeProgramacionFecha(
@@ -1443,8 +1752,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         evento.fecha,
         evento.fechaEvento,
         evento.Fecha,
-        evento.date
-      )
+        evento.date,
+      ),
     );
 
     const hora = this.normalizeProgramacionHora(
@@ -1452,21 +1761,21 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         evento.hora,
         evento.horaEvento,
         evento.Hora,
-        evento.time
-      )
+        evento.time,
+      ),
     );
 
     const notas = this.pickFirstString(
       evento.notas,
       evento.comentarios,
       evento.observaciones,
-      evento.descripcion
+      evento.descripcion,
     );
 
     const esPrincipal = Boolean(
       evento.esPrincipal ??
       evento.principal ??
-      (index < this.programacionMinimaRecomendada)
+      index < this.programacionMinimaRecomendada,
     );
 
     return {
@@ -1475,23 +1784,32 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       fecha,
       hora,
       notas: notas || undefined,
-      esPrincipal
+      esPrincipal,
     };
   }
 
-  private createProgramacionItem(config: ProgramacionEventoItem): UntypedFormGroup {
+  private createProgramacionItem(
+    config: ProgramacionEventoItem,
+  ): UntypedFormGroup {
     const hora24 = this.normalizeHora24(config.hora ?? '');
     const horaParts = this.splitHoraTo12(hora24);
     const grupo = this.fb.group({
       nombre: [config.nombre ?? '', Validators.required],
       direccion: [config.direccion ?? '', Validators.required],
       fecha: [{ value: config.fecha ?? '', disabled: true }],
-      hora: [hora24, [Validators.required, Validators.pattern(/^\d{2}:\d{2}$/), this.horaRangoValidator()]],
+      hora: [
+        hora24,
+        [
+          Validators.required,
+          Validators.pattern(/^\d{2}:\d{2}$/),
+          this.horaRangoValidator(),
+        ],
+      ],
       hora12: [horaParts.hora12, Validators.required],
       minuto: [horaParts.minuto, Validators.required],
       ampm: [horaParts.ampm, Validators.required],
       notas: [config.notas ?? ''],
-      esPrincipal: [config.esPrincipal ?? false]
+      esPrincipal: [config.esPrincipal ?? false],
     });
     this.bindHoraControls(grupo);
     this.bindFechaControl(grupo);
@@ -1507,9 +1825,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       grupo.get('hora')?.setValue(hora24, { emitEvent: false });
     };
 
-    ['hora12', 'minuto', 'ampm'].forEach(controlName => {
-      grupo.get(controlName)?.valueChanges
-        .pipe(takeUntil(this.destroy$))
+    ['hora12', 'minuto', 'ampm'].forEach((controlName) => {
+      grupo
+        .get(controlName)
+        ?.valueChanges.pipe(takeUntil(this.destroy$))
         .subscribe(updateHora);
     });
 
@@ -1524,7 +1843,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     let lastValid = fechaControl.value;
     fechaControl.valueChanges
       .pipe(takeUntil(this.destroy$))
-      .subscribe(value => {
+      .subscribe((value) => {
         if (!this.isMultipleDias()) {
           lastValid = value;
           return;
@@ -1542,19 +1861,24 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         const fechasUnicas = this.getFechasProgramacionUnicas();
         if (fechasUnicas.length <= maxDias) {
           const fechaAnterior = (lastValid ?? '').toString().trim();
-          if (fechaAnterior && fechaAnterior !== fecha && this.serviciosFechasSeleccionadas.length) {
+          if (
+            fechaAnterior &&
+            fechaAnterior !== fecha &&
+            this.serviciosFechasSeleccionadas.length
+          ) {
             const fechasActuales = this.getFechasProgramacionUnicas();
             if (!fechasActuales.includes(fechaAnterior)) {
-              this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
-                entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
-              );
+              this.serviciosFechasSeleccionadas =
+                this.serviciosFechasSeleccionadas.map((entry) =>
+                  entry.fecha === fechaAnterior ? { ...entry, fecha } : entry,
+                );
             }
           }
           lastValid = value;
           return;
         }
         const fechaAnterior = (lastValid ?? '').toString().trim();
-        const fechasPermitidas = fechasUnicas.filter(item => item !== fecha);
+        const fechasPermitidas = fechasUnicas.filter((item) => item !== fecha);
         const fechasTexto = fechasPermitidas.slice(0, maxDias);
         if (!fechaAnterior) {
           fechaControl.setValue(lastValid ?? '', { emitEvent: false });
@@ -1564,10 +1888,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
             html: `
               <p>Ya seleccionaste ${maxDias} día(s):</p>
               <ul class="text-start mb-0">
-                ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
+                ${fechasTexto.map((item) => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
               </ul>
             `,
-            confirmButtonText: 'Entendido'
+            confirmButtonText: 'Entendido',
           });
           return;
         }
@@ -1577,28 +1901,29 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           html: `
             <p>Ya seleccionaste ${maxDias} día(s):</p>
             <ul class="text-start mb-3">
-              ${fechasTexto.map(item => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
+              ${fechasTexto.map((item) => `<li>${this.formatFechaConDia(item)}</li>`).join('')}
             </ul>
             <p class="mb-0">¿Quieres cambiar todas las locaciones del día <b>${this.formatFechaConDia(fechaAnterior)}</b> al día <b>${this.formatFechaConDia(fecha)}</b>?</p>
           `,
           showCancelButton: true,
           confirmButtonText: 'Sí, cambiar todas',
-          cancelButtonText: 'Cancelar'
-        }).then(result => {
+          cancelButtonText: 'Cancelar',
+        }).then((result) => {
           if (!result.isConfirmed) {
             fechaControl.setValue(lastValid ?? '', { emitEvent: false });
             return;
           }
-          this.programacion.controls.forEach(control => {
+          this.programacion.controls.forEach((control) => {
             const controlFecha = (control as UntypedFormGroup).get('fecha');
             if (controlFecha?.value === fechaAnterior) {
               controlFecha.setValue(fecha, { emitEvent: false });
             }
           });
           if (this.serviciosFechasSeleccionadas.length) {
-            this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
-              entry.fecha === fechaAnterior ? { ...entry, fecha } : entry
-            );
+            this.serviciosFechasSeleccionadas =
+              this.serviciosFechasSeleccionadas.map((entry) =>
+                entry.fecha === fechaAnterior ? { ...entry, fecha } : entry,
+              );
           }
           lastValid = fecha;
         });
@@ -1619,7 +1944,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return `${String(horas).padStart(2, '0')}:${minutos}`;
   }
 
-  private splitHoraTo12(value: string): { hora12: number | null; minuto: string | null; ampm: 'AM' | 'PM' | null } {
+  private splitHoraTo12(value: string): {
+    hora12: number | null;
+    minuto: string | null;
+    ampm: 'AM' | 'PM' | null;
+  } {
     const texto = this.normalizeHora24(value);
     const match = /^(\d{2}):(\d{2})$/.exec(texto);
     if (!match) {
@@ -1635,11 +1964,22 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return { hora12: horas, minuto: minutos, ampm };
   }
 
-  private toHora24(hora12Value: unknown, minutoValue: unknown, ampmValue: unknown): string {
+  private toHora24(
+    hora12Value: unknown,
+    minutoValue: unknown,
+    ampmValue: unknown,
+  ): string {
     const hora12 = Number(hora12Value);
-    const minuto = typeof minutoValue === 'string' ? minutoValue : `${minutoValue ?? ''}`;
+    const minuto =
+      typeof minutoValue === 'string' ? minutoValue : `${minutoValue ?? ''}`;
     const ampm = ampmValue === 'PM' || ampmValue === 'AM' ? ampmValue : '';
-    if (!Number.isFinite(hora12) || hora12 < 1 || hora12 > 12 || minuto.length !== 2 || !ampm) {
+    if (
+      !Number.isFinite(hora12) ||
+      hora12 < 1 ||
+      hora12 > 12 ||
+      minuto.length !== 2 ||
+      !ampm
+    ) {
       return '';
     }
     let horas24 = hora12 % 12;
@@ -1671,23 +2011,26 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     };
   }
 
-  private hasProgramacionContent(config: ProgramacionEventoItemConfig): boolean {
+  private hasProgramacionContent(
+    config: ProgramacionEventoItemConfig,
+  ): boolean {
     return Boolean(
       (config.nombre && config.nombre.trim()) ||
       (config.direccion && config.direccion.trim()) ||
       (config.fecha && config.fecha.trim()) ||
       (config.hora && config.hora.trim()) ||
-      (config.notas && config.notas.trim())
+      (config.notas && config.notas.trim()),
     );
   }
 
   private syncProgramacionFechas(fecha?: string | null): void {
-    const referencia = this.normalizeProgramacionFecha(
-      fecha ??
-      this.form.get('fechaEvento')?.value ??
-      this.fechaEventoOriginal
-    ) ?? '';
-    this.programacion.controls.forEach(control => {
+    const referencia =
+      this.normalizeProgramacionFecha(
+        fecha ??
+          this.form.get('fechaEvento')?.value ??
+          this.fechaEventoOriginal,
+      ) ?? '';
+    this.programacion.controls.forEach((control) => {
       const grupo = control as UntypedFormGroup;
       const fechaControl = grupo.get('fecha');
       if (!fechaControl) {
@@ -1722,8 +2065,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private getFechasProgramacionUnicas(): string[] {
     const fechas = this.programacion.controls
-      .map(control => (control as UntypedFormGroup).get('fecha')?.value)
-      .map(value => (value ?? '').toString().trim())
+      .map((control) => (control as UntypedFormGroup).get('fecha')?.value)
+      .map((value) => (value ?? '').toString().trim())
       .filter(Boolean);
     return Array.from(new Set(fechas)).sort();
   }
@@ -1733,16 +2076,33 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (!objetivo) {
       return [];
     }
-    const indices = Array.from({ length: this.programacion.length }, (_, index) => index).filter(index => {
+    const indices = Array.from(
+      { length: this.programacion.length },
+      (_, index) => index,
+    ).filter((index) => {
       const grupo = this.programacion.at(index) as UntypedFormGroup | null;
-      const fechaLocacion = (grupo?.get('fecha')?.value ?? '').toString().trim();
+      const fechaLocacion = (grupo?.get('fecha')?.value ?? '')
+        .toString()
+        .trim();
       return fechaLocacion === objetivo;
     });
     indices.sort((a, b) => {
       const aGrupo = this.programacion.at(a) as UntypedFormGroup | null;
       const bGrupo = this.programacion.at(b) as UntypedFormGroup | null;
-      const aHora = ((aGrupo?.getRawValue() as Record<string, unknown> | undefined)?.['hora'] ?? '').toString().trim();
-      const bHora = ((bGrupo?.getRawValue() as Record<string, unknown> | undefined)?.['hora'] ?? '').toString().trim();
+      const aHora = (
+        (aGrupo?.getRawValue() as Record<string, unknown> | undefined)?.[
+          'hora'
+        ] ?? ''
+      )
+        .toString()
+        .trim();
+      const bHora = (
+        (bGrupo?.getRawValue() as Record<string, unknown> | undefined)?.[
+          'hora'
+        ] ?? ''
+      )
+        .toString()
+        .trim();
       const aMin = this.horaToMinutos(aHora);
       const bMin = this.horaToMinutos(bHora);
       if (aMin !== bMin) {
@@ -1801,23 +2161,37 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   getProgramacionEstadoClass(index: number): string {
-    return this.isProgramacionIncompleta(index) ? 'programacion-status--warn' : 'programacion-status--ok';
+    return this.isProgramacionIncompleta(index)
+      ? 'programacion-status--warn'
+      : 'programacion-status--ok';
   }
 
   canAgregarLocacion(fecha: string): boolean {
-    return this.getProgramacionIndicesPorFecha(fecha).length < this.maxLocacionesPorDia;
+    return (
+      this.getProgramacionIndicesPorFecha(fecha).length <
+      this.maxLocacionesPorDia
+    );
   }
 
   getResumenDia(fecha: string): { total: number; primera: string } {
     const indices = this.getProgramacionIndicesPorFecha(fecha);
     const total = indices.length;
-    const primeraHora = indices
-      .map(index => ((this.programacion.at(index) as UntypedFormGroup | null)?.get('hora')?.value ?? '').toString().trim())
-      .filter(Boolean)
-      .sort()[0] ?? '';
+    const primeraHora =
+      indices
+        .map((index) =>
+          (
+            (this.programacion.at(index) as UntypedFormGroup | null)?.get(
+              'hora',
+            )?.value ?? ''
+          )
+            .toString()
+            .trim(),
+        )
+        .filter(Boolean)
+        .sort()[0] ?? '';
     return {
       total,
-      primera: primeraHora ? this.formatHoraTexto(primeraHora) : 'Sin hora'
+      primera: primeraHora ? this.formatHoraTexto(primeraHora) : 'Sin hora',
     };
   }
 
@@ -1829,33 +2203,49 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (diaIndex <= 0) {
       return;
     }
-    const fechaOrigen = (this.fechasTrabajoValores[diaIndex - 1] ?? '').toString().trim();
+    const fechaOrigen = (this.fechasTrabajoValores[diaIndex - 1] ?? '')
+      .toString()
+      .trim();
     const destino = (fechaDestino ?? '').toString().trim();
     if (!fechaOrigen || !destino || fechaOrigen === destino) {
       return;
     }
     const indicesOrigen = this.getProgramacionIndicesPorFecha(fechaOrigen);
     if (!indicesOrigen.length) {
-      this.showAlert('info', 'Sin locaciones', 'El día anterior no tiene locaciones para copiar.');
+      this.showAlert(
+        'info',
+        'Sin locaciones',
+        'El día anterior no tiene locaciones para copiar.',
+      );
       return;
     }
-    const disponibles = Math.max(0, this.maxLocacionesPorDia - this.getProgramacionIndicesPorFecha(destino).length);
+    const disponibles = Math.max(
+      0,
+      this.maxLocacionesPorDia -
+        this.getProgramacionIndicesPorFecha(destino).length,
+    );
     if (!disponibles) {
-      this.showAlert('warning', 'Límite alcanzado', `Máximo ${this.maxLocacionesPorDia} locaciones por día.`);
+      this.showAlert(
+        'warning',
+        'Límite alcanzado',
+        `Máximo ${this.maxLocacionesPorDia} locaciones por día.`,
+      );
       return;
     }
     const aCopiar = indicesOrigen.slice(0, disponibles);
-    aCopiar.forEach(index => {
+    aCopiar.forEach((index) => {
       const grupo = this.programacion.at(index) as UntypedFormGroup | null;
       const raw = grupo?.getRawValue() as Record<string, unknown> | undefined;
-      this.programacion.push(this.createProgramacionItem({
-        nombre: (raw?.['nombre'] ?? '').toString().trim(),
-        direccion: (raw?.['direccion'] ?? '').toString().trim(),
-        hora: (raw?.['hora'] ?? '').toString().trim(),
-        notas: (raw?.['notas'] ?? '').toString().trim(),
-        fecha: destino,
-        esPrincipal: false
-      }));
+      this.programacion.push(
+        this.createProgramacionItem({
+          nombre: (raw?.['nombre'] ?? '').toString().trim(),
+          direccion: (raw?.['direccion'] ?? '').toString().trim(),
+          hora: (raw?.['hora'] ?? '').toString().trim(),
+          notas: (raw?.['notas'] ?? '').toString().trim(),
+          fecha: destino,
+          esPrincipal: false,
+        }),
+      );
     });
     this.ensureProgramacionPrincipales();
     this.syncProgramacionFechas();
@@ -1869,12 +2259,19 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const fechaAnterior = (prev[index] ?? '').toString().trim();
     const fecha = (value ?? '').toString().trim();
     const control = this.fechasTrabajo.at(index);
-    const duplicada = this.fechasTrabajo.controls.some((ctrl, i) =>
-      i !== index && (ctrl.value ?? '').toString().trim() === fecha && !!fecha
+    const duplicada = this.fechasTrabajo.controls.some(
+      (ctrl, i) =>
+        i !== index &&
+        (ctrl.value ?? '').toString().trim() === fecha &&
+        !!fecha,
     );
     if (duplicada) {
       control.setValue(prev[index] ?? '', { emitEvent: false });
-      this.showAlert('warning', 'Fecha repetida', 'Cada día de trabajo debe tener una fecha diferente.');
+      this.showAlert(
+        'warning',
+        'Fecha repetida',
+        'Cada día de trabajo debe tener una fecha diferente.',
+      );
       return;
     }
     const changingExistingDate = !!fechaAnterior && fechaAnterior !== fecha;
@@ -1902,8 +2299,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       `,
       showCancelButton: true,
       confirmButtonText: 'Sí, cambiar',
-      cancelButtonText: 'Cancelar'
-    }).then(result => {
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
       if (!result.isConfirmed) {
         control.setValue(fechaAnterior, { emitEvent: false });
         return;
@@ -1925,12 +2322,16 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (fechasTrabajo.length) {
       return fechasTrabajo[0];
     }
-    const fechaEvento = (this.form.get('fechaEvento')?.value ?? '').toString().trim();
+    const fechaEvento = (this.form.get('fechaEvento')?.value ?? '')
+      .toString()
+      .trim();
     return fechaEvento || this.fechaMinimaEvento;
   }
 
   private getFechasTrabajoRaw(): string[] {
-    return this.fechasTrabajo.controls.map(control => (control.value ?? '').toString().trim());
+    return this.fechasTrabajo.controls.map((control) =>
+      (control.value ?? '').toString().trim(),
+    );
   }
 
   private ordenarFechasTrabajo(): void {
@@ -1945,7 +2346,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private setFechasTrabajoRaw(values: string[]): void {
     this.fechasTrabajo.controls.forEach((control, index) => {
-      control.setValue((values[index] ?? '').toString().trim(), { emitEvent: false });
+      control.setValue((values[index] ?? '').toString().trim(), {
+        emitEvent: false,
+      });
     });
     this.fechasTrabajoSnapshot = this.getFechasTrabajoRaw();
     this.syncFechaEventoDesdeFechasTrabajo();
@@ -1954,36 +2357,45 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private moverDiasAlFinal(indices: number[]): void {
     const values = this.getFechasTrabajoRaw();
     const validos = Array.from(new Set(indices))
-      .filter(index => Number.isInteger(index) && index >= 0 && index < values.length)
+      .filter(
+        (index) =>
+          Number.isInteger(index) && index >= 0 && index < values.length,
+      )
       .sort((a, b) => a - b);
     if (!validos.length) {
       return;
     }
-    const removidos = validos.map(index => values[index] ?? '');
+    const removidos = validos.map((index) => values[index] ?? '');
     const restantes = values.filter((_, index) => !validos.includes(index));
     this.setFechasTrabajoRaw([...restantes, ...removidos]);
   }
 
-
-
-  private async seleccionarDiasAEliminar(anterior: number, nuevo: number): Promise<number[] | null> {
+  private async seleccionarDiasAEliminar(
+    anterior: number,
+    nuevo: number,
+  ): Promise<number[] | null> {
     const values = this.getFechasTrabajoRaw();
     const cantidadAEliminar = anterior - nuevo;
     if (cantidadAEliminar <= 0 || values.length <= nuevo) {
       return [];
     }
-    const opcionesHtml = values.map((fecha, index) => {
-      const fechaLabel = fecha ? this.formatFechaConDia(fecha) : 'Sin fecha';
-      const locaciones = fecha ? this.getProgramacionIndicesPorFecha(fecha).length : 0;
-      const checked = index >= nuevo ? 'checked' : '';
-      const estado = locaciones > 0 ? `${locaciones} locaciones` : 'Sin locaciones';
-      return `
+    const opcionesHtml = values
+      .map((fecha, index) => {
+        const fechaLabel = fecha ? this.formatFechaConDia(fecha) : 'Sin fecha';
+        const locaciones = fecha
+          ? this.getProgramacionIndicesPorFecha(fecha).length
+          : 0;
+        const checked = index >= nuevo ? 'checked' : '';
+        const estado =
+          locaciones > 0 ? `${locaciones} locaciones` : 'Sin locaciones';
+        return `
         <label class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
           <input type="checkbox" class="swal2-day-checkbox" value="${index}" ${checked}>
           <span><b>Dia ${index + 1}</b> - ${fechaLabel}<br><small class="text-muted">${estado}</small></span>
         </label>
       `;
-    }).join('');
+      })
+      .join('');
     const result = await Swal.fire({
       icon: 'question',
       title: 'Elige los dias a eliminar',
@@ -1998,28 +2410,40 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Eliminar seleccionados',
       cancelButtonText: 'Cancelar',
       preConfirm: () => {
-        const selected = Array.from(document.querySelectorAll<HTMLInputElement>('.swal2-day-checkbox:checked'))
-          .map(node => Number(node.value))
+        const selected = Array.from(
+          document.querySelectorAll<HTMLInputElement>(
+            '.swal2-day-checkbox:checked',
+          ),
+        )
+          .map((node) => Number(node.value))
           .filter(Number.isFinite);
         if (selected.length !== cantidadAEliminar) {
-          Swal.showValidationMessage(`Selecciona exactamente ${cantidadAEliminar} dia(s).`);
+          Swal.showValidationMessage(
+            `Selecciona exactamente ${cantidadAEliminar} dia(s).`,
+          );
           return null;
         }
         return selected;
-      }
+      },
     });
-    return result.isConfirmed ? ((result.value as number[] | null) ?? []) : null;
+    return result.isConfirmed
+      ? ((result.value as number[] | null) ?? [])
+      : null;
   }
-
 
   private syncFechaEventoDesdeFechasTrabajo(): void {
     const primera = this.fechasTrabajoValores[0] ?? '';
-    this.form.get('fechaEvento')?.setValue(primera || null, { emitEvent: false });
+    this.form
+      .get('fechaEvento')
+      ?.setValue(primera || null, { emitEvent: false });
   }
 
   private hasLocacionesRegistradas(): boolean {
-    return this.programacion.controls.some(control => {
-      const raw = (control as UntypedFormGroup).getRawValue() as Record<string, unknown>;
+    return this.programacion.controls.some((control) => {
+      const raw = (control as UntypedFormGroup).getRawValue() as Record<
+        string,
+        unknown
+      >;
       const nombre = (raw['nombre'] ?? '').toString().trim();
       const direccion = (raw['direccion'] ?? '').toString().trim();
       const hora = (raw['hora'] ?? '').toString().trim();
@@ -2028,23 +2452,28 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     });
   }
 
-  private remapFechaLocacionesYAsignaciones(fechaAnterior: string, fechaNueva: string): void {
+  private remapFechaLocacionesYAsignaciones(
+    fechaAnterior: string,
+    fechaNueva: string,
+  ): void {
     if (!fechaAnterior || !fechaNueva || fechaAnterior === fechaNueva) {
       return;
     }
-    this.programacion.controls.forEach(control => {
+    this.programacion.controls.forEach((control) => {
       const fechaControl = (control as UntypedFormGroup).get('fecha');
       if ((fechaControl?.value ?? '').toString().trim() === fechaAnterior) {
         fechaControl?.setValue(fechaNueva, { emitEvent: false });
       }
     });
     if (this.serviciosFechasSeleccionadas.length) {
-      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(entry =>
-        entry.fecha === fechaAnterior ? { ...entry, fecha: fechaNueva } : entry
+      this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.map(
+        (entry) =>
+          entry.fecha === fechaAnterior
+            ? { ...entry, fecha: fechaNueva }
+            : entry,
       );
     }
   }
-
 
   formatFechaConDia(fecha: string): string {
     const parsed = parseDateInput(fecha);
@@ -2055,7 +2484,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     }).format(parsed);
     return base.replace(/ de (\d{4})$/, ' del $1');
   }
@@ -2074,7 +2503,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
     const diasControl = this.form.get('dias');
     const nuevo = this.normalizeDias(value);
-    const anterior = this.lastDiasAplicado > 0 ? this.lastDiasAplicado : this.fechasTrabajo.length;
+    const anterior =
+      this.lastDiasAplicado > 0
+        ? this.lastDiasAplicado
+        : this.fechasTrabajo.length;
     const valorControl = this.parseNumber(diasControl?.value);
 
     if (diasControl && valorControl !== nuevo) {
@@ -2110,24 +2542,43 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.lastDiasAplicado = nuevo;
   }
 
-  private getImpactoReduccionDias(nuevoDias: number): { total: number; fechas: number; locaciones: number; asignaciones: number } {
+  private getImpactoReduccionDias(nuevoDias: number): {
+    total: number;
+    fechas: number;
+    locaciones: number;
+    asignaciones: number;
+  } {
     const fechasActuales = this.getFechasTrabajoRaw();
-    const fechasPermitidas = new Set(fechasActuales.slice(0, nuevoDias).filter(Boolean));
+    const fechasPermitidas = new Set(
+      fechasActuales.slice(0, nuevoDias).filter(Boolean),
+    );
     const fechasEliminadas = fechasActuales.slice(nuevoDias).filter(Boolean);
-    const locacionesEliminadas = this.programacion.controls.filter(control => {
-      const fecha = ((control as UntypedFormGroup).get('fecha')?.value ?? '').toString().trim();
-      return !!fecha && !fechasPermitidas.has(fecha);
-    }).length;
-    const asignacionesEliminadas = this.serviciosFechasSeleccionadas.filter(entry =>
-      !fechasPermitidas.has((entry.fecha ?? '').toString().trim())
+    const locacionesEliminadas = this.programacion.controls.filter(
+      (control) => {
+        const fecha = ((control as UntypedFormGroup).get('fecha')?.value ?? '')
+          .toString()
+          .trim();
+        return !!fecha && !fechasPermitidas.has(fecha);
+      },
     ).length;
-    const total = fechasEliminadas.length + locacionesEliminadas + asignacionesEliminadas;
-    return { total, fechas: fechasEliminadas.length, locaciones: locacionesEliminadas, asignaciones: asignacionesEliminadas };
+    const asignacionesEliminadas = this.serviciosFechasSeleccionadas.filter(
+      (entry) => !fechasPermitidas.has((entry.fecha ?? '').toString().trim()),
+    ).length;
+    const total =
+      fechasEliminadas.length + locacionesEliminadas + asignacionesEliminadas;
+    return {
+      total,
+      fechas: fechasEliminadas.length,
+      locaciones: locacionesEliminadas,
+      asignaciones: asignacionesEliminadas,
+    };
   }
 
   private aplicarReduccionDias(nuevoDias: number): void {
     const fechasActuales = this.getFechasTrabajoRaw();
-    const fechasPermitidas = new Set(fechasActuales.slice(0, nuevoDias).filter(Boolean));
+    const fechasPermitidas = new Set(
+      fechasActuales.slice(0, nuevoDias).filter(Boolean),
+    );
     for (let i = this.programacion.length - 1; i >= 0; i -= 1) {
       const grupo = this.programacion.at(i) as UntypedFormGroup;
       const fecha = (grupo.get('fecha')?.value ?? '').toString().trim();
@@ -2135,25 +2586,35 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         this.programacion.removeAt(i);
       }
     }
-    this.serviciosFechasSeleccionadas = this.serviciosFechasSeleccionadas.filter(entry =>
-      fechasPermitidas.has((entry.fecha ?? '').toString().trim())
-    );
+    this.serviciosFechasSeleccionadas =
+      this.serviciosFechasSeleccionadas.filter((entry) =>
+        fechasPermitidas.has((entry.fecha ?? '').toString().trim()),
+      );
   }
 
   private syncFechasTrabajoPorDias(value: unknown): void {
     const dias = this.parseNumber(value);
-    const target = dias != null && dias >= 1 ? Math.min(Math.floor(dias), 7) : 0;
+    const target =
+      dias != null && dias >= 1 ? Math.min(Math.floor(dias), 7) : 0;
     const prev = [...this.fechasTrabajoSnapshot];
     const currentLength = this.fechasTrabajo.length;
     const prevLength = prev.length;
     while (this.fechasTrabajo.length < target) {
-      this.fechasTrabajo.push(this.fb.control('', [Validators.required, this.fechaEventoEnRangoValidator()]));
+      this.fechasTrabajo.push(
+        this.fb.control('', [
+          Validators.required,
+          this.fechaEventoEnRangoValidator(),
+        ]),
+      );
     }
     while (this.fechasTrabajo.length > target) {
       this.fechasTrabajo.removeAt(this.fechasTrabajo.length - 1);
     }
-    this.fechasTrabajo.controls.forEach(control => {
-      control.setValidators([Validators.required, this.fechaEventoEnRangoValidator()]);
+    this.fechasTrabajo.controls.forEach((control) => {
+      control.setValidators([
+        Validators.required,
+        this.fechaEventoEnRangoValidator(),
+      ]);
       control.updateValueAndValidity({ emitEvent: false });
     });
     if (currentLength === 0 && prev.some(Boolean)) {
@@ -2174,10 +2635,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private remapProgramacionFechas(prev: string[], next: string[]): void {
-    const nextNoVacias = next.map(item => item.trim()).filter(Boolean);
+    const nextNoVacias = next.map((item) => item.trim()).filter(Boolean);
     if (!nextNoVacias.length) {
-      this.programacion.controls.forEach(control => {
-        (control as UntypedFormGroup).get('fecha')?.setValue('', { emitEvent: false });
+      this.programacion.controls.forEach((control) => {
+        (control as UntypedFormGroup)
+          .get('fecha')
+          ?.setValue('', { emitEvent: false });
       });
       return;
     }
@@ -2188,7 +2651,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       if (!oldFecha || !newFecha || oldFecha === newFecha) {
         continue;
       }
-      this.programacion.controls.forEach(control => {
+      this.programacion.controls.forEach((control) => {
         const fechaControl = (control as UntypedFormGroup).get('fecha');
         if ((fechaControl?.value ?? '').toString().trim() === oldFecha) {
           fechaControl?.setValue(newFecha, { emitEvent: false });
@@ -2196,7 +2659,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       });
     }
     const fallback = nextNoVacias[0];
-    this.programacion.controls.forEach(control => {
+    this.programacion.controls.forEach((control) => {
       const fechaControl = (control as UntypedFormGroup).get('fecha');
       const fechaActual = (fechaControl?.value ?? '').toString().trim();
       if (!fechaActual || !nextNoVacias.includes(fechaActual)) {
@@ -2207,7 +2670,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private applyDiasRules(value: unknown): void {
     const parsedRaw = this.parseNumber(value);
-    const parsed = parsedRaw != null && parsedRaw >= 1 ? Math.min(Math.floor(parsedRaw), 7) : parsedRaw;
+    const parsed =
+      parsedRaw != null && parsedRaw >= 1
+        ? Math.min(Math.floor(parsedRaw), 7)
+        : parsedRaw;
     const diasControl = this.form.get('dias');
     if (parsed !== parsedRaw && diasControl) {
       diasControl.setValue(parsed, { emitEvent: false });
@@ -2232,7 +2698,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       }
       horasControl.updateValueAndValidity({ emitEvent: false });
     }
-    this.programacion.controls.forEach(control => {
+    this.programacion.controls.forEach((control) => {
       const grupo = control as UntypedFormGroup;
       const fechaProg = grupo.get('fecha');
       if (!fechaProg) return;
@@ -2244,18 +2710,27 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     });
     this.syncProgramacionFechas();
 
-    if (!multiple && this.selectedPaquetes.some(item => (item.cantidad ?? 1) !== 1)) {
-      this.selectedPaquetes = this.selectedPaquetes.map(item => ({ ...item, cantidad: 1 }));
+    if (
+      !multiple &&
+      this.selectedPaquetes.some((item) => (item.cantidad ?? 1) !== 1)
+    ) {
+      this.selectedPaquetes = this.selectedPaquetes.map((item) => ({
+        ...item,
+        cantidad: 1,
+      }));
       this.syncTotalEstimado();
     }
     if (multiple) {
       const max = this.getCantidadMaximaPorDias();
       if (max != null) {
-        const ajustados = this.selectedPaquetes.map(item => ({
+        const ajustados = this.selectedPaquetes.map((item) => ({
           ...item,
-          cantidad: Math.min(Number(item.cantidad ?? 1) || 1, max)
+          cantidad: Math.min(Number(item.cantidad ?? 1) || 1, max),
         }));
-        const changed = ajustados.some((item, index) => item.cantidad !== this.selectedPaquetes[index]?.cantidad);
+        const changed = ajustados.some(
+          (item, index) =>
+            item.cantidad !== this.selectedPaquetes[index]?.cantidad,
+        );
         if (changed) {
           this.selectedPaquetes = ajustados;
           this.serviciosFechasSeleccionadas = [];
@@ -2275,7 +2750,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   isDepartamentoLima(): boolean {
-    const depto = (this.form.get('departamento')?.value ?? '').toString().trim().toLowerCase();
+    const depto = (this.form.get('departamento')?.value ?? '')
+      .toString()
+      .trim()
+      .toLowerCase();
     return depto === 'lima';
   }
 
@@ -2316,21 +2794,27 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (this.viaticosChangeLock) {
       return;
     }
-    const prev = this.lastViaticosCliente ?? Boolean(this.form.get('viaticosCliente')?.value);
+    const prev =
+      this.lastViaticosCliente ??
+      Boolean(this.form.get('viaticosCliente')?.value);
     const next = Boolean(value);
     if (prev === next) {
       return;
     }
-    const beforeText = prev ? 'Cliente cubre viaticos' : 'Cliente NO cubre viaticos';
-    const afterText = next ? 'Cliente cubre viaticos' : 'Cliente NO cubre viaticos';
+    const beforeText = prev
+      ? 'Cliente cubre viaticos'
+      : 'Cliente NO cubre viaticos';
+    const afterText = next
+      ? 'Cliente cubre viaticos'
+      : 'Cliente NO cubre viaticos';
     void Swal.fire({
       icon: 'warning',
       title: 'Confirmar cambio de viaticos',
       text: `Actual: ${beforeText}. Nuevo: ${afterText}.`,
       showCancelButton: true,
       confirmButtonText: 'Aceptar',
-      cancelButtonText: 'Cancelar'
-    }).then(result => {
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
       if (result.isConfirmed) {
         this.form.get('viaticosCliente')?.setValue(next, { emitEvent: false });
         this.applyViaticosRules();
@@ -2341,7 +2825,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.form.get('viaticosCliente')?.setValue(prev, { emitEvent: false });
       this.applyViaticosRules();
       if (this.lastViaticosMonto != null) {
-        this.form.get('viaticosMonto')?.setValue(this.lastViaticosMonto, { emitEvent: false });
+        this.form
+          .get('viaticosMonto')
+          ?.setValue(this.lastViaticosMonto, { emitEvent: false });
       } else {
         this.form.get('viaticosMonto')?.reset(null, { emitEvent: false });
       }
@@ -2350,7 +2836,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   onViaticosMontoBlur(value: unknown): void {
-    if (this.viaticosChangeLock || Boolean(this.form.get('viaticosCliente')?.value)) {
+    if (
+      this.viaticosChangeLock ||
+      Boolean(this.form.get('viaticosCliente')?.value)
+    ) {
       return;
     }
     const parsed = this.parseNumber(value);
@@ -2365,8 +2854,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       text: `Actual: ${prev ?? 'sin monto'}. Nuevo: ${next ?? 'sin monto'}.`,
       showCancelButton: true,
       confirmButtonText: 'Aceptar',
-      cancelButtonText: 'Cancelar'
-    }).then(result => {
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
       if (result.isConfirmed) {
         this.form.get('viaticosMonto')?.setValue(next, { emitEvent: false });
         this.syncViaticosSnapshot();
@@ -2385,9 +2874,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private syncViaticosSnapshot(): void {
     const viaticosCliente = Boolean(this.form.get('viaticosCliente')?.value);
-    const viaticosMonto = this.parseNumber(this.form.get('viaticosMonto')?.value);
+    const viaticosMonto = this.parseNumber(
+      this.form.get('viaticosMonto')?.value,
+    );
     this.lastViaticosCliente = viaticosCliente;
-    this.lastViaticosMonto = viaticosMonto != null && viaticosMonto > 0 ? viaticosMonto : null;
+    this.lastViaticosMonto =
+      viaticosMonto != null && viaticosMonto > 0 ? viaticosMonto : null;
   }
 
   private handleDepartamentoChange(value: unknown): void {
@@ -2407,9 +2899,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       return;
     }
     const monto = this.parseNumber(this.form.get('viaticosMonto')?.value);
-    const avisoMonto = monto != null && monto > 0
-      ? 'El monto de viaticos podria variar si cambias de departamento.'
-      : '';
+    const avisoMonto =
+      monto != null && monto > 0
+        ? 'El monto de viaticos podria variar si cambias de departamento.'
+        : '';
     const texto = avisoMonto
       ? `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"? ${avisoMonto}`
       : `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"?`;
@@ -2420,8 +2913,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       text: texto,
       showCancelButton: true,
       confirmButtonText: 'Cambiar',
-      cancelButtonText: 'Cancelar'
-    }).then(result => {
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
       if (result.isConfirmed) {
         this.lastDepartamento = next;
         this.applyViaticosRules();
@@ -2501,7 +2994,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private fechaEventoEnRangoValidator(): ValidatorFn {
-    return control => {
+    return (control) => {
       const raw = control.value;
       if (!raw) {
         return null;
@@ -2545,7 +3038,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private normalizeEventLabel(value: unknown): string {
-    const text = String(value ?? '').trim().toLowerCase();
+    const text = String(value ?? '')
+      .trim()
+      .toLowerCase();
     if (!text) {
       return '';
     }
@@ -2558,40 +3053,47 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private normalizeEventoCatalogo(evento: unknown): EventoCatalogo | null {
     const record = this.asRecord(evento);
     const id = this.parseNumber(
-      record['id']
-      ?? record['PK_E_Cod']
-      ?? record['idEvento']
-      ?? record['idTipoEvento']
-      ?? record['ID']
+      record['id'] ??
+        record['PK_E_Cod'] ??
+        record['idEvento'] ??
+        record['idTipoEvento'] ??
+        record['ID'],
     );
     if (id == null || id <= 0) {
       return null;
     }
-    const nombre = this.pickFirstString(
-      record['nombre'],
-      record['E_Nombre'],
-      record['name'],
-      record['tipoEvento'],
-      record['evento']
-    ) || 'Evento';
+    const nombre =
+      this.pickFirstString(
+        record['nombre'],
+        record['E_Nombre'],
+        record['name'],
+        record['tipoEvento'],
+        record['evento'],
+      ) || 'Evento';
     return { id, nombre, raw: record };
   }
 
   private applyPendingSelections(): void {
     if (this.pendingServicioId != null) {
-      const servicio = this.servicios.find(s => this.getId(s) === this.pendingServicioId);
+      const servicio = this.servicios.find(
+        (s) => this.getId(s) === this.pendingServicioId,
+      );
       if (servicio) {
         this.selectedServicioId = this.pendingServicioId;
         this.selectedServicioNombre = this.getNombre(servicio);
       }
-    } else if (!this.selectedServicioId && this.servicios.length && !this.selectedServicioNombre) {
+    } else if (
+      !this.selectedServicioId &&
+      this.servicios.length &&
+      !this.selectedServicioNombre
+    ) {
       // Mantiene la lista vacía hasta que se vincule un servicio manualmente
       this.selectedServicioId = null;
       this.selectedServicioNombre = '';
     }
 
     if (this.pendingEventoId != null) {
-      const evento = this.eventos.find(e => e.id === this.pendingEventoId);
+      const evento = this.eventos.find((e) => e.id === this.pendingEventoId);
       if (evento) {
         const record = this.asRecord(evento);
         const eventoId = this.parseNumber(record['id']) ?? null;
@@ -2599,8 +3101,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         this.selectedEventoNombre = this.getNombre(evento);
         this.selectedEventoIdValue = eventoId != null ? String(eventoId) : '';
       } else if (this.selectedEventoNombre) {
-        const byName = this.eventos.find(e =>
-          this.normalizeEventLabel(e.nombre) === this.normalizeEventLabel(this.selectedEventoNombre)
+        const byName = this.eventos.find(
+          (e) =>
+            this.normalizeEventLabel(e.nombre) ===
+            this.normalizeEventLabel(this.selectedEventoNombre),
         );
         if (byName) {
           this.selectedEventoId = byName.id;
@@ -2609,16 +3113,26 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           this.pendingEventoId = byName.id;
         }
       }
-    } else if (!this.selectedEventoId && this.selectedEventoNombre && this.eventos.length) {
-      const byName = this.eventos.find(e =>
-        this.normalizeEventLabel(e.nombre) === this.normalizeEventLabel(this.selectedEventoNombre)
+    } else if (
+      !this.selectedEventoId &&
+      this.selectedEventoNombre &&
+      this.eventos.length
+    ) {
+      const byName = this.eventos.find(
+        (e) =>
+          this.normalizeEventLabel(e.nombre) ===
+          this.normalizeEventLabel(this.selectedEventoNombre),
       );
       if (byName) {
         this.selectedEventoId = byName.id;
         this.selectedEventoNombre = byName.nombre;
         this.selectedEventoIdValue = String(byName.id);
       }
-    } else if (!this.selectedEventoId && this.eventos.length && !this.selectedEventoNombre) {
+    } else if (
+      !this.selectedEventoId &&
+      this.eventos.length &&
+      !this.selectedEventoNombre
+    ) {
       this.selectedEventoId = null;
       this.selectedEventoIdValue = '';
       this.selectedEventoNombre = '';
@@ -2644,37 +3158,48 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     this.loadingPaquetes = true;
-    this.cotizacionService.getEventosServicio(this.selectedEventoId, this.selectedServicioId)
+    this.cotizacionService
+      .getEventosServicio(this.selectedEventoId, this.selectedServicioId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: paquetes => {
+        next: (paquetes) => {
           const activos = Array.isArray(paquetes)
-            ? paquetes.filter(item => {
+            ? paquetes.filter((item) => {
                 const record = this.asRecord(item);
                 const estado = this.asRecord(record['estado']);
-                const estadoNombre = String(estado['nombre'] ?? record['estadoNombre'] ?? '').toLowerCase();
-                const estadoId = this.parseNumber(estado['id'] ?? estado['idEstado'] ?? record['estadoId']);
+                const estadoNombre = String(
+                  estado['nombre'] ?? record['estadoNombre'] ?? '',
+                ).toLowerCase();
+                const estadoId = this.parseNumber(
+                  estado['id'] ?? estado['idEstado'] ?? record['estadoId'],
+                );
                 return estadoNombre !== 'inactivo' && estadoId !== 2;
               })
             : [];
-          this.paquetesRows = activos.map(item => this.normalizePaqueteRow(item));
+          this.paquetesRows = activos.map((item) =>
+            this.normalizePaqueteRow(item),
+          );
           this.loadingPaquetes = false;
         },
         error: (err) => {
           console.error('[cotizacion] eventos-servicio', err);
           this.paquetesRows = [];
           this.loadingPaquetes = false;
-        }
+        },
       });
   }
 
-  private normalizeDateForPayload(value: string | Date | null | undefined): string | null {
+  private normalizeDateForPayload(
+    value: string | Date | null | undefined,
+  ): string | null {
     return formatIsoDate(value);
   }
 
   syncTotalEstimado(): void {
     const control = this.form.get('totalEstimado');
-    control?.setValue(this.totalSeleccion || control?.value || 0, { emitEvent: false });
+    control?.setValue(this.totalSeleccion || control?.value || 0, {
+      emitEvent: false,
+    });
     this.refreshSelectedPaquetesColumns();
   }
 
@@ -2689,7 +3214,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (eventoServicioId != null) {
       return String(eventoServicioId);
     }
-    return String(record['id'] ?? `${record['descripcion']}|${record['precio']}`);
+    return String(
+      record['id'] ?? `${record['descripcion']}|${record['precio']}`,
+    );
   }
 
   private getEventoServicioId(item: unknown): number | null {
@@ -2698,7 +3225,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       return null;
     }
     const eventoServicio = this.asRecord(record['eventoServicio']);
-    const num = this.parseNumber(record['eventoServicioId'] ?? record['idEventoServicio'] ?? eventoServicio['id'] ?? record['id']);
+    const num = this.parseNumber(
+      record['eventoServicioId'] ??
+        record['idEventoServicio'] ??
+        eventoServicio['id'] ??
+        record['id'],
+    );
     return num != null && num > 0 ? num : null;
   }
 
@@ -2743,7 +3275,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       precio: precio != null ? precio : null,
       staff: staff != null ? staff : null,
       horas: horas != null ? horas : null,
-      raw: record
+      raw: record,
     };
   }
 
@@ -2769,7 +3301,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return raw != null ? String(raw) : null;
   }
 
-  private getPaqueteServicioId(item: unknown, fallbackToSelected = true): number | null {
+  private getPaqueteServicioId(
+    item: unknown,
+    fallbackToSelected = true,
+  ): number | null {
     const record = this.asRecord(item);
     if (!Object.keys(record).length) {
       return this.selectedServicioId;
@@ -2782,7 +3317,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return fallbackToSelected ? this.selectedServicioId : null;
   }
 
-  private getPaqueteServicioNombre(item: unknown, fallbackToSelected = true): string | undefined {
+  private getPaqueteServicioNombre(
+    item: unknown,
+    fallbackToSelected = true,
+  ): string | undefined {
     const record = this.asRecord(item);
     const servicio = this.asRecord(record['servicio']);
     const baseNombre = servicio['nombre'] ?? record['servicioNombre'];
@@ -2790,7 +3328,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const texto = String(baseNombre).trim();
       if (texto) return texto;
     }
-    return fallbackToSelected ? (this.selectedServicioNombre || undefined) : undefined;
+    return fallbackToSelected
+      ? this.selectedServicioNombre || undefined
+      : undefined;
   }
 
   private getOpcion(item: unknown): number | null {
@@ -2808,7 +3348,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return this.parseNumber(record['recargo'] ?? null);
   }
 
-  private parseHorasToNumber(value: string | null | undefined): number | undefined {
+  private parseHorasToNumber(
+    value: string | null | undefined,
+  ): number | undefined {
     if (value == null) {
       return undefined;
     }
@@ -2835,7 +3377,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (!Number.isFinite(horas) || !Number.isFinite(minutos)) {
       return Number.MAX_SAFE_INTEGER;
     }
-    return (horas * 60) + minutos;
+    return horas * 60 + minutos;
   }
 
   private formatHoraTexto(hora24: string): string {
@@ -2861,12 +3403,15 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return value.trim().toLowerCase().replace(/\s+/g, ' ');
   }
 
-  private setProgramacionExpandida(grupo: UntypedFormGroup, expandida: boolean): void {
+  private setProgramacionExpandida(
+    grupo: UntypedFormGroup,
+    expandida: boolean,
+  ): void {
     this.programacionExpandida.set(grupo, expandida);
   }
 
   private expandirProgramacionConErrores(): void {
-    this.programacion.controls.forEach(control => {
+    this.programacion.controls.forEach((control) => {
       const grupo = control as UntypedFormGroup;
       if (grupo.invalid || this.isProgramacionIncompletaPorGrupo(grupo)) {
         this.setProgramacionExpandida(grupo, true);
@@ -2900,7 +3445,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   private focusPrecioInput(key: string | number): void {
     setTimeout(() => {
-      const element = document.getElementById(this.getPrecioInputIdFromKey(key)) as HTMLInputElement | null;
+      const element = document.getElementById(
+        this.getPrecioInputIdFromKey(key),
+      ) as HTMLInputElement | null;
       if (element) {
         element.focus();
         element.select();
@@ -2915,23 +3462,72 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private refreshSelectedPaquetesColumns(): void {
     const base: TableColumn<PaqueteSeleccionado>[] = [
       { key: 'titulo', header: 'Título', sortable: false },
-      { key: 'precioUnit', header: 'Precio unit.', sortable: false, class: 'text-center', width: '140px' }
+      {
+        key: 'precioUnit',
+        header: 'Precio unit.',
+        sortable: false,
+        class: 'text-center',
+        width: '140px',
+      },
     ];
 
     if (this.isMultipleDias()) {
-      base.splice(1, 0, { key: 'cantidad', header: 'Dias', sortable: false, class: 'text-center', width: '90px' });
+      base.splice(1, 0, {
+        key: 'cantidad',
+        header: 'Dias',
+        sortable: false,
+        class: 'text-center',
+        width: '90px',
+      });
     }
 
     if (this.shouldShowPrecioOriginal()) {
-      base.push({ key: 'precioOriginal', header: 'Original', sortable: false, class: 'text-center', width: '140px' });
+      base.push({
+        key: 'precioOriginal',
+        header: 'Original',
+        sortable: false,
+        class: 'text-center',
+        width: '140px',
+      });
     }
 
     base.push(
-      { key: 'horas', header: 'Horas', sortable: false, class: 'text-center', width: '100px' },
-      { key: 'staff', header: 'Staff', sortable: false, class: 'text-center', width: '110px' },
-      { key: 'subtotal', header: 'Subtotal', sortable: false, class: 'text-center', width: '140px' },
-      { key: 'notas', header: 'Notas', sortable: false, filterable: false, width: '280px' },
-      { key: 'quitar', header: 'Quitar', sortable: false, filterable: false, class: 'text-center', width: '90px' }
+      {
+        key: 'horas',
+        header: 'Horas',
+        sortable: false,
+        class: 'text-center',
+        width: '100px',
+      },
+      {
+        key: 'staff',
+        header: 'Staff',
+        sortable: false,
+        class: 'text-center',
+        width: '110px',
+      },
+      {
+        key: 'subtotal',
+        header: 'Subtotal',
+        sortable: false,
+        class: 'text-center',
+        width: '140px',
+      },
+      {
+        key: 'notas',
+        header: 'Notas',
+        sortable: false,
+        filterable: false,
+        width: '280px',
+      },
+      {
+        key: 'quitar',
+        header: 'Quitar',
+        sortable: false,
+        filterable: false,
+        class: 'text-center',
+        width: '90px',
+      },
     );
 
     this.selectedPaquetesColumns = base;

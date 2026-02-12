@@ -10,34 +10,49 @@
       [createButtonIcon]="'add'"
       [disableCreate]="loadingEventos"
       (searchChange)="onBuscarEventos($event)"
-      (createClick)="abrirRegistroEvento()">
+      (createClick)="abrirRegistroEvento()"
+    >
     </app-list-toolbar>
 
     @if (!loadingEventos && eventosFiltrados.length) {
       <div class="event-grid">
-        @for (evento of eventosFiltrados; track evento.id !== null && evento.id !== undefined ? evento.id : $index) {
-        <app-event-card
-          [id]="evento.id"
-          [titulo]="evento.nombre"
-          [imagen]="imagenDe(evento.nombre)"
-          (emitAccion)="seleccionarEventoPorId($event)">
-        </app-event-card>
+        @for (
+          evento of eventosFiltrados;
+          track evento.id !== null && evento.id !== undefined
+            ? evento.id
+            : $index
+        ) {
+          <app-event-card
+            [id]="evento.id"
+            [titulo]="evento.nombre"
+            [imagen]="imagenDe(evento.nombre)"
+            (emitAccion)="seleccionarEventoPorId($event)"
+          >
+          </app-event-card>
         }
       </div>
     } @else {
       @if (loadingEventos) {
-      <div class="text-center py-5">
-        <span class="spinner-border text-secondary" role="status" aria-hidden="true"></span>
-      </div>
+        <div class="text-center py-5">
+          <span
+            class="spinner-border text-secondary"
+            role="status"
+            aria-hidden="true"
+          ></span>
+        </div>
       }
       @if (!loadingEventos && !eventosFiltrados.length) {
-      <div class="empty-state">
-        <mat-icon>event_busy</mat-icon>
-        <p class="mb-1">No se encontraron eventos</p>
-        <p class="text-muted small mb-0">
-          {{ searchTerm ? 'Prueba con otro término o limpia la búsqueda.' : 'Usa el botón "Registrar evento" para agregar uno nuevo.' }}
-        </p>
-      </div>
+        <div class="empty-state">
+          <mat-icon>event_busy</mat-icon>
+          <p class="mb-1">No se encontraron eventos</p>
+          <p class="text-muted small mb-0">
+            {{
+              searchTerm
+                ? "Prueba con otro término o limpia la búsqueda."
+                : 'Usa el botón "Registrar evento" para agregar uno nuevo.'
+            }}
+          </p>
+        </div>
       }
     }
   </div>

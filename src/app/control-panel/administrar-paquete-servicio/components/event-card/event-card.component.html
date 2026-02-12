@@ -1,10 +1,8 @@
 <mat-card class="example-card">
-<img
-  [src]="imagen"
-  (error)="onImgError($event)"
-  alt="icono del evento"
-/>
+  <img [src]="imagen" (error)="onImgError($event)" alt="icono del evento" />
   <mat-card-content>
-    <button (click)="cambioVista()" mat-button>{{ titulo }}</button>
+    <button (click)="cambioVista()" mat-button>
+      {{ corregirCumple(titulo) }}
+    </button>
   </mat-card-content>
 </mat-card>

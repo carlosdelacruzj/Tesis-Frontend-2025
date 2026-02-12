@@ -53,6 +53,29 @@ body {
   color: #1a1a1a;
 }
 
+/* Angular Material should follow system styles + body font */
+:root {
+  --mdc-typography-font-family: "Poppins", Roboto, "Helvetica Neue", sans-serif;
+  --mat-typography-font-family: "Poppins", Roboto, "Helvetica Neue", sans-serif;
+  --mat-card-title-text-font: "Poppins", Roboto, "Helvetica Neue", sans-serif;
+}
+
+.mat-typography,
+.mat-mdc-form-field,
+.mat-mdc-select,
+.mat-mdc-card,
+.mat-mdc-option,
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-icon-button,
+.mat-mdc-tab,
+.mat-mdc-menu-item,
+.mat-mdc-list-item {
+  font-family: inherit;
+}
+
 /* Links (antes rosado) */
 a:hover,
 a:focus {

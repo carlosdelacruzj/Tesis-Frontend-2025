@@ -5,7 +5,7 @@
         <app-list-toolbar
           [title]="'Eventos visibles'"
           [description]="
-            'Activa los tipos de evento que apareceran en el portafolio publico.'
+            'Activa los tipos de evento que apareceran en el portafolio público.'
           "
           [showSearch]="false"
           [showCreateButton]="false"
@@ -31,6 +31,10 @@
                 [alt]="row.nombre || 'Evento'"
                 (error)="onEventoIconError(row)"
               />
+            </ng-template>
+
+            <ng-template appCell="nombre" let-row>
+              {{ corregirCumple(row.nombre) }}
             </ng-template>
 
             <ng-template appCell="mostrarPortafolio" let-row>
@@ -62,7 +66,7 @@
             'Sube y organiza las imágenes que se mostraran en la web.'
           "
           [showSearch]="true"
-          [searchPlaceholder]="'Buscar por titulo o evento...'"
+          [searchPlaceholder]="'Buscar por título o evento...'"
           [searchValue]="searchTerm"
           [showCreateButton]="true"
           [disableCreate]="isUiLocked"
@@ -86,7 +90,9 @@
             >
               <option [ngValue]="null">Todos</option>
               @for (evento of eventos; track evento.id) {
-                <option [ngValue]="evento.id">{{ evento.nombre }}</option>
+                <option [ngValue]="evento.id">
+                  {{ corregirCumple(evento.nombre) }}
+                </option>
               }
             </select>
           </div>
@@ -101,7 +107,7 @@
                   (change)="onFiltroOpcionalChange()"
                   [disabled]="isUiLocked"
                 />
-                <span class="form-check-label">Sin titulo</span>
+                <span class="form-check-label">Sin título</span>
               </label>
               <label class="form-check d-flex align-items-center gap-2">
                 <input
@@ -111,7 +117,7 @@
                   (change)="onFiltroOpcionalChange()"
                   [disabled]="isUiLocked"
                 />
-                <span class="form-check-label">Sin descripcion</span>
+                <span class="form-check-label">Sin descripción</span>
               </label>
             </div>
           </div>
@@ -152,7 +158,9 @@
               >
                 <option [ngValue]="null">Mover a evento...</option>
                 @for (evento of getEventosParaMover(); track evento.id) {
-                  <option [ngValue]="evento.id">{{ evento.nombre }}</option>
+                  <option [ngValue]="evento.id">
+                    {{ corregirCumple(evento.nombre) }}
+                  </option>
                 }
               </select>
               <button
