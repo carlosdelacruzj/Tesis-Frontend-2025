@@ -164,7 +164,6 @@ export interface PedidoUpdateDetalle {
   empleadoId: number;
   fechaCreacion: string;
   estadoPedidoId: number;
-  estadoPagoId: number;
   fechaEvento: string | null;
   lugar: string;
   observaciones: string;
@@ -224,4 +223,37 @@ export interface PedidoUpdatePayload {
   eventos: PedidoUpdateEvento[];
   items: PedidoUpdateItem[];
   serviciosFechas: PedidoUpdateServicioFecha[];
+}
+
+export interface PedidoCreateDetalle {
+  empleadoId: number;
+  fechaCreacion: string;
+  estadoPedidoId: number;
+}
+
+export interface PedidoCreateEvento {
+  fecha: string;
+  hora: string;
+  ubicacion: string;
+  direccion: string;
+  notas: string;
+}
+
+export interface PedidoCreateItem {
+  idEventoServicio: number | null;
+  eventoCodigo: string | number | null;
+  moneda: string;
+  nombre: string;
+  descripcion: string;
+  precioUnit: number;
+  cantidad: number;
+  descuento: number;
+  recargo: number;
+  notas: string;
+}
+
+export interface PedidoCreatePayload {
+  pedido: PedidoCreateDetalle;
+  eventos: PedidoCreateEvento[];
+  items: PedidoCreateItem[];
 }

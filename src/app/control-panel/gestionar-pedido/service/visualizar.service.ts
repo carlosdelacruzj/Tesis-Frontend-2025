@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AgregarPedido, EditarPedido, PedidoResponse, PedidoUpdatePayload, Proyecto } from '../model/visualizar.model';
+import { AgregarPedido, EditarPedido, PedidoCreatePayload, PedidoResponse, PedidoUpdatePayload, Proyecto } from '../model/visualizar.model';
 import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -59,7 +59,7 @@ export class VisualizarService {
    * Crear pedido compuesto (POST /pedido)
    * Mantiene tu firma postPedidos(data)
    */
-  public postPedidos(data: unknown): Observable<unknown> {
+  public postPedidos(data: PedidoCreatePayload): Observable<unknown> {
     return this.http.post<unknown>(this.apiPedido, data);
   }
 

@@ -1302,45 +1302,28 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
     // fechaCreate: aseguramos YYYY-MM-DD (sin locale)
     const fechaCreacion = this.convert(this.fechaCreate); // ya retorna YYYY-MM-DD
 
-    // Normalizador de hora: HH:mm -> HH:mm:ss
-    const toHms = (h: string | null | undefined) =>
-      (h || '').length === 5 ? `${h}:00` : (h || '');
-
     // ====== Construcción del payload compuesto ======
     const payload = {
       pedido: {
-        clienteId: this.infoCliente.idCliente,
         empleadoId: this.CodigoEmpleado ?? 1,
         fechaCreacion: fechaCreacion,
-        observaciones: this.visualizarService.selectAgregarPedido?.Observacion || '',
-        // Define estos IDs iniciales en tu back; aquí puedes setearlos fijo o obtenerlos antes
-        estadoPedidoId: 1, // Ej: 1 = Pendiente
-        estadoPagoId: 1,   // Ej: 1 = Sin pago
-        nombrePedido: this.visualizarService.selectAgregarPedido?.NombrePedido || '',
-        departamento: this.visualizarService.selectAgregarPedido?.departamento || undefined,
-        viaticosCliente: this.visualizarService.selectAgregarPedido?.departamento?.toLowerCase() === 'lima'
-          ? true
-          : Boolean(this.visualizarService.selectAgregarPedido?.viaticosCliente),
-        viaticosMonto: this.visualizarService.selectAgregarPedido?.departamento?.toLowerCase() === 'lima'
-          ? undefined
-          : (this.visualizarService.selectAgregarPedido?.viaticosCliente
-              ? undefined
-              : (this.parseNumberNullable(this.visualizarService.selectAgregarPedido?.viaticosMonto) ?? undefined))
+        estadoPedidoId: 1
       },
       eventos: (this.ubicacion || [])
         .filter(u => (u?.Direccion || '').trim())
         .map(u => ({
           fecha: String(u.Fecha || '').trim(),            // YYYY-MM-DD
-          hora: toHms(String(u.Hora || '').trim()),       // HH:mm:ss
+          hora: String(u.Hora || '').trim().length === 5
+            ? `${String(u.Hora || '').trim()}:00`
+            : String(u.Hora || '').trim(),               // HH:mm:ss
           ubicacion: String(u.Direccion || '').trim(),    // nombre corto/lugar
           direccion: String(u.DireccionExacta || '').trim(), // dirección exacta
           notas: String(u.Notas || '').trim()
         })),
       items: (this.selectedPaquetes || []).map(it => ({
-        tmpId: it.tmpId,
-        exsId: it.ID ?? null,                    // FK_ExS_Cod si proviene de catálogo
-        eventoCodigo: null,                      // Si luego asocias al evento, coloca el PK_PE_Cod
-        moneda: 'USD',                           // Cambia a 'USD' si corresponde
+        idEventoServicio: it.ID ?? null,
+        eventoCodigo: null,
+        moneda: 'USD',
         nombre: String(it.descripcion || '').trim(),
         descripcion: String(it.descripcion || '').trim(),
         precioUnit: Number(it.precio || 0),
@@ -1348,8 +1331,7 @@ export class AgregarPedidoComponent implements OnInit, AfterViewInit, OnDestroy 
         descuento: 0,
         recargo: 0,
         notas: String(it.notas || '').trim()
-      })),
-      serviciosFechas: serviciosFechas.length ? serviciosFechas : undefined
+      }))
     };
 
     // ====== Validaciones de coherencia (extra) ======

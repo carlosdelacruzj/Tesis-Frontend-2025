@@ -2631,7 +2631,6 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         empleadoId: this.CodigoEmpleado ?? 1,
         fechaCreacion: fechaCreacion,
         estadoPedidoId: this.estadoPedidoId ?? 1,
-        estadoPagoId: this.estadoPagoId ?? 1,
         fechaEvento: fechaEvento,
         lugar: lugar,
         observaciones:
