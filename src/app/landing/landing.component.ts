@@ -238,7 +238,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     {
       question: '¿Requieren adelanto para reservar la fecha?',
       answer:
-        'Sí, se reserva con el 30% del paquete contratado. El saldo se cancela el día del evento.',
+        'Sí, se reserva con el 50% del paquete contratado.',
     },
     {
       question: '¿Cubren eventos fuera de Lima?',
@@ -246,20 +246,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         'Sí, viajamos a todo el Perú. Se cotizan viáticos y logística según destino.',
     },
     {
-      question: '¿Puedo agregar un segundo fotógrafo o drone?',
+      question: '¿Puedo solicitar archivos RAW?',
       answer:
-        'Claro, contamos con operadores certificados para drone y un pool de fotógrafos adicionales.',
-    },
-    {
-      question: '¿Puedo solicitar archivos RAW o uso comercial?',
-      answer:
-        'Sí. Los RAW se entregan bajo acuerdo y aplican tarifas adicionales según licencia de uso.',
-    },
-    {
-      question: '¿Qué pasa si cambia la fecha?',
-      answer:
-        'Podemos reprogramar sin penalidad hasta 45 días antes. Luego, aplican cargos por bloqueo de agenda.',
-    },
+        'Sí. Los RAW se entregan bajo acuerdo.',
+    }
   ];
 
   // Optional extras rendered as checkboxes
