@@ -1,1216 +1,884 @@
 @if (!loading) {
-  <div class="dashboard-content" [class.is-saving]="saving">
-    <app-list-toolbar
-      [title]="'Editar cotización'"
-      [showSearch]="false"
-      [showCreateButton]="false"
-    >
-    </app-list-toolbar>
+<div class="dashboard-content" [class.is-saving]="saving">
+  <app-list-toolbar [title]="'Editar cotización'" [showSearch]="false" [showCreateButton]="false">
+  </app-list-toolbar>
 
-    <form class="cotizacion-form" [formGroup]="form" (ngSubmit)="update()">
-      <div class="row g-3 card-grid">
-        <div class="col-md-6">
-          <mat-card class="card">
-            <mat-card-header>
-              <mat-card-title>Datos del solicitante</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <div class="form-group">
-                <label class="col-form-label" for="clienteNombre"
-                  >Nombre completo</label
-                >
-                <input
-                  id="clienteNombre"
-                  type="text"
-                  class="form-control"
-                  formControlName="clienteNombre"
-                  placeholder="Nombre y apellidos"
-                />
-                @if (
-                  form.get("clienteNombre")?.invalid &&
-                  form.get("clienteNombre")?.touched
-                ) {
-                  <small class="text-danger">
-                    Ingresa al menos 2 caracteres.
-                  </small>
-                }
-              </div>
-
-              <div class="form-group">
-                <label class="col-form-label" for="clienteContacto"
-                  >WhatsApp / contacto</label
-                >
-                <input
-                  id="clienteContacto"
-                  type="tel"
-                  class="form-control"
-                  formControlName="clienteContacto"
-                  placeholder="Ej. 999 999 999"
-                />
-                @if (
-                  form.get("clienteContacto")?.invalid &&
-                  form.get("clienteContacto")?.touched
-                ) {
-                  <small class="text-danger">
-                    Ingresa un medio de contacto valido.
-                  </small>
-                }
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-
-        <div class="col-md-6">
-          <mat-card class="card">
-            <mat-card-header>
-              <mat-card-title>Detalles del evento</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label class="col-form-label" for="diasEvento"
-                      >Cantidad de días</label
-                    >
-                    <select
-                      id="diasEvento"
-                      class="form-select"
-                      formControlName="dias"
-                      [class.is-invalid]="
-                        form.get('dias')?.invalid && form.get('dias')?.touched
-                      "
-                    >
-                      <option [ngValue]="null" disabled>Selecciona días</option>
-                      @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
-                        <option [ngValue]="dia">{{ dia }}</option>
-                      }
-                    </select>
-                    @if (
-                      form.get("dias")?.hasError("required") &&
-                      form.get("dias")?.touched
-                    ) {
-                      <small class="text-danger">
-                        Ingresa la cantidad de días.
-                      </small>
-                    }
-                    @if (
-                      form.get("dias")?.hasError("min") &&
-                      form.get("dias")?.touched
-                    ) {
-                      <small class="text-danger">
-                        Ingresa un número mayor a 0.
-                      </small>
-                    }
-                    @if (
-                      form.get("dias")?.hasError("max") &&
-                      form.get("dias")?.touched
-                    ) {
-                      <small class="text-danger">
-                        El máximo permitido es 7 días.
-                      </small>
-                    }
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label class="col-form-label" for="horasEstimadas"
-                      >Horas estimadas por día</label
-                    >
-                    <input
-                      id="horasEstimadas"
-                      type="number"
-                      class="form-control"
-                      formControlName="horasEstimadas"
-                      placeholder="Ej. 6"
-                      min="1"
-                      step="1"
-                      inputmode="numeric"
-                      [class.is-invalid]="
-                        form.get('horasEstimadas')?.invalid &&
-                        form.get('horasEstimadas')?.touched
-                      "
-                    />
-                    @if (
-                      form.get("horasEstimadas")?.hasError("required") &&
-                      form.get("horasEstimadas")?.touched
-                    ) {
-                      <small class="text-danger">
-                        Ingresa las horas estimadas por día.
-                      </small>
-                    }
-                    @if (
-                      form.get("horasEstimadas")?.hasError("pattern") &&
-                      form.get("horasEstimadas")?.touched
-                    ) {
-                      <small class="text-danger">
-                        Usa solo números enteros.
-                      </small>
-                    }
-                    @if (
-                      form.get("horasEstimadas")?.hasError("min") &&
-                      form.get("horasEstimadas")?.touched
-                    ) {
-                      <small class="text-danger">
-                        Ingresa un número mayor a 0.
-                      </small>
-                    }
-                  </div>
-                </div>
-              </div>
-              <div class="row g-3 mt-1">
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label class="col-form-label" for="departamentoSelect"
-                      >Departamento</label
-                    >
-                    <select
-                      id="departamentoSelect"
-                      class="form-select"
-                      formControlName="departamento"
-                      [class.is-invalid]="
-                        form.get('departamento')?.invalid &&
-                        form.get('departamento')?.touched
-                      "
-                    >
-                      <option value="">Selecciona un departamento</option>
-                      @for (dep of departamentos; track dep) {
-                        <option [value]="dep">{{ dep }}</option>
-                      }
-                    </select>
-                    @if (
-                      form.get("departamento")?.invalid &&
-                      form.get("departamento")?.touched
-                    ) {
-                      <small class="text-danger">
-                        Selecciona el departamento del evento.
-                      </small>
-                    }
-                  </div>
-                </div>
-                <div class="col-sm-6">
-                  <div class="form-group">
-                    <label class="col-form-label" for="eventoSelect"
-                      >Tipo de evento</label
-                    >
-                    <select
-                      id="eventoSelect"
-                      class="form-select"
-                      [ngModel]="selectedEventoId"
-                      [ngModelOptions]="{ standalone: true }"
-                      (ngModelChange)="onEventoModelChange($event)"
-                      [disabled]="!eventos.length"
-                      [ngClass]="{
-                        'is-invalid': eventoSelectTouched && !selectedEventoId,
-                      }"
-                    >
-                      <option [ngValue]="null" disabled>
-                        Selecciona un tipo de evento
-                      </option>
-                      @for (
-                        evento of eventos;
-                        track evento.id !== null && evento.id !== undefined
-                          ? evento.id
-                          : $index
-                      ) {
-                        <option [ngValue]="evento.id">
-                          {{ corregirCumple(evento.nombre) }}
-                        </option>
-                      }
-                    </select>
-                    @if (eventoSelectTouched && !selectedEventoId) {
-                      <small class="text-danger">
-                        Selecciona un tipo de evento.
-                      </small>
-                    }
-                  </div>
-                </div>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-      </div>
-
-      <mat-card class="card mb-3">
-        <mat-card-header class="programacion-header">
-          <mat-card-title>Programación del evento</mat-card-title>
-          <mat-card-subtitle>
-            Define las locaciones clave y los horarios estimados. Siempre
-            considera al menos {{ programacionMinimaRecomendada }} puntos
-            principales.
-          </mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="programacion-fechas form-group mb-3">
-            <label class="col-form-label mb-2">Fechas de trabajo</label>
-            <div formArrayName="fechasTrabajo" class="row g-2">
-              @for (control of fechasTrabajo.controls; track $index) {
-                <div class="col-md-4">
-                  <label class="small text-muted mb-1 d-block"
-                    >Día {{ $index + 1 }}</label
-                  >
-                  <input
-                    type="date"
-                    class="form-control"
-                    [formControlName]="$index"
-                    [min]="fechaMinimaEvento"
-                    [max]="fechaMaximaEvento"
-                    (change)="
-                      onFechaTrabajoChange($index, $any($event.target).value)
-                    "
-                    [class.is-invalid]="
-                      control.invalid &&
-                      (control.touched || form.get('dias')?.touched)
-                    "
-                  />
-                  @if (
-                    control.invalid &&
-                    (control.touched || form.get("dias")?.touched)
-                  ) {
-                    <small class="text-danger"
-                      >Selecciona una fecha válida.</small
-                    >
-                  }
-                </div>
+  <form class="cotizacion-form" [formGroup]="form" (ngSubmit)="update()">
+    <div class="row g-3 card-grid">
+      <div class="col-md-6">
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title>Datos del solicitante</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="form-group">
+              <label class="col-form-label" for="clienteNombre">Nombre completo</label>
+              <input id="clienteNombre" type="text" class="form-control" formControlName="clienteNombre"
+                placeholder="Nombre y apellidos" />
+              @if (
+              form.get("clienteNombre")?.invalid &&
+              form.get("clienteNombre")?.touched
+              ) {
+              <small class="text-danger">
+                Ingresa al menos 2 caracteres.
+              </small>
               }
             </div>
-          </div>
-          <div formArrayName="programacion" class="programacion-list">
-            @for (
-              fecha of fechasTrabajoValores;
-              track fecha;
-              let diaIndex = $index
-            ) {
-              <div class="programacion-day">
-                <div
-                  class="programacion-day__header d-flex align-items-center justify-content-between gap-2"
-                >
-                  <div>
-                    <h5 class="mb-1">
-                      Día {{ diaIndex + 1 }} · {{ formatFechaConDia(fecha) }}
-                    </h5>
-                    @let resumenDia = getResumenDia(fecha);
-                    <div class="programacion-day__summary">
-                      <span class="programacion-chip programacion-chip--soft"
-                        >{{ resumenDia.total }} locación(es)</span
-                      >
-                      <span class="programacion-chip programacion-chip--soft"
-                        >Inicio: {{ resumenDia.primera }}</span
-                      >
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center gap-2">
-                    @if (canCopiarDiaAnterior(diaIndex)) {
-                      <button
-                        type="button"
-                        class="btn btn-secondary btn-sm"
-                        (click)="copiarLocacionesDiaAnterior(diaIndex, fecha)"
-                      >
-                        <i class="fa-regular fa-copy"></i>
-                        Copiar día anterior
-                      </button>
+
+            <div class="form-group">
+              <label class="col-form-label" for="clienteContacto">WhatsApp / contacto</label>
+              <input id="clienteContacto" type="tel" class="form-control" formControlName="clienteContacto"
+                placeholder="Ej. 999 999 999" />
+              @if (
+              form.get("clienteContacto")?.invalid &&
+              form.get("clienteContacto")?.touched
+              ) {
+              <small class="text-danger">
+                Ingresa un medio de contacto valido.
+              </small>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <div class="col-md-6">
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title>Detalles del evento</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="form-group" [class.flow-locked]="!isEventoSeleccionado()">
+                  <label class="col-form-label" for="eventoSelect">Tipo de evento</label>
+                  <select id="eventoSelect" class="form-select" [ngModel]="selectedEventoId"
+                    [ngModelOptions]="{ standalone: true }" (ngModelChange)="onEventoModelChange($event)"
+                    [disabled]="!eventos.length" [ngClass]="{
+                        'is-invalid': eventoSelectTouched && !selectedEventoId,
+                      }">
+                    <option [ngValue]="null" disabled>
+                      Selecciona un tipo de evento
+                    </option>
+                    @for (
+                    evento of eventos;
+                    track evento.id !== null && evento.id !== undefined
+                    ? evento.id
+                    : $index
+                    ) {
+                    <option [ngValue]="evento.id">
+                      {{ corregirCumple(evento.nombre) }}
+                    </option>
                     }
-                    <button
-                      type="button"
-                      class="btn btn-primary btn-sm"
-                      (click)="addProgramacionItem(fecha)"
-                      [disabled]="!canAgregarLocacion(fecha)"
-                      [attr.title]="
+                  </select>
+                  @if (eventoSelectTouched && !selectedEventoId) {
+                  <small class="text-danger">
+                    Selecciona un tipo de evento.
+                  </small>
+                  }
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="form-group">
+                  <label class="col-form-label" for="departamentoSelect">Departamento</label>
+                  <select id="departamentoSelect" class="form-select" formControlName="departamento" [class.is-invalid]="
+                        form.get('departamento')?.invalid &&
+                        form.get('departamento')?.touched
+                      " [disabled]="!isEventoSeleccionado()">
+                    <option value="">Selecciona un departamento</option>
+                    @for (dep of departamentos; track dep) {
+                    <option [value]="dep">{{ dep }}</option>
+                    }
+                  </select>
+                  @if (
+                  form.get("departamento")?.invalid &&
+                  form.get("departamento")?.touched
+                  ) {
+                  <small class="text-danger">
+                    Selecciona el departamento del evento.
+                  </small>
+                  }
+                </div>
+              </div>
+
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="form-group" [class.flow-locked]="!isEventoSeleccionado()">
+                  <label class="col-form-label" for="diasEvento">Cantidad de días</label>
+                  <select id="diasEvento" class="form-select" formControlName="dias" [class.is-invalid]="
+                        form.get('dias')?.invalid && form.get('dias')?.touched
+                      " [disabled]="!isEventoSeleccionado()">
+                    <option [ngValue]="null" disabled>Selecciona días</option>
+                    @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
+                    <option [ngValue]="dia">{{ dia }}</option>
+                    }
+                  </select>
+                  @if (
+                  form.get("dias")?.hasError("required") &&
+                  form.get("dias")?.touched
+                  ) {
+                  <small class="text-danger">
+                    Ingresa la cantidad de días.
+                  </small>
+                  }
+                  @if (
+                  form.get("dias")?.hasError("min") &&
+                  form.get("dias")?.touched
+                  ) {
+                  <small class="text-danger">
+                    Ingresa un número mayor a 0.
+                  </small>
+                  }
+                  @if (
+                  form.get("dias")?.hasError("max") &&
+                  form.get("dias")?.touched
+                  ) {
+                  <small class="text-danger">
+                    El máximo permitido es 7 días.
+                  </small>
+                  }
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group" [class.flow-locked]="!isEventoSeleccionado()">
+                  <label class="col-form-label" for="horasEstimadas">Horas estimadas por día</label>
+                  <input id="horasEstimadas" type="number" class="form-control" formControlName="horasEstimadas"
+                    placeholder="Ej. 6" min="1" step="1" inputmode="numeric" [class.is-invalid]="
+                        form.get('horasEstimadas')?.invalid &&
+                        form.get('horasEstimadas')?.touched
+                      " [disabled]="!isEventoSeleccionado()" />
+                  @if (
+                  form.get("horasEstimadas")?.hasError("required") &&
+                  form.get("horasEstimadas")?.touched
+                  ) {
+                  <small class="text-danger">
+                    Ingresa las horas estimadas por día.
+                  </small>
+                  }
+                  @if (
+                  form.get("horasEstimadas")?.hasError("pattern") &&
+                  form.get("horasEstimadas")?.touched
+                  ) {
+                  <small class="text-danger">
+                    Usa solo números enteros.
+                  </small>
+                  }
+                  @if (
+                  form.get("horasEstimadas")?.hasError("min") &&
+                  form.get("horasEstimadas")?.touched
+                  ) {
+                  <small class="text-danger">
+                    Ingresa un número mayor a 0.
+                  </small>
+                  }
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    <div [attr.inert]="canContinueFlow() ? null : ''" [class.flow-locked]="!canContinueFlow()">
+    <mat-card class="card mb-3">
+      <mat-card-header class="programacion-header">
+        <mat-card-title>Programación del evento</mat-card-title>
+        <mat-card-subtitle>
+          Define las locaciones clave y los horarios estimados. Siempre
+          considera al menos {{ programacionMinimaRecomendada }} puntos
+          principales.
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="programacion-fechas form-group mb-3">
+          <label class="col-form-label mb-2">Fechas de trabajo</label>
+          <div formArrayName="fechasTrabajo" class="row g-2">
+            @for (control of fechasTrabajo.controls; track $index) {
+            <div class="col-md-4">
+              <label class="small text-muted mb-1 d-block">Día {{ $index + 1 }}</label>
+              <input type="date" class="form-control" [formControlName]="$index" [min]="fechaMinimaEvento"
+                [max]="fechaMaximaEvento" (change)="
+                      onFechaTrabajoChange($index, $any($event.target).value)
+                    " [class.is-invalid]="
+                      control.invalid &&
+                      (control.touched || form.get('dias')?.touched)
+                    " />
+              @if (
+              control.invalid &&
+              (control.touched || form.get("dias")?.touched)
+              ) {
+              <small class="text-danger">Selecciona una fecha válida.</small>
+              }
+            </div>
+            }
+          </div>
+        </div>
+        <div formArrayName="programacion" class="programacion-list">
+          @for (
+          fecha of fechasTrabajoValores;
+          track fecha;
+          let diaIndex = $index
+          ) {
+          <div class="programacion-day">
+            <div class="programacion-day__header d-flex align-items-center justify-content-between gap-2">
+              <div>
+                <h5 class="mb-1">
+                  Día {{ diaIndex + 1 }} · {{ formatFechaConDia(fecha) }}
+                </h5>
+                @let resumenDia = getResumenDia(fecha);
+                <div class="programacion-day__summary">
+                  <span class="programacion-chip programacion-chip--soft">{{ resumenDia.total }} locación(es)</span>
+                  <span class="programacion-chip programacion-chip--soft">Inicio: {{ resumenDia.primera }}</span>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                @if (canCopiarDiaAnterior(diaIndex)) {
+                <button type="button" class="btn btn-secondary btn-sm"
+                  (click)="copiarLocacionesDiaAnterior(diaIndex, fecha)">
+                  <i class="fa-regular fa-copy"></i>
+                  Copiar día anterior
+                </button>
+                }
+                <button type="button" class="btn btn-primary btn-sm" (click)="addProgramacionItem(fecha)"
+                  [disabled]="!canAgregarLocacion(fecha)" [attr.title]="
                         !canAgregarLocacion(fecha)
                           ? 'Máximo ' +
                             maxLocacionesPorDia +
                             ' locaciones por día'
                           : 'Agregar locación'
-                      "
-                    >
-                      <i class="fa-solid fa-location-dot"></i>
-                      Agregar locación
-                    </button>
-                  </div>
-                </div>
+                      ">
+                  <i class="fa-solid fa-location-dot"></i>
+                  Agregar locación
+                </button>
+              </div>
+            </div>
 
-                @let indices = getProgramacionIndicesPorFecha(fecha);
-                @if (!indices.length) {
-                  <div class="programacion-empty">
-                    Aún no hay locaciones para este día.
+            @let indices = getProgramacionIndicesPorFecha(fecha);
+            @if (!indices.length) {
+            <div class="programacion-empty">
+              Aún no hay locaciones para este día.
+            </div>
+            }
+            @for (index of indices; track index) {
+            @let grupo = programacion.at(index);
+            <div class="programacion-item" [formGroupName]="index">
+              <div
+                class="programacion-item__header d-flex align-items-center justify-content-between gap-2 programacion-item__header--clickable"
+                (click)="toggleProgramacionExpandida(index)">
+                <div class="programacion-item__summary">
+                  <div class="d-flex align-items-center gap-2">
+                    <h4 class="mb-0">
+                      {{
+                      grupo.get("nombre")?.value ||
+                      "Locación " + (index + 1)
+                      }}
+                    </h4>
+                    @if (!isProgramacionExpandida(index)) {
+                    <span class="programacion-chip" [ngClass]="getProgramacionEstadoClass(index)">
+                      {{ getProgramacionEstadoLabel(index) }}
+                    </span>
+                    }
                   </div>
-                }
-                @for (index of indices; track index) {
-                  @let grupo = programacion.at(index);
-                  <div class="programacion-item" [formGroupName]="index">
-                    <div
-                      class="programacion-item__header d-flex align-items-center justify-content-between gap-2 programacion-item__header--clickable"
-                      (click)="toggleProgramacionExpandida(index)"
-                    >
-                      <div class="programacion-item__summary">
-                        <div class="d-flex align-items-center gap-2">
-                          <h4 class="mb-0">
-                            {{
-                              grupo.get("nombre")?.value ||
-                                "Locación " + (index + 1)
-                            }}
-                          </h4>
-                          @if (!isProgramacionExpandida(index)) {
-                            <span
-                              class="programacion-chip"
-                              [ngClass]="getProgramacionEstadoClass(index)"
-                            >
-                              {{ getProgramacionEstadoLabel(index) }}
-                            </span>
-                          }
-                        </div>
-                        @if (!isProgramacionExpandida(index)) {
-                          <div class="programacion-item__meta">
-                            <span
-                              class="programacion-chip programacion-chip--soft"
-                              >{{ getProgramacionHoraResumen(index) }}</span
-                            >
-                            <span
-                              class="programacion-chip programacion-chip--soft"
-                              >{{
-                                getProgramacionDireccionResumen(index)
-                              }}</span
-                            >
-                          </div>
-                        }
-                      </div>
-                      <div class="d-flex align-items-center gap-2">
-                        <button
-                          type="button"
-                          class="btn btn-outline-secondary btn-sm"
-                          (click)="
+                  @if (!isProgramacionExpandida(index)) {
+                  <div class="programacion-item__meta">
+                    <span class="programacion-chip programacion-chip--soft">{{ getProgramacionHoraResumen(index)
+                      }}</span>
+                    <span class="programacion-chip programacion-chip--soft">{{
+                      getProgramacionDireccionResumen(index)
+                      }}</span>
+                  </div>
+                  }
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="
                             $event.stopPropagation();
                             duplicarProgramacionItem(index)
-                          "
-                        >
-                          Duplicar
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-outline-danger btn-sm programacion-item__remove"
-                          (click)="
+                          ">
+                    Duplicar
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm programacion-item__remove" (click)="
                             $event.stopPropagation();
                             removeProgramacionItem(index)
-                          "
-                          [disabled]="programacion.length <= 1"
-                          [attr.aria-label]="
+                          " [disabled]="programacion.length <= 1" [attr.aria-label]="
                             'Eliminar locación ' +
                             (grupo.get('nombre')?.value ||
                               'Locación ' + (index + 1))
-                          "
-                          [attr.title]="
+                          " [attr.title]="
                             programacion.length <= 1
                               ? 'Mantén al menos una locación'
                               : 'Eliminar locación'
-                          "
-                        >
-                          Quitar
-                        </button>
-                      </div>
-                    </div>
+                          ">
+                    Quitar
+                  </button>
+                </div>
+              </div>
 
-                    @if (isProgramacionExpandida(index)) {
-                      <div class="row g-3 mt-2">
-                        <div class="col-md-6">
-                          <div class="form-group">
-                            <label
-                              class="col-form-label"
-                              [attr.for]="'programacionNombre' + index"
-                              >Nombre de la locación</label
-                            >
-                            <input
-                              [attr.id]="'programacionNombre' + index"
-                              type="text"
-                              class="form-control"
-                              formControlName="nombre"
-                              placeholder="Ej. Recepción en casona"
-                              maxlength="50"
-                              [class.is-invalid]="
+              @if (isProgramacionExpandida(index)) {
+              <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionNombre' + index">Nombre de la
+                      locación</label>
+                    <input [attr.id]="'programacionNombre' + index" type="text" class="form-control"
+                      formControlName="nombre" placeholder="Ej. Recepción en casona" maxlength="50" [class.is-invalid]="
                                 grupo.get('nombre')?.invalid &&
                                 grupo.get('nombre')?.touched
-                              "
-                            />
-                            @if (
-                              grupo.get("nombre")?.hasError("required") &&
-                              grupo.get("nombre")?.touched
-                            ) {
-                              <small class="text-danger">
-                                Ingresa la locación.
-                              </small>
-                            }
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <div class="form-group">
-                            <label
-                              class="col-form-label"
-                              [attr.for]="'programacionDireccion' + index"
-                              >Dirección o punto de encuentro</label
-                            >
-                            <input
-                              [attr.id]="'programacionDireccion' + index"
-                              type="text"
-                              class="form-control"
-                              formControlName="direccion"
-                              placeholder="Ej. Av. La Marina 1234"
-                              [class.is-invalid]="
+                              " />
+                    @if (
+                    grupo.get("nombre")?.hasError("required") &&
+                    grupo.get("nombre")?.touched
+                    ) {
+                    <small class="text-danger">
+                      Ingresa la locación.
+                    </small>
+                    }
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionDireccion' + index">Dirección o punto de
+                      encuentro</label>
+                    <input [attr.id]="'programacionDireccion' + index" type="text" class="form-control"
+                      formControlName="direccion" placeholder="Ej. Av. La Marina 1234" [class.is-invalid]="
                                 grupo.get('direccion')?.invalid &&
                                 grupo.get('direccion')?.touched
-                              "
-                            />
-                            @if (
-                              grupo.get("direccion")?.hasError("required") &&
-                              grupo.get("direccion")?.touched
-                            ) {
-                              <small class="text-danger">
-                                Ingresa la dirección.
-                              </small>
-                            }
-                          </div>
-                        </div>
-                        <div class="col-sm-6 col-md-6">
-                          <div class="form-group">
-                            <label
-                              class="col-form-label"
-                              [attr.for]="'programacionHora' + index"
-                              >Hora</label
-                            >
-                            <div class="d-flex gap-2">
-                              <select
-                                class="form-select"
-                                formControlName="hora12"
-                                [class.is-invalid]="
+                              " />
+                    @if (
+                    grupo.get("direccion")?.hasError("required") &&
+                    grupo.get("direccion")?.touched
+                    ) {
+                    <small class="text-danger">
+                      Ingresa la dirección.
+                    </small>
+                    }
+                  </div>
+                </div>
+                <div class="col-sm-6 col-md-6">
+                  <div class="form-group">
+                    <label class="col-form-label" [attr.for]="'programacionHora' + index">Hora</label>
+                    <div class="d-flex gap-2">
+                      <select class="form-select" formControlName="hora12" [class.is-invalid]="
                                   grupo.get('hora12')?.invalid &&
                                   grupo.get('hora12')?.touched
-                                "
-                              >
-                                <option [ngValue]="null" disabled>Hora</option>
-                                @for (hora of horaOptions; track hora) {
-                                  <option [ngValue]="hora">{{ hora }}</option>
-                                }
-                              </select>
-                              <select
-                                class="form-select"
-                                formControlName="minuto"
-                                [class.is-invalid]="
+                                ">
+                        <option [ngValue]="null" disabled>Hora</option>
+                        @for (hora of horaOptions; track hora) {
+                        <option [ngValue]="hora">{{ hora }}</option>
+                        }
+                      </select>
+                      <select class="form-select" formControlName="minuto" [class.is-invalid]="
                                   grupo.get('minuto')?.invalid &&
                                   grupo.get('minuto')?.touched
-                                "
-                              >
-                                <option [ngValue]="null" disabled>Min</option>
-                                @for (minuto of minutoOptions; track minuto) {
-                                  <option [ngValue]="minuto">
-                                    {{ minuto }}
-                                  </option>
-                                }
-                              </select>
-                              <select
-                                class="form-select"
-                                formControlName="ampm"
-                                [class.is-invalid]="
+                                ">
+                        <option [ngValue]="null" disabled>Min</option>
+                        @for (minuto of minutoOptions; track minuto) {
+                        <option [ngValue]="minuto">
+                          {{ minuto }}
+                        </option>
+                        }
+                      </select>
+                      <select class="form-select" formControlName="ampm" [class.is-invalid]="
                                   grupo.get('ampm')?.invalid &&
                                   grupo.get('ampm')?.touched
-                                "
-                              >
-                                <option [ngValue]="null" disabled>AM/PM</option>
-                                @for (meridiem of ampmOptions; track meridiem) {
-                                  <option [ngValue]="meridiem">
-                                    {{ meridiem }}
-                                  </option>
-                                }
-                              </select>
-                            </div>
-                            <input type="hidden" formControlName="hora" />
-                            @if (
-                              (grupo.get("hora12")?.invalid ||
-                                grupo.get("minuto")?.invalid ||
-                                grupo.get("ampm")?.invalid) &&
-                              (grupo.get("hora12")?.touched ||
-                                grupo.get("minuto")?.touched ||
-                                grupo.get("ampm")?.touched)
-                            ) {
-                              <small class="text-danger">
-                                Ingresa la hora.
-                              </small>
-                            }
-                            @if (
-                              grupo.get("hora")?.hasError("rangoHora") &&
-                              (grupo.get("hora12")?.touched ||
-                                grupo.get("minuto")?.touched ||
-                                grupo.get("ampm")?.touched)
-                            ) {
-                              <small class="text-danger">
-                                La hora debe estar entre 06:00 y 22:00.
-                              </small>
-                            }
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <div class="form-group mb-0">
-                            <label
-                              class="col-form-label"
-                              [attr.for]="'programacionNotas' + index"
-                              >Notas internas</label
-                            >
-                            <textarea
-                              [attr.id]="'programacionNotas' + index"
-                              class="form-control"
-                              rows="2"
-                              formControlName="notas"
-                              placeholder="Detalles adicionales para el equipo (opcional)"
-                            ></textarea>
-                          </div>
-                        </div>
-                      </div>
+                                ">
+                        <option [ngValue]="null" disabled>AM/PM</option>
+                        @for (meridiem of ampmOptions; track meridiem) {
+                        <option [ngValue]="meridiem">
+                          {{ meridiem }}
+                        </option>
+                        }
+                      </select>
+                    </div>
+                    <input type="hidden" formControlName="hora" />
+                    @if (
+                    (grupo.get("hora12")?.invalid ||
+                    grupo.get("minuto")?.invalid ||
+                    grupo.get("ampm")?.invalid) &&
+                    (grupo.get("hora12")?.touched ||
+                    grupo.get("minuto")?.touched ||
+                    grupo.get("ampm")?.touched)
+                    ) {
+                    <small class="text-danger">
+                      Ingresa la hora.
+                    </small>
                     }
-                    <input type="hidden" formControlName="fecha" />
+                    @if (
+                    grupo.get("hora")?.hasError("rangoHora") &&
+                    (grupo.get("hora12")?.touched ||
+                    grupo.get("minuto")?.touched ||
+                    grupo.get("ampm")?.touched)
+                    ) {
+                    <small class="text-danger">
+                      La hora debe estar entre 06:00 y 22:00.
+                    </small>
+                    }
                   </div>
-                }
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group mb-0">
+                    <label class="col-form-label" [attr.for]="'programacionNotas' + index">Notas internas</label>
+                    <textarea [attr.id]="'programacionNotas' + index" class="form-control" rows="2"
+                      formControlName="notas" placeholder="Detalles adicionales para el equipo (opcional)"></textarea>
+                  </div>
+                </div>
               </div>
-            }
-            @if (!fechasTrabajoValores.length) {
-              <div class="programacion-empty">
-                Define primero la cantidad de días y sus fechas de trabajo.
-              </div>
+              }
+              <input type="hidden" formControlName="fecha" />
+            </div>
             }
           </div>
-        </mat-card-content>
-      </mat-card>
+          }
+          @if (!fechasTrabajoValores.length) {
+          <div class="programacion-empty">
+            Define primero la cantidad de días y sus fechas de trabajo.
+          </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-      <mat-card class="card mb-3">
-        <mat-card-header>
-          <mat-card-title>Servicios y paquetes</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label class="col-form-label" for="servicioSelect"
-                  >Servicio</label
-                >
-                <select
-                  id="servicioSelect"
-                  class="form-select"
-                  [value]="selectedServicioId ?? ''"
-                  (change)="onServicioDropdownChange($any($event.target).value)"
-                  [disabled]="!servicios.length"
-                >
-                  <option value="" disabled>Selecciona un servicio</option>
-                  @for (
-                    servicio of servicios;
-                    track servicio.id !== null && servicio.id !== undefined
-                      ? servicio.id
-                      : $index
-                  ) {
-                    <option [value]="servicio.id ?? ''">
-                      {{ servicio.nombre ?? "Servicio" }}
-                    </option>
-                  }
-                </select>
-              </div>
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <mat-card-title>Servicios y paquetes</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="col-form-label" for="servicioSelect">Servicio</label>
+              <select id="servicioSelect" class="form-select" [value]="selectedServicioId ?? ''"
+                (change)="onServicioDropdownChange($any($event.target).value)" [disabled]="!servicios.length">
+                <option value="" disabled>Selecciona un servicio</option>
+                @for (
+                servicio of servicios;
+                track servicio.id !== null && servicio.id !== undefined
+                ? servicio.id
+                : $index
+                ) {
+                <option [value]="servicio.id ?? ''">
+                  {{ servicio.nombre ?? "Servicio" }}
+                </option>
+                }
+              </select>
             </div>
           </div>
+        </div>
 
-          @if (!loadingPaquetes) {
-            <div class="table-responsive">
-              <app-table-base
-                [columns]="paquetesColumns"
-                [data]="paquetesRows"
-                [showSearch]="false"
-                [showFooterInfo]="false"
-                [showPagination]="false"
-                [showPageSizeSelector]="false"
-                [showCreateButton]="false"
-                [pageSize]="paquetesRows.length || 10"
-                [pageSizeOptions]="[paquetesRows.length || 10]"
-                emptyText="Sin paquetes disponibles"
-              >
-                <ng-template appCell="titulo" let-row>
-                  {{ row.titulo || "—" }}
-                </ng-template>
+        @if (!loadingPaquetes) {
+        <div class="table-responsive">
+          <app-table-base [columns]="paquetesColumns" [data]="paquetesRows" [showSearch]="false"
+            [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false" [showCreateButton]="false"
+            [pageSize]="paquetesRows.length || 10" [pageSizeOptions]="[paquetesRows.length || 10]"
+            emptyText="Sin paquetes disponibles">
+            <ng-template appCell="titulo" let-row>
+              {{ row.titulo || "—" }}
+            </ng-template>
 
-                <ng-template appCell="precio" let-row>
-                  {{ row.precio | usd: "1.2-2" }}
-                </ng-template>
+            <ng-template appCell="precio" let-row>
+              {{ row.precio | usd: "1.2-2" }}
+            </ng-template>
 
-                <ng-template appCell="staff" let-row>
-                  {{ row.staff !== null ? row.staff : "—" }}
-                </ng-template>
+            <ng-template appCell="staff" let-row>
+              {{ row.staff !== null ? row.staff : "—" }}
+            </ng-template>
 
-                <ng-template appCell="horas" let-row>
-                  {{ row.horas !== null ? row.horas : "—" }}
-                </ng-template>
+            <ng-template appCell="horas" let-row>
+              {{ row.horas !== null ? row.horas : "—" }}
+            </ng-template>
 
-                <ng-template appCell="acciones" let-row>
-                  <div class="d-flex justify-content-center gap-2">
-                    <button
-                      type="button"
-                      class="btn btn-outline-secondary btn-sm"
-                      (click)="mostrarDetallePaquete(row)"
-                    >
-                      Mostrar
-                    </button>
-                    @if (!isInSeleccion(row.raw)) {
-                      <button
-                        type="button"
-                        class="btn btn-primary btn-sm"
-                        [ngClass]="{
+            <ng-template appCell="acciones" let-row>
+              <div class="d-flex justify-content-center gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="mostrarDetallePaquete(row)">
+                  Mostrar
+                </button>
+                @if (!isInSeleccion(row.raw)) {
+                <button type="button" class="btn btn-primary btn-sm" [ngClass]="{
                           'btn-outline-warning': hasOtroPaqueteDelServicio(
                             row.raw
                           ),
-                        }"
-                        (click)="addPaquete(row.raw)"
-                      >
-                        {{
-                          hasOtroPaqueteDelServicio(row.raw)
-                            ? "Reemplazar"
-                            : "Agregar"
-                        }}
-                      </button>
-                    } @else {
-                      <button
-                        type="button"
-                        class="btn btn-outline-danger btn-sm"
-                        (click)="removePaquete(pkgKey(row.raw))"
-                      >
-                        Quitar
-                      </button>
-                    }
-                  </div>
-                </ng-template>
-              </app-table-base>
-            </div>
-          } @else {
-            <div
-              class="d-flex flex-column align-items-center justify-content-center py-4 text-muted"
-            >
-              <mat-spinner diameter="32"></mat-spinner>
-              <span class="mt-2">Cargando paquetes…</span>
-            </div>
-          }
-        </mat-card-content>
-      </mat-card>
-
-      @if (selectedPaquetes.length) {
-        <mat-card class="card mb-3">
-          <mat-card-header>
-            <div
-              class="d-flex align-items-center justify-content-between w-100"
-            >
-              <mat-card-title
-                >Paquetes seleccionados ({{
-                  selectedPaquetes.length
-                }})</mat-card-title
-              >
-              @if (isMultipleDias()) {
-                <button
-                  type="button"
-                  class="btn btn-primary btn-sm"
-                  (click)="abrirAsignacionFechas()"
-                >
-                  <i class="fa-regular fa-calendar"></i>
-                  Asignar fechas
+                        }" (click)="addPaquete(row.raw)">
+                  {{
+                  hasOtroPaqueteDelServicio(row.raw)
+                  ? "Reemplazar"
+                  : "Agregar"
+                  }}
                 </button>
-              }
-            </div>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="table-responsive">
-              <app-table-base
-                [columns]="selectedPaquetesColumns"
-                [data]="selectedPaquetes"
-                [showSearch]="false"
-                [showFooterInfo]="false"
-                [showPagination]="false"
-                [showPageSizeSelector]="false"
-                [showCreateButton]="false"
-                [pageSize]="selectedPaquetes.length || 10"
-                [pageSizeOptions]="[selectedPaquetes.length || 10]"
-                emptyText="Sin paquetes seleccionados"
-              >
-                <ng-template appCell="titulo" let-row>
-                  {{ row.titulo }}
-                </ng-template>
-
-                <ng-template appCell="cantidad" let-row>
-                  <div class="text-center qty-select-wrap">
-                    <mat-form-field
-                      appearance="outline"
-                      class="qty-mat-field form-select-mat"
-                    >
-                      <mat-select
-                        [ngModel]="row.cantidad || 1"
-                        [ngModelOptions]="{ standalone: true }"
-                        (ngModelChange)="onCantidadChange(row, $event)"
-                        panelClass="qty-mat-panel"
-                      >
-                        @for (
-                          cantidad of getCantidadOptions();
-                          track cantidad
-                        ) {
-                          <mat-option
-                            [value]="cantidad"
-                            class="qty-mat-option"
-                            >{{ cantidad }}</mat-option
-                          >
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                  </div>
-                </ng-template>
-
-                <ng-template appCell="precioUnit" let-row>
-                  <div class="text-end">
-                    {{ row.precio | usd: "1.2-2" }}
-                  </div>
-                </ng-template>
-
-                <ng-template appCell="precioOriginal" let-row>
-                  <div class="text-end">
-                    <div>{{ row.precioOriginal | usd: "1.2-2" }}</div>
-                    @if (getDescuentoPorcentaje(row) !== null) {
-                      <div class="text-success small">
-                        -{{ getDescuentoPorcentaje(row) | number: "1.0-1" }}%
-                      </div>
-                    }
-                  </div>
-                </ng-template>
-
-                <ng-template appCell="horas" let-row>
-                  <div class="text-center">{{ row.horas ?? "—" }}</div>
-                </ng-template>
-
-                <ng-template appCell="staff" let-row>
-                  <div class="text-center">{{ row.staff ?? "—" }}</div>
-                </ng-template>
-
-                <ng-template appCell="subtotal" let-row>
-                  <div class="text-end">
-                    {{ row.precio * (row.cantidad || 1) | usd: "1.2-2" }}
-                  </div>
-                </ng-template>
-
-                <ng-template appCell="notas" let-row>
-                  <input
-                    type="text"
-                    class="form-control form-control-sm"
-                    [(ngModel)]="row.notas"
-                    [ngModelOptions]="{ standalone: true }"
-                    maxlength="200"
-                    placeholder="Notas opcionales"
-                  />
-                </ng-template>
-
-                <ng-template appCell="quitar" let-row>
-                  <button
-                    type="button"
-                    class="btn btn-link text-danger p-0"
-                    (click)="removePaquete(row.key)"
-                  >
-                    Quitar
-                  </button>
-                </ng-template>
-              </app-table-base>
-            </div>
-            <div class="text-end mt-2">
-              <strong
-                >Subtotal paquetes: {{ totalPaquetes | usd: "1.2-2" }}</strong
-              >
-            </div>
-          </mat-card-content>
-        </mat-card>
-      }
-      @if (!isDepartamentoLima()) {
-        <mat-card class="card mb-3">
-          <mat-card-header>
-            <mat-card-title>Viáticos</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="form-check mb-3">
-              <input
-                id="viaticosCliente"
-                type="checkbox"
-                class="form-check-input"
-                formControlName="viaticosCliente"
-              />
-              <label class="form-check-label" for="viaticosCliente"
-                >El cliente cubre viáticos</label
-              >
-            </div>
-            @if (!form.get("viaticosCliente")?.value) {
-              <div class="form-group">
-                <label class="col-form-label" for="viaticosMonto"
-                  >Monto de viáticos (USD)</label
-                >
-                <input
-                  id="viaticosMonto"
-                  type="number"
-                  class="form-control"
-                  formControlName="viaticosMonto"
-                  min="1"
-                  step="1"
-                  (blur)="onViaticosMontoBlur($any($event.target).value)"
-                  inputmode="numeric"
-                  [class.is-invalid]="
-                    form.get('viaticosMonto')?.invalid &&
-                    form.get('viaticosMonto')?.touched
-                  "
-                />
-                @if (
-                  form.get("viaticosMonto")?.hasError("required") &&
-                  form.get("viaticosMonto")?.touched
-                ) {
-                  <small class="text-danger">
-                    Ingresa el monto de viáticos.
-                  </small>
-                }
-                @if (
-                  form.get("viaticosMonto")?.hasError("min") &&
-                  form.get("viaticosMonto")?.touched
-                ) {
-                  <small class="text-danger">
-                    El monto debe ser mayor a 0.
-                  </small>
+                } @else {
+                <button type="button" class="btn btn-outline-danger btn-sm" (click)="removePaquete(pkgKey(row.raw))">
+                  Quitar
+                </button>
                 }
               </div>
-            }
-          </mat-card-content>
-        </mat-card>
-      }
+            </ng-template>
+          </app-table-base>
+        </div>
+        } @else {
+        <div class="d-flex flex-column align-items-center justify-content-center py-4 text-muted">
+          <mat-spinner diameter="32"></mat-spinner>
+          <span class="mt-2">Cargando paquetes…</span>
+        </div>
+        }
+      </mat-card-content>
+    </mat-card>
 
-      <mat-card class="card mb-3">
-        <mat-card-header>
-          <mat-card-title>Mensaje del solicitante</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <textarea
-            class="form-control"
-            rows="3"
-            formControlName="descripcion"
-            placeholder="Mensaje proporcionado en la solicitud"
-          ></textarea>
-        </mat-card-content>
-      </mat-card>
+    @if (selectedPaquetes.length) {
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <div class="d-flex align-items-center justify-content-between w-100">
+          <mat-card-title>Paquetes seleccionados ({{
+            selectedPaquetes.length
+            }})</mat-card-title>
+          @if (isMultipleDias()) {
+          <button type="button" class="btn btn-primary btn-sm" (click)="abrirAsignacionFechas()">
+            <i class="fa-regular fa-calendar"></i>
+            Asignar fechas
+          </button>
+          }
+        </div>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-responsive">
+          <app-table-base [columns]="selectedPaquetesColumns" [data]="selectedPaquetes" [showSearch]="false"
+            [showFooterInfo]="false" [showPagination]="false" [showPageSizeSelector]="false" [showCreateButton]="false"
+            [pageSize]="selectedPaquetes.length || 10" [pageSizeOptions]="[selectedPaquetes.length || 10]"
+            emptyText="Sin paquetes seleccionados">
+            <ng-template appCell="titulo" let-row>
+              {{ row.titulo }}
+            </ng-template>
 
-      <div class="row mb-3">
-        <div class="col-md-4 ms-auto">
-          <label class="col-form-label" for="totalEstimado">Total final</label>
-          <div class="input-group">
-            <span class="input-group-text">US$</span>
-            <input
-              id="totalEstimado"
-              type="number"
-              class="form-control"
-              formControlName="totalEstimado"
-              min="0"
-              step="0.01"
-            />
-          </div>
+            <ng-template appCell="cantidad" let-row>
+              <div class="text-center qty-select-wrap">
+                <mat-form-field appearance="outline" class="qty-mat-field form-select-mat">
+                  <mat-select [ngModel]="row.cantidad || 1" [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="onCantidadChange(row, $event)" panelClass="qty-mat-panel">
+                    @for (
+                    cantidad of getCantidadOptions();
+                    track cantidad
+                    ) {
+                    <mat-option [value]="cantidad" class="qty-mat-option">{{ cantidad }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </ng-template>
+
+            <ng-template appCell="precioUnit" let-row>
+              <div class="text-end">
+                {{ row.precio | usd: "1.2-2" }}
+              </div>
+            </ng-template>
+
+            <ng-template appCell="precioOriginal" let-row>
+              <div class="text-end">
+                <div>{{ row.precioOriginal | usd: "1.2-2" }}</div>
+                @if (getDescuentoPorcentaje(row) !== null) {
+                <div class="text-success small">
+                  -{{ getDescuentoPorcentaje(row) | number: "1.0-1" }}%
+                </div>
+                }
+              </div>
+            </ng-template>
+
+            <ng-template appCell="horas" let-row>
+              <div class="text-center">{{ row.horas ?? "—" }}</div>
+            </ng-template>
+
+            <ng-template appCell="staff" let-row>
+              <div class="text-center">{{ row.staff ?? "—" }}</div>
+            </ng-template>
+
+            <ng-template appCell="subtotal" let-row>
+              <div class="text-end">
+                {{ row.precio * (row.cantidad || 1) | usd: "1.2-2" }}
+              </div>
+            </ng-template>
+
+            <ng-template appCell="notas" let-row>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="row.notas"
+                [ngModelOptions]="{ standalone: true }" maxlength="200" placeholder="Notas opcionales" />
+            </ng-template>
+
+            <ng-template appCell="quitar" let-row>
+              <button type="button" class="btn btn-link text-danger p-0" (click)="removePaquete(row.key)">
+                Quitar
+              </button>
+            </ng-template>
+          </app-table-base>
+        </div>
+        <div class="text-end mt-2">
+          <strong>Subtotal paquetes: {{ totalPaquetes | usd: "1.2-2" }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    }
+    @if (!isDepartamentoLima()) {
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <mat-card-title>Viáticos</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="form-check mb-3">
+          <input id="viaticosCliente" type="checkbox" class="form-check-input" formControlName="viaticosCliente" />
+          <label class="form-check-label" for="viaticosCliente">El cliente cubre viáticos</label>
+        </div>
+        @if (!form.get("viaticosCliente")?.value) {
+        <div class="form-group">
+          <label class="col-form-label" for="viaticosMonto">Monto de viáticos (USD)</label>
+          <input id="viaticosMonto" type="number" class="form-control" formControlName="viaticosMonto" min="1" step="1"
+            (blur)="onViaticosMontoBlur($any($event.target).value)" inputmode="numeric" [class.is-invalid]="
+                    form.get('viaticosMonto')?.invalid &&
+                    form.get('viaticosMonto')?.touched
+                  " />
+          @if (
+          form.get("viaticosMonto")?.hasError("required") &&
+          form.get("viaticosMonto")?.touched
+          ) {
+          <small class="text-danger">
+            Ingresa el monto de viáticos.
+          </small>
+          }
+          @if (
+          form.get("viaticosMonto")?.hasError("min") &&
+          form.get("viaticosMonto")?.touched
+          ) {
+          <small class="text-danger">
+            El monto debe ser mayor a 0.
+          </small>
+          }
+        </div>
+        }
+      </mat-card-content>
+    </mat-card>
+    }
+
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <mat-card-title>Mensaje del solicitante</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <textarea class="form-control" rows="3" formControlName="descripcion"
+          placeholder="Mensaje proporcionado en la solicitud"></textarea>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="row mb-3">
+      <div class="col-md-4 ms-auto">
+        <label class="col-form-label" for="totalEstimado">Total final</label>
+        <div class="input-group">
+          <span class="input-group-text">US$</span>
+          <input id="totalEstimado" type="number" class="form-control" formControlName="totalEstimado" min="0"
+            step="0.01" />
         </div>
       </div>
+    </div>
 
-      <div class="text-end">
-        <button
-          type="button"
-          class="btn btn-danger me-2"
-          (click)="cancel()"
-          [disabled]="saving"
-        >
-          Cancelar
-        </button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving">
-          @if (!saving) {
-            <span>Guardar cambios</span>
-          }
-          @if (saving) {
-            <span
-              class="spinner-border spinner-border-sm"
-              role="status"
-              aria-hidden="true"
-            ></span>
-          }
-        </button>
-      </div>
-    </form>
-  </div>
+    <div class="text-end">
+      <button type="button" class="btn btn-danger me-2" (click)="cancel()" [disabled]="saving">
+        Cancelar
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="saving">
+        @if (!saving) {
+        <span>Guardar cambios</span>
+        }
+        @if (saving) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+      </button>
+    </div>
+    </div>
+  </form>
+</div>
 } @else {
-  <div
-    class="d-flex flex-column align-items-center justify-content-center py-5 text-muted"
-  >
-    <mat-spinner diameter="40"></mat-spinner>
-    <p class="mt-3 mb-0">Cargando cotización…</p>
-  </div>
+<div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+  <mat-spinner diameter="40"></mat-spinner>
+  <p class="mt-3 mb-0">Cargando cotización…</p>
+</div>
 }
 
-<app-modal-base
-  [open]="detallePaqueteAbierto"
-  [disableClose]="false"
-  [loading]="false"
-  [useDefaultFooter]="false"
-  size="lg"
-  title="Detalle del paquete"
-  (closed)="cerrarDetallePaquete()"
->
+<app-modal-base [open]="detallePaqueteAbierto" [disableClose]="false" [loading]="false" [useDefaultFooter]="false"
+  size="lg" title="Detalle del paquete" (closed)="cerrarDetallePaquete()">
   @if (detallePaqueteSeleccionado) {
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label" for="detallePaqueteTituloEdit">Título</label>
-        <input
-          id="detallePaqueteTituloEdit"
-          class="form-control"
-          [value]="detallePaqueteSeleccionado?.titulo ?? '—'"
-          disabled
-        />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label" for="detallePaquetePrecioEdit">Precio</label>
-        <input
-          id="detallePaquetePrecioEdit"
-          class="form-control"
-          [value]="detallePaqueteSeleccionado?.precio ?? 0 | usd: '1.0-0'"
-          disabled
-        />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label" for="detallePaqueteHorasEdit">Horas</label>
-        <input
-          id="detallePaqueteHorasEdit"
-          class="form-control"
-          [value]="detallePaqueteSeleccionado?.horas ?? '—'"
-          disabled
-        />
-      </div>
-      <div class="col-md-6">
-        <label class="form-label" for="detallePaqueteServicioEdit"
-          >Servicio</label
-        >
-        <input
-          id="detallePaqueteServicioEdit"
-          class="form-control"
-          [value]="
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label" for="detallePaqueteTituloEdit">Título</label>
+      <input id="detallePaqueteTituloEdit" class="form-control" [value]="detallePaqueteSeleccionado?.titulo ?? '—'"
+        disabled />
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="detallePaquetePrecioEdit">Precio</label>
+      <input id="detallePaquetePrecioEdit" class="form-control"
+        [value]="detallePaqueteSeleccionado?.precio ?? 0 | usd: '1.0-0'" disabled />
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="detallePaqueteHorasEdit">Horas</label>
+      <input id="detallePaqueteHorasEdit" class="form-control" [value]="detallePaqueteSeleccionado?.horas ?? '—'"
+        disabled />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="detallePaqueteServicioEdit">Servicio</label>
+      <input id="detallePaqueteServicioEdit" class="form-control" [value]="
             detallePaqueteSeleccionado?.servicioNombre ??
             detallePaqueteSeleccionado?.servicio?.nombre ??
             '—'
-          "
-          disabled
-        />
-      </div>
-      <div class="col-md-6">
-        <label class="form-label" for="detallePaqueteCategoriaEdit"
-          >Categoría</label
-        >
-        <input
-          id="detallePaqueteCategoriaEdit"
-          class="form-control"
-          [value]="
+          " disabled />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="detallePaqueteCategoriaEdit">Categoría</label>
+      <input id="detallePaqueteCategoriaEdit" class="form-control" [value]="
             detallePaqueteSeleccionado?.categoriaNombre ??
             detallePaqueteSeleccionado?.categoriaTipo ??
             '—'
-          "
-          disabled
-        />
-      </div>
-      <div class="col-md-6">
-        <label class="form-label" for="detallePaqueteTipoEdit"
-          >Tipo de paquete</label
-        >
-        <input
-          id="detallePaqueteTipoEdit"
-          class="form-control"
-          [value]="
+          " disabled />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="detallePaqueteTipoEdit">Tipo de paquete</label>
+      <input id="detallePaqueteTipoEdit" class="form-control" [value]="
             detallePaqueteSeleccionado?.esAddon ? 'Add-on' : 'Paquete principal'
-          "
-          disabled
-        />
-      </div>
-      <div class="col-12">
-        <label class="form-label" for="detallePaqueteDescripcionEdit"
-          >Descripción</label
-        >
-        <textarea
-          id="detallePaqueteDescripcionEdit"
-          class="form-control"
-          rows="3"
-          [value]="
+          " disabled />
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="detallePaqueteDescripcionEdit">Descripción</label>
+      <textarea id="detallePaqueteDescripcionEdit" class="form-control" rows="3" [value]="
             detallePaqueteSeleccionado?.descripcion ||
             detallePaqueteSeleccionado?.Descripcion ||
             '—'
-          "
-          disabled
-        ></textarea>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="detallePaqueteFotosEdit"
-          >Fotos impresas</label
-        >
-        <input
-          id="detallePaqueteFotosEdit"
-          class="form-control"
-          [value]="detallePaqueteSeleccionado?.fotosImpresas ?? '—'"
-          disabled
-        />
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="detallePaqueteTrailerEdit"
-          >Trailer (min)</label
-        >
-        <input
-          id="detallePaqueteTrailerEdit"
-          class="form-control"
-          [value]="detallePaqueteSeleccionado?.trailerMin ?? '—'"
-          disabled
-        />
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="detallePaqueteFilmEdit"
-          >Filmación (min)</label
-        >
-        <input
-          id="detallePaqueteFilmEdit"
-          class="form-control"
-          [value]="detallePaqueteSeleccionado?.filmMin ?? '—'"
-          disabled
-        />
-      </div>
-      <div class="col-12">
-        <div class="form-label">Staff</div>
-        <div class="form-control" style="height: auto" disabled>
-          {{ getDetalleStaffTotal(detallePaqueteSeleccionado) }}
-          @if (getDetalleStaffLista(detallePaqueteSeleccionado).length) {
-            <div class="small text-muted">
-              @for (
-                miembro of getDetalleStaffLista(detallePaqueteSeleccionado);
-                track $index
-              ) {
-                <div>
-                  {{
-                    miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? "Rol"
-                  }}
-                  @if (miembro?.cantidad) {
-                    <span>({{ miembro?.cantidad }})</span>
-                  }
-                </div>
-              }
-            </div>
+          " disabled></textarea>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="detallePaqueteFotosEdit">Fotos impresas</label>
+      <input id="detallePaqueteFotosEdit" class="form-control"
+        [value]="detallePaqueteSeleccionado?.fotosImpresas ?? '—'" disabled />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="detallePaqueteTrailerEdit">Trailer (min)</label>
+      <input id="detallePaqueteTrailerEdit" class="form-control" [value]="detallePaqueteSeleccionado?.trailerMin ?? '—'"
+        disabled />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="detallePaqueteFilmEdit">Filmación (min)</label>
+      <input id="detallePaqueteFilmEdit" class="form-control" [value]="detallePaqueteSeleccionado?.filmMin ?? '—'"
+        disabled />
+    </div>
+    <div class="col-12">
+      <div class="form-label">Staff</div>
+      <div class="form-control" style="height: auto" disabled>
+        {{ getDetalleStaffTotal(detallePaqueteSeleccionado) }}
+        @if (getDetalleStaffLista(detallePaqueteSeleccionado).length) {
+        <div class="small text-muted">
+          @for (
+          miembro of getDetalleStaffLista(detallePaqueteSeleccionado);
+          track $index
+          ) {
+          <div>
+            {{
+            miembro?.rol ?? miembro?.nombre ?? miembro?.puesto ?? "Rol"
+            }}
+            @if (miembro?.cantidad) {
+            <span>({{ miembro?.cantidad }})</span>
+            }
+          </div>
           }
         </div>
+        }
       </div>
-      @if (getEquiposLista(detallePaqueteSeleccionado).length) {
-        <div class="col-12">
-          <div class="form-label">Equipamiento requerido</div>
-          <ul class="list-group">
-            @for (
-              eq of getEquiposLista(detallePaqueteSeleccionado);
-              track $index
-            ) {
-              <li class="list-group-item py-2">
-                <div class="fw-semibold">{{ eq?.tipoEquipo ?? eq?.tipo }}</div>
-                <div class="small text-muted">
-                  @if (eq?.cantidad) {
-                    <span>Cantidad: {{ eq?.cantidad }}</span>
-                  }
-                  @if (eq?.notas) {
-                    <span class="ms-2">({{ eq?.notas }})</span>
-                  }
-                </div>
-              </li>
-            }
-          </ul>
-        </div>
-      }
     </div>
+    @if (getEquiposLista(detallePaqueteSeleccionado).length) {
+    <div class="col-12">
+      <div class="form-label">Equipamiento requerido</div>
+      <ul class="list-group">
+        @for (
+        eq of getEquiposLista(detallePaqueteSeleccionado);
+        track $index
+        ) {
+        <li class="list-group-item py-2">
+          <div class="fw-semibold">{{ eq?.tipoEquipo ?? eq?.tipo }}</div>
+          <div class="small text-muted">
+            @if (eq?.cantidad) {
+            <span>Cantidad: {{ eq?.cantidad }}</span>
+            }
+            @if (eq?.notas) {
+            <span class="ms-2">({{ eq?.notas }})</span>
+            }
+          </div>
+        </li>
+        }
+      </ul>
+    </div>
+    }
+  </div>
   } @else {
-    <p class="text-muted mb-0">Selecciona un paquete para ver el detalle.</p>
+  <p class="text-muted mb-0">Selecciona un paquete para ver el detalle.</p>
   }
 
   <div modal-footer class="d-flex justify-content-end">
-    <button
-      type="button"
-      class="btn btn-outline-secondary"
-      (click)="cerrarDetallePaquete()"
-    >
+    <button type="button" class="btn btn-outline-secondary" (click)="cerrarDetallePaquete()">
       Cerrar
     </button>
   </div>
 </app-modal-base>
 
-<app-modal-base
-  [open]="asignacionFechasAbierta"
-  [disableClose]="false"
-  [loading]="false"
-  [useDefaultFooter]="false"
-  size="lg"
-  title="Asignar fechas a servicios"
-  (closed)="cerrarAsignacionFechas()"
->
+<app-modal-base [open]="asignacionFechasAbierta" [disableClose]="false" [loading]="false" [useDefaultFooter]="false"
+  size="lg" title="Asignar fechas a servicios" (closed)="cerrarAsignacionFechas()">
   @if (!fechasDisponibles.length) {
-    <p class="text-muted mb-0">No hay fechas disponibles para asignar.</p>
+  <p class="text-muted mb-0">No hay fechas disponibles para asignar.</p>
   } @else {
-    <p class="text-muted mb-2">
-      Selecciona las fechas de trabajo por servicio. Deben coincidir con la
-      cantidad.
-    </p>
+  <p class="text-muted mb-2">
+    Selecciona las fechas de trabajo por servicio. Deben coincidir con la
+    cantidad.
+  </p>
 
-    <div class="table-responsive">
-      <table class="table table-sm align-middle">
-        <thead>
-          <tr>
-            <th>Servicio</th>
-            @for (fecha of fechasDisponibles; track fecha) {
-              <th class="text-center">{{ formatFechaConDia(fecha) }}</th>
-            }
-            <th class="text-center">Asignadas</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (
-            item of selectedPaquetes;
-            track item.key;
-            let itemIndex = $index
-          ) {
-            <tr>
-              <td>
-                <div class="fw-semibold">{{ item.titulo }}</div>
-                <div class="small text-muted">
-                  Cantidad: {{ item.cantidad || 1 }}
-                </div>
-              </td>
-              @for (fecha of fechasDisponibles; track fecha) {
-                <td class="text-center">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    [checked]="isFechaAsignada(item.tmpId, fecha)"
-                    [disabled]="
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Servicio</th>
+          @for (fecha of fechasDisponibles; track fecha) {
+          <th class="text-center">{{ formatFechaConDia(fecha) }}</th>
+          }
+          <th class="text-center">Asignadas</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (
+        item of selectedPaquetes;
+        track item.key;
+        let itemIndex = $index
+        ) {
+        <tr>
+          <td>
+            <div class="fw-semibold">{{ item.titulo }}</div>
+            <div class="small text-muted">
+              Cantidad: {{ item.cantidad || 1 }}
+            </div>
+          </td>
+          @for (fecha of fechasDisponibles; track fecha) {
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input" [checked]="isFechaAsignada(item.tmpId, fecha)" [disabled]="
                       !isFechaAsignada(item.tmpId, fecha) &&
                       getCantidadAsignada(item.tmpId) >= (item.cantidad || 1)
-                    "
-                    (change)="
+                    " (change)="
                       toggleFechaAsignada(
                         item.tmpId,
                         fecha,
                         $any($event.target).checked,
                         item.cantidad || 1
                       )
-                    "
-                  />
-                </td>
-              }
-              <td class="text-center">
-                {{ getCantidadAsignada(item.tmpId) }}/{{ item.cantidad || 1 }}
-              </td>
-            </tr>
+                    " />
+          </td>
           }
-        </tbody>
-      </table>
-    </div>
+          <td class="text-center">
+            {{ getCantidadAsignada(item.tmpId) }}/{{ item.cantidad || 1 }}
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
   }
 
   <div modal-footer class="d-flex justify-content-end">
-    <button
-      type="button"
-      class="btn btn-outline-secondary"
-      (click)="cerrarAsignacionFechas()"
-    >
+    <button type="button" class="btn btn-outline-secondary" (click)="cerrarAsignacionFechas()">
       Cerrar
     </button>
   </div>

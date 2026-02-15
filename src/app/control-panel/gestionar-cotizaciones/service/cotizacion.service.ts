@@ -2,7 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
-import { Cotizacion, CotizacionItemPayload, CotizacionPayload, CotizacionContacto, CotizacionContactoPayload, CotizacionContextoPayload, CotizacionDetallePayload, CotizacionEventoPayload, CotizacionApiContacto, CotizacionApiResponse, ClienteBusquedaResultado, CotizacionPublicPayload, CotizacionPublicResponse, CotizacionPublicResult, LeadConvertPayload, CotizacionPedidoPayload, CotizacionPedidoResponse, CotizacionAdminCreatePayload, CotizacionAdminUpdatePayload } from '../model/cotizacion.model';
+import { Cotizacion, CotizacionItemPayload, CotizacionPayload, CotizacionContacto, CotizacionContactoPayload, CotizacionContextoPayload, CotizacionDetallePayload, CotizacionEventoPayload, CotizacionApiContacto, CotizacionApiResponse, ClienteBusquedaResultado, CotizacionPublicPayload, CotizacionPublicResponse, CotizacionPublicResult, LeadConvertPayload, CotizacionPedidoPayload, CotizacionPedidoResponse, CotizacionAdminCreatePayload, CotizacionAdminUpdatePayload, PedidoDisponibilidadDiariaResponse } from '../model/cotizacion.model';
 import { PedidoService } from '../../gestionar-pedido/service/pedido.service';
 import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
 import { environment } from '../../../../environments/environment';
@@ -301,6 +301,14 @@ downloadPdf(
         console.error('[cotizaciones] getEventosServicio', err);
         return of([]);
       })
+    );
+  }
+
+  getPedidoDisponibilidadDiaria(fecha: string): Observable<PedidoDisponibilidadDiariaResponse> {
+    const params = new HttpParams().set('fecha', fecha);
+    return this.http.get<PedidoDisponibilidadDiariaResponse>(
+      `${this.apiBase}/pedido/disponibilidad/diaria`,
+      { params }
     );
   }
 

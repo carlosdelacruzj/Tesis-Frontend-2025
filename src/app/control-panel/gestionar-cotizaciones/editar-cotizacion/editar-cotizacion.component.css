@@ -20,6 +20,12 @@
   height: 1.4rem;
 }
 
+.flow-locked {
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+}
+
 .limpiar-seleccion-link {
   cursor: pointer;
   color: var(--bs-link-color, #0d6efd);

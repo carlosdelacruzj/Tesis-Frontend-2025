@@ -20,6 +20,12 @@
   height: 1.4rem;
 }
 
+.flow-locked {
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+}
+
 .limpiar-seleccion-link {
   cursor: pointer;
   color: var(--bs-link-color, #0d6efd);
@@ -135,6 +141,111 @@
   color: #7a4d00;
   background: #fff3dd;
   border-color: #f5d8a1;
+}
+
+.programacion-dispo {
+  position: relative;
+}
+
+.programacion-dispo-metric {
+  font-weight: 500;
+}
+
+.programacion-dispo--ok {
+  color: #166534;
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+}
+
+.programacion-dispo--warn {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.programacion-dispo--critical {
+  color: #991b1b;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.programacion-dispo--none {
+  color: #475569;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.programacion-dispo-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  cursor: pointer;
+}
+
+.programacion-dispo-help.is-disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.programacion-dispo-popover {
+  display: none;
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  top: calc(100% + 8px);
+  width: min(360px, 90vw);
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+}
+
+.programacion-dispo-help:hover .programacion-dispo-popover,
+.programacion-dispo-help:focus-within .programacion-dispo-popover,
+.programacion-dispo-help:focus .programacion-dispo-popover {
+  display: block;
+}
+
+.programacion-dispo-popover__section + .programacion-dispo-popover__section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(15, 23, 42, 0.12);
+}
+
+.programacion-dispo-popover__section strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  color: #0f172a;
+}
+
+.programacion-dispo-popover__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: #334155;
+}
+
+.programacion-dispo-popover__value {
+  text-align: right;
+  white-space: nowrap;
+  color: #166534;
+  font-weight: 600;
+}
+
+.programacion-dispo-popover__value--none {
+  color: #991b1b;
 }
 
 .programacion-item__remove {

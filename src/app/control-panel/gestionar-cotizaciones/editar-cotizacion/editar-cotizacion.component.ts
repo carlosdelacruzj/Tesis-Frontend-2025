@@ -297,6 +297,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       .subscribe(() => this.syncTotalEstimado());
     this.applyDiasRules(this.form.get('dias')?.value);
     this.lastDiasAplicado = this.normalizeDias(this.form.get('dias')?.value);
+    this.applyEventoGateRules();
   }
 
   ngOnDestroy(): void {
@@ -319,6 +320,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   addProgramacionItem(fechaForzada?: string): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const fechaConfig = this.getFechaProgramacionNuevaFila(fechaForzada);
     if (!fechaConfig) {
       this.showAlert(
@@ -362,6 +366,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   duplicarProgramacionItem(index: number): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
     if (!grupo) {
       return;
@@ -394,6 +401,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   removeProgramacionItem(index: number): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     if (index < 0 || index >= this.programacion.length) {
       return;
     }
@@ -468,6 +478,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   onServicioChange(servicioId: number | null | undefined): void {
+    if (!this.canContinueFlow()) {
+      this.selectedServicioId = null;
+      this.selectedServicioNombre = '';
+      this.paquetesRows = [];
+      return;
+    }
     const parsed = this.parseNumber(servicioId);
     this.selectedServicioId = parsed ?? null;
     if (this.selectedServicioId == null) {
@@ -559,10 +575,14 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       const selected = this.eventos.find((e) => e.id === this.selectedEventoId);
       this.selectedEventoNombre = this.getNombre(selected);
     }
+    this.applyEventoGateRules();
     this.loadEventosServicio();
   }
 
   addPaquete(element: AnyRecord): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const key = this.getPkgKey(element);
     if (this.selectedPaquetes.some((p) => p.key === key)) {
       return;
@@ -674,6 +694,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   removePaquete(key: string | number): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const removed = this.selectedPaquetes.find((p) => p.key === key);
     this.selectedPaquetes = this.selectedPaquetes.filter((p) => p.key !== key);
     if (removed?.tmpId) {
@@ -696,6 +719,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   abrirAsignacionFechas(): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     if (!this.isMultipleDias()) {
       return;
     }
@@ -910,6 +936,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   onCantidadChange(paquete: PaqueteSeleccionado, value: unknown): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const parsed = this.parseNumber(value);
     const base = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
     const max = this.getCantidadMaximaPorDias();
@@ -2073,6 +2102,52 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return Array.from(new Set(fechas)).sort();
   }
 
+  isEventoSeleccionado(): boolean {
+    return this.selectedEventoId != null;
+  }
+
+  canContinueFlow(): boolean {
+    if (!this.isEventoSeleccionado()) {
+      return false;
+    }
+    const dias = this.parseNumber(this.form.get('dias')?.value);
+    return dias != null && dias >= 1;
+  }
+
+  private applyEventoGateRules(): void {
+    const eventoSeleccionado = this.isEventoSeleccionado();
+    const departamentoControl = this.form.get('departamento');
+    const diasControl = this.form.get('dias');
+    const horasControl = this.form.get('horasEstimadas');
+
+    if (departamentoControl) {
+      if (eventoSeleccionado && departamentoControl.disabled) {
+        departamentoControl.enable({ emitEvent: false });
+      }
+      if (!eventoSeleccionado && departamentoControl.enabled) {
+        departamentoControl.disable({ emitEvent: false });
+      }
+    }
+
+    if (diasControl) {
+      if (eventoSeleccionado && diasControl.disabled) {
+        diasControl.enable({ emitEvent: false });
+      }
+      if (!eventoSeleccionado && diasControl.enabled) {
+        diasControl.disable({ emitEvent: false });
+      }
+    }
+
+    if (!eventoSeleccionado) {
+      if (horasControl?.enabled) {
+        horasControl.disable({ emitEvent: false });
+      }
+      return;
+    }
+
+    this.applyDiasRules(this.form.get('dias')?.value);
+  }
+
   private autoAsignarFechasSiCantidadMaxima(
     itemTmpId: string,
     cantidad: number,
@@ -3168,6 +3243,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.paquetesRows = [];
       this.loadingPaquetes = false;
     }
+
+    this.applyEventoGateRules();
 
     if (this.form.pristine && this.programacion.pristine && !this.saving) {
       this.initialSnapshot = this.buildSnapshot();

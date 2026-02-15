@@ -28,6 +28,7 @@ import {
   CotizacionAdminItemPayload,
   CotizacionAdminEventoPayload,
   CotizacionAdminServicioFechaPayload,
+  PedidoDisponibilidadDiariaResponse,
 } from '../model/cotizacion.model';
 import { CotizacionService } from '../service/cotizacion.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
@@ -224,6 +225,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   asignacionFechasAbierta = false;
   fechasDisponibles: string[] = [];
   serviciosFechasSeleccionadas: CotizacionAdminServicioFechaPayload[] = [];
+  disponibilidadDiariaPorFecha: Record<string, PedidoDisponibilidadDiariaResponse> = {};
+  disponibilidadDiariaLoadingPorFecha: Record<string, boolean> = {};
   private fechasTrabajoSnapshot: string[] = [];
   private lastDiasAplicado = 0;
   private diasChangeGuard = false;
@@ -300,6 +303,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.applyDiasRules(this.form.get('dias')?.value);
     this.lastDiasAplicado = this.normalizeDias(this.form.get('dias')?.value);
     this.applyViaticosRules();
+    this.applyEventoGateRules();
   }
 
   ngOnDestroy(): void {
@@ -430,6 +434,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   addProgramacionItem(fechaForzada?: string): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const fechaConfig = this.getFechaProgramacionNuevaFila(fechaForzada);
     if (!fechaConfig) {
       this.showAlert(
@@ -464,6 +471,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   duplicarProgramacionItem(index: number): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
     if (!grupo) {
       return;
@@ -552,6 +562,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   removeProgramacionItem(index: number): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     if (index < 0 || index >= this.programacion.length) {
       return;
     }
@@ -709,6 +722,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   onServicioChange(servicioId: number | null | undefined): void {
+    if (!this.canContinueFlow()) {
+      this.selectedServicioId = null;
+      this.selectedServicioNombre = '';
+      this.paquetesRows = [];
+      return;
+    }
     const parsed = this.parseNumber(servicioId);
     this.selectedServicioId = parsed ?? null;
     if (this.selectedServicioId == null) {
@@ -772,10 +791,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       );
       this.selectedEventoNombre = this.getNombre(selected);
     }
+    this.applyEventoGateRules();
     this.loadEventosServicio();
   }
 
   addPaquete(element: AnyRecord): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const key = this.getPkgKey(element);
     if (this.selectedPaquetes.some((p) => p.key === key)) {
       return;
@@ -886,6 +909,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   removePaquete(key: string | number): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const removed = this.selectedPaquetes.find((p) => p.key === key);
     this.selectedPaquetes = this.selectedPaquetes.filter((p) => p.key !== key);
     if (removed?.tmpId) {
@@ -908,6 +934,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   abrirAsignacionFechas(): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     if (!this.isMultipleDias()) {
       return;
     }
@@ -1262,6 +1291,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   onCantidadChange(paquete: PaqueteSeleccionado, value: unknown): void {
+    if (!this.canContinueFlow()) {
+      return;
+    }
     const parsed = this.parseNumber(value);
     const base = parsed != null && parsed >= 1 ? Math.floor(parsed) : 1;
     const max = this.getCantidadMaximaPorDias();
@@ -1838,6 +1870,40 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return Array.from(new Set(fechas)).sort();
   }
 
+  private syncDisponibilidadDiariaPorFechas(): void {
+    const fechas = Array.from(new Set(this.fechasTrabajoValores));
+    fechas.forEach((fecha) => this.cargarDisponibilidadDiaria(fecha));
+  }
+
+  private cargarDisponibilidadDiaria(fecha: string): void {
+    const key = (fecha ?? '').toString().trim();
+    if (!key) return;
+    if (this.disponibilidadDiariaPorFecha[key] || this.disponibilidadDiariaLoadingPorFecha[key]) {
+      return;
+    }
+    this.disponibilidadDiariaLoadingPorFecha[key] = true;
+    this.cotizacionService
+      .getPedidoDisponibilidadDiaria(key)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          delete this.disponibilidadDiariaLoadingPorFecha[key];
+          this.disponibilidadDiariaLoadingPorFecha = { ...this.disponibilidadDiariaLoadingPorFecha };
+        }),
+      )
+      .subscribe({
+        next: (data) => {
+          this.disponibilidadDiariaPorFecha = {
+            ...this.disponibilidadDiariaPorFecha,
+            [key]: data,
+          };
+        },
+        error: (err) => {
+          console.error('[cotizacion] disponibilidad diaria', err);
+        },
+      });
+  }
+
   private autoAsignarFechasSiCantidadMaxima(
     itemTmpId: string,
     cantidad: number,
@@ -2105,6 +2171,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.form
       .get('fechaEvento')
       ?.setValue(primera || null, { emitEvent: false });
+    this.syncDisponibilidadDiariaPorFechas();
   }
 
   formatFechaConDia(fecha: string): string {
@@ -2119,6 +2186,115 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       year: 'numeric',
     }).format(parsed);
     return base.replace(/ de (\d{4})$/, ' del $1');
+  }
+
+  getDisponibilidadDiaria(fecha: string): PedidoDisponibilidadDiariaResponse | null {
+    const key = (fecha ?? '').toString().trim();
+    if (!key) return null;
+    return this.disponibilidadDiariaPorFecha[key] ?? null;
+  }
+
+  getDisponibilidadEstadoLabel(fecha: string): string {
+    const data = this.getDisponibilidadDiaria(fecha);
+    if (!data) {
+      return this.disponibilidadDiariaLoadingPorFecha[fecha]
+        ? 'Disponibilidad: consultando'
+        : 'Disponibilidad: sin datos';
+    }
+    const personal = data.resumen.personal;
+    const equipos = data.resumen.equipos;
+    if (personal.disponible <= 0 || equipos.disponible <= 0) {
+      return 'Disponibilidad: critica';
+    }
+    const personalRatio = personal.total > 0 ? personal.disponible / personal.total : 0;
+    const equiposRatio = equipos.total > 0 ? equipos.disponible / equipos.total : 0;
+    if (personalRatio <= 0.2 || equiposRatio <= 0.2) {
+      return 'Disponibilidad: limitada';
+    }
+    return 'Disponibilidad: alta';
+  }
+
+  isEventoSeleccionado(): boolean {
+    return this.selectedEventoId != null;
+  }
+
+  canContinueFlow(): boolean {
+    if (!this.isEventoSeleccionado()) {
+      return false;
+    }
+    const dias = this.parseNumber(this.form.get('dias')?.value);
+    return dias != null && dias >= 1;
+  }
+
+  private applyEventoGateRules(): void {
+    const eventoSeleccionado = this.isEventoSeleccionado();
+    const departamentoControl = this.form.get('departamento');
+    const diasControl = this.form.get('dias');
+    const horasControl = this.form.get('horasEstimadas');
+
+    if (departamentoControl) {
+      if (eventoSeleccionado && departamentoControl.disabled) {
+        departamentoControl.enable({ emitEvent: false });
+      }
+      if (!eventoSeleccionado && departamentoControl.enabled) {
+        departamentoControl.disable({ emitEvent: false });
+      }
+    }
+
+    if (diasControl) {
+      if (eventoSeleccionado && diasControl.disabled) {
+        diasControl.enable({ emitEvent: false });
+      }
+      if (!eventoSeleccionado && diasControl.enabled) {
+        diasControl.disable({ emitEvent: false });
+      }
+    }
+
+    if (!eventoSeleccionado) {
+      if (horasControl?.enabled) {
+        horasControl.disable({ emitEvent: false });
+      }
+      return;
+    }
+
+    this.applyDiasRules(this.form.get('dias')?.value);
+  }
+
+  getDisponibilidadPersonalDisponibleLabel(fecha: string): string {
+    const data = this.getDisponibilidadDiaria(fecha);
+    if (!data) {
+      return this.disponibilidadDiariaLoadingPorFecha[fecha]
+        ? 'Personal: consultando'
+        : 'Personal: sin datos';
+    }
+    return `Personal disponible: ${data.resumen.personal.disponible}`;
+  }
+
+  getDisponibilidadEquiposDisponibleLabel(fecha: string): string {
+    const data = this.getDisponibilidadDiaria(fecha);
+    if (!data) {
+      return this.disponibilidadDiariaLoadingPorFecha[fecha]
+        ? 'Equipos: consultando'
+        : 'Equipos: sin datos';
+    }
+    return `Equipos disponibles: ${data.resumen.equipos.disponible}`;
+  }
+
+  getDisponibilidadEstadoClass(fecha: string): string {
+    const data = this.getDisponibilidadDiaria(fecha);
+    if (!data) return 'programacion-dispo--none';
+    const personal = data.resumen.personal;
+    const equipos = data.resumen.equipos;
+    if (personal.disponible <= 0 || equipos.disponible <= 0) return 'programacion-dispo--critical';
+    const personalRatio = personal.total > 0 ? personal.disponible / personal.total : 0;
+    const equiposRatio = equipos.total > 0 ? equipos.disponible / equipos.total : 0;
+    if (personalRatio <= 0.2 || equiposRatio <= 0.2) return 'programacion-dispo--warn';
+    return 'programacion-dispo--ok';
+  }
+
+  hasDisponibilidadDetalle(fecha: string): boolean {
+    const data = this.getDisponibilidadDiaria(fecha);
+    return !!(data?.personalPorRol?.length || data?.equiposPorTipo?.length);
   }
 
   shouldShowFechaEvento(): boolean {
@@ -3150,6 +3326,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.asignacionFechasAbierta = false;
     this.fechasDisponibles = [];
     this.serviciosFechasSeleccionadas = [];
+    this.disponibilidadDiariaPorFecha = {};
+    this.disponibilidadDiariaLoadingPorFecha = {};
     this.fechasTrabajoSnapshot = [];
     this.lastDiasAplicado = 0;
     this.diasChangeGuard = false;
@@ -3157,3 +3335,4 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.syncTotalEstimado();
   }
 }
+
