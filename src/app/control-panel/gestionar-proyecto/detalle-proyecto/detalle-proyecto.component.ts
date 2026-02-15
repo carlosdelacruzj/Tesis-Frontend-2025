@@ -118,7 +118,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   nuevoEmpleadoId: number | null = null;
   nuevoEquipoId: number | null = null;
   incidenciaDiaId: number | null = null;
-  incidenciaDiaLocked = false;
   incidenciaListaDiaId: number | null = null;
   incidenciaFiltroTipo: '' | 'PERSONAL_NO_ASISTE' | 'EQUIPO_FALLA_EN_EVENTO' | 'EQUIPO_ROBO_PERDIDA' | 'OTROS' = '';
   incidenciaFiltroTexto = '';
@@ -187,6 +186,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   estadosDiaCatalogo: ProyectoDiaEstadoItem[] = [];
   estadoDiaLoading: Record<number, boolean> = {};
   estadoDiaMenuOpenId: number | null = null;
+  estadoProyectoMenuOpen = false;
   iniciarEnCursoTrasAsignarDiaId: number | null = null;
   cancelandoGlobalProyecto = false;
   private diasOrdenadosCache: ProyectoDia[] = [];
@@ -295,7 +295,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     }
     this.modalIncidenciaAbierto = true;
     this.incidenciaDiaId = selected;
-    this.incidenciaDiaLocked = !!diaId;
     this.resetIncidenciaForm(false);
     this.cargarDisponiblesIncidencia(selected);
   }
@@ -313,12 +312,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   @HostListener('document:click')
   onDocumentClick(): void {
     this.estadoDiaMenuOpenId = null;
+    this.estadoProyectoMenuOpen = false;
   }
 
 
   cerrarModalIncidencia(): void {
     this.modalIncidenciaAbierto = false;
-    this.incidenciaDiaLocked = false;
   }
 
   abrirModalIncidenciasDia(diaId: number): void {
@@ -332,6 +331,25 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   cerrarModalIncidenciasDia(): void {
     this.modalIncidenciasListaAbierto = false;
     this.incidenciaListaDiaId = null;
+  }
+
+  canCambiarEstadoProyectoACancelado(): boolean {
+    const estado = this.getEstadoProyectoNormalizado();
+    return estado === 'planificado' || estado === 'en ejecucion' || estado === 'en ejecución';
+  }
+
+  toggleEstadoProyectoMenu(event?: Event): void {
+    event?.stopPropagation();
+    if (!this.canCambiarEstadoProyectoACancelado() || this.cancelandoGlobalProyecto) {
+      this.estadoProyectoMenuOpen = false;
+      return;
+    }
+    this.estadoProyectoMenuOpen = !this.estadoProyectoMenuOpen;
+  }
+
+  onEstadoProyectoSelectCancelado(): void {
+    this.estadoProyectoMenuOpen = false;
+    void this.cancelarProyectoGlobal();
   }
 
   toggleEstadoDiaMenu(diaId: number, event?: Event): void {
@@ -458,6 +476,9 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   async cancelarProyectoGlobal(): Promise<void> {
     const proyectoId = this.proyecto?.proyectoId;
     if (!proyectoId || this.cancelandoGlobalProyecto) {
+      return;
+    }
+    if (!this.canCambiarEstadoProyectoACancelado()) {
       return;
     }
     const diasYaCancelados = this.diasYaCanceladosCount;
@@ -1697,16 +1718,6 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
   }
 
-  onIncidenciaDiaChange(diaId: number | null): void {
-    this.incidenciaDiaId = diaId;
-    this.incidenciaEmpleadoId = null;
-    this.incidenciaEmpleadoReemplazoId = null;
-    this.incidenciaEquipoId = null;
-    this.incidenciaEquipoReemplazoId = null;
-    const fecha = this.detalle?.dias?.find(d => d.diaId === diaId)?.fecha ?? null;
-    this.cargarDisponiblesIncidencia(fecha ?? null);
-  }
-
   onIncidenciaEmpleadoChange(empleadoId: number | null): void {
     this.incidenciaEmpleadoId = empleadoId;
     this.incidenciaEmpleadoReemplazoId = null;
@@ -1861,8 +1872,17 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   iniciarEdicionPost(): void {
-    if (this.postproduccionOriginal.fechaInicioEdicion) return;
-    const hoy = new Date().toISOString().slice(0, 10);
+    if (!this.puedeIniciarEdicionPost) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Fase bloqueada',
+        text: this.postproduccionSoloLecturaPorEstado
+          ? 'El proyecto ya fue entregado/cerrado y no permite más edición.'
+          : 'La fecha de inicio ya está registrada.'
+      });
+      return;
+    }
+    const hoy = this.getTodayIsoLocal();
     const fechaMinima = this.fechaMinInicioEdicion;
     const seleccionada = this.toIsoDateOnly(this.postproduccion.fechaInicioEdicion);
     const base = seleccionada ?? hoy;
@@ -1918,7 +1938,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    const fecha = new Date().toISOString().slice(0, 10);
+    const fecha = this.getTodayIsoLocal();
     void Swal.fire({
       icon: 'warning',
       title: '¿Confirmar envío de pre-entrega?',
@@ -1939,7 +1959,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       void Swal.fire({
         icon: 'warning',
         title: 'Fase bloqueada',
-        text: this.postproduccion.fechaFinEdicion
+        text: this.postproduccionOriginal.fechaFinEdicion
           ? 'La edición ya está cerrada y sus datos no pueden editarse.'
           : 'Debes enviar la pre-entrega antes de cerrar la edición.'
       });
@@ -2057,8 +2077,16 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    const fechaEntregaCalculada = this.postproduccion.entregaFinalFecha ?? new Date().toISOString().slice(0, 10);
-    const fechaTexto = fechaEntregaCalculada ?? this.postproduccion.fechaFinEdicion ?? '';
+    const fechaEntregaCalculada = this.toIsoDateOnly(this.postproduccion.entregaFinalFecha);
+    if (!fechaEntregaCalculada) {
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Falta fecha de entrega',
+        text: 'Selecciona la fecha de entrega final antes de marcar la entrega.'
+      });
+      return;
+    }
+    const fechaTexto = fechaEntregaCalculada;
     void Swal.fire({
       icon: 'warning',
       title: '¿Confirmar entrega final?',
@@ -2069,9 +2097,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
       reverseButtons: true
     }).then(result => {
       if (!result.isConfirmed) return;
-      if (!this.postproduccion.entregaFinalFecha) {
-        this.postproduccion = { ...this.postproduccion, entregaFinalFecha: fechaEntregaCalculada };
-      }
+      this.postproduccion = { ...this.postproduccion, entregaFinalFecha: fechaEntregaCalculada };
       this.postEntregaMarcada = true;
       this.guardarPostproduccionCambios(
         'Entrega marcada',
@@ -2138,15 +2164,30 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   get puedeEditarPreEntregaPost(): boolean {
-    return !!this.postproduccion.fechaInicioEdicion && !this.postproduccion.preEntregaFecha && !this.postproduccion.fechaFinEdicion;
+    return !this.postproduccionSoloLecturaPorEstado
+      && !!this.postproduccion.fechaInicioEdicion
+      && !this.postproduccion.preEntregaFecha
+      && !this.postproduccion.fechaFinEdicion;
   }
 
   get puedeCerrarEdicionPost(): boolean {
-    return !!this.postproduccion.fechaInicioEdicion && !!this.postproduccion.preEntregaFecha && !this.postproduccion.fechaFinEdicion;
+    return !this.postproduccionSoloLecturaPorEstado
+      && !!this.postproduccion.fechaInicioEdicion
+      && !!this.postproduccion.preEntregaFecha
+      && !this.postproduccionOriginal.fechaFinEdicion;
   }
 
   get puedeEditarEntregaFinalPost(): boolean {
-    return !!this.postproduccion.fechaFinEdicion;
+    return !this.postproduccionSoloLecturaPorEstado && !!this.postproduccion.fechaFinEdicion;
+  }
+
+  get puedeIniciarEdicionPost(): boolean {
+    return !this.postproduccionSoloLecturaPorEstado && !this.postproduccionOriginal.fechaInicioEdicion;
+  }
+
+  get postproduccionSoloLecturaPorEstado(): boolean {
+    const estado = this.getEstadoProyectoNormalizado();
+    return estado === 'entregado' || estado === 'cerrado' || estado === 'cancelado';
   }
 
   get fechaMinEntregaFinalPost(): string | null {
@@ -2439,7 +2480,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     if (!payload.equipos.length) return;
     const fechaDia = this.toIsoDateOnly(
       (this.detalle?.dias ?? []).find(dia => dia.diaId === this.devolucionDiaId)?.fecha
-    ) ?? new Date().toISOString().slice(0, 10);
+    ) ?? this.getTodayIsoLocal();
     const equiposPreview = payload.equipos
       .filter(item => !!item.estadoDevolucion && item.estadoDevolucion !== 'DEVUELTO')
       .map(item => ({
@@ -3260,6 +3301,12 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return this.formatFechaLarga(dia?.fecha ?? '');
   }
 
+  getIncidenciaDiaLabel(): string {
+    if (!this.incidenciaDiaId) return '—';
+    const dia = this.detalle?.dias?.find(d => d.diaId === this.incidenciaDiaId);
+    return this.formatFechaLarga(dia?.fecha ?? '');
+  }
+
   canGuardarAsignacionesFinal(): boolean {
     if (this.asignacionSoloLectura) return false;
     if (!this.asignacionDiaId) return false;
@@ -3477,6 +3524,11 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     return this.toIsoDateOnly(this.postproduccion.fechaInicioEdicion);
   }
 
+  get mostrarAccionesAgendaPendientes(): boolean {
+    const estado = this.getEstadoProyectoNormalizado();
+    return estado !== 'entregado' && estado !== 'listo para entrega';
+  }
+
   private refrescarProyectoDetalle(): void {
     const proyectoId = this.proyecto?.proyectoId;
     if (!proyectoId) return;
@@ -3497,6 +3549,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   private updateStepperOrientation(): void {
     if (typeof window === 'undefined') return;
     this.stepperOrientation = window.innerWidth < 900 ? 'vertical' : 'horizontal';
+  }
+
+  private getEstadoProyectoNormalizado(): string {
+    return (this.proyecto?.estadoNombre ?? '').toString().trim().toLowerCase();
   }
 
   private toIsoDateOnly(value: string | Date | null | undefined): string | null {
@@ -3679,6 +3735,14 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     const hh = String(d.getHours()).padStart(2, '0');
     const mi = String(d.getMinutes()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  }
+
+  private getTodayIsoLocal(): string {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   private setIncidenciaHoraActual(): void {

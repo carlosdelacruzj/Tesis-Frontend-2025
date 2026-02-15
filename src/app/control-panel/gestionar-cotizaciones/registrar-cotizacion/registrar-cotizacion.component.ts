@@ -872,6 +872,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         ...nuevas,
       ];
     }
+    this.autoAsignarFechasSiCantidadMaxima(nextTmpId, cantidadInicial);
     this.syncTotalEstimado();
   }
 
@@ -1278,6 +1279,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           }
           return false;
         });
+      this.autoAsignarFechasSiCantidadMaxima(paquete.tmpId, paquete.cantidad);
     }
     this.syncTotalEstimado();
   }
@@ -1582,7 +1584,65 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   cancel(): void {
-    this.router.navigate(['/home/gestionar-cotizaciones']);
+    if (!this.hasCambiosSinGuardar()) {
+      this.router.navigate(['/home/gestionar-cotizaciones']);
+      return;
+    }
+
+    void Swal.fire({
+      icon: 'warning',
+      title: 'Descartar cambios',
+      text: 'Tienes cambios sin guardar en la cotización. Si sales ahora, se perderán.',
+      showCancelButton: true,
+      confirmButtonText: 'Salir sin guardar',
+      cancelButtonText: 'Seguir editando',
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/home/gestionar-cotizaciones']);
+      }
+    });
+  }
+
+  private hasCambiosSinGuardar(): boolean {
+    if (this.form.dirty) {
+      return true;
+    }
+
+    if (this.selectedPaquetes.length > 0) {
+      return true;
+    }
+
+    if (this.programacion.length > 0 || this.fechasTrabajo.length > 0) {
+      return true;
+    }
+
+    if (this.serviciosFechasSeleccionadas.length > 0) {
+      return true;
+    }
+
+    if (this.selectedEventoId != null || this.clienteSeleccionado != null) {
+      return true;
+    }
+
+    const raw = this.form.getRawValue() as Record<string, unknown>;
+    const clienteNombre = (raw['clienteNombre'] ?? '').toString().trim();
+    const clienteContacto = (raw['clienteContacto'] ?? '').toString().trim();
+    const descripcion = (raw['descripcion'] ?? '').toString().trim();
+    const dias = Number(raw['dias'] ?? 0);
+    const fechaEvento = (raw['fechaEvento'] ?? '').toString().trim();
+    const viaticosCliente = !!raw['viaticosCliente'];
+    const viaticosMonto = Number(raw['viaticosMonto'] ?? 0);
+
+    return (
+      !!clienteNombre ||
+      !!clienteContacto ||
+      !!descripcion ||
+      Number.isFinite(dias) && dias > 0 ||
+      (!!fechaEvento && fechaEvento !== this.fechaMinimaEvento) ||
+      !viaticosCliente ||
+      (Number.isFinite(viaticosMonto) && viaticosMonto > 0)
+    );
   }
 
   private syncProgramacionFechas(fecha?: string | null): void {
@@ -1776,6 +1836,28 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       .map((value) => (value ?? '').toString().trim())
       .filter(Boolean);
     return Array.from(new Set(fechas)).sort();
+  }
+
+  private autoAsignarFechasSiCantidadMaxima(
+    itemTmpId: string,
+    cantidad: number,
+  ): void {
+    if (!this.isMultipleDias()) return;
+    const max = this.getCantidadMaximaPorDias();
+    if (!max || cantidad < max) return;
+    const fechasBase = this.getFechasProgramacionUnicas().length
+      ? this.getFechasProgramacionUnicas()
+      : ((this.form.get('fechaEvento')?.value ?? '').toString().trim()
+          ? [String(this.form.get('fechaEvento')?.value).trim()]
+          : []);
+    if (!fechasBase.length) return;
+    const fechasObjetivo = fechasBase.slice(0, cantidad);
+    this.serviciosFechasSeleccionadas = [
+      ...this.serviciosFechasSeleccionadas.filter(
+        (entry) => entry.itemTmpId !== itemTmpId,
+      ),
+      ...fechasObjetivo.map((fecha) => ({ itemTmpId, fecha })),
+    ];
   }
 
   private getFechaProgramacionNuevaFila(preferida?: string): string {
@@ -2147,6 +2229,13 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     }
 
     if (anterior > 0 && nuevo > 0 && nuevo < anterior) {
+      const impacto = this.getImpactoReduccionDias(nuevo);
+      if (impacto.total <= 0) {
+        this.aplicarReduccionDias(nuevo);
+        this.applyDiasRules(nuevo);
+        this.lastDiasAplicado = nuevo;
+        return;
+      }
       void (async () => {
         const fechasOriginales = this.getFechasTrabajoRaw();
         const indices = await this.seleccionarDiasAEliminar(anterior, nuevo);

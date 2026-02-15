@@ -660,6 +660,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         ...nuevas,
       ];
     }
+    this.autoAsignarFechasSiCantidadMaxima(nextTmpId, cantidadInicial);
     this.syncTotalEstimado();
   }
 
@@ -926,6 +927,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           }
           return false;
         });
+      this.autoAsignarFechasSiCantidadMaxima(paquete.tmpId, paquete.cantidad);
     }
     this.syncTotalEstimado();
   }
@@ -2069,6 +2071,28 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       .map((value) => (value ?? '').toString().trim())
       .filter(Boolean);
     return Array.from(new Set(fechas)).sort();
+  }
+
+  private autoAsignarFechasSiCantidadMaxima(
+    itemTmpId: string,
+    cantidad: number,
+  ): void {
+    if (!this.isMultipleDias()) return;
+    const max = this.getCantidadMaximaPorDias();
+    if (!max || cantidad < max) return;
+    const fechasBase = this.getFechasProgramacionUnicas().length
+      ? this.getFechasProgramacionUnicas()
+      : ((this.form.get('fechaEvento')?.value ?? '').toString().trim()
+          ? [String(this.form.get('fechaEvento')?.value).trim()]
+          : []);
+    if (!fechasBase.length) return;
+    const fechasObjetivo = fechasBase.slice(0, cantidad);
+    this.serviciosFechasSeleccionadas = [
+      ...this.serviciosFechasSeleccionadas.filter(
+        (entry) => entry.itemTmpId !== itemTmpId,
+      ),
+      ...fechasObjetivo.map((fecha) => ({ itemTmpId, fecha })),
+    ];
   }
 
   getProgramacionIndicesPorFecha(fecha: string): number[] {

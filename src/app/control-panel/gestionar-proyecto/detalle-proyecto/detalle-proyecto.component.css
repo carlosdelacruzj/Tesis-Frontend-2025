@@ -1860,6 +1860,58 @@ section[id] {
   gap: 4px;
 }
 
+.estado-proyecto-action-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.estado-proyecto-action {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.estado-proyecto-action:disabled {
+  cursor: default;
+}
+
+.estado-proyecto-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 6;
+  min-width: 190px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  padding: 6px;
+}
+
+.estado-proyecto-menu__item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.estado-proyecto-menu__item:hover {
+  background: #f3f4f6;
+}
+
+.estado-proyecto-menu__item--danger {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 .pill {
   background: #eef2ff;
   color: #4338ca;

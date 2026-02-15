@@ -23,19 +23,38 @@
           </div>
           <div class="estado">
             <span class="label">Estado</span>
-            <app-estado-badge
-              [estado]="proyecto.estadoNombre || '—'"
-              [mapaColores]="{
-                'planificado': 'info',
-                'en ejecucion': 'warning',
-                'en ejecución': 'warning',
-                'en postproduccion': 'primary',
-                'en postproducción': 'primary',
-                'listo para entrega': 'success-light',
-                'entregado': 'success-light',
-                'cerrado': 'success'
-              }"
-            ></app-estado-badge>
+            <div class="estado-proyecto-action-wrap" (click)="$event.stopPropagation()">
+              <button
+                class="estado-proyecto-action"
+                type="button"
+                [disabled]="!canCambiarEstadoProyectoACancelado() || cancelandoGlobalProyecto"
+                (click)="toggleEstadoProyectoMenu($event)">
+                <app-estado-badge
+                  [estado]="proyecto.estadoNombre || '—'"
+                  [mapaColores]="{
+                    'planificado': 'info',
+                    'en ejecucion': 'warning',
+                    'en ejecución': 'warning',
+                    'en postproduccion': 'primary',
+                    'en postproducción': 'primary',
+                    'listo para entrega': 'success-light',
+                    'entregado': 'success-light',
+                    'cerrado': 'success'
+                  }"
+                ></app-estado-badge>
+              </button>
+              @if (estadoProyectoMenuOpen && canCambiarEstadoProyectoACancelado()) {
+                <div class="estado-proyecto-menu" (click)="$event.stopPropagation()">
+                  <button
+                    class="estado-proyecto-menu__item estado-proyecto-menu__item--danger"
+                    type="button"
+                    [disabled]="cancelandoGlobalProyecto"
+                    (click)="onEstadoProyectoSelectCancelado()">
+                    Cambiar a cancelado
+                  </button>
+                </div>
+              }
+            </div>
           </div>
         </header>
 
@@ -83,16 +102,6 @@
               Ir a devoluciones pendientes
             </button>
           }
-          @if ((proyecto.estadoNombre || '').toLowerCase() !== 'cancelado') {
-            <button
-              mat-stroked-button
-              color="warn"
-              type="button"
-              [disabled]="cancelandoGlobalProyecto"
-              (click)="cancelarProyectoGlobal()">
-              {{ cancelandoGlobalProyecto ? 'Cancelando proyecto…' : 'Cancelar proyecto global' }}
-            </button>
-          }
         </div>
         <div class="control-kpis" aria-label="Indicadores de control operativo">
           <article class="control-kpi control-kpi--primary">
@@ -133,12 +142,16 @@
             <h3>Días de proyecto ({{ detalle.dias.length }})</h3>
             <p class="muted small section-help">Explora cada día para revisar bloques, servicios y pendientes.</p>
           </div>
-          <div class="agenda-actions">
-            <button class="toggle-btn" type="button" (click)="toggleSoloPendientes()">
-              @if (soloPendientes) { Ver todos } @else { Solo pendientes }
-            </button>
-            <button class="toggle-btn" type="button" (click)="irAPrimerPendiente()">Ir a pendiente</button>
-          </div>
+          @if (mostrarAccionesAgendaPendientes) {
+            <div class="agenda-actions">
+              <button class="toggle-btn" type="button" (click)="toggleSoloPendientes()">
+                @if (soloPendientes) { Ver todos } @else { Solo pendientes }
+              </button>
+              @if (totalDiasConPendientes > 0) {
+                <button class="toggle-btn" type="button" (click)="irAPrimerPendiente()">Ir a pendiente</button>
+              }
+            </div>
+          }
         </header>
         @if (openDiaId) {
           <div class="agenda-sticky-bar">
@@ -368,9 +381,6 @@
               <h3>Registro del día</h3>
             </div>
             <div class="collapsible__actions">
-              <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); abrirModalIncidencia()" [disabled]="!isDiaEnCurso(openDiaId)">
-                Agregar incidencia
-              </button>
               <span class="collapsible__caret">▾</span>
             </div>
           </summary>
@@ -433,7 +443,6 @@
               <button mat-button type="button" (click)="$event.stopPropagation(); toggleSoloExcepcionesEstado()">
                 @if (mostrarSoloExcepcionesEstado) { Ver todo } @else { Solo excepciones }
               </button>
-              <span class="muted small">Registra devoluciones desde cada día.</span>
               <span class="collapsible__caret">▾</span>
             </div>
           </summary>
@@ -523,9 +532,9 @@
               <h4>Inicio de edición</h4>
               <label class="form-field">
                 <span class="label">Fecha inicio</span>
-                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaInicioEdicion" [attr.min]="fechaMinInicioEdicion || null" [disabled]="guardandoPostproduccion || !!postproduccionOriginal.fechaInicioEdicion">
+                <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaInicioEdicion" [attr.min]="fechaMinInicioEdicion || null" [disabled]="guardandoPostproduccion || !puedeIniciarEdicionPost">
               </label>
-              <button mat-stroked-button color="primary" type="button" (click)="iniciarEdicionPost()" [disabled]="guardandoPostproduccion || !!postproduccionOriginal.fechaInicioEdicion">
+              <button mat-stroked-button color="primary" type="button" (click)="iniciarEdicionPost()" [disabled]="guardandoPostproduccion || !puedeIniciarEdicionPost">
                 Iniciar edición
               </button>
             </div>
@@ -1147,17 +1156,7 @@
     <div class="asignaciones-editor">
       <label class="form-field">
         <span class="label">Día</span>
-        <select
-          class="form-control"
-          [ngModel]="incidenciaDiaId"
-          (ngModelChange)="onIncidenciaDiaChange($event)"
-          name="incidenciaDiaId"
-          [disabled]="incidenciaDiaLocked">
-          <option [ngValue]="null">Selecciona un día</option>
-          @for (dia of detalle?.dias ?? []; track dia.diaId) {
-            <option [ngValue]="dia.diaId">{{ formatFechaLarga(dia.fecha) }}</option>
-          }
-        </select>
+        <div class="form-control--static">{{ getIncidenciaDiaLabel() }}</div>
       </label>
       <label class="form-field">
         <span class="label">Tipo</span>
@@ -1192,7 +1191,6 @@
             <option value="PM">PM</option>
           </select>
         </div>
-        <div class="muted micro">Preseleccionada con la hora actual.</div>
       </label>
     </div>
 

@@ -364,13 +364,11 @@
                     onFechaTrabajoChange($index, $any($event.target).value)
                   "
                   [class.is-invalid]="
-                    control.invalid &&
-                    (control.touched || form.get('dias')?.touched)
+                    control.invalid && control.touched
                   "
                 />
                 @if (
-                  control.invalid &&
-                  (control.touched || form.get("dias")?.touched)
+                  control.invalid && control.touched
                 ) {
                   <small class="text-danger"
                     >Selecciona una fecha válida.</small

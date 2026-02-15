@@ -702,6 +702,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
           }
           return false;
         });
+      this.autoAsignarFechasSiCantidadMaxima(
+        paquete.tmpId,
+        paquete.cantidad || 1,
+      );
     }
   }
 
@@ -836,6 +840,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         ...nuevas,
       ];
     }
+    this.autoAsignarFechasSiCantidadMaxima(tmpId, cantidad);
     this.refreshSelectedPaquetesColumns();
   }
   removePaquete(
@@ -1242,6 +1247,31 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       .map((item) => (item.Fecha ?? '').toString().trim())
       .filter(Boolean);
     return Array.from(new Set(fechas)).sort();
+  }
+
+  private autoAsignarFechasSiCantidadMaxima(
+    itemTmpId: string,
+    cantidad: number,
+  ): void {
+    if (!this.isMultipleDias()) return;
+    const max = this.getCantidadMaximaPorDias();
+    if (!max || cantidad < max) return;
+    const fechaEvento = (
+      this.visualizarService.selectAgregarPedido?.fechaEvent ?? ''
+    )
+      .toString()
+      .trim();
+    const fechasBase = this.fechasTrabajoValores.length
+      ? [...this.fechasTrabajoValores]
+      : (fechaEvento ? [fechaEvento] : []);
+    if (!fechasBase.length) return;
+    const fechasObjetivo = fechasBase.slice(0, cantidad);
+    this.serviciosFechasSeleccionadas = [
+      ...this.serviciosFechasSeleccionadas.filter(
+        (entry) => entry.itemTmpId !== itemTmpId,
+      ),
+      ...fechasObjetivo.map((fecha) => ({ itemTmpId, fecha })),
+    ];
   }
 
   formatFechaConDia(fecha: string): string {
