@@ -2267,7 +2267,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         ? 'Personal: consultando'
         : 'Personal: sin datos';
     }
-    return `Personal disponible: ${data.resumen.personal.disponible}`;
+    return `Personal disponible: ${this.normalizeDisponibles(data.resumen.personal.disponible)}`;
   }
 
   getDisponibilidadEquiposDisponibleLabel(fecha: string): string {
@@ -2277,7 +2277,71 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         ? 'Equipos: consultando'
         : 'Equipos: sin datos';
     }
-    return `Equipos disponibles: ${data.resumen.equipos.disponible}`;
+    return `Equipos disponibles: ${this.normalizeDisponibles(data.resumen.equipos.disponible)}`;
+  }
+
+  getDisponibilidadPersonalPorRolOrdenado(fecha: string): {
+    rolId: number;
+    rolNombre: string;
+    disponible: number;
+    disponibleInterno: number;
+    disponibleFreelance: number;
+  }[] {
+    const rows = this.getDisponibilidadDiaria(fecha)?.personalPorRol ?? [];
+    return rows
+      .map((row) => ({
+        rolId: row.rolId,
+        rolNombre: row.rolNombre,
+        disponible: this.normalizeDisponibles(row.disponible),
+        disponibleInterno: this.normalizeDisponibles(row.interno?.disponible),
+        disponibleFreelance: this.normalizeDisponibles(row.freelance?.disponible),
+      }))
+      .sort((a, b) => a.disponible - b.disponible || a.rolNombre.localeCompare(b.rolNombre));
+  }
+
+  getDisponibilidadPersonalInternoPorRolOrdenado(fecha: string): {
+    rolId: number;
+    rolNombre: string;
+    disponible: number;
+  }[] {
+    const rows = this.getDisponibilidadDiaria(fecha)?.personalPorRol ?? [];
+    return rows
+      .map((row) => ({
+        rolId: row.rolId,
+        rolNombre: row.rolNombre,
+        disponible: this.normalizeDisponibles(row.interno?.disponible),
+      }))
+      .sort((a, b) => a.disponible - b.disponible || a.rolNombre.localeCompare(b.rolNombre));
+  }
+
+  getDisponibilidadPersonalFreelancePorRolOrdenado(fecha: string): {
+    rolId: number;
+    rolNombre: string;
+    disponible: number;
+  }[] {
+    const rows = this.getDisponibilidadDiaria(fecha)?.personalPorRol ?? [];
+    return rows
+      .map((row) => ({
+        rolId: row.rolId,
+        rolNombre: row.rolNombre,
+        disponible: this.normalizeDisponibles(row.freelance?.disponible),
+      }))
+      .sort((a, b) => a.disponible - b.disponible || a.rolNombre.localeCompare(b.rolNombre));
+  }
+
+  getDisponibilidadEquiposPorTipoOrdenado(fecha: string): {
+    tipoEquipoId: number;
+    tipoEquipoNombre: string;
+    disponible: number;
+  }[] {
+    const rows = this.getDisponibilidadDiaria(fecha)?.equiposPorTipo ?? [];
+    return rows
+      .map((row) => ({
+        tipoEquipoId: row.tipoEquipoId,
+        tipoEquipoNombre: row.tipoEquipoNombre,
+        disponible: this.normalizeDisponibles(row.disponible),
+      }))
+      .sort((a, b) => a.disponible - b.disponible || a.tipoEquipoNombre.localeCompare(b.tipoEquipoNombre));
   }
 
   getDisponibilidadEstadoClass(fecha: string): string {
@@ -2295,6 +2359,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   hasDisponibilidadDetalle(fecha: string): boolean {
     const data = this.getDisponibilidadDiaria(fecha);
     return !!(data?.personalPorRol?.length || data?.equiposPorTipo?.length);
+  }
+
+  private normalizeDisponibles(value: unknown): number {
+    const parsed = this.parseNumber(value);
+    if (parsed == null) {
+      return 0;
+    }
+    return Math.max(0, parsed);
   }
 
   shouldShowFechaEvento(): boolean {

@@ -273,6 +273,28 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
       this.modalEditarSaving = true;
       this.modalEditarError = null;
 
+      const guardarEstadoSiCorresponde = (message: string): void => {
+        if (!debeActualizarEstado) {
+          this.onEditSuccess(message);
+          return;
+        }
+        this.clienteService.actualizarEstadoCliente(this.selectedCliente!.idCliente, selectedEstadoId as number)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => this.onEditSuccess(message),
+            error: (err) => {
+              this.modalEditarSaving = false;
+              const estadoMsg = err?.error?.message || 'No pudimos actualizar el estado.';
+              this.modalEditarError = estadoMsg;
+            }
+          });
+      };
+
+      if (!hayCambios) {
+        guardarEstadoSiCorresponde('Actualización exitosa');
+        return;
+      }
+
       const payload = {
         correo: correoForm,
         celular: celularForm,
@@ -296,21 +318,7 @@ export class GestionarClienteComponent implements OnInit, OnDestroy {
               this.modalEditarError = msg;
               return;
             }
-
-            if (debeActualizarEstado) {
-              this.clienteService.actualizarEstadoCliente(this.selectedCliente.idCliente, selectedEstadoId as number)
-                .pipe(takeUntil(this.destroy$))
-                .subscribe({
-                  next: () => this.onEditSuccess(msg),
-                  error: (err) => {
-                    this.modalEditarSaving = false;
-                    const estadoMsg = err?.error?.message || 'No pudimos actualizar el estado.';
-                    this.modalEditarError = estadoMsg;
-                  }
-                });
-            } else {
-              this.onEditSuccess(msg);
-            }
+            guardarEstadoSiCorresponde(msg);
           },
           error: (err) => {
             this.modalEditarSaving = false;

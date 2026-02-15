@@ -29,7 +29,7 @@
       <ng-template appCell="nombreCompleto" let-row>
         <div class="d-flex flex-column">
           <span>{{ row.nombre }} {{ row.apellido }}</span>
-          <small class="text-muted">{{ row.autonomo === 2 || row.autonomo === 'SI' ? 'Autónomo' : 'Dependiente' }}</small>
+          <small class="text-muted">{{ isAutonomo(row.autonomo) ? 'Autónomo' : 'Dependiente' }}</small>
         </div>
       </ng-template>
 
@@ -204,8 +204,8 @@
           <select id="createAutonomo" class="form-select" name="autonomo" [(ngModel)]="nuevoEmpleado.autonomo" required
             #autonomoCtrl="ngModel" [class.is-invalid]="autonomoCtrl.invalid && autonomoCtrl.touched"
             [attr.title]="autonomoCtrl.invalid && autonomoCtrl.touched ? 'Selecciona una opcion' : null">
-            <option [ngValue]="1">No</option>
-            <option [ngValue]="2">Sí</option>
+            <option [ngValue]="0">No</option>
+            <option [ngValue]="1">Sí</option>
           </select>
         </div>
 
@@ -351,7 +351,7 @@
           <div class="col-12 col-md-6">
             <label class="form-label" for="updateAutonomo">Autónomo</label>
             <input id="updateAutonomo" type="text" class="form-control" name="Autonomo"
-              [ngModel]="selected?.autonomo === 2 || selected?.autonomo === 'SI' ? 'Sí' : 'No'"
+              [ngModel]="isAutonomo(selected?.autonomo) ? 'Sí' : 'No'"
               disabled>
           </div>
 
@@ -440,7 +440,7 @@
         <div class="col-12 col-md-6">
           <label class="form-label" for="viewAutonomo">Autónomo</label>
           <input id="viewAutonomo" type="text" class="form-control" name="Autonomo"
-            [ngModel]="selected?.autonomo === 2 || selected?.autonomo === 'SI' ? 'Sí' : 'No'"
+            [ngModel]="isAutonomo(selected?.autonomo) ? 'Sí' : 'No'"
             disabled>
         </div>
         <div class="col-12 col-md-6">

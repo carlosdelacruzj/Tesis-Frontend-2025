@@ -328,8 +328,19 @@
                     @if (hasDisponibilidadDetalle(fecha)) {
                     <div class="programacion-dispo-popover">
                       <div class="programacion-dispo-popover__section">
-                        <strong>Personal por rol</strong>
-                        @for (row of getDisponibilidadDiaria(fecha)?.personalPorRol ?? []; track row.rolId) {
+                        <strong>Personal</strong>
+                        <strong>Trabajadores</strong>
+                        @for (row of getDisponibilidadPersonalInternoPorRolOrdenado(fecha); track row.rolId) {
+                        <div class="programacion-dispo-popover__row">
+                          <span>{{ row.rolNombre }}</span>
+                          <span class="programacion-dispo-popover__value"
+                            [class.programacion-dispo-popover__value--none]="row.disponible <= 0">
+                            Disponibles: {{ row.disponible }}
+                          </span>
+                        </div>
+                        }
+                        <strong>Freelances</strong>
+                        @for (row of getDisponibilidadPersonalFreelancePorRolOrdenado(fecha); track row.rolId) {
                         <div class="programacion-dispo-popover__row">
                           <span>{{ row.rolNombre }}</span>
                           <span class="programacion-dispo-popover__value"
@@ -340,8 +351,8 @@
                         }
                       </div>
                       <div class="programacion-dispo-popover__section">
-                        <strong>Equipos por tipo</strong>
-                        @for (row of getDisponibilidadDiaria(fecha)?.equiposPorTipo ?? []; track row.tipoEquipoId) {
+                        <strong>Equipos</strong>
+                        @for (row of getDisponibilidadEquiposPorTipoOrdenado(fecha); track row.tipoEquipoId) {
                         <div class="programacion-dispo-popover__row">
                           <span>{{ row.tipoEquipoNombre }}</span>
                           <span class="programacion-dispo-popover__value"

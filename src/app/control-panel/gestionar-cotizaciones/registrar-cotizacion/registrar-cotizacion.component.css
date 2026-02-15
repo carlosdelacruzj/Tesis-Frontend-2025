@@ -248,6 +248,15 @@
   color: #991b1b;
 }
 
+.programacion-dispo-popover__value small {
+  display: block;
+  margin-top: 2px;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: normal;
+}
+
 .programacion-item__remove {
   opacity: 0.8;
 }

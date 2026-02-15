@@ -10,7 +10,7 @@ export interface Empleado {
   documento: string;
   tipoDocumentoId?: number;
   direccion: string;
-  autonomo: 1 | 2 | 'SI' | 'NO';
+  autonomo: 0 | 1 | 2 | 'SI' | 'NO';
   idCargo: number;
   cargo: string;
   esOperativoCampo: 0 | 1;
@@ -21,8 +21,12 @@ export interface Empleado {
 
 export type EmpleadoUpdateDto = Pick<
   Empleado,
-  'idEmpleado' | 'correo' | 'celular' | 'direccion' | 'idEstado'
+  'idEmpleado' | 'correo' | 'celular' | 'direccion'
 >;
+
+export interface EmpleadoEstadoUpdateDto {
+  estado: 1 | 2;
+}
 
 export interface EmpleadoOperativo {
   empleadoId: number;

@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Empleado, EmpleadoOperativo, EmpleadoUpdateDto } from '../model/personal.model';
+import { Empleado, EmpleadoEstadoUpdateDto, EmpleadoOperativo, EmpleadoUpdateDto } from '../model/personal.model';
 import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
 export interface Cargo {
@@ -38,6 +38,12 @@ export class PersonalService {
   // PUT /empleados/{id}
   updateEmpleado(dto: EmpleadoUpdateDto): Observable<Empleado> {
     return this.http.put<Empleado>(`${this.base}/${dto.idEmpleado}`, dto);
+  }
+
+  // PATCH /empleados/{id}/estado
+  actualizarEstadoEmpleado(id: number, estado: 1 | 2): Observable<Empleado> {
+    const payload: EmpleadoEstadoUpdateDto = { estado };
+    return this.http.patch<Empleado>(`${this.base}/${id}/estado`, payload);
   }
 
   // GET /empleados/cargos  (opcional)

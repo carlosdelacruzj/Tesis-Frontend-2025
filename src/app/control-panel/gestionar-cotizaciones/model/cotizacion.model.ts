@@ -301,8 +301,13 @@ export interface PedidoDisponibilidadDiariaResumenItem {
   disponible: number;
 }
 
+export interface PedidoDisponibilidadDiariaResumenDesglose {
+  interno?: PedidoDisponibilidadDiariaResumenItem;
+  freelance?: PedidoDisponibilidadDiariaResumenItem;
+}
+
 export interface PedidoDisponibilidadDiariaResumen {
-  personal: PedidoDisponibilidadDiariaResumenItem;
+  personal: PedidoDisponibilidadDiariaResumenItem & PedidoDisponibilidadDiariaResumenDesglose;
   equipos: PedidoDisponibilidadDiariaResumenItem;
 }
 
@@ -312,6 +317,8 @@ export interface PedidoDisponibilidadDiariaPersonalRol {
   total: number;
   reservado: number;
   disponible: number;
+  interno?: PedidoDisponibilidadDiariaResumenItem;
+  freelance?: PedidoDisponibilidadDiariaResumenItem;
 }
 
 export interface PedidoDisponibilidadDiariaEquipoTipo {
