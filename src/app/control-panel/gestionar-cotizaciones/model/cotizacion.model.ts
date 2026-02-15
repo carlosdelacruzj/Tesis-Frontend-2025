@@ -294,3 +294,37 @@ export interface CotizacionPedidoPayload {
 export interface CotizacionPedidoResponse {
   pedidoId: number;
 }
+
+export interface PedidoDisponibilidadDiariaResumenItem {
+  total: number;
+  reservado: number;
+  disponible: number;
+}
+
+export interface PedidoDisponibilidadDiariaResumen {
+  personal: PedidoDisponibilidadDiariaResumenItem;
+  equipos: PedidoDisponibilidadDiariaResumenItem;
+}
+
+export interface PedidoDisponibilidadDiariaPersonalRol {
+  rolId: number;
+  rolNombre: string;
+  total: number;
+  reservado: number;
+  disponible: number;
+}
+
+export interface PedidoDisponibilidadDiariaEquipoTipo {
+  tipoEquipoId: number;
+  tipoEquipoNombre: string;
+  total: number;
+  reservado: number;
+  disponible: number;
+}
+
+export interface PedidoDisponibilidadDiariaResponse {
+  fecha: string;
+  resumen: PedidoDisponibilidadDiariaResumen;
+  personalPorRol: PedidoDisponibilidadDiariaPersonalRol[];
+  equiposPorTipo: PedidoDisponibilidadDiariaEquipoTipo[];
+}
