@@ -2201,17 +2201,11 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         ? 'Disponibilidad: consultando'
         : 'Disponibilidad: sin datos';
     }
-    const personal = data.resumen.personal;
-    const equipos = data.resumen.equipos;
-    if (personal.disponible <= 0 || equipos.disponible <= 0) {
-      return 'Disponibilidad: critica';
-    }
-    const personalRatio = personal.total > 0 ? personal.disponible / personal.total : 0;
-    const equiposRatio = equipos.total > 0 ? equipos.disponible / equipos.total : 0;
-    if (personalRatio <= 0.2 || equiposRatio <= 0.2) {
-      return 'Disponibilidad: limitada';
-    }
-    return 'Disponibilidad: alta';
+    const nivel = this.getDisponibilidadNivel(fecha);
+    if (nivel === 'CRITICA') return 'Disponibilidad: crítica';
+    if (nivel === 'LIMITADA') return 'Disponibilidad: limitada';
+    if (nivel === 'ALTA') return 'Disponibilidad: alta';
+    return 'Disponibilidad: sin datos';
   }
 
   isEventoSeleccionado(): boolean {
@@ -2347,18 +2341,34 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   getDisponibilidadEstadoClass(fecha: string): string {
     const data = this.getDisponibilidadDiaria(fecha);
     if (!data) return 'programacion-dispo--none';
-    const personal = data.resumen.personal;
-    const equipos = data.resumen.equipos;
-    if (personal.disponible <= 0 || equipos.disponible <= 0) return 'programacion-dispo--critical';
-    const personalRatio = personal.total > 0 ? personal.disponible / personal.total : 0;
-    const equiposRatio = equipos.total > 0 ? equipos.disponible / equipos.total : 0;
-    if (personalRatio <= 0.2 || equiposRatio <= 0.2) return 'programacion-dispo--warn';
-    return 'programacion-dispo--ok';
+    const nivel = this.getDisponibilidadNivel(fecha);
+    if (nivel === 'CRITICA') return 'programacion-dispo--critical';
+    if (nivel === 'LIMITADA') return 'programacion-dispo--warn';
+    if (nivel === 'ALTA') return 'programacion-dispo--ok';
+    return 'programacion-dispo--none';
   }
 
   hasDisponibilidadDetalle(fecha: string): boolean {
     const data = this.getDisponibilidadDiaria(fecha);
-    return !!(data?.personalPorRol?.length || data?.equiposPorTipo?.length);
+    return !!(
+      data?.personalPorRol?.length ||
+      data?.equiposPorTipo?.length ||
+      data?.disponibilidadDia?.requiereApoyoExterno
+    );
+  }
+
+  getDisponibilidadRequiereApoyoExterno(fecha: string): boolean {
+    return !!this.getDisponibilidadDiaria(fecha)?.disponibilidadDia?.requiereApoyoExterno;
+  }
+
+  private getDisponibilidadNivel(fecha: string): string | null {
+    const raw = this.getDisponibilidadDiaria(fecha)?.disponibilidadDia?.nivel;
+    if (!raw) return null;
+    const nivel = String(raw).trim().toUpperCase();
+    if (nivel === 'ALTA' || nivel === 'LIMITADA' || nivel === 'CRITICA') {
+      return nivel;
+    }
+    return null;
   }
 
   private normalizeDisponibles(value: unknown): number {

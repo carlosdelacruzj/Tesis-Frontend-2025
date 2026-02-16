@@ -329,9 +329,23 @@ export interface PedidoDisponibilidadDiariaEquipoTipo {
   disponible: number;
 }
 
+export interface PedidoDisponibilidadDiariaRiesgos {
+  personalCriticoInterno?: string;
+  equiposCriticosInternos?: string;
+  equiposSecundariosInternos?: string;
+}
+
+export interface PedidoDisponibilidadDia {
+  nivel?: 'ALTA' | 'LIMITADA' | 'CRITICA' | string;
+  requiereApoyoExterno?: boolean;
+  motivos?: string[];
+  riesgos?: PedidoDisponibilidadDiariaRiesgos;
+}
+
 export interface PedidoDisponibilidadDiariaResponse {
   fecha: string;
   resumen: PedidoDisponibilidadDiariaResumen;
   personalPorRol: PedidoDisponibilidadDiariaPersonalRol[];
   equiposPorTipo: PedidoDisponibilidadDiariaEquipoTipo[];
+  disponibilidadDia?: PedidoDisponibilidadDia;
 }
