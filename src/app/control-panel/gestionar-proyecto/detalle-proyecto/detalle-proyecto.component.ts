@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { MatStepper } from '@angular/material/stepper';
-import Swal from 'sweetalert2';
+import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import {
   BloqueDia,
   EquipoDia,

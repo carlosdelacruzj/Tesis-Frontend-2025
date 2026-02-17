@@ -5,6 +5,7 @@ import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { RegistrarPagoService, PedidoLite, ResumenPago, VoucherVM } from '../registrar-pago/service/registrar-pago.service';
 import { formatIsoDate, parseDateInput } from '../../shared/utils/date-utils';
 import { ComprobantesService } from '../comprobantes/service/comprobantes.service';
+import { deriveFinancialStatus, FinancialStatusResult } from 'src/app/shared/utils/financial-status.utils';
 
 type TabKey = 'pendientes' | 'parciales' | 'pagados' | 'cerrados';
 
@@ -67,8 +68,11 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     fechaMin: '',
     file: null as File | null,
     fileName: null as string | null,
-    faltanteDeposito: 0
+    faltanteDeposito: 0,
+    financialStatus: null as FinancialStatusResult | null
   };
+  showEstadoLegend = false;
+  showFinancialDetails = false;
 
   private readonly destroy$ = new Subject<void>();
 
@@ -90,9 +94,7 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
 
   onTabChange(tab: TabKey): void {
     this.selectedTab = tab;
-    if (!(this.data[tab]?.length)) {
-      this.loadTab(tab);
-    }
+    this.loadTab(tab, true);
   }
 
   onRefresh(): void {
@@ -112,14 +114,30 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     );
   }
 
+  getEstadoPagoLabel(row: PagoRow | null | undefined): string {
+    return deriveFinancialStatus({ estadoLabel: row?.estado }).label;
+  }
+
+  isEstadoPagoCerrado(row: PagoRow | null | undefined): boolean {
+    return deriveFinancialStatus({ estadoLabel: row?.estado }).code === 'CERRADO';
+  }
+
+  getEstadoPagoTooltip(row: PagoRow | null | undefined): string {
+    const status = deriveFinancialStatus({ estadoLabel: row?.estado });
+    if (status.code !== 'CERRADO') {
+      return '';
+    }
+    return 'Caso financiero finalizado: incluye nota de credito, devolucion o cierre administrativo.';
+  }
+
   isPagado(row: PagoRow | null | undefined): boolean {
-    const key = (row?.estado || '').toLowerCase();
-    return ['pagado', 'pagados', 'pagado total', 'completo', 'cerrado', 'cerrados'].includes(key);
+    return deriveFinancialStatus({ estadoLabel: row?.estado }).isSettled;
   }
 
   abrirGestionPago(row: PagoRow): void {
     if (!row?.id) return;
     const fechaMin = this.getFechaMinPago(row);
+    const status = deriveFinancialStatus({ estadoLabel: row.estado });
     this.modal = {
       ...this.modal,
       open: true,
@@ -139,9 +157,11 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
       file: null,
       fileName: null,
       faltanteDeposito: 0,
-      allowRegistro: !this.isPagado(row),
-      pagadoCompleto: this.isPagado(row)
+      allowRegistro: status.allowPayment,
+      pagadoCompleto: status.isSettled,
+      financialStatus: status
     };
+    this.showFinancialDetails = false;
 
     this.pagoService.getMetodosPago().pipe(takeUntil(this.destroy$)).subscribe({
       next: (m) => { this.modal.metodos = m ?? []; },
@@ -157,12 +177,18 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
           ? this.parseMonto(resumenValido.SaldoPendiente)
           : Math.max(total - abonado, 0);
         const faltanteDeposito = Math.max(total * 0.5 - abonado, 0);
+        const financialStatus = deriveFinancialStatus({
+          estadoLabel: row.estado,
+          montoAbonado: resumenValido.MontoAbonado,
+          saldoPendiente: saldo,
+          montoPorDevolver: resumenValido.MontoPorDevolver,
+          notasCredito: resumenValido.NotasCredito
+        });
         this.modal.resumen = { ...resumenValido, SaldoPendiente: saldo } as ResumenPago;
         this.modal.faltanteDeposito = faltanteDeposito;
-        if (saldo <= 0) {
-          this.modal.allowRegistro = false;
-          this.modal.pagadoCompleto = true;
-        }
+        this.modal.allowRegistro = financialStatus.allowPayment;
+        this.modal.pagadoCompleto = financialStatus.isSettled;
+        this.modal.financialStatus = financialStatus;
         this.configurarOpcionPagoInicial();
         this.modal.loading = false;
       },
@@ -180,6 +206,15 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
 
   cerrarGestionPago(): void {
     this.modal.open = false;
+    this.showFinancialDetails = false;
+  }
+
+  toggleEstadoLegend(): void {
+    this.showEstadoLegend = !this.showEstadoLegend;
+  }
+
+  toggleFinancialDetails(): void {
+    this.showFinancialDetails = !this.showFinancialDetails;
   }
 
   onFileSelected(event: Event): void {
@@ -366,9 +401,10 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
     }
   }
 
-  irAPagados(): void {
-    this.selectedTab = 'pagados';
-    this.loadTab('pagados', true);
+  irAEstadoLiquidado(): void {
+    const tab: TabKey = this.modal.financialStatus?.code === 'CERRADO' ? 'cerrados' : 'pagados';
+    this.selectedTab = tab;
+    this.loadTab(tab, true);
     this.cerrarGestionPago();
   }
 
@@ -384,10 +420,18 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
               ? this.parseMonto(resumenValido.SaldoPendiente)
               : Math.max(total - abonado, 0);
             const faltanteDeposito = Math.max(total * 0.5 - abonado, 0);
+            const financialStatus = deriveFinancialStatus({
+              estadoLabel: this.modal.pedido?.estado,
+              montoAbonado: resumenValido.MontoAbonado,
+              saldoPendiente: saldo,
+              montoPorDevolver: resumenValido.MontoPorDevolver,
+              notasCredito: resumenValido.NotasCredito
+            });
             this.modal.resumen = { ...resumenValido, SaldoPendiente: saldo } as ResumenPago;
             this.modal.faltanteDeposito = faltanteDeposito;
-            this.modal.allowRegistro = saldo > 0;
-            this.modal.pagadoCompleto = saldo <= 0;
+            this.modal.allowRegistro = financialStatus.allowPayment;
+            this.modal.pagadoCompleto = financialStatus.isSettled;
+            this.modal.financialStatus = financialStatus;
             this.configurarOpcionPagoInicial();
             resolve();
           },
@@ -586,6 +630,47 @@ export class PagosEstandarComponent implements OnInit, OnDestroy {
   get montoSeleccionadoTexto(): string {
     const monto = this.parseMonto(this.modal.monto);
     return monto > 0 ? this.formatearMoneda(monto) : '--';
+  }
+
+  get modalSettlementTitle(): string {
+    if (this.modal.financialStatus?.code === 'CERRADO') {
+      return 'Caso financiero finalizado';
+    }
+    return 'Se completo el cobro';
+  }
+
+  get modalSettlementSubtitle(): string {
+    if (this.modal.financialStatus?.code === 'CERRADO' && this.modal.financialStatus.closedByCreditNote) {
+      return 'Operacion cerrada con nota de credito/devolucion.';
+    }
+    if (this.modal.financialStatus?.code === 'CERRADO') {
+      return 'Caso financiero finalizado por cierre administrativo.';
+    }
+    return 'Sin saldo pendiente.';
+  }
+
+  get settledTargetTabLabel(): string {
+    return this.modal.financialStatus?.code === 'CERRADO' ? 'cerrados' : 'pagados';
+  }
+
+  get showAdjustedFinancialSummary(): boolean {
+    const r = this.modal.resumen;
+    if (!r) return false;
+    return (
+      r.CostoTotalOriginal != null ||
+      r.CostoTotalNeto != null ||
+      r.CobrosPositivos != null ||
+      r.NotasCredito != null ||
+      r.MontoPorDevolver != null
+    );
+  }
+
+  get hasMontoPorDevolver(): boolean {
+    return this.parseMonto(this.modal.resumen?.MontoPorDevolver ?? 0) > 0;
+  }
+
+  get hasSaldoNoCobrable(): boolean {
+    return this.parseMonto(this.modal.resumen?.SaldoNoCobrable ?? 0) > 0;
   }
 
   private loadTab(tab: TabKey, force = false): void {

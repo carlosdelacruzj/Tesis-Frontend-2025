@@ -11,12 +11,21 @@ export interface PedidoLite {
   Fecha: string; // YYYY-MM-DD
   FechaCreacion?: string; // YYYY-MM-DD
 }
+
+type NumericValue = number | string;
+
 export interface ResumenPago {
-  CostoBase: number;
-  Igv: number;
-  CostoTotal: number;
-  MontoAbonado: number;
-  SaldoPendiente: number;
+  CostoBase: NumericValue;
+  Igv: NumericValue;
+  CostoTotalOriginal?: NumericValue;
+  CostoTotalNeto?: NumericValue;
+  CobrosPositivos?: NumericValue;
+  NotasCredito?: NumericValue;
+  CostoTotal: NumericValue;
+  MontoAbonado: NumericValue;
+  SaldoPendiente: NumericValue;
+  SaldoNoCobrable?: NumericValue;
+  MontoPorDevolver?: NumericValue;
 }
 
 export interface VoucherVM {

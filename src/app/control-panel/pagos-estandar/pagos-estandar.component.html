@@ -25,7 +25,29 @@
     <button type="button" class="btn btn-link btn-sm text-decoration-none" (click)="onRefresh()">
       <mat-icon class="align-middle">refresh</mat-icon> Actualizar
     </button>
+    <button type="button" class="btn btn-link btn-sm text-decoration-none" (click)="toggleEstadoLegend()">
+      <mat-icon class="align-middle">help_outline</mat-icon>
+      {{ showEstadoLegend ? 'Ocultar estados' : 'Que significa cada estado' }}
+    </button>
   </div>
+  @if (showEstadoLegend) {
+  <div class="alert alert-light border mb-3 py-2 px-3" role="note">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <small class="text-muted">Estados de pago:</small>
+      <app-estado-badge [estado]="'Pendiente'" [mapaColores]="{ 'Pendiente': 'info' }"></app-estado-badge>
+      <small class="text-muted">sin abonos</small>
+      <app-estado-badge [estado]="'Parcial'" [mapaColores]="{ 'Parcial': 'warning' }"></app-estado-badge>
+      <small class="text-muted">abono parcial</small>
+      <app-estado-badge [estado]="'Pagado'" [mapaColores]="{ 'Pagado': 'success-light' }"></app-estado-badge>
+      <small class="text-muted">sin saldo pendiente</small>
+      <span
+        [matTooltip]="'Caso financiero finalizado: incluye nota de credito, devolucion o cierre administrativo.'"
+      >
+        <app-estado-badge [estado]="'Cerrado'" [mapaColores]="{ 'Cerrado': 'success' }"></app-estado-badge>
+      </span>
+    </div>
+  </div>
+  }
 
   @if (error) {
     <div class="alert alert-danger" role="alert">{{ error }}</div>
@@ -61,13 +83,18 @@
     </ng-template>
 
     <ng-template appCell="estado" let-row>
-      <app-estado-badge [estado]="row.estado || 'Sin estado'"
-      [mapaColores]="{
-            'Pendiente': 'info',
-            'Parcial': 'warning',
-            'Pagado': 'success-light',
-            'Cerrado': 'success'
-          }"></app-estado-badge>
+      <span
+        [matTooltip]="getEstadoPagoTooltip(row)"
+        [matTooltipDisabled]="!isEstadoPagoCerrado(row)"
+      >
+        <app-estado-badge [estado]="getEstadoPagoLabel(row)"
+        [mapaColores]="{
+              'Pendiente': 'info',
+              'Parcial': 'warning',
+              'Pagado': 'success-light',
+              'Cerrado': 'success'
+            }"></app-estado-badge>
+      </span>
     </ng-template>
 
     <ng-template appCell="acciones" let-row>
@@ -90,8 +117,8 @@
   [open]="modal.open"
   [useDefaultFooter]="false"
   [disableClose]="modal.guardando"
-  [title]="modal.pagadoCompleto ? 'Pago completado' : 'Registrar pago'"
-  size="md"
+  [title]="modal.pagadoCompleto ? modalSettlementTitle : 'Registrar pago'"
+  size="lg"
   (closed)="cerrarGestionPago()"
 >
   @if (modal.loading) {
@@ -110,30 +137,52 @@
 
       @if (modal.resumen) {
         <div class="summary-card">
-          <div class="summary-grid" [class.summary-grid-3]="modal.pagadoCompleto">
-            <div class="summary-item">
-              <div class="summary-label">Subtotal</div>
-              <div class="summary-value">{{ (modal.resumen?.CostoBase || 0) | usd:'1.2-2' }}</div>
+          <div class="summary-overview">
+            <div class="overview-item overview-item--status">
+              <div class="summary-label">Estado financiero</div>
+              <div class="summary-value">{{ modal.financialStatus?.label || 'Pendiente' }}</div>
             </div>
-            <div class="summary-item">
-              <div class="summary-label">IGV</div>
-              <div class="summary-value">{{ (modal.resumen?.Igv || 0) | usd:'1.2-2' }}</div>
+            <div class="overview-item overview-item--highlight">
+              <div class="summary-label">Saldo pendiente</div>
+              <div class="summary-value">{{ saldoPendienteTexto }}</div>
             </div>
-            <div class="summary-item">
-              <div class="summary-label">Total</div>
-              <div class="summary-value">{{ (modal.resumen?.CostoTotal || 0) | usd:'1.2-2' }}</div>
+            <div class="overview-item">
+              <div class="summary-label">Total pactado</div>
+              <div class="summary-value">{{ (modal.resumen?.CostoTotal ?? 0) | usd:'1.2-2' }}</div>
             </div>
-            @if (!modal.pagadoCompleto) {
-              <div class="summary-item">
-                <div class="summary-label">Abonado</div>
-                <div class="summary-value">{{ (modal.resumen?.MontoAbonado || 0) | usd:'1.2-2' }}</div>
-              </div>
-              <div class="summary-item summary-highlight">
-                <div class="summary-label">Saldo pendiente</div>
-                <div class="summary-value">{{ saldoPendienteTexto }}</div>
-              </div>
-            }
           </div>
+          <p class="summary-help mb-0">
+            Vista rápida: estado actual, saldo pendiente y total pactado.
+          </p>
+          <div class="d-flex justify-content-end mt-2">
+            <button type="button" class="btn btn-link btn-sm p-0" (click)="toggleFinancialDetails()">
+              {{ showFinancialDetails ? 'Ocultar desglose financiero' : 'Ver desglose financiero' }}
+            </button>
+          </div>
+          @if (showFinancialDetails) {
+            <div class="summary-detail-list mt-2">
+              <div class="summary-detail-row">
+                <span>Total</span>
+                <strong>{{ (modal.resumen?.CostoTotal || 0) | usd:'1.2-2' }}</strong>
+              </div>
+              <div class="summary-detail-row">
+                <span>Abonado</span>
+                <strong>{{ (modal.resumen?.MontoAbonado || 0) | usd:'1.2-2' }}</strong>
+              </div>
+              @if (hasMontoPorDevolver) {
+                <div class="summary-detail-row">
+                  <span>Monto por devolver</span>
+                  <strong>{{ modal.resumen?.MontoPorDevolver | usd:'1.2-2' }}</strong>
+                </div>
+              }
+              @if (hasSaldoNoCobrable) {
+                <div class="summary-detail-row">
+                  <span>Saldo no cobrable (informativo)</span>
+                  <strong>{{ modal.resumen?.SaldoNoCobrable | usd:'1.2-2' }}</strong>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
 
@@ -141,15 +190,15 @@
       <div class="paid-banner">
         <div class="paid-banner__icon">OK</div>
         <div>
-          <div class="paid-banner__title">Pago completado</div>
-          <div class="paid-banner__subtitle">El saldo esta en 0 y no quedan pagos pendientes.</div>
-          @if (selectedTab !== 'pagados') {
+          <div class="paid-banner__title">{{ modalSettlementTitle }}</div>
+          <div class="paid-banner__subtitle">{{ modalSettlementSubtitle }}</div>
+          @if (selectedTab !== settledTargetTabLabel) {
             <button
               class="btn btn-link btn-sm ps-0"
               type="button"
-              (click)="irAPagados()"
+              (click)="irAEstadoLiquidado()"
             >
-              Ver en pagados
+              Ver en {{ settledTargetTabLabel }}
             </button>
           }
         </div>
@@ -216,7 +265,7 @@
             <label class="payment-option" for="opcionPago100" [class.is-disabled]="!opcionPago100Disponible">
               <div class="payment-option__body">
                 <div class="payment-title">Pagar 100% del saldo restante</div>
-                <div class="payment-sub">Pago completo</div>
+                <div class="payment-sub">Pago del saldo</div>
                 @if (!opcionPago100Disponible) {
                   <div class="payment-badge">No disponible</div>
                 }
