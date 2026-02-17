@@ -1,143 +1,71 @@
-<div class="dashboard-content">
+﻿<div class="dashboard-content">
   <div class="container-fluid">
     <div class="row">
-        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-            <div class="page-header">
-                <h2 class="pageheader-title">Form Validations </h2>
-                <p class="pageheader-text">Proin placerat ante duiullam scelerisque a velit ac porta, fusce sit amet vestibulum mi. Morbi lobortis pulvinar quam.</p>
-                <div class="page-breadcrumb">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="#" class="breadcrumb-link">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="#" class="breadcrumb-link">Forms</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Form Validations</li>
-                        </ol>
-                    </nav>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <form #perfilForm="ngForm" (ngSubmit)="postPermiso(perfilForm)">
-        <!-- card numero 1 -->
+      <div class="col-12">
         <mat-card class="card">
-            <mat-card-header class="card-header">
-                <mat-card-title>Registrar Perfil</mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="card-body">
-                <div class="form-row">
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
-                        <mat-label>Rol</mat-label>
-                        <mat-select name="rol" #rol="ngModel" ngModel required>
-                            <mat-option label=""></mat-option>
-                            @for (rol of roles; track rol.PK_Rol_Cod) {
-                                <mat-option [value]="rol.PK_Rol_Cod">
-                                    {{rol.Rol_Nombre}}
-                                </mat-option>
-                            }
-                        </mat-select>
-                        @if (selectFormControl.hasError('required')) {
-                            <mat-error>
-                                <p>*Campo Requerido</p>
-                            </mat-error>
-                        }
-                    </mat-form-field>
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
-                        <mat-label>Nombre</mat-label>
-                        <input matInput type="text" name="nombre" #nombre="ngModel" ngModel [pattern]="nombrePattern" required>
-                        @if (nombre.errors?.pattern) {
-                            <mat-error>
-                                <p>*Sólo letras</p>
-                            </mat-error>
-                        }
-                        @if (nombre.errors?.required) {
-                            <mat-error>
-                                <p>*Campo Requerido</p>
-                            </mat-error>
-                        }
-                    </mat-form-field>
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
-                        <mat-label>Apellido</mat-label>
-                        <input matInput type="text" name="apellido" #apellido="ngModel" ngModel [pattern]="apellidoPattern" required>
-                        @if (apellido.errors?.pattern) {
-                            <mat-error>
-                                <p>*Sólo letras</p>
-                            </mat-error>
-                        }
-                        @if (apellido.errors?.required) {
-                            <mat-error>
-                                <p>*Campo Requerido</p>
-                            </mat-error>
-                        }
-                    </mat-form-field>
+          <mat-card-header class="card-header">
+            <mat-card-title>Asignar perfil a usuario</mat-card-title>
+          </mat-card-header>
 
-                    <mat-form-field appearance="fill" class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2">
-                        <mat-label>Correo</mat-label>
-                        <input matInput type="text" name="correo" #correo="ngModel" ngModel [pattern]="correoPattern" required>
-                        @if (correo.errors?.pattern) {
-                            <mat-error>
-                                <p>*Ingrese un email correcto</p>
-                            </mat-error>
-                        }
-                        @if (correo.errors?.required) {
-                            <mat-error>
-                                <p>*Campo Requerido</p>
-                            </mat-error>
-                        }
-                    </mat-form-field>
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
-                        <mat-label>Número de documento</mat-label>
-                        <input matInput type="text" name="doc" #doc="ngModel" ngModel [pattern]="docPattern" required>
-                        @if (doc.errors?.pattern) {
-                            <mat-error>
-                                <p>*Sólo números</p>
-                            </mat-error>
-                        }
-                        @if (doc.errors?.required) {
-                            <mat-error>
-                                <p>*Campo Requerido</p>
-                            </mat-error>
-                        }
-                    </mat-form-field>
-                    <mat-form-field class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-2 " appearance="fill">
-                        <mat-label>Celular</mat-label>
-                        <input matInput type="text" name="celular" #celular="ngModel" ngModel [pattern]="celularPattern" required>
-                        @if (celular.errors?.pattern) {
-                            <mat-error>
-                                <p>*Sólo números</p>
-                            </mat-error>
-                        }
-                        @if (celular.errors?.required) {
-                            <mat-error>
-                                <p>*Campo Requerido</p>
-                            </mat-error>
-                        }
-                    </mat-form-field>
+          <mat-card-content class="card-body">
+            @if (error) {
+              <div class="alert alert-danger" role="alert">{{ error }}</div>
+            }
+
+            <form #perfilForm="ngForm" (ngSubmit)="asignarPerfil(perfilForm)">
+              <div class="form-row">
+                <mat-form-field class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 mb-2" appearance="fill">
+                  <mat-label>Buscar empleado</mat-label>
+                  <input matInput type="text" name="empleadoBusqueda" [(ngModel)]="empleadoBusqueda"
+                    (ngModelChange)="filtrarEmpleados()" placeholder="Nombre, correo o usuarioId"
+                    [disabled]="loadingEmpleados">
+                </mat-form-field>
+
+                <mat-form-field class="col-xl-5 col-lg-6 col-md-6 col-sm-12 col-12 mb-2" appearance="fill">
+                  <mat-label>Empleado</mat-label>
+                  <mat-select name="usuarioId" [(ngModel)]="usuarioId" (selectionChange)="onEmpleadoChange($event.value)"
+                    required [disabled]="loadingEmpleados">
+                    @for (empleado of empleadosFiltrados; track empleado.idEmpleado) {
+                      <mat-option [value]="empleado.idUsuario">
+                        {{ empleado.nombreCompleto }} - {{ empleado.correo }} (usuarioId: {{ empleado.idUsuario }})
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="col-xl-3 col-lg-12 col-md-12 col-sm-12 col-12 mb-2" appearance="fill">
+                  <mat-label>Usuario ID</mat-label>
+                  <input matInput type="number" [ngModel]="usuarioId" name="usuarioIdReadonly" readonly>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 mb-2" appearance="fill">
+                  <mat-label>Perfil</mat-label>
+                  <mat-select name="perfilCodigo" [(ngModel)]="perfilCodigo" required [disabled]="loadingPerfiles">
+                    @for (perfil of perfiles; track perfil.codigo) {
+                      <mat-option [value]="perfil.codigo">
+                        {{ perfil.codigo }} - {{ perfil.nombre }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 mb-2 d-flex align-items-center">
+                  <mat-checkbox name="principal" [(ngModel)]="principal">Perfil principal</mat-checkbox>
                 </div>
-                <div class="form-row">
-                    <mat-form-field class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 mb-12 " appearance="fill">
-                        <mat-label>Dirección</mat-label>
-                        <textarea matInput type="text" name="direccion" #direccion="ngModel" ngModel required></textarea>
-                        @if (direccion.errors?.pattern) {
-                            <mat-error>
-                                <p>*Ingrese una dirección correcta</p>
-                            </mat-error>
-                        }
-                        @if (direccion.errors?.required) {
-                            <mat-error>
-                                <p>*Campo Requerido</p>
-                            </mat-error>
-                        }
-                    </mat-form-field>
-                </div>
-            </mat-card-content>
+              </div>
+
+              <button class="btn btn-primary mb-2 mr-1" type="submit" [disabled]="perfilForm.invalid || submitting || cargandoDatos">
+                {{ submitting ? 'Guardando...' : 'Asignar' }}
+              </button>
+              <button class="btn btn-secondary mb-2 mr-1" type="button" [routerLink]="['/home/gestionar-perfiles']">
+                Atras
+              </button>
+            </form>
+          </mat-card-content>
         </mat-card>
-        <button class="btn btn-primary mb-2 mr-1" type="submit" [disabled]="perfilForm.invalid">
-            Registrar
-        </button>
-        <button class="btn btn-primary mb-2 mr-1" type="button" [routerLink]="['/home/gestionar-perfil']"> 
-            atras
-        </button>
-    </form>
+      </div>
+    </div>
   </div>
 </div>

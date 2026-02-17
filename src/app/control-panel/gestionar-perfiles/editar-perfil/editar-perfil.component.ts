@@ -1,12 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { PerfilService } from '../service/perfil.service';
-import { NgForm, UntypedFormControl, Validators } from '@angular/forms';
+﻿import { Component, OnInit, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
+import { ApiErrorResponse, PerfilUsuario } from '../model/perfil.model';
+import { PerfilService } from '../service/perfil.service';
 
-interface Rol {
-  PK_Rol_Cod: number;
-  Rol_Nombre: string;
-}
 @Component({
   selector: 'app-editar-perfil',
   templateUrl: './editar-perfil.component.html',
@@ -14,63 +11,92 @@ interface Rol {
 })
 export class EditarPerfilComponent implements OnInit {
 
-  rol: Rol[] = [];
-  roles: Rol[] = [];
-  selectFormControl = new UntypedFormControl('', Validators.required);
-  nombrePattern = '^[a-zA-Z ]{2,20}$';
-  apellidoPattern = '^[a-zA-Z ]{2,30}$';
-  docPattern = '^[0-9]{1}[0-9]{7}$';
-  celularPattern = '^[1-9]{1}[0-9]{6,8}$';
-  correoPattern = '^[a-z]+[a-z0-9._]+@[a-z]+\\.[a-z.]{2,5}$';
+  usuarioId: number | null = null;
+  correo = '';
+  perfilesUsuario: PerfilUsuario[] = [];
+  loading = false;
+  updating = false;
+  error: string | null = null;
 
-  readonly service = inject(PerfilService);
+  private readonly service = inject(PerfilService);
+  private readonly route = inject(ActivatedRoute);
 
   ngOnInit(): void {
-    this.getAllRoles();
+    const queryUsuarioId = Number(this.route.snapshot.queryParamMap.get('usuarioId'));
+    if (Number.isFinite(queryUsuarioId) && queryUsuarioId > 0) {
+      this.usuarioId = queryUsuarioId;
+      this.consultar();
+    }
   }
-  public putPermiso(perfilForm: NgForm) {
-    const data = {
-      Correo: perfilForm.value.correo,
-      Celular: perfilForm.value.celular,
-      ID: perfilForm.value.ID,
-      Direccion: perfilForm.value.direccion,
-      rol: perfilForm.value.ROL,
 
-    };
-    try {
-      this.service.putPermiso(data).subscribe();
-      Swal.fire({
-        text: 'Actualización exitosa',
-        icon: 'success',
-        showCancelButton: false,
-        customClass: {
-          confirmButton: 'btn btn-success',
-        },
-        buttonsStyling: false
-      });
+  consultar(): void {
+    if (!this.usuarioId || this.usuarioId <= 0) {
+      this.error = 'Ingresa un usuarioId valido.';
+      this.perfilesUsuario = [];
+      this.correo = '';
+      return;
     }
-    catch (err) {
-    }
-  }
-  getAllRoles() {
-    this.service.getAllRoles().subscribe(
-      (res) => {
-        this.roles = this.mapRoles(res);
+
+    this.loading = true;
+    this.error = null;
+
+    this.service.getUsuarioPerfiles(this.usuarioId).subscribe({
+      next: (res) => {
+        this.correo = res?.usuario?.correo ?? '';
+        this.perfilesUsuario = res?.perfiles ?? [];
+        this.loading = false;
       },
-      (err) => console.error(err)
-    );
+      error: (err) => {
+        this.loading = false;
+        this.error = this.getErrorMessage(err) ?? 'No se pudieron consultar los perfiles del usuario.';
+        this.perfilesUsuario = [];
+        this.correo = '';
+      }
+    });
   }
-  clear(perfilForm: NgForm){
-    perfilForm.reset();
- }
 
-  private mapRoles(value: Record<string, unknown>[] | null | undefined): Rol[] {
-    if (!Array.isArray(value)) {
-      return [];
+  marcarPrincipal(perfilCodigo: string): void {
+    if (!this.usuarioId || this.updating) {
+      return;
     }
-    return value.map((item) => ({
-      PK_Rol_Cod: Number(item?.PK_Rol_Cod ?? item?.id ?? 0) || 0,
-      Rol_Nombre: String(item?.Rol_Nombre ?? item?.nombre ?? '')
-    }));
+
+    this.updating = true;
+    this.service.asignarPerfilPorCodigo(this.usuarioId, perfilCodigo, true).subscribe({
+      next: () => {
+        this.updating = false;
+        void Swal.fire({ text: 'Perfil principal actualizado.', icon: 'success', confirmButtonText: 'Ok' });
+        this.consultar();
+      },
+      error: (err) => {
+        this.updating = false;
+        const message = this.getErrorMessage(err) ?? 'No se pudo actualizar el perfil principal.';
+        void Swal.fire({ text: message, icon: 'warning', confirmButtonText: 'Ok' });
+      }
+    });
+  }
+
+  remover(perfilCodigo: string): void {
+    if (!this.usuarioId || this.updating) {
+      return;
+    }
+
+    this.updating = true;
+    this.service.removerPerfil(this.usuarioId, perfilCodigo).subscribe({
+      next: () => {
+        this.updating = false;
+        void Swal.fire({ text: 'Perfil removido.', icon: 'success', confirmButtonText: 'Ok' });
+        this.consultar();
+      },
+      error: (err) => {
+        this.updating = false;
+        const message = this.getErrorMessage(err) ?? 'No se pudo remover el perfil.';
+        void Swal.fire({ text: message, icon: 'warning', confirmButtonText: 'Ok' });
+      }
+    });
+  }
+
+  private getErrorMessage(err: unknown): string | null {
+    const message = (err as { error?: ApiErrorResponse })?.error?.message;
+    return typeof message === 'string' && message.trim().length > 0 ? message : null;
   }
 }

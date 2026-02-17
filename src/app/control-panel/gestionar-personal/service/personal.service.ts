@@ -2,6 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { Empleado, EmpleadoEstadoUpdateDto, EmpleadoOperativo, EmpleadoUpdateDto } from '../model/personal.model';
 import { CatalogosService } from 'src/app/shared/services/catalogos.service';
@@ -48,11 +49,23 @@ export class PersonalService {
 
   // GET /empleados/cargos  (opcional)
   getCargos(): Observable<Cargo[]> {
-    return this.catalogos.getCargos();
+    return this.catalogos.getCargos().pipe(
+      map((cargos) => (cargos ?? []).filter((cargo) => !this.isAdminCargo(cargo?.cargoNombre)))
+    );
   }
 
   // GET /empleados/operativos
   getOperativos(): Observable<EmpleadoOperativo[]> {
     return this.http.get<EmpleadoOperativo[]>(this.baseOperativos);
+  }
+
+  private isAdminCargo(nombre: string | null | undefined): boolean {
+    const normalized = String(nombre ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+
+    return normalized === 'admin' || normalized === 'administrador';
   }
 }
