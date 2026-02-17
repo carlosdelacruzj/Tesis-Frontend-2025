@@ -24,6 +24,7 @@ import { DetalleProyectoComponent } from './gestionar-proyecto/detalle-proyecto/
 import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.component';
 import { RoleGuard } from '../guards/role.guard';
 import { GestionarPortafolioComponent } from './gestionar-portafolio/gestionar-portafolio.component';
+import { CalendarioOperacionesComponent } from './calendario-operaciones/calendario-operaciones.component';
 
 const routes: Routes = [
   {
@@ -44,6 +45,7 @@ const routes: Routes = [
       { path: 'gestionar-pedido/detalle/:id', component: DetallePedidoComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
       { path: 'gestionar-personal', component: GestionarPersonalComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
       { path: 'pagos-estandar', component: PagosEstandarComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
+      { path: 'calendario-operaciones', component: CalendarioOperacionesComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
       { path: 'gestionar-cliente', component: GestionarClienteComponent, canActivate: [RoleGuard], data: { roles: ['Admin', 'Vendedor'] } },
       { path: 'gestionar-perfiles', component: GestionarPerfilesComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },
       { path: 'gestionar-perfiles/registrar-perfil', component: RegistrarPerfilComponent, canActivate: [RoleGuard], data: { roles: ['Admin'] } },

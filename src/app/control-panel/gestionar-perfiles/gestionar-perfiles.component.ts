@@ -17,6 +17,7 @@ interface EmpleadoOption {
   idUsuario: number;
   nombreCompleto: string;
   correo: string;
+  cargo: string;
   estado: string;
 }
 
@@ -265,7 +266,7 @@ export class GestionarPerfilesComponent implements OnInit, OnDestroy {
 
     this.empleadosFiltrados = this.empleados.filter((empleado) =>
       empleado.nombreCompleto.toLowerCase().includes(term)
-      || empleado.correo.toLowerCase().includes(term)
+      || empleado.cargo.toLowerCase().includes(term)
       || String(empleado.idEmpleado).includes(term)
     );
   }
@@ -363,12 +364,13 @@ export class GestionarPerfilesComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res: Empleado[]) => {
           this.empleados = (res ?? [])
-            .filter((empleado) => Number(empleado?.idUsuario) > 0)
+            .filter((empleado) => Number(empleado?.idUsuario) > 0 && Number(empleado?.esOperativoCampo) === 0)
             .map((empleado) => ({
               idEmpleado: Number(empleado.idEmpleado),
               idUsuario: Number(empleado.idUsuario),
               nombreCompleto: `${empleado.nombre ?? ''} ${empleado.apellido ?? ''}`.trim(),
               correo: String(empleado.correo ?? ''),
+              cargo: String(empleado.cargo ?? ''),
               estado: String(empleado.estado ?? (Number(empleado.idEstado) === 1 ? 'Activo' : 'Inactivo'))
             }))
             .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));

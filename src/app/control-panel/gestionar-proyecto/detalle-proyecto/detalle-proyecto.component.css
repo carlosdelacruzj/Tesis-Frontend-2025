@@ -1,4 +1,4 @@
-:host {
+﻿:host {
   display: block;
 }
 
@@ -139,6 +139,32 @@ section[id] {
   font-size: clamp(1.3rem, 2.2vw, 1.75rem);
   line-height: 1.2;
   letter-spacing: -0.01em;
+}
+
+.title--editable {
+  cursor: text;
+}
+
+.title-hint {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.title-input {
+  width: min(520px, 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: clamp(1.05rem, 1.9vw, 1.35rem);
+  font-weight: 700;
+  color: #111827;
+}
+
+.title-input:focus {
+  outline: 0;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
 .section {
@@ -2242,3 +2268,4 @@ h2, h3 {
     padding: 10px;
   }
 }
+

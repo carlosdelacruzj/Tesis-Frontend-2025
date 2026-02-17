@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, Subject, takeUntil } from 'rxjs';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
@@ -96,6 +96,10 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   error: string | null = null;
   detalle: ProyectoDetalleResponse | null = null;
   proyecto: ProyectoDetalle | null = null;
+  editandoNombreProyecto = false;
+  guardandoNombreProyecto = false;
+  nombreProyectoDraft = '';
+  private confirmandoNombreProyecto = false;
   modalAsignarAbierto = false;
   modalIncidenciaAbierto = false;
   modalIncidenciasListaAbierto = false;
@@ -217,6 +221,7 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
   @ViewChild('asignacionesStepper') asignacionesStepper?: MatStepper;
+  @ViewChild('nombreProyectoInput') nombreProyectoInput?: ElementRef<HTMLInputElement>;
 
   ngOnInit(): void {
     this.updateStepperOrientation();
@@ -266,6 +271,106 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     }
   }
 
+  iniciarEdicionNombreProyecto(event?: Event): void {
+    event?.stopPropagation();
+    if (!this.proyecto || this.guardandoNombreProyecto) {
+      return;
+    }
+    this.nombreProyectoDraft = (this.proyecto.proyectoNombre ?? '').toString();
+    this.editandoNombreProyecto = true;
+    setTimeout(() => {
+      this.nombreProyectoInput?.nativeElement?.focus();
+      this.nombreProyectoInput?.nativeElement?.select();
+    }, 0);
+  }
+
+  cancelarEdicionNombreProyecto(): void {
+    this.editandoNombreProyecto = false;
+    this.nombreProyectoDraft = (this.proyecto?.proyectoNombre ?? '').toString();
+  }
+
+  async confirmarCambioNombreProyecto(): Promise<void> {
+    if (!this.proyecto || this.guardandoNombreProyecto || this.confirmandoNombreProyecto) {
+      return;
+    }
+
+    this.confirmandoNombreProyecto = true;
+    const nombreActual = (this.proyecto.proyectoNombre ?? '').toString().trim();
+    const nombreNuevo = (this.nombreProyectoDraft ?? '').toString().trim();
+
+    if (!nombreNuevo) {
+      this.confirmandoNombreProyecto = false;
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Nombre requerido',
+        text: 'Ingresa un nombre de proyecto valido.',
+        confirmButtonText: 'Entendido'
+      }).then(() => {
+        this.nombreProyectoInput?.nativeElement?.focus();
+      });
+      return;
+    }
+
+    if (nombreNuevo === nombreActual) {
+      this.cancelarEdicionNombreProyecto();
+      this.confirmandoNombreProyecto = false;
+      return;
+    }
+
+    const confirm = await Swal.fire({
+      icon: 'question',
+      title: '¿Guardar nuevo nombre?',
+      text: `Se actualizara el nombre a: "${nombreNuevo}"`,
+      showCancelButton: true,
+      confirmButtonText: 'Si, guardar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    });
+
+    if (!confirm.isConfirmed) {
+      this.cancelarEdicionNombreProyecto();
+      this.confirmandoNombreProyecto = false;
+      return;
+    }
+
+    this.guardandoNombreProyecto = true;
+    this.proyectoService.actualizarNombreProyecto(this.proyecto.proyectoId, { proyectoNombre: nombreNuevo })
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.guardandoNombreProyecto = false;
+          this.confirmandoNombreProyecto = false;
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          const nombre = (response?.proyectoNombre ?? nombreNuevo).toString().trim();
+          if (this.proyecto) {
+            this.proyecto.proyectoNombre = nombre;
+          }
+          if (this.detalle?.proyecto) {
+            this.detalle.proyecto.proyectoNombre = nombre;
+          }
+          this.nombreProyectoDraft = nombre;
+          this.editandoNombreProyecto = false;
+          void Swal.fire({
+            icon: 'success',
+            title: 'Nombre actualizado',
+            timer: 1300,
+            showConfirmButton: false
+          });
+        },
+        error: (err) => {
+          console.error('[proyecto] actualizar nombre', err);
+          void Swal.fire({
+            icon: 'error',
+            title: 'No se pudo actualizar',
+            text: 'Intenta nuevamente en unos segundos.',
+            confirmButtonText: 'Entendido'
+          });
+        }
+      });
+  }
   abrirModalAsignar(diaId?: number): void {
     this.modalAsignarAbierto = true;
     const selected = diaId ?? this.openDiaId ?? this.detalle?.dias?.[0]?.diaId ?? null;
@@ -3757,6 +3862,11 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
 
 }
+
+
+
+
+
 
 
 

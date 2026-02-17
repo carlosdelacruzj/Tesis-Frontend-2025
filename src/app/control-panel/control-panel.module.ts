@@ -44,6 +44,7 @@ import { OrderByEmpleadoPipe } from '../pipes/order-by-empleado.pipe';
 import { UsdPipe } from '../pipes/usd.pipe';
 import { PagosEstandarComponent } from './pagos-estandar/pagos-estandar.component';
 import { GestionarPortafolioComponent } from './gestionar-portafolio/gestionar-portafolio.component';
+import { CalendarioOperacionesComponent } from './calendario-operaciones/calendario-operaciones.component';
 
 @NgModule({
   declarations: [
@@ -74,7 +75,8 @@ import { GestionarPortafolioComponent } from './gestionar-portafolio/gestionar-p
     GestionarProyectoComponent,
     DetalleProyectoComponent,
     PagosEstandarComponent,
-    GestionarPortafolioComponent
+    GestionarPortafolioComponent,
+    CalendarioOperacionesComponent
   ],
   imports: [
     CommonModule,

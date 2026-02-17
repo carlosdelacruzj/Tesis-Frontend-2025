@@ -427,6 +427,16 @@ export interface ProyectoCancelarGlobalResponse {
   montoNcTotal: number;
 }
 
+export interface ProyectoActualizarNombrePayload {
+  proyectoNombre: string;
+}
+
+export interface ProyectoActualizarNombreResponse {
+  status: string;
+  proyectoId: number;
+  proyectoNombre: string;
+}
+
 export type ProyectoPayload = {
   pedidoId?: number | null;
   responsableId?: number | null;

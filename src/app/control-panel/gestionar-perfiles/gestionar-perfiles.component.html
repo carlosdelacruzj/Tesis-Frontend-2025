@@ -103,7 +103,7 @@
               name="empleadoBusqueda"
               [(ngModel)]="asignacionFormData.empleadoBusqueda"
               (ngModelChange)="filtrarEmpleados()"
-              placeholder="Nombre, correo o empleadoId"
+              placeholder="Nombre, rol o empleadoId"
               [disabled]="loadingEmpleados || asignandoPerfil">
           </div>
 
@@ -120,7 +120,7 @@
               <option [ngValue]="null">Selecciona un empleado</option>
               @for (empleado of empleadosFiltrados; track empleado.idEmpleado) {
                 <option [ngValue]="empleado.idEmpleado">
-                  {{ empleado.nombreCompleto }} - {{ empleado.correo }}
+                  {{ empleado.nombreCompleto }} - {{ empleado.cargo || 'Sin rol' }}
                 </option>
               }
             </select>

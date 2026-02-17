@@ -129,7 +129,7 @@ export class RegistrarPerfilComponent implements OnInit {
     this.personalService.getEmpleados().subscribe({
       next: (res: Empleado[]) => {
         this.empleados = (res ?? [])
-          .filter((empleado) => Number(empleado?.idUsuario) > 0)
+          .filter((empleado) => Number(empleado?.idUsuario) > 0 && Number(empleado?.esOperativoCampo) === 0)
           .map((empleado) => ({
             idEmpleado: Number(empleado.idEmpleado),
             idUsuario: Number(empleado.idUsuario),

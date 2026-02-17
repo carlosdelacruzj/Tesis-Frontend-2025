@@ -20,7 +20,9 @@ import {
   ProyectoCancelarDiaPayload,
   ProyectoCancelarDiaResponse,
   ProyectoCancelarGlobalPayload,
-  ProyectoCancelarGlobalResponse
+  ProyectoCancelarGlobalResponse,
+  ProyectoActualizarNombrePayload,
+  ProyectoActualizarNombreResponse
 } from '../model/proyecto.model';
 import { PedidoRequerimientos } from '../model/detalle-proyecto.model';
 import { ProyectoDisponibilidad } from '../model/proyecto-disponibilidad.model';
@@ -50,6 +52,13 @@ export class ProyectoService {
 
   actualizarProyecto(id: number, payload: Partial<ProyectoPayload>): Observable<Proyecto> {
     return this.http.put<Proyecto>(`${this.API}/${id}`, payload);
+  }
+
+  actualizarNombreProyecto(
+    id: number,
+    payload: ProyectoActualizarNombrePayload
+  ): Observable<ProyectoActualizarNombreResponse> {
+    return this.http.patch<ProyectoActualizarNombreResponse>(`${this.API}/${id}/nombre`, payload);
   }
 
   actualizarProyectoParcial(

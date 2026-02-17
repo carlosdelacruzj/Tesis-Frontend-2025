@@ -1,0 +1,161 @@
+<div class="dashboard-content calendario-page">
+  <div class="calendar-header card shell">
+    <div>
+      <h1>Calendario operativo</h1>
+      <p>Vista mensual de proyectos programados y detalle por fecha.</p>
+    </div>
+    <div class="calendar-controls">
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goToPreviousMonth()">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <select class="form-select form-select-sm" [ngModel]="month" (ngModelChange)="onMonthChange($event)">
+        @for (monthName of monthNames; track monthName; let index = $index) {
+          <option [value]="index + 1">{{ monthName }}</option>
+        }
+      </select>
+      <select class="form-select form-select-sm" [ngModel]="year" (ngModelChange)="onYearChange($event)">
+        @for (item of years; track item) {
+          <option [value]="item">{{ item }}</option>
+        }
+      </select>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goToNextMonth()">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  @if (monthError) {
+    <div class="alert alert-danger mt-3" role="alert">{{ monthError }}</div>
+  }
+
+  @if (!monthError) {
+    <div class="calendar-kpis">
+      <div class="kpi-card">
+        <span>Proyecto-dia</span>
+        <strong>{{ resumenTotalProyectoDiasMes }}</strong>
+      </div>
+      <div class="kpi-card">
+        <span>Proyectos unicos</span>
+        <strong>{{ resumenTotalProyectosUnicosMes }}</strong>
+      </div>
+      <div class="kpi-card">
+        <span>Dias con actividad</span>
+        <strong>{{ resumenDiasConActividad }}</strong>
+      </div>
+      <div class="kpi-card">
+        <span>Periodo</span>
+        <strong>{{ monthTitle }}</strong>
+      </div>
+    </div>
+
+    <div class="calendar-grid-wrap card shell">
+      @if (loadingMonth) {
+        <div class="loading-wrap">
+          <mat-spinner diameter="38"></mat-spinner>
+          <p>Cargando calendario...</p>
+        </div>
+      } @else {
+        <div class="calendar-week-head">
+          @for (weekName of weekNames; track weekName) {
+            <div>{{ weekName }}</div>
+          }
+        </div>
+
+        <div class="calendar-grid">
+          @for (cell of calendarCells; track trackByCalendarCell($index, cell)) {
+            <button
+              type="button"
+              class="calendar-cell"
+              [class.out-month]="!cell.inCurrentMonth"
+              [class.has-items]="(cell.info?.totalItems ?? 0) > 0"
+              [disabled]="!cell.inCurrentMonth"
+              (click)="openDay(cell)"
+            >
+              <div class="calendar-cell__day">{{ cell.day }}</div>
+              <div class="calendar-cell__meta">
+                @if ((cell.info?.totalItems ?? 0) > 0) {
+                  <span class="items-pill">{{ cell.info?.totalItems }} item(s)</span>
+                  <span class="project-name">
+                    {{ cell.info?.items?.[0]?.proyectoNombre }}
+                  </span>
+                } @else if (cell.inCurrentMonth) {
+                  <span class="no-items">Sin actividad</span>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<app-modal-base
+  [open]="dayModalOpen"
+  [title]="'Detalle del dia ' + formatDate(selectedDate)"
+  [useDefaultFooter]="false"
+  [disableClose]="loadingDay"
+  (closed)="closeDayModal()"
+>
+  @if (loadingDay) {
+    <div class="loading-wrap loading-wrap--modal">
+      <mat-spinner diameter="34"></mat-spinner>
+      <p>Cargando detalle...</p>
+    </div>
+  } @else if (dayError) {
+    <div class="alert alert-danger mb-0" role="alert">{{ dayError }}</div>
+  } @else if (detalleDia) {
+    <div class="day-detail-head">
+      <div>
+        <p class="mb-1 text-muted">Fecha</p>
+        <strong>{{ formatDate(detalleDia.fecha) }}</strong>
+      </div>
+      <div>
+        <p class="mb-1 text-muted">Total proyectos</p>
+        <strong>{{ detalleDia.totalItems }}</strong>
+      </div>
+    </div>
+
+    <div class="day-items-list">
+      @for (item of detalleDia.items; track trackByDiaItem($index, item)) {
+        <article class="day-item-card">
+          <header>
+            <h3>{{ item.proyectoNombre }}</h3>
+            <span class="status-chip" [ngClass]="getEstadoClass(item.estadoDia)">
+              {{ item.estadoDia || 'Sin estado' }}
+            </span>
+          </header>
+
+          <div class="day-item-meta">
+            <span><strong>Hora:</strong> {{ formatHora(item.horaInicio) }}</span>
+            <span><strong>Estado proyecto:</strong> {{ item.estadoProyecto || '-' }}</span>
+          </div>
+
+          @if ((item.locaciones?.length ?? 0) > 0) {
+            <div class="day-item-block">
+              <p class="day-item-label">Locaciones</p>
+              <ul>
+                @for (locacion of item.locaciones; track $index) {
+                  <li>{{ locacion.ubicacion || '-' }} | {{ locacion.direccion || '-' }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if ((item.servicios?.length ?? 0) > 0) {
+            <div class="day-item-block">
+              <p class="day-item-label">Servicios</p>
+              <ul>
+                @for (servicio of item.servicios; track servicio.servicioId) {
+                  <li>{{ servicio.nombre || '-' }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </article>
+      } @empty {
+        <p class="empty-note mb-0">Sin proyectos para esta fecha.</p>
+      }
+    </div>
+  }
+</app-modal-base>

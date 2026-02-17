@@ -1,6 +1,5 @@
 ﻿<div class="dashboard-content operativo-mode">
   <app-list-toolbar
-    [title]="proyecto?.proyectoNombre || 'Proyecto'"
     [showSearch]="false"
     [showCreateButton]="false">
   </app-list-toolbar>
@@ -15,7 +14,26 @@
         <header class="card-header">
           <div>
             <p class="eyebrow">Proyecto #{{ proyecto.proyectoId }}</p>
-            <h2 class="title">{{ proyecto.proyectoNombre }}</h2>
+            @if (!editandoNombreProyecto) {
+              <h2
+                class="title title--editable"
+                title="Doble click para editar"
+                (dblclick)="iniciarEdicionNombreProyecto($event)">
+                {{ proyecto.proyectoNombre }}
+              </h2>
+              <p class="title-hint">Doble click para editar nombre</p>
+            } @else {
+              <input
+                #nombreProyectoInput
+                class="title-input"
+                type="text"
+                [disabled]="guardandoNombreProyecto"
+                [(ngModel)]="nombreProyectoDraft"
+                (blur)="confirmarCambioNombreProyecto()"
+                (keydown.enter)="$event.preventDefault(); confirmarCambioNombreProyecto()"
+                (keydown.escape)="cancelarEdicionNombreProyecto()"
+                maxlength="150" />
+            }
             <p class="muted small">Pedido #{{ proyecto.pedidoCodigo || proyecto.pedidoId }}</p>
             @if ((proyecto.estadoNombre || '').toLowerCase() === 'en postproducción' || (proyecto.estadoNombre || '').toLowerCase() === 'en postproduccion') {
               <span class="status-pill status-pill--post">Postproducción</span>
@@ -1413,4 +1431,5 @@
   <mat-spinner diameter="40"></mat-spinner>
   <p>Cargando proyecto…</p>
 </ng-template>
+
 

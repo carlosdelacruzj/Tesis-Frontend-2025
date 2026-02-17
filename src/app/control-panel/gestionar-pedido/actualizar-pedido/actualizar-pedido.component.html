@@ -51,33 +51,7 @@
           </mat-card-header>
           <mat-card-content>
             <div class="row g-3">
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label class="col-form-label" for="pedidoNombre"
-                    >Pedido</label
-                  >
-                  <input
-                    id="pedidoNombre"
-                    type="text"
-                    class="form-control"
-                    name="NombrePedido"
-                    [(ngModel)]="
-                      visualizarService.selectAgregarPedido.NombrePedido
-                    "
-                    #pedidoNombre="ngModel"
-                    required
-                    [class.is-invalid]="
-                      pedidoNombre.invalid && pedidoNombre.touched
-                    "
-                  />
-                  @if (pedidoNombre.invalid && pedidoNombre.touched) {
-                    <small class="text-danger">
-                      Ingresa el nombre del pedido.
-                    </small>
-                  }
-                </div>
-              </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <div class="form-group">
                   <label class="col-form-label" for="departamentoPedido"
                     >Departamento</label
@@ -110,7 +84,7 @@
                   }
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <div class="form-group">
                   <label class="col-form-label" for="eventoSelect"
                     >Tipo de evento</label
