@@ -20,7 +20,7 @@ export class GestionarContratosComponent implements OnInit, OnDestroy {
     { key: 'codigoContrato', header: 'Contrato', sortable: true, width: '140px', class: 'text-center text-nowrap' },
     { key: 'codigoPedido', header: 'Pedido', sortable: true, width: '120px', class: 'text-center text-nowrap' },
     { key: 'cliente', header: 'Cliente', sortable: true, width: '220px' },
-    { key: 'fechaContrato', header: 'Fecha', sortable: true, width: '130px', class: 'text-center' },
+    { key: 'fechaContrato', header: 'Fecha creación', sortable: true, width: '130px', class: 'text-center' },
     { key: 'versionContrato', header: 'Version', sortable: true, width: '100px', class: 'text-center' },
     { key: 'estadoContrato', header: 'Estado contrato', sortable: true, width: '150px', class: 'text-center' },
     { key: 'esVigente', header: 'Vigente', sortable: true, width: '100px', class: 'text-center' },
@@ -43,6 +43,7 @@ export class GestionarContratosComponent implements OnInit, OnDestroy {
   historialRows: ContratoVersionResumen[] = [];
   vigentePedido: ContratoVersionResumen | null = null;
   vigentePedidoError: string | null = null;
+  historialModalOpen = false;
 
   private readonly contratoService = inject(ContratoService);
   private readonly destroy$ = new Subject<void>();
@@ -142,6 +143,7 @@ export class GestionarContratosComponent implements OnInit, OnDestroy {
     if (!row?.pedidoId) {
       return;
     }
+    this.historialModalOpen = true;
     this.historialPedidoId = row.pedidoId;
     this.historialPedidoCodigo = row.codigoPedido ?? null;
     this.historialLoading = true;
@@ -164,6 +166,17 @@ export class GestionarContratosComponent implements OnInit, OnDestroy {
           this.historialError = 'No pudimos cargar el historial de versiones.';
         },
       });
+  }
+
+  closeHistorialModal(): void {
+    this.historialModalOpen = false;
+    this.historialPedidoId = null;
+    this.historialPedidoCodigo = null;
+    this.historialLoading = false;
+    this.historialError = null;
+    this.historialRows = [];
+    this.vigentePedido = null;
+    this.vigentePedidoError = null;
   }
 
   cargarVigentePedido(): void {

@@ -17,6 +17,8 @@ export interface ContratoGestionRow {
   versionContrato: number | string | null;
   estadoContrato: string | null;
   esVigente: boolean;
+  fechaCreacion?: string | null;
+  createdAt?: string | null;
   pdfLink?: string | null;
 }
 
@@ -26,6 +28,7 @@ export interface ContratoVersionResumen {
   version: number | string | null;
   estado: string | null;
   esVigente: boolean;
+  fechaCreacion?: string | null;
   fechaContrato?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;

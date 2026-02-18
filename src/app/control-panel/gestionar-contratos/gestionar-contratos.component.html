@@ -61,7 +61,7 @@
       </ng-template>
 
       <ng-template appCell="fechaContrato" let-row>
-        {{ row.fechaContrato ? (row.fechaContrato | date:'dd-MM-yyyy') : '--' }}
+        {{ (row.fechaCreacion || row.createdAt || row.fechaContrato) ? ((row.fechaCreacion || row.createdAt || row.fechaContrato) | date:'dd-MM-yyyy') : '--' }}
       </ng-template>
 
       <ng-template appCell="versionContrato" let-row>
@@ -131,73 +131,80 @@
       <p class="mt-3 mb-0">Cargando contratos...</p>
     </div>
   }
-
-  @if (historialPedidoId) {
-    <section class="panel mt-4">
-      <div class="panel-header">
-        <h5 class="mb-0">Historial de versiones - Pedido {{ historialPedidoCodigo || ('#' + historialPedidoId) }}</h5>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-primary btn-sm" (click)="cargarVigentePedido()">
-            Ver vigente del pedido
-          </button>
-        </div>
-      </div>
-
-      @if (historialLoading) {
-        <div class="d-flex align-items-center gap-2 text-muted">
-          <mat-spinner diameter="22"></mat-spinner>
-          <span>Cargando historial...</span>
-        </div>
-      } @else if (historialError) {
-        <div class="alert alert-danger mb-0" role="alert">{{ historialError }}</div>
-      } @else if (historialRows.length === 0) {
-        <div class="text-muted">Sin versiones registradas para este pedido.</div>
-      } @else {
-        <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Version</th>
-                <th>Estado</th>
-                <th>Vigente</th>
-                <th>Fecha</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (item of historialRows; track item.id) {
-                <tr>
-                  <td>{{ item.id }}</td>
-                  <td>v{{ item.version ?? '--' }}</td>
-                  <td>{{ item.estado || '--' }}</td>
-                  <td>{{ item.esVigente ? 'Si' : 'No' }}</td>
-                  <td>{{ item.fechaContrato ? (item.fechaContrato | date:'dd-MM-yyyy') : '--' }}</td>
-                  <td class="text-center">
-                    <div class="d-inline-flex gap-1">
-                      <button mat-icon-button type="button" (click)="verPdf(item.id)" matTooltip="Abrir PDF">
-                        <mat-icon>picture_as_pdf</mat-icon>
-                      </button>
-                      <button mat-icon-button type="button" (click)="descargarPdf(item.id)" matTooltip="Descargar PDF">
-                        <mat-icon>download</mat-icon>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-
-      @if (vigentePedidoError) {
-        <div class="alert alert-warning mt-3 mb-0" role="alert">{{ vigentePedidoError }}</div>
-      }
-      @if (vigentePedido) {
-        <div class="alert alert-success mt-3 mb-0" role="status">
-          Contrato vigente: ID {{ vigentePedido.id }} - Version v{{ vigentePedido.version ?? '--' }} - Estado {{ vigentePedido.estado || '--' }}
-        </div>
-      }
-    </section>
-  }
 </div>
+
+<app-modal-base
+  [open]="historialModalOpen"
+  [title]="'Historial de versiones - Pedido ' + (historialPedidoCodigo || ('#' + (historialPedidoId || '')))"
+  [disableClose]="false"
+  [useDefaultFooter]="false"
+  size="lg"
+  (closed)="closeHistorialModal()">
+  <div class="d-flex justify-content-end mb-2">
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="cargarVigentePedido()" [disabled]="!historialPedidoId">
+      Ver vigente del pedido
+    </button>
+  </div>
+
+  @if (historialLoading) {
+    <div class="d-flex align-items-center gap-2 text-muted">
+      <mat-spinner diameter="22"></mat-spinner>
+      <span>Cargando historial...</span>
+    </div>
+  } @else if (historialError) {
+    <div class="alert alert-danger mb-0" role="alert">{{ historialError }}</div>
+  } @else if (historialRows.length === 0) {
+    <div class="text-muted">Sin versiones registradas para este pedido.</div>
+  } @else {
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Version</th>
+            <th>Estado</th>
+            <th>Vigente</th>
+            <th>Fecha creacion</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of historialRows; track item.id) {
+            <tr>
+              <td>{{ item.id }}</td>
+              <td>v{{ item.version ?? '--' }}</td>
+              <td>{{ item.estado || '--' }}</td>
+              <td>{{ item.esVigente ? 'Si' : 'No' }}</td>
+              <td>{{ (item.fechaCreacion || item.createdAt || item.fechaContrato) ? ((item.fechaCreacion || item.createdAt || item.fechaContrato) | date:'dd-MM-yyyy') : '--' }}</td>
+              <td class="text-center">
+                <div class="d-inline-flex gap-1">
+                  <button mat-icon-button type="button" (click)="verPdf(item.id)" matTooltip="Abrir PDF">
+                    <mat-icon>picture_as_pdf</mat-icon>
+                  </button>
+                  <button mat-icon-button type="button" (click)="descargarPdf(item.id)" matTooltip="Descargar PDF">
+                    <mat-icon>download</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (vigentePedidoError) {
+    <div class="alert alert-warning mt-3 mb-0" role="alert">{{ vigentePedidoError }}</div>
+  }
+  @if (vigentePedido) {
+    <div class="alert alert-success mt-3 mb-0" role="status">
+      Contrato vigente: ID {{ vigentePedido.id }} - Version v{{ vigentePedido.version ?? '--' }} - Estado {{ vigentePedido.estado || '--' }}
+    </div>
+  }
+
+  <div modal-footer class="d-flex justify-content-end">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeHistorialModal()">
+      Cerrar
+    </button>
+  </div>
+</app-modal-base>

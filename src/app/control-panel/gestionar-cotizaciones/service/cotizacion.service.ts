@@ -2,7 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
-import { Cotizacion, CotizacionItemPayload, CotizacionPayload, CotizacionContacto, CotizacionContactoPayload, CotizacionContextoPayload, CotizacionDetallePayload, CotizacionEventoPayload, CotizacionApiContacto, CotizacionApiResponse, ClienteBusquedaResultado, CotizacionPublicPayload, CotizacionPublicResponse, CotizacionPublicResult, LeadConvertPayload, CotizacionPedidoPayload, CotizacionPedidoResponse, CotizacionAdminCreatePayload, CotizacionAdminUpdatePayload, PedidoDisponibilidadDiariaResponse } from '../model/cotizacion.model';
+import { Cotizacion, CotizacionItemPayload, CotizacionPayload, CotizacionContacto, CotizacionContactoPayload, CotizacionContextoPayload, CotizacionDetallePayload, CotizacionEventoPayload, CotizacionApiContacto, CotizacionApiResponse, ClienteBusquedaResultado, CotizacionPublicPayload, CotizacionPublicResponse, CotizacionPublicResult, LeadConvertPayload, CotizacionPedidoPayload, CotizacionPedidoResponse, CotizacionAdminCreatePayload, CotizacionAdminUpdatePayload, PedidoDisponibilidadDiariaResponse, CotizacionVersionesResponse } from '../model/cotizacion.model';
 import { PedidoService } from '../../gestionar-pedido/service/pedido.service';
 import { VisualizarService } from '../../gestionar-pedido/service/visualizar.service';
 import { environment } from '../../../../environments/environment';
@@ -62,6 +62,14 @@ export class CotizacionService {
         return throwError(() => err);
       })
     );
+  }
+
+  getCotizacionVersiones(id: number | string): Observable<CotizacionVersionesResponse> {
+    const numericId = Number(id);
+    if (!Number.isFinite(numericId)) {
+      return throwError(() => new Error('Identificador de cotización inválido'));
+    }
+    return this.http.get<CotizacionVersionesResponse>(`${this.baseUrl}/${numericId}/versiones`);
   }
 
   // [3] POST /cotizaciones/public
@@ -136,6 +144,7 @@ export class CotizacionService {
   }
 
   /**
+   * @deprecated Mantener temporalmente por compatibilidad.
    * Descarga el PDF con payload (logoBase64, firmaBase64, videoEquipo).
    * 1) Intenta POST /api/v1/cotizaciones/:id/pdf (oficial).
    * 2) Si responde 404, reintenta POST /api/cotizacion/:id/pdf (alias).
@@ -167,6 +176,26 @@ downloadPdf(
       }
       return throwError(() => err);
     })
+  );
+}
+
+downloadPdfByVersionId(
+  cotizacionVersionVigenteId: number | string,
+  regenerate = false
+): Observable<Blob> {
+  const numericId = Number(cotizacionVersionVigenteId);
+  if (!Number.isFinite(numericId)) {
+    return throwError(() => new Error('Identificador de versión de cotización inválido'));
+  }
+
+  let params = new HttpParams();
+  if (regenerate) {
+    params = params.set('regenerate', '1');
+  }
+
+  return this.http.get(
+    `${this.apiBase}/cotizaciones-versiones/${numericId}/pdf`,
+    { params, responseType: 'blob' as const }
   );
 }
 
@@ -450,6 +479,31 @@ downloadPdf(
     if (api.cotizacion?.fechaCreacion) {
       normalized.createdAt = api.cotizacion.fechaCreacion;
     }
+    const versionVigenteIdRaw =
+      apiRecord['cotizacionVersionVigenteId'] ??
+      apiRecord['CotizacionVersionVigenteId'] ??
+      cotizacionRecord['cotizacionVersionVigenteId'] ??
+      cotizacionRecord['CotizacionVersionVigenteId'];
+    const versionVigenteRaw =
+      apiRecord['cotizacionVersionVigente'] ??
+      apiRecord['CotizacionVersionVigente'] ??
+      cotizacionRecord['cotizacionVersionVigente'] ??
+      cotizacionRecord['CotizacionVersionVigente'];
+    const versionEstadoVigenteRaw =
+      apiRecord['cotizacionVersionEstadoVigente'] ??
+      apiRecord['CotizacionVersionEstadoVigente'] ??
+      cotizacionRecord['cotizacionVersionEstadoVigente'] ??
+      cotizacionRecord['CotizacionVersionEstadoVigente'];
+
+    normalized.cotizacionVersionVigenteId =
+      this.parseNumberNullable(versionVigenteIdRaw) ?? null;
+    normalized.cotizacionVersionVigente =
+      this.parseNumberNullable(versionVigenteRaw) ??
+      this.toOptionalString(versionVigenteRaw) ??
+      null;
+    normalized.cotizacionVersionEstadoVigente =
+      this.toOptionalString(versionEstadoVigenteRaw) ?? null;
+
     const apiContacto = (api.contacto as CotizacionApiContacto | undefined) ?? (api.lead as CotizacionApiContacto | undefined);
     if (apiContacto) {
       const contactoId = this.parseNumberNullable(apiContacto.id ?? apiContacto.idlead ?? apiContacto.ID);

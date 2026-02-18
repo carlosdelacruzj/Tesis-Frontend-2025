@@ -47,6 +47,9 @@ export interface Cotizacion {
   eventoSolicitado?: string;
   servicioId?: number;
   eventoId?: number;
+  cotizacionVersionVigenteId?: number | null;
+  cotizacionVersionVigente?: number | string | null;
+  cotizacionVersionEstadoVigente?: string | null;
 }
 
 export interface CotizacionContactoPayload {
@@ -77,6 +80,9 @@ export interface CotizacionDetallePayload {
 export interface CotizacionApiResponse {
   id?: number | string | null;
   idCotizacion?: number | string | null;
+  cotizacionVersionVigenteId?: number | string | null;
+  cotizacionVersionVigente?: number | string | null;
+  cotizacionVersionEstadoVigente?: string | null;
   estado?: string | null;
   fechaCreacion?: string | null;
   fecha_creacion?: string | null;
@@ -348,4 +354,35 @@ export interface PedidoDisponibilidadDiariaResponse {
   personalPorRol: PedidoDisponibilidadDiariaPersonalRol[];
   equiposPorTipo: PedidoDisponibilidadDiariaEquipoTipo[];
   disponibilidadDia?: PedidoDisponibilidadDia;
+}
+
+export interface CotizacionVersionSnapshot {
+  estadoCotizacion: string;
+  cotizacion: Record<string, unknown>;
+  contacto: Record<string, unknown>;
+  eventos: Record<string, unknown>[];
+  items: Record<string, unknown>[];
+  serviciosFechas: Record<string, unknown>[];
+  templateData: Record<string, unknown>;
+}
+
+export interface CotizacionVersion {
+  id: number;
+  cotizacionId: number;
+  version: number;
+  estado: string;
+  snapshotHash: string;
+  esVigente: boolean;
+  fechaCreacion: string;
+  fechaCierre: string | null;
+  pdfLink: string | null;
+  snapshot: CotizacionVersionSnapshot;
+}
+
+export type CotizacionVersionesResponse = CotizacionVersion[];
+export type CotizacionVersionVigenteResponse = CotizacionVersion;
+export type CotizacionVersionDetalleResponse = CotizacionVersion;
+
+export interface CotizacionVersionErrorResponse {
+  message: string;
 }

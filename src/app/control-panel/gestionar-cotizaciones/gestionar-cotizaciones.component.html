@@ -57,6 +57,10 @@
             [disabled]="row.estado === 'Aceptada' || row.estado === 'Rechazada' || row.estado === 'Expirada'">
             <mat-icon>edit</mat-icon>
           </button>
+          <button mat-icon-button color="primary" type="button" (click)="openVersionesModal(row)"
+            matTooltip="Ver versiones">
+            <mat-icon>history</mat-icon>
+          </button>
           @if ((row.estado || 'Borrador') === 'Borrador') {
             <button mat-icon-button color="accent" type="button" [disabled]="!row.total"
               (click)="openEstadoModal(row, 'Enviada')" matTooltip="Marcar como enviada">
@@ -70,8 +74,8 @@
             </button>
           }
           <button mat-icon-button color="accent" type="button" (click)="downloadPdf(row)"
-            [disabled]="downloadingId === row.id || !row.total" matTooltip="Descargar PDF"
-            [matTooltipDisabled]="!!row.total">
+            [disabled]="downloadingId === row.id || !row.total || !row.cotizacionVersionVigenteId"
+            [matTooltip]="row.cotizacionVersionVigenteId ? 'Descargar PDF (versión vigente)' : 'Sin versión vigente'">
             @if (downloadingId !== row.id) {
               <mat-icon>picture_as_pdf</mat-icon>
             }
@@ -89,6 +93,79 @@
     </div>
   }
 </div>
+
+<app-modal-base
+  [open]="versionesModalOpen"
+  [title]="'Versiones de ' + (versionesTarget?.codigo || ('Cotización #' + (versionesTarget?.id || '')))"
+  [disableClose]="false"
+  [useDefaultFooter]="false"
+  size="lg"
+  (closed)="closeVersionesModal()">
+  @if (versionesModalLoading) {
+    <div class="d-flex align-items-center gap-2 text-muted">
+      <mat-spinner diameter="28"></mat-spinner>
+      <span>Cargando versiones...</span>
+    </div>
+  } @else {
+    @if (versionesModalError) {
+      <div class="alert alert-danger" role="alert">{{ versionesModalError }}</div>
+    } @else if (!versionesRows.length) {
+      <div class="text-muted">No hay versiones registradas para esta cotización.</div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Versión</th>
+              <th>Estado</th>
+              <th>Vigente</th>
+              <th>Fecha creación</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (version of versionesRows; track version.id) {
+              <tr>
+                <td>{{ version.id }}</td>
+                <td>v{{ version.version }}</td>
+                <td>{{ version.estado }}</td>
+                <td>{{ version.esVigente ? 'Sí' : 'No' }}</td>
+                <td>{{ version.fechaCreacion | date:'dd-MM-yyyy HH:mm' }}</td>
+                <td class="text-center">
+                  <div class="d-inline-flex gap-1">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      (click)="verVersionPdf(version)"
+                      [disabled]="versionDownloadingId === version.id"
+                      matTooltip="Abrir PDF">
+                      <mat-icon>picture_as_pdf</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      (click)="descargarVersionPdf(version)"
+                      [disabled]="versionDownloadingId === version.id"
+                      matTooltip="Descargar PDF">
+                      <mat-icon>download</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <div modal-footer class="d-flex justify-content-end">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeVersionesModal()">
+      Cerrar
+    </button>
+  </div>
+</app-modal-base>
 
 <app-modal-base
   [open]="estadoModalOpen"

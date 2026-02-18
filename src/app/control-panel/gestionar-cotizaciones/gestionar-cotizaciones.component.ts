@@ -2,10 +2,9 @@
 import { Router } from '@angular/router';
 import { NgForm } from '@angular/forms';
 import { Subject, takeUntil, firstValueFrom, take } from 'rxjs';
-import { Cotizacion } from './model/cotizacion.model';
+import { Cotizacion, CotizacionVersion } from './model/cotizacion.model';
 import { CotizacionService } from './service/cotizacion.service';
 import { TableColumn } from 'src/app/components/table-base/table-base.component';
-import { urlToBase64 } from 'src/app/utils/url-to-base64';
 import { HttpClient } from '@angular/common/http';
 import Swal from 'sweetalert2/dist/sweetalert2.esm.all.js';
 import { environment } from 'src/environments/environment';
@@ -75,7 +74,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       header: 'Acciones',
       sortable: false,
       filterable: false,
-      width: '230px',
+      width: '270px',
       class: 'text-center',
     },
   ];
@@ -112,6 +111,13 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   tiposDocumento: TipoDocumento[] = [];
   selectedTipoDocumento: TipoDocumento | null = null;
   isRucSelected = false;
+
+  versionesModalOpen = false;
+  versionesModalLoading = false;
+  versionesModalError: string | null = null;
+  versionesTarget: Cotizacion | null = null;
+  versionesRows: CotizacionVersion[] = [];
+  versionDownloadingId: number | null = null;
 
   private readonly destroy$ = new Subject<void>();
   private registroClienteClosingInterno = false;
@@ -165,46 +171,41 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     ]);
   }
 
-  // === DESCARGAR PDF usando el SERVICE (NO HttpClient directo) ===
+  // === DESCARGAR PDF usando el SERVICE ===
   async downloadPdf(cotizacion: Cotizacion): Promise<void> {
     this.error = null;
     this.downloadingId = cotizacion.id;
 
     try {
-      // Assets a base64 (data URL). Ajusta nombres si cambian.
-      const logoUrl = 'assets/images/logocot.jpg';
-      const firmaUrl = 'assets/images/firma.png';
-
-      const [logoDataUrl, firmaDataUrl] = await Promise.all([
-        urlToBase64(this.http, logoUrl),
-        urlToBase64(this.http, firmaUrl),
-      ]);
-
-      const payload = {
-        company: {
-          logoBase64: logoDataUrl, // data:image/png;base64,...
-          firmaBase64: firmaDataUrl, // data:image/png;base64,...
-        },
-        videoEquipo: '35 mm y sistema 4K',
-      };
+      const versionId = cotizacion.cotizacionVersionVigenteId;
+      if (!versionId) {
+        throw new Error('La cotización no tiene versión vigente para descargar PDF.');
+      }
 
       const blob = await firstValueFrom(
-        this.cotizacionService.downloadPdf(cotizacion.id, payload),
+        this.cotizacionService.downloadPdfByVersionId(versionId),
       );
 
-      const fileUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = fileUrl;
-      a.download = `${cotizacion.codigo ?? 'cotizacion'}-${cotizacion.id}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(fileUrl);
+      this.downloadBlob(
+        blob,
+        `${cotizacion.codigo ?? 'cotizacion'}-${cotizacion.id}-v${cotizacion.cotizacionVersionVigente ?? 'vigente'}.pdf`,
+      );
     } catch (err) {
       console.error('[cotizacion] pdf', err);
       this.error =
-        'No se pudo descargar el PDF. Revisa que /api/v1/cotizaciones/:id/pdf o el alias /api/cotizacion/:id/pdf respondan en el backend.';
+        'No se pudo descargar el PDF de la versión vigente. Revisa que exista cotizacionVersionVigenteId y que /api/v1/cotizaciones-versiones/:id/pdf responda correctamente.';
     } finally {
       this.downloadingId = null;
     }
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const fileUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = fileUrl;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(fileUrl);
   }
 
   openEstadoModal(
@@ -221,6 +222,97 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.estadoTarget = cotizacion;
     this.estadoDestino = destino;
     this.estadoModalOpen = true;
+  }
+
+  openVersionesModal(cotizacion: Cotizacion): void {
+    this.versionesTarget = cotizacion;
+    this.versionesModalOpen = true;
+    this.versionesModalLoading = true;
+    this.versionesModalError = null;
+    this.versionesRows = [];
+
+    this.cotizacionService
+      .getCotizacionVersiones(cotizacion.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (rows) => {
+          this.versionesModalLoading = false;
+          this.versionesRows = Array.isArray(rows) ? rows : [];
+        },
+        error: (err) => {
+          console.error('[cotizacion] versiones', err);
+          this.versionesModalLoading = false;
+          this.versionesModalError =
+            'No pudimos cargar las versiones de la cotización.';
+        },
+      });
+  }
+
+  closeVersionesModal(): void {
+    this.versionesModalOpen = false;
+    this.versionesModalLoading = false;
+    this.versionesModalError = null;
+    this.versionesTarget = null;
+    this.versionesRows = [];
+    this.versionDownloadingId = null;
+  }
+
+  verVersionPdf(version: CotizacionVersion): void {
+    const versionId = version?.id;
+    if (!versionId) {
+      return;
+    }
+    this.versionDownloadingId = versionId;
+    this.cotizacionService
+      .downloadPdfByVersionId(versionId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (blob) => {
+          this.versionDownloadingId = null;
+          const url = URL.createObjectURL(blob);
+          const opened = window.open(url, '_blank');
+          if (!opened) {
+            this.downloadBlob(
+              blob,
+              `cotizacion-${version.cotizacionId}-v${version.version}.pdf`,
+            );
+          } else {
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }
+        },
+        error: (err) => {
+          this.versionDownloadingId = null;
+          console.error('[cotizacion] version pdf', err);
+          this.error =
+            'No se pudo abrir el PDF de la versión seleccionada.';
+        },
+      });
+  }
+
+  descargarVersionPdf(version: CotizacionVersion): void {
+    const versionId = version?.id;
+    if (!versionId) {
+      return;
+    }
+    this.versionDownloadingId = versionId;
+    this.cotizacionService
+      .downloadPdfByVersionId(versionId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (blob) => {
+          this.versionDownloadingId = null;
+          this.downloadBlob(
+            blob,
+            `cotizacion-${version.cotizacionId}-v${version.version}.pdf`,
+          );
+        },
+        error: (err) => {
+          this.versionDownloadingId = null;
+          console.error('[cotizacion] version download', err);
+          this.error =
+            'No se pudo descargar el PDF de la versión seleccionada.';
+        },
+      });
   }
 
   closeEstadoModal(): void {
