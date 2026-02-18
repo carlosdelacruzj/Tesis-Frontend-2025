@@ -1,3 +1,5 @@
+export type PedidoDatosEvento = Record<string, unknown>;
+
 export interface Proyecto {
   Empleado: string;
   N_Pedido: number;
@@ -105,6 +107,7 @@ export interface PedidoDetalle {
   estadoPagoId: number;
   observaciones: string;
   idTipoEvento: number;
+  datosEvento?: PedidoDatosEvento;
   lugar: string;
   dias: number;
   horasEstimadas: number | null;
@@ -171,6 +174,7 @@ export interface PedidoUpdateDetalle {
   lugar: string;
   observaciones: string;
   idTipoEvento: number;
+  datosEvento?: PedidoDatosEvento;
   dias: number;
   horasEstimadas: number | null;
   viaticosMonto: number;
@@ -232,6 +236,8 @@ export interface PedidoCreateDetalle {
   empleadoId: number;
   fechaCreacion: string;
   estadoPedidoId: number;
+  idTipoEvento?: number;
+  datosEvento?: PedidoDatosEvento;
 }
 
 export interface PedidoCreateEvento {

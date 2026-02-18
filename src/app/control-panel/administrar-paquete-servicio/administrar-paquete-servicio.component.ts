@@ -36,7 +36,32 @@ export class AdministrarPaqueteServicioComponent implements OnInit {
   }
 
   abrirRegistroEvento(): void {
-    const dialogRef = this.dialog.open(AddEventoComponent, { width: '420px' });
+    const dialogRef = this.dialog.open(AddEventoComponent, {
+      width: '980px',
+      maxWidth: '96vw',
+      autoFocus: false,
+      data: { mode: 'create' as const }
+    });
+    dialogRef.afterClosed().subscribe((shouldReload) => {
+      if (shouldReload) {
+        this.cargarEventos();
+      }
+    });
+  }
+
+  abrirEdicionEvento(eventoId: number): void {
+    const evento = this.eventos.find(item => item.id === eventoId);
+    if (!evento) return;
+
+    const dialogRef = this.dialog.open(AddEventoComponent, {
+      width: '980px',
+      maxWidth: '96vw',
+      autoFocus: false,
+      data: {
+        mode: 'edit' as const,
+        evento
+      }
+    });
     dialogRef.afterClosed().subscribe((shouldReload) => {
       if (shouldReload) {
         this.cargarEventos();
@@ -55,7 +80,7 @@ export class AdministrarPaqueteServicioComponent implements OnInit {
 
   private cargarEventos(): void {
     this.loadingEventos = true;
-    this.dataService.getEventos()
+    this.dataService.getEventos(true)
       .pipe(finalize(() => {
         this.loadingEventos = false;
         this.cdr.markForCheck();

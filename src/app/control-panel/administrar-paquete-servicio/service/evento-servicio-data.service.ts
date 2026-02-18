@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
-import { Evento, EventoServicioDetalle, EventoServicioCategoria, Servicio, CrearEventoServicioRequest, ActualizarEventoServicioRequest, EstadoEventoServicio, ActualizarEstadoEventoServicioResponse } from '../model/evento-servicio.model';
+import { Evento, EventoServicioDetalle, EventoServicioCategoria, Servicio, CrearEventoServicioRequest, ActualizarEventoServicioRequest, EstadoEventoServicio, ActualizarEstadoEventoServicioResponse, EventoSchemaResponse, EventoSchemaUpdatePayload, EventoSchemaUpdateResponse, EventoCreatePayload, EventoUpdatePayload, EventoUpsertResponse } from '../model/evento-servicio.model';
 import { TipoEquipo } from '../../administrar-equipos/models/tipo-equipo.model';
 import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
@@ -14,7 +14,10 @@ export class EventoServicioDataService {
   private readonly http = inject(HttpClient);
   private readonly catalogos = inject(CatalogosService);
 
-  getEventos(): Observable<Evento[]> {
+  getEventos(forceRefresh = false): Observable<Evento[]> {
+    if (forceRefresh) {
+      this.catalogos.invalidate('eventos');
+    }
     return this.catalogos.getEventos();
   }
 
@@ -22,25 +25,38 @@ export class EventoServicioDataService {
     return this.http.get<Evento>(`${this.baseUrl}/eventos/${id}`);
   }
 
-  crearEvento(nombre: string, iconUrl?: string | null): Observable<Evento> {
-    const body: Record<string, unknown> = { nombre };
-    if (iconUrl !== undefined) {
-      body['iconUrl'] = iconUrl;
-    }
-    return this.http.post<Evento>(`${this.baseUrl}/eventos`, body).pipe(
+  getEventoSchema(id: number): Observable<EventoSchemaResponse> {
+    return this.http.get<EventoSchemaResponse>(`${this.baseUrl}/eventos/${id}/schema`);
+  }
+
+  actualizarEventoSchema(id: number, payload: EventoSchemaUpdatePayload): Observable<EventoSchemaUpdateResponse> {
+    return this.http.put<EventoSchemaUpdateResponse>(`${this.baseUrl}/eventos/${id}/schema`, payload);
+  }
+
+  crearEvento(nombre: string, iconUrl?: string | null): Observable<Evento | EventoUpsertResponse>;
+  crearEvento(payload: EventoCreatePayload): Observable<Evento | EventoUpsertResponse>;
+  crearEvento(nombreOrPayload: string | EventoCreatePayload, iconUrl?: string | null): Observable<Evento | EventoUpsertResponse> {
+    const payload: EventoCreatePayload =
+      typeof nombreOrPayload === 'string'
+        ? { nombre: nombreOrPayload, iconUrl }
+        : nombreOrPayload;
+    const body = this.buildEventoMultipartPayload(payload);
+
+    return this.http.post<Evento | EventoUpsertResponse>(`${this.baseUrl}/eventos`, body).pipe(
       tap(() => this.catalogos.invalidate('eventos'))
     );
   }
 
-  actualizarEvento(id: number, nombre?: string, iconUrl?: string | null): Observable<Evento> {
-    const body: Record<string, unknown> = {};
-    if (nombre !== undefined) {
-      body['nombre'] = nombre;
-    }
-    if (iconUrl !== undefined) {
-      body['iconUrl'] = iconUrl;
-    }
-    return this.http.put<Evento>(`${this.baseUrl}/eventos/${id}`, body).pipe(
+  actualizarEvento(id: number, nombre?: string, iconUrl?: string | null): Observable<Evento | EventoUpsertResponse>;
+  actualizarEvento(id: number, payload: EventoUpdatePayload): Observable<Evento | EventoUpsertResponse>;
+  actualizarEvento(id: number, nombreOrPayload?: string | EventoUpdatePayload, iconUrl?: string | null): Observable<Evento | EventoUpsertResponse> {
+    const payload: EventoUpdatePayload =
+      (typeof nombreOrPayload === 'object' && nombreOrPayload !== null)
+        ? nombreOrPayload
+        : { nombre: typeof nombreOrPayload === 'string' ? nombreOrPayload : undefined, iconUrl };
+    const body = this.buildEventoMultipartPayload(payload);
+
+    return this.http.put<Evento | EventoUpsertResponse>(`${this.baseUrl}/eventos/${id}`, body).pipe(
       tap(() => this.catalogos.invalidate('eventos'))
     );
   }
@@ -111,5 +127,25 @@ export class EventoServicioDataService {
     return this.http.put<Servicio>(`${this.baseUrl}/servicios/${id}`, { nombre }).pipe(
       tap(() => this.catalogos.invalidate('servicios'))
     );
+  }
+
+  private buildEventoMultipartPayload(payload: EventoCreatePayload | EventoUpdatePayload): FormData {
+    const fd = new FormData();
+
+    const nombre = payload?.nombre?.trim();
+    if (nombre) {
+      fd.append('nombre', nombre);
+    }
+    if (payload?.icon instanceof File) {
+      fd.append('icon', payload.icon);
+    }
+    if (payload?.iconUrl !== undefined && payload?.iconUrl !== null) {
+      fd.append('iconUrl', payload.iconUrl);
+    }
+    if (payload?.formSchema !== undefined && payload?.formSchema !== null) {
+      fd.append('formSchema', JSON.stringify(payload.formSchema));
+    }
+
+    return fd;
   }
 }

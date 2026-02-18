@@ -1,13 +1,24 @@
-.example-card img {
-    padding: auto;
-    display: block;
-    margin: auto;
-    width: 100px;
-    height: 100px;
+﻿.example-card {
+  position: relative;
 }
 
-.example-card button {
-    margin: auto;
-    display: block;
-    padding-top: 20px;
+.example-card img {
+  display: block;
+  margin: auto;
+  width: 100px;
+  height: 100px;
 }
+
+.example-card button[mat-button] {
+  margin: auto;
+  display: block;
+  padding-top: 20px;
+}
+
+.edit-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+}
+

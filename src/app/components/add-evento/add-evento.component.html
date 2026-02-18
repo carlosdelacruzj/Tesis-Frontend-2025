@@ -1,45 +1,193 @@
-<h2 mat-dialog-title>Nuevo evento</h2>
+﻿<h2 mat-dialog-title>{{ dialogTitle }}</h2>
 
-<mat-dialog-content [formGroup]="form">
-  <mat-form-field appearance="fill" class="w-full" style="width:100%;">
-    <mat-label>Nombre del evento</mat-label>
-    <input
-      matInput
-      formControlName="nombre"
-      autocomplete="off"
-      (keyup.enter)="save()"
-      placeholder="Ej: Boda, Cumpleaños, Corporativo" />
+<mat-dialog-content>
+  <app-formulario-base [loading]="loading" [error]="error">
+    <form [formGroup]="form" class="evento-form" novalidate>
+      <div class="row g-3">
+        <div class="col-12 col-md-8">
+          <label class="form-label" for="eventoNombre">Nombre del evento</label>
+          <input
+            id="eventoNombre"
+            type="text"
+            class="form-control"
+            formControlName="nombre"
+            autocomplete="off"
+            (keyup.enter)="save()"
+            placeholder="Ej. Boda, cumpleaños, corporativo"
+            [class.is-invalid]="form.get('nombre')?.invalid && form.get('nombre')?.touched"
+          />
+          @if (form.get('nombre')?.hasError('required') && form.get('nombre')?.touched) {
+            <div class="invalid-feedback d-block">El nombre es obligatorio.</div>
+          }
+          @if (form.get('nombre')?.hasError('minlength') && form.get('nombre')?.touched) {
+            <div class="invalid-feedback d-block">Mínimo 3 caracteres.</div>
+          }
+          @if (form.get('nombre')?.hasError('duplicado')) {
+            <div class="invalid-feedback d-block">Ya existe un evento con ese nombre.</div>
+          }
+        </div>
 
-    <mat-hint>
-      El ícono se asignará por nombre
-      (<code>{{ hintPath }}</code>). Si no existe, usaremos uno por defecto.
-    </mat-hint>
+        <div class="col-12 col-md-4">
+          <label class="form-label d-block" for="eventoIcon">Icono (opcional)</label>
+          <label class="btn btn-outline-secondary btn-sm" for="eventoIcon">Seleccionar imagen</label>
+          <input
+            id="eventoIcon"
+            class="hidden-input"
+            type="file"
+            accept="image/*"
+            (change)="onIconSelected($event)"
+          />
+          @if (iconFile) {
+            <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
+              <span class="small text-muted text-truncate">{{ iconFile.name }}</span>
+              <button type="button" class="btn btn-link btn-sm p-0" (click)="clearIcon()">Quitar</button>
+            </div>
+          }
+          @if (iconPreviewUrl) {
+            <div class="mt-2">
+              <img [src]="iconPreviewUrl" alt="Vista previa del icono del evento" class="icon-preview" />
+            </div>
+          }
+        </div>
 
-    @if (form.get('nombre')?.hasError('required')) {
-      <mat-error>
-        Requerido
-      </mat-error>
-    }
-    @if (form.get('nombre')?.hasError('minlength')) {
-      <mat-error>
-        Mínimo 3 caracteres
-      </mat-error>
-    }
-    @if (form.get('nombre')?.hasError('duplicado')) {
-      <mat-error>
-        Ya existe un evento con ese nombre
-      </mat-error>
-    }
-  </mat-form-field>
+        <div class="col-12">
+          <hr class="my-1" />
+        </div>
+
+        <div class="col-12" [formGroup]="schemaDraft">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="form-label mb-0">Campos dinámicos del evento</div>
+            <span class="badge text-bg-light">{{ schemaFields.length }} campos</span>
+          </div>
+
+          <div class="row g-3 schema-layout">
+            <div class="col-12 col-xl-5">
+              <div class="schema-editor card h-100">
+                <div class="card-body">
+                  <div class="schema-editor-title mb-2">
+                    {{ editingSchemaIndex !== null ? 'Editando campo' : 'Nuevo campo' }}
+                  </div>
+
+                  <div class="row g-3">
+                    <div class="col-12 col-md-7">
+                      <label class="form-label" for="schemaLabel">Etiqueta</label>
+                      <input id="schemaLabel" type="text" class="form-control" formControlName="label" (blur)="syncKeyFromLabel()"
+                        placeholder="Nombre del novio" />
+                    </div>
+
+                    <div class="col-12 col-md-5">
+                      <label class="form-label" for="schemaType">Tipo</label>
+                      <select id="schemaType" class="form-select" formControlName="type">
+                        @for (item of fieldTypes; track item.value) {
+                          <option [value]="item.value">{{ item.label }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    @if (requiresOptions) {
+                      <div class="col-12">
+                        <label class="form-label" for="schemaOptions">Opciones (para tipo selección)</label>
+                        <textarea
+                          id="schemaOptions"
+                          class="form-control"
+                          formControlName="optionsText"
+                          rows="2"
+                          placeholder="Civil, Religiosa"
+                        ></textarea>
+                        <small class="text-muted">Separa por coma o salto de línea.</small>
+                      </div>
+                    }
+
+                    <div class="col-12 d-flex align-items-center gap-3 flex-wrap">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="schemaRequired" formControlName="required">
+                        <label class="form-check-label" for="schemaRequired">Obligatorio</label>
+                      </div>
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="schemaActive" formControlName="active">
+                        <label class="form-check-label" for="schemaActive">Activo</label>
+                      </div>
+                    </div>
+
+                    <div class="col-12 d-flex align-items-center gap-2 flex-wrap">
+                      <button type="button" class="btn btn-sm schema-main-action" (click)="addOrUpdateSchemaField()">
+                        <mat-icon class="action-icon">{{ schemaDraftActionIcon }}</mat-icon>
+                        {{ schemaDraftActionLabel }}
+                      </button>
+                      @if (editingSchemaIndex !== null) {
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cancelSchemaEdit()">
+                          Cancelar edición
+                        </button>
+                      } @else {
+                        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="createNewSchemaField()">
+                          Limpiar formulario
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-xl-7">
+              <div class="schema-preview card h-100">
+                <div class="card-body">
+                  <div class="schema-editor-title mb-2">Vista previa del formulario</div>
+                  @if (schemaFields.length) {
+                    <div
+                      class="list-group schema-list"
+                      [class.schema-list--scrollable]="schemaFields.length > 3"
+                      cdkDropList
+                      [cdkDropListData]="schemaFields"
+                      (cdkDropListDropped)="onSchemaDrop($event)"
+                    >
+                      @for (field of schemaFields; let i = $index; track field.key) {
+                        <div class="list-group-item schema-item" [class.is-editing]="isEditingField(i)" cdkDrag cdkDragLockAxis="y">
+                          <div class="schema-item-main">
+                            <div class="schema-title-row">
+                              <span class="schema-order">{{ i + 1 }}</span>
+                              <div class="fw-semibold schema-label-text">{{ field.label }}</div>
+                            </div>
+                            <div class="schema-tags">
+                              <span class="schema-chip schema-chip--type">{{ getSchemaTypeLabel(field.type) }}</span>
+                              <span class="schema-chip" [ngClass]="field.required ? 'schema-chip--required' : 'schema-chip--optional'">
+                                {{ field.required ? 'Obligatorio' : 'Opcional' }}
+                              </span>
+                              <span class="schema-chip" [ngClass]="field.active ? 'schema-chip--active' : 'schema-chip--inactive'">
+                                {{ field.active ? 'Activo' : 'Inactivo' }}
+                              </span>
+                            </div>
+                            @if (field.options?.length) {
+                              <div class="small text-muted schema-options-text">Opciones: {{ field.options?.join(', ') }}</div>
+                            }
+                          </div>
+                          <div class="schema-actions">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="editSchemaField(i)">
+                              Editar
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeSchemaField(i)">
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="text-muted small">Sin campos dinámicos.</div>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </app-formulario-base>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()" [disabled]="loading">Cancelar</button>
-  <button
-    mat-flat-button
-    color="primary"
-    (click)="save()"
-    [disabled]="loading || form.invalid">
-    {{ loading ? 'Guardando…' : 'Guardar' }}
+  <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="loading">Cancelar</button>
+  <button type="button" class="btn btn-primary" (click)="save()" [disabled]="loading || form.invalid">
+    {{ submitLabel }}
   </button>
 </mat-dialog-actions>

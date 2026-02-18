@@ -132,6 +132,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   selectedEventoId: number | null = null;
   selectedEventoNombre = '';
   selectedEventoIdValue = '';
+  selectedEventoDetalle: AnyRecord | null = null;
 
   paquetesColumns: TableColumn<PaqueteRow>[] = [
     { key: 'titulo', header: 'Título', sortable: true, width: '45%' },
@@ -197,6 +198,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private pendingServicioId: number | null = null;
   private pendingEventoId: number | null = null;
   private fechaEventoOriginal: string | null = null;
+  private lastEventoDetalleId: number | null = null;
 
   private readonly destroy$ = new Subject<void>();
   readonly programacionMinimaRecomendada = 1;
@@ -571,9 +573,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedEventoId != null ? String(this.selectedEventoId) : '';
     if (this.selectedEventoId == null) {
       this.selectedEventoNombre = '';
+      this.selectedEventoDetalle = null;
+      this.lastEventoDetalleId = null;
     } else {
       const selected = this.eventos.find((e) => e.id === this.selectedEventoId);
       this.selectedEventoNombre = this.getNombre(selected);
+      this.cargarEventoSeleccionado(this.selectedEventoId);
     }
     this.applyEventoGateRules();
     this.loadEventosServicio();
@@ -1326,6 +1331,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
             this.selectedEventoId = null;
             this.selectedEventoIdValue = '';
             this.selectedEventoNombre = '';
+            this.selectedEventoDetalle = null;
+            this.lastEventoDetalleId = null;
           }
           this.applyPendingSelections();
         },
@@ -1335,6 +1342,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           this.selectedEventoId = null;
           this.selectedEventoIdValue = '';
           this.selectedEventoNombre = '';
+          this.selectedEventoDetalle = null;
+          this.lastEventoDetalleId = null;
           this.applyPendingSelections();
         },
       });
@@ -1449,6 +1458,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.selectedEventoIdValue =
       this.selectedEventoId != null ? String(this.selectedEventoId) : '';
     this.selectedEventoNombre = detalle?.tipoEvento ?? '';
+    this.cargarEventoSeleccionado(this.selectedEventoId);
     this.selectedPaquetes = itemsBase.map((item, index) => {
       const record = this.asRecord(item);
       const itemPayload = item as CotizacionItemPayload;
@@ -3235,7 +3245,11 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedEventoId = null;
       this.selectedEventoIdValue = '';
       this.selectedEventoNombre = '';
+      this.selectedEventoDetalle = null;
+      this.lastEventoDetalleId = null;
     }
+
+    this.cargarEventoSeleccionado(this.selectedEventoId);
 
     if (this.selectedEventoId != null && this.selectedServicioId != null) {
       this.loadEventosServicio();
@@ -3249,6 +3263,46 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     if (this.form.pristine && this.programacion.pristine && !this.saving) {
       this.initialSnapshot = this.buildSnapshot();
     }
+  }
+
+  private cargarEventoSeleccionado(eventoId: number | null): void {
+    if (eventoId == null || eventoId <= 0) {
+      this.selectedEventoDetalle = null;
+      this.lastEventoDetalleId = null;
+      return;
+    }
+    if (
+      this.lastEventoDetalleId === eventoId &&
+      this.selectedEventoDetalle != null
+    ) {
+      return;
+    }
+    this.lastEventoDetalleId = eventoId;
+    this.cotizacionService
+      .getEventoById(eventoId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (evento) => {
+          const record = this.asRecord(evento);
+          this.selectedEventoDetalle = record;
+          const nombre = this.pickFirstString(
+            record['nombre'],
+            record['E_Nombre'],
+            record['name'],
+            record['tipoEvento'],
+            record['evento'],
+          );
+          if (nombre) {
+            this.selectedEventoNombre = nombre;
+          }
+        },
+        error: (err) => {
+          console.error('[cotizacion] evento detalle', err);
+          if (this.lastEventoDetalleId === eventoId) {
+            this.selectedEventoDetalle = null;
+          }
+        },
+      });
   }
 
   private loadEventosServicio(): void {

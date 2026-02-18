@@ -105,6 +105,24 @@ interface PaqueteDetalle {
   eventoServicio?: { staff?: StaffDetalle };
 }
 
+type EventoCampoTipo =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'date'
+  | 'select'
+  | 'checkbox';
+
+interface EventoSchemaCampo {
+  key: string;
+  label: string;
+  type: EventoCampoTipo;
+  required: boolean;
+  active: boolean;
+  order: number;
+  options: string[];
+}
+
 @Component({
   selector: 'app-registrar-cotizacion',
   templateUrl: './registrar-cotizacion.component.html',
@@ -133,6 +151,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   selectedServicioNombre = '';
   selectedEventoId: number | null = null;
   selectedEventoNombre = '';
+  selectedEventoDetalle: AnyRecord | null = null;
   eventoSelectTouched = false;
   readonly departamentos: string[] = [
     'Amazonas',
@@ -268,6 +287,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       totalEstimado: [{ value: 0, disabled: true }, Validators.min(0)],
       fechasTrabajo: this.fb.array([]),
       programacion: this.fb.array([]),
+      datosEvento: this.fb.group({}),
     });
   }
 
@@ -318,6 +338,22 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
   get fechasTrabajo(): UntypedFormArray {
     return this.form.get('fechasTrabajo') as UntypedFormArray;
+  }
+
+  get datosEventoGroup(): UntypedFormGroup {
+    return this.form.get('datosEvento') as UntypedFormGroup;
+  }
+
+  get eventoFormSchema(): EventoSchemaCampo[] {
+    const record = this.asRecord(this.selectedEventoDetalle);
+    const rawSchema = Array.isArray(record['formSchema'])
+      ? (record['formSchema'] as unknown[])
+      : [];
+    return rawSchema
+      .map((item, index) => this.normalizeEventoSchemaCampo(item, index))
+      .filter((item): item is EventoSchemaCampo => item != null)
+      .filter((item) => item.active)
+      .sort((a, b) => a.order - b.order);
   }
 
   get fechasTrabajoValores(): string[] {
@@ -785,11 +821,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.selectedEventoId = parsed ?? null;
     if (this.selectedEventoId == null) {
       this.selectedEventoNombre = '';
+      this.selectedEventoDetalle = null;
+      this.syncDatosEventoControls();
     } else {
       const selected = this.eventos.find(
         (e) => this.getId(e) === this.selectedEventoId,
       );
       this.selectedEventoNombre = this.getNombre(selected);
+      this.cargarEventoSeleccionado(this.selectedEventoId);
     }
     this.applyEventoGateRules();
     this.loadEventosServicio();
@@ -1336,15 +1375,20 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const eventoInvalido = this.selectedEventoId == null;
     const programacionInvalida = this.programacion.invalid;
     const programacionVacia = this.programacion.length === 0;
+    const datosEventoInvalido = this.datosEventoGroup.invalid;
 
     if (
       formInvalido ||
       eventoInvalido ||
       programacionInvalida ||
-      programacionVacia
+      programacionVacia ||
+      datosEventoInvalido
     ) {
       if (formInvalido) {
         this.form.markAllAsTouched();
+      }
+      if (datosEventoInvalido) {
+        this.datosEventoGroup.markAllAsTouched();
       }
       if (programacionInvalida || programacionVacia) {
         this.programacion.markAllAsTouched();
@@ -1356,6 +1400,8 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
 
       const mensaje = eventoInvalido
         ? 'Selecciona un tipo de evento.'
+        : datosEventoInvalido
+          ? 'Completa los datos del evento.'
         : programacionVacia
           ? 'Agrega al menos una locación.'
           : programacionInvalida
@@ -1409,6 +1455,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const horasEstimadas = (raw.horasEstimadas ?? '').toString().trim();
     const diasTexto = (raw.dias ?? '').toString().trim();
     const descripcionBase = (raw.descripcion ?? '').toString().trim();
+    const datosEventoPayload = this.buildDatosEventoPayload();
     const descripcion =
       descripcionBase ||
       (clienteNombre
@@ -1560,6 +1607,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           this.selectedEventoNombre || this.selectedServicioNombre || 'Evento',
         fechaEvento,
         lugar: departamento || undefined,
+        datosEvento:
+          Object.keys(datosEventoPayload).length > 0
+            ? datosEventoPayload
+            : undefined,
         dias: diasNumero ?? undefined,
         horasEstimadas: horasEstimadasNumero ?? undefined,
         mensaje: descripcion,
@@ -2937,11 +2988,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           if (!this.eventos.length) {
             this.selectedEventoId = null;
             this.selectedEventoNombre = '';
+            this.selectedEventoDetalle = null;
+            this.syncDatosEventoControls();
           } else if (this.selectedEventoId != null) {
             const selected = this.eventos.find(
               (e) => this.getId(e) === this.selectedEventoId,
             );
             this.selectedEventoNombre = this.getEventoNombre(selected);
+            this.cargarEventoSeleccionado(this.selectedEventoId);
           }
           this.loadEventosServicio();
         },
@@ -2950,7 +3004,30 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           this.eventos = [];
           this.selectedEventoId = null;
           this.selectedEventoNombre = '';
+          this.selectedEventoDetalle = null;
+          this.syncDatosEventoControls();
           this.loadEventosServicio();
+        },
+      });
+  }
+
+  private cargarEventoSeleccionado(eventoId: number): void {
+    this.cotizacionService
+      .getEventoById(eventoId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (evento) => {
+          this.selectedEventoDetalle = this.asRecord(evento);
+          const nombre = this.getNombre(evento);
+          if (nombre) {
+            this.selectedEventoNombre = nombre;
+          }
+          this.syncDatosEventoControls();
+        },
+        error: (err) => {
+          console.error('[cotizacion] eventoById', err);
+          this.selectedEventoDetalle = null;
+          this.syncDatosEventoControls();
         },
       });
   }
@@ -3238,6 +3315,134 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     return Number.isFinite(num) ? num : null;
   }
 
+  getSchemaControlInvalid(field: EventoSchemaCampo): boolean {
+    const control = this.datosEventoGroup.get(field.key);
+    return !!control && control.invalid && control.touched;
+  }
+
+  getSchemaErrorMessage(field: EventoSchemaCampo): string {
+    const control = this.datosEventoGroup.get(field.key);
+    if (!control?.errors) {
+      return '';
+    }
+    if (field.type === 'checkbox' && control.hasError('required')) {
+      return 'Debes marcar esta opción.';
+    }
+    if (control.hasError('required')) {
+      return 'Este campo es obligatorio.';
+    }
+    return 'Valor inválido.';
+  }
+
+  private buildDatosEventoPayload(): Record<string, unknown> {
+    const payload: Record<string, unknown> = {};
+    for (const field of this.eventoFormSchema) {
+      const control = this.datosEventoGroup.get(field.key);
+      if (!control) {
+        continue;
+      }
+      const rawValue = control.value;
+      if (field.type === 'checkbox') {
+        payload[field.key] = Boolean(rawValue);
+        continue;
+      }
+      if (field.type === 'number') {
+        const parsed = this.parseNumber(rawValue);
+        if (parsed != null) {
+          payload[field.key] = parsed;
+        }
+        continue;
+      }
+      const text = (rawValue ?? '').toString().trim();
+      if (text) {
+        payload[field.key] = text;
+      }
+    }
+    return payload;
+  }
+
+  private syncDatosEventoControls(): void {
+    const group = this.datosEventoGroup;
+    const schema = this.eventoFormSchema;
+    const allowedKeys = new Set(schema.map((field) => field.key));
+
+    Object.keys(group.controls).forEach((key) => {
+      if (!allowedKeys.has(key)) {
+        group.removeControl(key);
+      }
+    });
+
+    schema.forEach((field) => {
+      const validators = this.buildSchemaValidators(field);
+      const existing = group.get(field.key);
+      if (existing) {
+        existing.setValidators(validators);
+        existing.updateValueAndValidity({ emitEvent: false });
+        return;
+      }
+      const initialValue = field.type === 'checkbox' ? false : '';
+      group.addControl(field.key, this.fb.control(initialValue, validators));
+    });
+  }
+
+  private buildSchemaValidators(field: EventoSchemaCampo): ValidatorFn[] {
+    if (!field.required) {
+      return [];
+    }
+    if (field.type === 'checkbox') {
+      return [Validators.requiredTrue];
+    }
+    return [Validators.required];
+  }
+
+  private normalizeEventoSchemaCampo(
+    item: unknown,
+    index: number,
+  ): EventoSchemaCampo | null {
+    const record = this.asRecord(item);
+    const key = (record['key'] ?? '').toString().trim();
+    const label = (record['label'] ?? '').toString().trim();
+    const typeRaw = (record['type'] ?? '').toString().trim().toLowerCase();
+    const type = this.asEventoCampoTipo(typeRaw);
+    const order = this.parseNumber(record['order']) ?? index + 1;
+    const active = record['active'] !== false;
+    const required = record['required'] === true;
+    const options = Array.isArray(record['options'])
+      ? (record['options'] as unknown[])
+          .map((opt) => String(opt ?? '').trim())
+          .filter(Boolean)
+      : [];
+    if (!key || !label || !type) {
+      return null;
+    }
+    if (type === 'select' && !options.length) {
+      return null;
+    }
+    return {
+      key,
+      label,
+      type,
+      required,
+      active,
+      order: order > 0 ? order : index + 1,
+      options,
+    };
+  }
+
+  private asEventoCampoTipo(value: string): EventoCampoTipo | null {
+    if (
+      value === 'text' ||
+      value === 'textarea' ||
+      value === 'number' ||
+      value === 'date' ||
+      value === 'select' ||
+      value === 'checkbox'
+    ) {
+      return value;
+    }
+    return null;
+  }
+
   private normalizarClave(value: string): string {
     return value.trim().toLowerCase().replace(/\s+/g, ' ');
   }
@@ -3399,6 +3604,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.paquetesRows = [];
     this.selectedEventoId = null;
     this.selectedEventoNombre = '';
+    this.selectedEventoDetalle = null;
     this.selectedServicioId = null;
     this.selectedServicioNombre = '';
     this.clienteSeleccionado = null;
@@ -3414,7 +3620,9 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.lastDiasAplicado = 0;
     this.diasChangeGuard = false;
     this.programacionExpandida = new WeakMap<UntypedFormGroup, boolean>();
+    this.syncDatosEventoControls();
     this.syncTotalEstimado();
   }
 }
+
 

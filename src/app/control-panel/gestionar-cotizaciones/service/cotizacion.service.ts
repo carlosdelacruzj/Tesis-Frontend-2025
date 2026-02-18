@@ -323,6 +323,14 @@ downloadPdfByVersionId(
     );
   }
 
+  getEventoById(id: number | string): Observable<Record<string, unknown>> {
+    const numericId = Number(id);
+    if (!Number.isFinite(numericId)) {
+      return throwError(() => new Error('Identificador de evento inválido'));
+    }
+    return this.http.get<Record<string, unknown>>(`${this.apiBase}/eventos/${numericId}`);
+  }
+
   getEventosServicio(eventoId?: number | null, servicioId?: number | null): Observable<Record<string, unknown>[]> {
     return this.visualizarService.getEventosServicio(eventoId ?? undefined, servicioId ?? undefined).pipe(
       map(items => this.toRecordArray(items)),
@@ -613,7 +621,8 @@ downloadPdfByVersionId(
       createdAt: undefined,
       eventoSolicitado: detalle.tipoEvento ?? contexto.eventoNombre,
       servicioId: contexto.servicioId,
-      eventoId: detalle.eventoId
+      eventoId: detalle.eventoId,
+      datosEvento: detalle.datosEvento
     };
 
     return normalized;
@@ -628,6 +637,13 @@ downloadPdfByVersionId(
     const totalEstimado = detalleInput.totalEstimado != null ? Number(detalleInput.totalEstimado) : undefined;
 
     const idTipoEventoParsed = this.parseNumberNullable(detalleInput.idTipoEvento ?? detalleInput.eventoId);
+    const datosEvento = (
+      detalleInput.datosEvento &&
+      typeof detalleInput.datosEvento === 'object' &&
+      !Array.isArray(detalleInput.datosEvento)
+    )
+      ? { ...(detalleInput.datosEvento as Record<string, unknown>) }
+      : undefined;
 
     const detalle = {
       idCotizacion: detalleInput.idCotizacion ?? id,
@@ -636,6 +652,7 @@ downloadPdfByVersionId(
       tipoEvento: detalleInput.tipoEvento ?? contexto.eventoNombre ?? contexto.servicioNombre ?? contacto.origen ?? undefined,
       fechaEvento,
       lugar: detalleInput.lugar ?? undefined,
+      datosEvento,
       dias: detalleInput.dias ?? undefined,
       horasEstimadas: horasEstimadas ?? undefined,
       mensaje: detalleInput.mensaje ?? undefined,
@@ -973,6 +990,14 @@ downloadPdfByVersionId(
     const viaticosCliente = typeof viaticosClienteRaw === 'boolean'
       ? viaticosClienteRaw
       : (viaticosMonto != null ? viaticosMonto === 0 : undefined);
+    const datosEventoRaw = detalleApi?.datosEvento ?? api.datosEvento;
+    const datosEvento = (
+      datosEventoRaw &&
+      typeof datosEventoRaw === 'object' &&
+      !Array.isArray(datosEventoRaw)
+    )
+      ? { ...(datosEventoRaw as Record<string, unknown>) }
+      : undefined;
 
     const detalle: CotizacionDetallePayload = {
       idCotizacion: idCotizacion ?? undefined,
@@ -980,6 +1005,7 @@ downloadPdfByVersionId(
       tipoEvento,
       fechaEvento,
       lugar: detalleApi?.lugar ?? api.lugar ?? undefined,
+      datosEvento,
       dias: diasNumero ?? undefined,
       horasEstimadas: horasNumero ?? undefined,
       mensaje: detalleApi?.mensaje ?? api.mensaje ?? api.notas ?? undefined,

@@ -1,10 +1,56 @@
 export interface Evento {
   id: number;
   nombre: string;
+  formSchema?: EventoFormSchemaField[];
   /**
    * URL del icono representativo. Se mantiene opcional mientras se evalúa su deprecación.
    */
   iconUrl?: string | null;
+}
+
+export interface EventoFormSchemaField {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  active: boolean;
+  order: number;
+  placeholder?: string | null;
+  helpText?: string | null;
+  options?: string[];
+}
+
+export interface EventoSchemaResponse {
+  eventoId: number;
+  formSchema: EventoFormSchemaField[];
+}
+
+export interface EventoSchemaUpdatePayload {
+  formSchema: EventoFormSchemaField[];
+}
+
+export interface EventoSchemaUpdateResponse {
+  Status: string;
+  eventoId: number;
+  formSchema: EventoFormSchemaField[];
+}
+
+export interface EventoUpsertResponse {
+  Status: string;
+}
+
+export interface EventoCreatePayload {
+  nombre: string;
+  icon?: File | null;
+  iconUrl?: string | null;
+  formSchema?: EventoFormSchemaField[] | null;
+}
+
+export interface EventoUpdatePayload {
+  nombre?: string;
+  icon?: File | null;
+  iconUrl?: string | null;
+  formSchema?: EventoFormSchemaField[] | null;
 }
 
 export interface Servicio {
@@ -104,3 +150,4 @@ export interface ActualizarEstadoEventoServicioResponse {
   idEventoServicio: number;
   estadoId: number;
 }
+

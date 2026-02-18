@@ -1,3 +1,5 @@
+export type DatosEventoPayload = Record<string, unknown>;
+
 export interface CotizacionContacto {
   id?: number;
   nombre?: string;
@@ -50,6 +52,7 @@ export interface Cotizacion {
   cotizacionVersionVigenteId?: number | null;
   cotizacionVersionVigente?: number | string | null;
   cotizacionVersionEstadoVigente?: string | null;
+  datosEvento?: DatosEventoPayload;
 }
 
 export interface CotizacionContactoPayload {
@@ -68,6 +71,7 @@ export interface CotizacionDetallePayload {
   tipoEvento?: string;
   fechaEvento: string;
   lugar?: string;
+  datosEvento?: DatosEventoPayload;
   dias?: number;
   horasEstimadas?: number;
   mensaje?: string;
@@ -107,6 +111,7 @@ export interface CotizacionApiResponse {
   viaticos_monto?: number | string | null;
   viaticosCliente?: boolean | null;
   viaticos_cliente?: boolean | null;
+  datosEvento?: DatosEventoPayload | null;
   lead?: CotizacionApiContacto | null;
   contacto?: CotizacionApiContacto | null;
   cotizacion?: (Partial<CotizacionDetallePayload> & {
@@ -117,6 +122,7 @@ export interface CotizacionApiResponse {
     fechaCreacion?: string | null;
     estado?: string | null;
     idTipoEvento?: number | string | null;
+    datosEvento?: DatosEventoPayload | null;
     items?: Record<string, unknown>[] | null;
     serviciosFechas?: Record<string, unknown>[] | null;
   }) | null;
@@ -223,6 +229,7 @@ export interface CotizacionAdminBasePayload {
     tipoEvento?: string;
     fechaEvento?: string;
     lugar?: string;
+    datosEvento?: DatosEventoPayload;
     dias?: number | null;
     horasEstimadas?: number | null;
     mensaje?: string;

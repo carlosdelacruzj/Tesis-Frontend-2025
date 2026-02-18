@@ -25,8 +25,9 @@
           <app-event-card
             [id]="evento.id"
             [titulo]="evento.nombre"
-            [imagen]="imagenDe(evento.nombre)"
+            [imagen]="evento.iconUrl || imagenDe(evento.nombre)"
             (emitAccion)="seleccionarEventoPorId($event)"
+            (emitEditar)="abrirEdicionEvento($event)"
           >
           </app-event-card>
         }

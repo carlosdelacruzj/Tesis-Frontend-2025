@@ -23,8 +23,22 @@ export interface LandingPublicCotizacionPayload {
 }
 
 export interface LandingEventDto {
-  PK_E_Cod: number;
-  E_Nombre: string;
+  PK_E_Cod?: number;
+  E_Nombre?: string;
+  id?: number;
+  nombre?: string;
+  iconUrl?: string | null;
+  formSchema?: Array<{
+    key: string;
+    label: string;
+    type: string;
+    required: boolean;
+    active: boolean;
+    order: number;
+    placeholder?: string | null;
+    helpText?: string | null;
+    options?: string[];
+  }>;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -154,6 +154,8 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   evento: AnyRecord[] = [];
   servicioSeleccionado = 1;
   eventoSeleccionado = 1;
+  selectedEventoDetalle: AnyRecord | null = null;
+  private lastEventoDetalleId: number | null = null;
   eventoSelectTouched = false;
 
   dataSource: MatTableDataSource<UbicacionRow> =
@@ -518,6 +520,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         this.tmpIdSequence = 0;
         this.refreshSelectedPaquetesColumns();
         this.eventoSeleccionado = parsed;
+        this.cargarEventoSeleccionado(this.eventoSeleccionado);
         if (this.puedeCargarPaquetes) {
           this.getEventoxServicio();
         }
@@ -525,6 +528,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       return;
     }
     this.eventoSeleccionado = parsed;
+    this.cargarEventoSeleccionado(this.eventoSeleccionado);
     if (this.puedeCargarPaquetes) {
       this.getEventoxServicio();
     }
@@ -2184,6 +2188,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         this.estadoPagoId = pedido.estadoPagoId ?? null;
         if (pedido.idTipoEvento != null) {
           this.eventoSeleccionado = pedido.idTipoEvento;
+          this.cargarEventoSeleccionado(this.eventoSeleccionado);
         }
         if (pedido.cotizacionId != null) {
           this.cotizacionId = pedido.cotizacionId;
@@ -2351,6 +2356,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
             ?.eventoId ?? null;
         if (eventoDesdeItems != null) {
           this.eventoSeleccionado = eventoDesdeItems;
+          this.cargarEventoSeleccionado(this.eventoSeleccionado);
         }
 
         const tmpIdMap = new Map<number, string>();
@@ -3632,6 +3638,41 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     }
     const parsed = Number(String(value).trim());
     return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private cargarEventoSeleccionado(eventoId: number | null): void {
+    if (eventoId == null || eventoId <= 0) {
+      this.selectedEventoDetalle = null;
+      this.lastEventoDetalleId = null;
+      return;
+    }
+    if (
+      this.lastEventoDetalleId === eventoId &&
+      this.selectedEventoDetalle != null
+    ) {
+      return;
+    }
+
+    this.lastEventoDetalleId = eventoId;
+    this.visualizarService
+      .getEventoById(eventoId)
+      .pipe(
+        take(1),
+        catchError((err: unknown) => {
+          console.error('[getEventoById] error', err);
+          if (this.lastEventoDetalleId === eventoId) {
+            this.selectedEventoDetalle = null;
+          }
+          return of({});
+        }),
+      )
+      .subscribe((evento) => {
+        const record = this.asRecord(evento);
+        if (!Object.keys(record).length) {
+          return;
+        }
+        this.selectedEventoDetalle = record;
+      });
   }
 
   private normalizeEventoCatalogo(item: unknown): AnyRecord | null {

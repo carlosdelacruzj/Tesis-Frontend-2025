@@ -77,4 +77,8 @@ export class VisualizarService {
     if (servicio != null) params = params.set('servicio', String(servicio));
     return this.http.get<unknown[]>(this.apiEventosServ, { params });
   }
+
+  public getEventoById(id: number | string): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>(`${this.apiBase}/eventos/${id}`);
+  }
 }

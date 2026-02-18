@@ -1,8 +1,21 @@
-<mat-card class="example-card">
+﻿<mat-card class="example-card">
+  <button
+    type="button"
+    mat-icon-button
+    class="edit-btn"
+    aria-label="Editar evento"
+    matTooltip="Editar evento"
+    (click)="editar($event)"
+  >
+    <mat-icon>edit</mat-icon>
+  </button>
+
   <img [src]="imagen" (error)="onImgError($event)" alt="icono del evento" />
+
   <mat-card-content>
     <button (click)="cambioVista()" mat-button>
       {{ corregirCumple(titulo) }}
     </button>
   </mat-card-content>
 </mat-card>
+
