@@ -33,6 +33,9 @@ export interface PedidoRow {
   TotalLabel?: string;
   Estado?: string;
   Pago?: string;
+  contratoVigenteId?: number | null;
+  contratoVersionVigente?: number | string | null;
+  contratoEstadoVigente?: string | null;
 }
 
 interface ModalPagoState {
@@ -148,17 +151,17 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
   }
 
   verContratoPdf(row: PedidoRow): void {
-    const id = this.extractId(row);
-    if (!id) {
+    const contratoId = this.parseNumber(row?.contratoVigenteId);
+    if (!contratoId) {
       return;
     }
-    this.downloadingId = id;
+    this.downloadingId = contratoId;
     this.pedidoService
-      .getContratoPdf(id)
+      .getContratoPdf(contratoId)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
-          if (this.downloadingId === id) {
+          if (this.downloadingId === contratoId) {
             this.downloadingId = null;
           }
         }),
@@ -170,17 +173,24 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
           if (!opened) {
             const link = document.createElement('a');
             link.href = url;
-            link.download = `contrato_pedido_${id}.pdf`;
+            link.download = `contrato_${contratoId}.pdf`;
             link.click();
           }
           setTimeout(() => URL.revokeObjectURL(url), 1000);
         },
         error: (err) => {
           console.error('[pedido] contrato pdf', err);
+          const code = err?.status;
+          const text =
+            code === 404
+              ? 'El contrato no existe.'
+              : code === 422
+                ? 'El contrato existe, pero no tiene snapshot para generar el PDF.'
+                : 'No pudimos abrir el contrato PDF.';
           void Swal.fire({
             icon: 'error',
             title: 'No se pudo abrir',
-            text: 'No pudimos generar el contrato PDF.',
+            text,
             confirmButtonText: 'Aceptar',
             buttonsStyling: false,
             customClass: { confirmButton: 'btn btn-danger' },
@@ -552,6 +562,21 @@ export class GestionarPedidoComponent implements OnInit, OnDestroy {
               Cliente: clienteLabel,
               Documento: clienteSub,
               TotalLabel: totalLabel ?? undefined,
+              contratoVigenteId: this.parseNumber(
+                raw?.contratoVigenteId ?? raw?.ContratoVigenteId,
+              ),
+              contratoVersionVigente:
+                this.toOptionalString(
+                  raw?.contratoVersionVigente ?? raw?.ContratoVersionVigente,
+                ) ??
+                this.parseNumber(
+                  raw?.contratoVersionVigente ?? raw?.ContratoVersionVigente,
+                ) ??
+                null,
+              contratoEstadoVigente:
+                this.toOptionalString(
+                  raw?.contratoEstadoVigente ?? raw?.ContratoEstadoVigente,
+                ) ?? null,
             } as PedidoRow;
           });
           this.loadingList = false;

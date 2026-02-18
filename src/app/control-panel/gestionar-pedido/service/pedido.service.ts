@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Proyecto, DatosCliente, Eventos, Servi } from '../model/pedido.model';
+import { Proyecto, DatosCliente, Eventos, Servi, PedidoListItem } from '../model/pedido.model';
 import { environment } from 'src/environments/environment';
 import { CatalogosService } from 'src/app/shared/services/catalogos.service';
 
@@ -54,6 +54,7 @@ export class PedidoService {
   // };
 
   private readonly apiBase = `${environment.baseUrl}/pedido`;
+  private readonly apiContratos = `${environment.baseUrl}/contratos`;
   // private API_PRUEBA =
   //   'https://tp2021database.herokuapp.com/pedido/consulta/getAllPedido';
   private readonly apiNumeroPedido =
@@ -66,8 +67,8 @@ export class PedidoService {
   // private API_SERVICIOSxEVENTOS =
   //   'https://tp2021database.herokuapp.com/eventos_servicios/consulta/getAllServiciosByEventoServ/';
 
-  public getAllPedidos(): Observable<unknown> {
-    return this.http.get(this.apiBase);
+  public getAllPedidos(): Observable<PedidoListItem[]> {
+    return this.http.get<PedidoListItem[]>(this.apiBase);
   }
   // public getDni(id: any): Observable<any> {
   //   return this.http.get(this.API_DNI + id)
@@ -85,8 +86,15 @@ export class PedidoService {
   public getEventos(): Observable<unknown> {
     return this.catalogos.getEventos();
   }
-  public getContratoPdf(id: number): Observable<Blob> {
-    return this.http.post(`${this.apiBase}/${id}/contrato/pdf`, null, { responseType: 'blob' });
+  public getContratoPdf(contratoId: number, regenerate = false): Observable<Blob> {
+    let params = new HttpParams();
+    if (regenerate) {
+      params = params.set('regenerate', '1');
+    }
+    return this.http.get(`${this.apiContratos}/${contratoId}/pdf`, {
+      params,
+      responseType: 'blob',
+    });
   }
   // public getEventServicios(): Observable<any> {
   //   return this.http.get(this.API_SERVICIOSxEVENTOS);

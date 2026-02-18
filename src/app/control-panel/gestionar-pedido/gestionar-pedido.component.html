@@ -115,11 +115,13 @@
             </button>
           }
           <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); verContratoPdf(row)"
-            [disabled]="downloadingId === row.id" matTooltip="Ver contrato PDF">
-            @if (downloadingId !== row.id) {
+            [disabled]="!row.contratoVigenteId || downloadingId === row.contratoVigenteId"
+            [matTooltip]="row.contratoVigenteId ? 'Ver contrato PDF' : 'Este pedido no tiene contrato vigente'"
+          >
+            @if (downloadingId !== row.contratoVigenteId) {
               <mat-icon>picture_as_pdf</mat-icon>
             }
-            @if (downloadingId === row.id) {
+            @if (downloadingId === row.contratoVigenteId) {
               <mat-icon class="spin">hourglass_top</mat-icon>
             }
           </button>

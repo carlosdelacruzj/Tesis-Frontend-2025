@@ -94,6 +94,9 @@ export interface PedidoDetalle {
   codigo: string;
   clienteId: number;
   cotizacionId: number | null;
+  contratoVigenteId?: number | null;
+  contratoVersionVigente?: number | string | null;
+  contratoEstadoVigente?: string | null;
   nombrePedido: string;
   empleadoId: number;
   fechaCreacion: string;

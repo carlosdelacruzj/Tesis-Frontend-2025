@@ -52,3 +52,15 @@ export class Eventos {
 
 //   }
 // }
+
+export interface PedidoListItem {
+  id?: number;
+  pedidoId?: number;
+  codigo?: string;
+  codigoPedido?: string;
+  cliente?: unknown;
+  contratoVigenteId?: number | null;
+  contratoVersionVigente?: number | string | null;
+  contratoEstadoVigente?: string | null;
+  [key: string]: unknown;
+}
