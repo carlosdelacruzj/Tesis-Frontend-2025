@@ -106,6 +106,24 @@ interface PaqueteDetalle {
   eventoServicio?: { staff?: StaffDetalle };
 }
 
+type EventoCampoTipo =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'date'
+  | 'select'
+  | 'checkbox';
+
+interface EventoSchemaCampo {
+  key: string;
+  label: string;
+  type: EventoCampoTipo;
+  required: boolean;
+  active: boolean;
+  order: number;
+  options: string[];
+}
+
 @Component({
   selector: 'app-editar-cotizacion',
   templateUrl: './editar-cotizacion.component.html',
@@ -197,6 +215,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
   private cotizacion: Cotizacion | null = null;
   private pendingServicioId: number | null = null;
   private pendingEventoId: number | null = null;
+  private pendingDatosEvento: AnyRecord | null = null;
+  private pendingDatosEventoAplicado = false;
   private fechaEventoOriginal: string | null = null;
   private lastEventoDetalleId: number | null = null;
 
@@ -262,6 +282,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       totalEstimado: [{ value: 0, disabled: true }, Validators.min(0)],
       fechasTrabajo: this.fb.array([]),
       programacion: this.fb.array([]),
+      datosEvento: this.fb.group({}),
     });
   }
 
@@ -313,6 +334,22 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
   get fechasTrabajo(): UntypedFormArray {
     return this.form.get('fechasTrabajo') as UntypedFormArray;
+  }
+
+  get datosEventoGroup(): UntypedFormGroup {
+    return this.form.get('datosEvento') as UntypedFormGroup;
+  }
+
+  get eventoFormSchema(): EventoSchemaCampo[] {
+    const record = this.asRecord(this.selectedEventoDetalle);
+    const rawSchema = Array.isArray(record['formSchema'])
+      ? (record['formSchema'] as unknown[])
+      : [];
+    return rawSchema
+      .map((item, index) => this.normalizeEventoSchemaCampo(item, index))
+      .filter((item): item is EventoSchemaCampo => item != null)
+      .filter((item) => item.active)
+      .sort((a, b) => a.order - b.order);
   }
 
   get fechasTrabajoValores(): string[] {
@@ -530,10 +567,12 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         this.serviciosFechasSeleccionadas = [];
         this.tmpIdSequence = 0;
         this.refreshSelectedPaquetesColumns();
+        this.resetPendingDatosEventoIfManualChange(nextEventoId);
         this.onEventoChange(nextEventoId);
       });
       return;
     }
+    this.resetPendingDatosEventoIfManualChange(nextEventoId);
     this.onEventoChange(nextEventoId);
   }
 
@@ -558,11 +597,13 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         this.serviciosFechasSeleccionadas = [];
         this.tmpIdSequence = 0;
         this.refreshSelectedPaquetesColumns();
+        this.resetPendingDatosEventoIfManualChange(nextEventoId);
         this.onEventoChange(nextEventoId);
       });
       return;
     }
 
+    this.resetPendingDatosEventoIfManualChange(nextEventoId);
     this.onEventoChange(nextEventoId);
   }
 
@@ -575,6 +616,9 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedEventoNombre = '';
       this.selectedEventoDetalle = null;
       this.lastEventoDetalleId = null;
+      this.pendingDatosEvento = null;
+      this.pendingDatosEventoAplicado = false;
+      this.syncDatosEventoControls();
     } else {
       const selected = this.eventos.find((e) => e.id === this.selectedEventoId);
       this.selectedEventoNombre = this.getNombre(selected);
@@ -582,6 +626,25 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     }
     this.applyEventoGateRules();
     this.loadEventosServicio();
+  }
+
+  private resetPendingDatosEventoIfManualChange(
+    nextEventoId: number | null,
+  ): void {
+    if (nextEventoId === this.selectedEventoId) {
+      return;
+    }
+    const isHydratingInitialData =
+      this.loading &&
+      this.pendingDatosEvento != null &&
+      !this.pendingDatosEventoAplicado &&
+      this.pendingEventoId != null &&
+      nextEventoId === this.pendingEventoId;
+    if (isHydratingInitialData) {
+      return;
+    }
+    this.pendingDatosEvento = null;
+    this.pendingDatosEventoAplicado = false;
   }
 
   addPaquete(element: AnyRecord): void {
@@ -989,11 +1052,22 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
 
     const programacionInvalida = this.programacion.invalid;
     const programacionVacia = this.programacion.length === 0;
-    if (this.form.invalid || programacionInvalida || programacionVacia) {
+    const datosEventoInvalido = this.datosEventoGroup.invalid;
+    if (
+      this.form.invalid ||
+      programacionInvalida ||
+      programacionVacia ||
+      datosEventoInvalido
+    ) {
       this.form.markAllAsTouched();
       this.programacion.markAllAsTouched();
+      if (datosEventoInvalido) {
+        this.datosEventoGroup.markAllAsTouched();
+      }
       const mensaje = programacionVacia
         ? 'Agrega al menos una locación.'
+        : datosEventoInvalido
+          ? 'Completa los datos del evento.'
         : programacionInvalida
           ? 'Completa la programación del evento.'
           : 'Revisa los campos obligatorios.';
@@ -1078,6 +1152,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const horasEstimadasNumero = this.parseHorasToNumber(
       horasEstimadas ?? rawContexto?.horasEstimadasTexto,
     );
+    const datosEventoPayload = this.buildDatosEventoPayload();
     const diasTexto = (raw.dias ?? '').toString().trim();
     const diasNumeroTexto = this.parseNumber(diasTexto);
 
@@ -1239,6 +1314,10 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           this.selectedServicioNombre,
         fechaEvento: fechaEvento ?? undefined,
         lugar: departamento || rawDetalle?.lugar,
+        datosEvento:
+          Object.keys(datosEventoPayload).length > 0
+            ? datosEventoPayload
+            : undefined,
         dias: diasNumeroTexto ?? undefined,
         horasEstimadas: horasEstimadasNumero ?? undefined,
         mensaje: descripcion,
@@ -1333,6 +1412,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
             this.selectedEventoNombre = '';
             this.selectedEventoDetalle = null;
             this.lastEventoDetalleId = null;
+            this.syncDatosEventoControls();
           }
           this.applyPendingSelections();
         },
@@ -1344,6 +1424,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           this.selectedEventoNombre = '';
           this.selectedEventoDetalle = null;
           this.lastEventoDetalleId = null;
+          this.syncDatosEventoControls();
           this.applyPendingSelections();
         },
       });
@@ -1381,6 +1462,27 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     const contactoRaw = raw?.contacto;
     const detalle = raw?.cotizacion;
     const contexto = raw?.contexto;
+    const detalleRecordRaw = this.asRecord(detalle);
+    const rawPayloadRecord = this.asRecord(raw);
+    const cotizacionRecordRaw = this.asRecord(cotizacion as unknown);
+    const schemaResolvedRaw =
+      detalleRecordRaw['formSchemaResolved'] ??
+      rawPayloadRecord['formSchemaResolved'] ??
+      cotizacionRecordRaw['formSchemaResolved'];
+    const datosDesdeSchemaResolved =
+      this.mapSchemaResolvedToDatosEvento(schemaResolvedRaw);
+    const datosEventoRecord =
+      Object.keys(datosDesdeSchemaResolved).length > 0
+        ? datosDesdeSchemaResolved
+        : this.asRecord(
+            detalle?.datosEvento ??
+              cotizacionRecordRaw['datosEvento'] ??
+              rawPayloadRecord['datosEvento'],
+          );
+    this.pendingDatosEvento = Object.keys(datosEventoRecord).length
+      ? datosEventoRecord
+      : null;
+    this.pendingDatosEventoAplicado = false;
 
     const nombre = (contactoRaw?.nombre ?? cotizacion.cliente ?? '')
       .toString()
@@ -1402,8 +1504,8 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         ? String(horasEstimadasNumero)
         : '';
     const departamento = this.pickFirstString(detalle?.lugar, cotizacion.lugar);
-    const detalleRecord = this.asRecord(detalle);
-    const cotizacionRecord = this.asRecord(cotizacion as unknown);
+    const detalleRecord = detalleRecordRaw;
+    const cotizacionRecord = cotizacionRecordRaw;
     const viaticosCliente =
       detalleRecord['viaticosCliente'] ?? cotizacionRecord['viaticosCliente'];
     const viaticosMonto = this.parseNumber(
@@ -1458,7 +1560,6 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.selectedEventoIdValue =
       this.selectedEventoId != null ? String(this.selectedEventoId) : '';
     this.selectedEventoNombre = detalle?.tipoEvento ?? '';
-    this.cargarEventoSeleccionado(this.selectedEventoId);
     this.selectedPaquetes = itemsBase.map((item, index) => {
       const record = this.asRecord(item);
       const itemPayload = item as CotizacionItemPayload;
@@ -3247,6 +3348,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedEventoNombre = '';
       this.selectedEventoDetalle = null;
       this.lastEventoDetalleId = null;
+      this.syncDatosEventoControls();
     }
 
     this.cargarEventoSeleccionado(this.selectedEventoId);
@@ -3285,6 +3387,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
         next: (evento) => {
           const record = this.asRecord(evento);
           this.selectedEventoDetalle = record;
+          this.syncDatosEventoControls();
           const nombre = this.pickFirstString(
             record['nombre'],
             record['E_Nombre'],
@@ -3300,6 +3403,7 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
           console.error('[cotizacion] evento detalle', err);
           if (this.lastEventoDetalleId === eventoId) {
             this.selectedEventoDetalle = null;
+            this.syncDatosEventoControls();
           }
         },
       });
@@ -3598,6 +3702,183 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     return Number.isFinite(num) ? num : null;
   }
 
+  getSchemaControlInvalid(field: EventoSchemaCampo): boolean {
+    const control = this.datosEventoGroup.get(field.key);
+    return !!control && control.invalid && control.touched;
+  }
+
+  getSchemaErrorMessage(field: EventoSchemaCampo): string {
+    const control = this.datosEventoGroup.get(field.key);
+    if (!control?.errors) {
+      return '';
+    }
+    if (field.type === 'checkbox' && control.hasError('required')) {
+      return 'Debes marcar esta opción.';
+    }
+    if (control.hasError('required')) {
+      return 'Este campo es obligatorio.';
+    }
+    return 'Valor inválido.';
+  }
+
+  private buildDatosEventoPayload(): Record<string, unknown> {
+    const payload: Record<string, unknown> = {};
+    for (const field of this.eventoFormSchema) {
+      const control = this.datosEventoGroup.get(field.key);
+      if (!control) {
+        continue;
+      }
+      const rawValue = control.value;
+      if (field.type === 'checkbox') {
+        payload[field.key] = Boolean(rawValue);
+        continue;
+      }
+      if (field.type === 'number') {
+        const parsed = this.parseNumber(rawValue);
+        if (parsed != null) {
+          payload[field.key] = parsed;
+        }
+        continue;
+      }
+      const text = (rawValue ?? '').toString().trim();
+      if (text) {
+        payload[field.key] = text;
+      }
+    }
+    return payload;
+  }
+
+  private syncDatosEventoControls(): void {
+    const group = this.datosEventoGroup;
+    const schema = this.eventoFormSchema;
+    const allowedKeys = new Set(schema.map((field) => field.key));
+
+    Object.keys(group.controls).forEach((key) => {
+      if (!allowedKeys.has(key)) {
+        group.removeControl(key);
+      }
+    });
+
+    schema.forEach((field) => {
+      const validators = this.buildSchemaValidators(field);
+      const existing = group.get(field.key);
+      if (existing) {
+        existing.setValidators(validators);
+        existing.updateValueAndValidity({ emitEvent: false });
+        return;
+      }
+      const initialValue = field.type === 'checkbox' ? false : '';
+      group.addControl(field.key, this.fb.control(initialValue, validators));
+    });
+
+    this.applyPendingDatosEventoValues();
+  }
+
+  private applyPendingDatosEventoValues(): void {
+    if (this.pendingDatosEventoAplicado || !this.pendingDatosEvento) {
+      return;
+    }
+    const patch: Record<string, unknown> = {};
+    for (const field of this.eventoFormSchema) {
+      if (!(field.key in this.pendingDatosEvento)) {
+        continue;
+      }
+      const raw = this.pendingDatosEvento[field.key];
+      if (field.type === 'checkbox') {
+        patch[field.key] = Boolean(raw);
+        continue;
+      }
+      if (field.type === 'number') {
+        const num = this.parseNumber(raw);
+        patch[field.key] = num != null ? num : '';
+        continue;
+      }
+      if (field.type === 'date') {
+        const dateInput =
+          raw instanceof Date || typeof raw === 'string' ? raw : String(raw);
+        patch[field.key] = this.normalizeDateForPayload(dateInput) ?? '';
+        continue;
+      }
+      patch[field.key] = (raw ?? '').toString();
+    }
+    this.datosEventoGroup.patchValue(patch, { emitEvent: false });
+    this.pendingDatosEventoAplicado = true;
+  }
+
+  private buildSchemaValidators(field: EventoSchemaCampo): ValidatorFn[] {
+    if (!field.required) {
+      return [];
+    }
+    if (field.type === 'checkbox') {
+      return [Validators.requiredTrue];
+    }
+    return [Validators.required];
+  }
+
+  private normalizeEventoSchemaCampo(
+    item: unknown,
+    index: number,
+  ): EventoSchemaCampo | null {
+    const record = this.asRecord(item);
+    const key = (record['key'] ?? '').toString().trim();
+    const label = (record['label'] ?? '').toString().trim();
+    const typeRaw = (record['type'] ?? '').toString().trim().toLowerCase();
+    const type = this.asEventoCampoTipo(typeRaw);
+    const order = this.parseNumber(record['order']) ?? index + 1;
+    const active = record['active'] !== false;
+    const required = record['required'] === true;
+    const options = Array.isArray(record['options'])
+      ? (record['options'] as unknown[])
+          .map((opt) => String(opt ?? '').trim())
+          .filter(Boolean)
+      : [];
+    if (!key || !label || !type) {
+      return null;
+    }
+    if (type === 'select' && !options.length) {
+      return null;
+    }
+    return {
+      key,
+      label,
+      type,
+      required,
+      active,
+      order: order > 0 ? order : index + 1,
+      options,
+    };
+  }
+
+  private asEventoCampoTipo(value: string): EventoCampoTipo | null {
+    if (
+      value === 'text' ||
+      value === 'textarea' ||
+      value === 'number' ||
+      value === 'date' ||
+      value === 'select' ||
+      value === 'checkbox'
+    ) {
+      return value;
+    }
+    return null;
+  }
+
+  private mapSchemaResolvedToDatosEvento(value: unknown): AnyRecord {
+    if (!Array.isArray(value)) {
+      return {};
+    }
+    const out: AnyRecord = {};
+    value.forEach((entry) => {
+      const record = this.asRecord(entry);
+      const key = (record['key'] ?? '').toString().trim();
+      if (!key) {
+        return;
+      }
+      out[key] = record['value'];
+    });
+    return out;
+  }
+
   private focusPrecioInput(key: string | number): void {
     setTimeout(() => {
       const element = document.getElementById(
@@ -3688,3 +3969,4 @@ export class EditarCotizacionComponent implements OnInit, OnDestroy {
     this.selectedPaquetesColumns = base;
   }
 }
+

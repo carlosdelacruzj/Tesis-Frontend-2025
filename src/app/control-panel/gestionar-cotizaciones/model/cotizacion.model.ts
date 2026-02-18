@@ -1,4 +1,5 @@
 export type DatosEventoPayload = Record<string, unknown>;
+export type EventoFormSchemaField = Record<string, unknown>;
 
 export interface CotizacionContacto {
   id?: number;
@@ -72,6 +73,8 @@ export interface CotizacionDetallePayload {
   fechaEvento: string;
   lugar?: string;
   datosEvento?: DatosEventoPayload;
+  formSchema?: EventoFormSchemaField[];
+  formSchemaResolved?: EventoFormSchemaField[];
   dias?: number;
   horasEstimadas?: number;
   mensaje?: string;
@@ -123,9 +126,13 @@ export interface CotizacionApiResponse {
     estado?: string | null;
     idTipoEvento?: number | string | null;
     datosEvento?: DatosEventoPayload | null;
+    formSchema?: EventoFormSchemaField[] | null;
+    formSchemaResolved?: EventoFormSchemaField[] | null;
     items?: Record<string, unknown>[] | null;
     serviciosFechas?: Record<string, unknown>[] | null;
   }) | null;
+  formSchema?: EventoFormSchemaField[] | null;
+  formSchemaResolved?: EventoFormSchemaField[] | null;
   items?: Record<string, unknown>[] | null;
   eventos?: Record<string, unknown>[] | null;
   serviciosFechas?: Record<string, unknown>[] | null;

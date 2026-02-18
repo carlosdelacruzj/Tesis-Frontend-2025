@@ -20,6 +20,15 @@
   height: 1.4rem;
 }
 
+.schema-grid {
+  align-items: flex-start;
+}
+
+.schema-check {
+  min-height: 38px;
+  padding-top: 0.3rem;
+}
+
 .flow-locked {
   opacity: 0.55;
   pointer-events: none;

@@ -180,6 +180,65 @@
       </div>
     </div>
 
+    @if (isEventoSeleccionado() && eventoFormSchema.length) {
+    <mat-card class="card mb-3">
+      <mat-card-header>
+        <mat-card-title>Datos del evento</mat-card-title>
+        <mat-card-subtitle>Campos dinámicos del tipo de evento seleccionado.</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="row g-3 schema-grid" [formGroup]="datosEventoGroup">
+          @for (field of eventoFormSchema; track field.key) {
+          <div class="col-md-6" [class.col-12]="field.type === 'textarea'">
+            <div class="form-group">
+              @if (field.type === 'checkbox') {
+              <div class="form-check schema-check">
+                <input class="form-check-input" type="checkbox" [id]="'schema-' + field.key"
+                  [formControlName]="field.key" [class.is-invalid]="getSchemaControlInvalid(field)" />
+                <label class="form-check-label" [attr.for]="'schema-' + field.key">
+                  {{ field.label }}
+                  @if (field.required) {
+                  <span class="text-danger">*</span>
+                  }
+                </label>
+              </div>
+              } @else {
+              <label class="col-form-label" [attr.for]="'schema-' + field.key">
+                {{ field.label }}
+                @if (field.required) {
+                <span class="text-danger">*</span>
+                }
+              </label>
+
+              @if (field.type === 'textarea') {
+              <textarea class="form-control" rows="2" [id]="'schema-' + field.key" [formControlName]="field.key"
+                [class.is-invalid]="getSchemaControlInvalid(field)"></textarea>
+              } @else if (field.type === 'select') {
+              <select class="form-select" [id]="'schema-' + field.key" [formControlName]="field.key"
+                [class.is-invalid]="getSchemaControlInvalid(field)">
+                <option value="">Selecciona una opción</option>
+                @for (option of field.options; track option) {
+                <option [value]="option">{{ option }}</option>
+                }
+              </select>
+              } @else {
+              <input class="form-control" [id]="'schema-' + field.key"
+                [type]="field.type === 'number' || field.type === 'date' ? field.type : 'text'"
+                [formControlName]="field.key" [class.is-invalid]="getSchemaControlInvalid(field)" />
+              }
+              }
+
+              @if (getSchemaControlInvalid(field)) {
+              <small class="text-danger">{{ getSchemaErrorMessage(field) }}</small>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+    }
+
     <div [attr.inert]="canContinueFlow() ? null : ''" [class.flow-locked]="!canContinueFlow()">
     <mat-card class="card mb-3">
       <mat-card-header class="programacion-header">

@@ -376,6 +376,31 @@ downloadPdfByVersionId(
       primerEventoServicioRaw && typeof primerEventoServicioRaw === 'object' && !Array.isArray(primerEventoServicioRaw)
         ? (primerEventoServicioRaw as Record<string, unknown>)
         : {};
+    const datosEventoRaw = (detalle as Record<string, unknown>)['datosEvento'];
+    const datosEvento = (
+      datosEventoRaw &&
+      typeof datosEventoRaw === 'object' &&
+      !Array.isArray(datosEventoRaw)
+    )
+      ? { ...(datosEventoRaw as Record<string, unknown>) }
+      : undefined;
+    const formSchemaRaw = (detalle as Record<string, unknown>)['formSchema'];
+    const formSchema = Array.isArray(formSchemaRaw)
+      ? formSchemaRaw.map((item) =>
+          item && typeof item === 'object'
+            ? { ...(item as Record<string, unknown>) }
+            : {},
+        )
+      : undefined;
+    const formSchemaResolvedRaw =
+      (detalle as Record<string, unknown>)['formSchemaResolved'];
+    const formSchemaResolved = Array.isArray(formSchemaResolvedRaw)
+      ? formSchemaResolvedRaw.map((item) =>
+          item && typeof item === 'object'
+            ? { ...(item as Record<string, unknown>) }
+            : {},
+        )
+      : undefined;
 
     const payload: CotizacionPayload = {
       contacto: {
@@ -393,6 +418,9 @@ downloadPdfByVersionId(
         tipoEvento: this.toOptionalString(detalle.tipoEvento),
         fechaEvento: this.normalizeIsoDate(detalle.fechaEvento),
         lugar: this.toOptionalString(detalle.lugar),
+        datosEvento,
+        formSchema,
+        formSchemaResolved,
         dias: this.parseNumberNullable(detalle.dias) ?? undefined,
         horasEstimadas: this.parseNumberNullable(detalle.horasEstimadas) ?? undefined,
         mensaje: this.toOptionalString(detalle.mensaje),
@@ -644,6 +672,20 @@ downloadPdfByVersionId(
     )
       ? { ...(detalleInput.datosEvento as Record<string, unknown>) }
       : undefined;
+    const formSchema = Array.isArray(detalleInput.formSchema)
+      ? detalleInput.formSchema.map((item) =>
+          item && typeof item === 'object'
+            ? { ...(item as Record<string, unknown>) }
+            : {},
+        )
+      : undefined;
+    const formSchemaResolved = Array.isArray(detalleInput.formSchemaResolved)
+      ? detalleInput.formSchemaResolved.map((item) =>
+          item && typeof item === 'object'
+            ? { ...(item as Record<string, unknown>) }
+            : {},
+        )
+      : undefined;
 
     const detalle = {
       idCotizacion: detalleInput.idCotizacion ?? id,
@@ -653,6 +695,8 @@ downloadPdfByVersionId(
       fechaEvento,
       lugar: detalleInput.lugar ?? undefined,
       datosEvento,
+      formSchema,
+      formSchemaResolved,
       dias: detalleInput.dias ?? undefined,
       horasEstimadas: horasEstimadas ?? undefined,
       mensaje: detalleInput.mensaje ?? undefined,
@@ -998,6 +1042,23 @@ downloadPdfByVersionId(
     )
       ? { ...(datosEventoRaw as Record<string, unknown>) }
       : undefined;
+    const formSchemaRaw = detalleApi?.formSchema ?? api.formSchema;
+    const formSchema = Array.isArray(formSchemaRaw)
+      ? formSchemaRaw.map((item) =>
+          item && typeof item === 'object'
+            ? { ...(item as Record<string, unknown>) }
+            : {},
+        )
+      : undefined;
+    const formSchemaResolvedRaw =
+      detalleApi?.formSchemaResolved ?? api.formSchemaResolved;
+    const formSchemaResolved = Array.isArray(formSchemaResolvedRaw)
+      ? formSchemaResolvedRaw.map((item) =>
+          item && typeof item === 'object'
+            ? { ...(item as Record<string, unknown>) }
+            : {},
+        )
+      : undefined;
 
     const detalle: CotizacionDetallePayload = {
       idCotizacion: idCotizacion ?? undefined,
@@ -1006,6 +1067,8 @@ downloadPdfByVersionId(
       fechaEvento,
       lugar: detalleApi?.lugar ?? api.lugar ?? undefined,
       datosEvento,
+      formSchema,
+      formSchemaResolved,
       dias: diasNumero ?? undefined,
       horasEstimadas: horasNumero ?? undefined,
       mensaje: detalleApi?.mensaje ?? api.mensaje ?? api.notas ?? undefined,

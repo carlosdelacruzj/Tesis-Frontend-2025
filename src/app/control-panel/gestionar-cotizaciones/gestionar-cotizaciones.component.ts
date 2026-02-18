@@ -289,6 +289,11 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       });
   }
 
+  showHistorialButton(cotizacion: Cotizacion): boolean {
+    const version = Number(cotizacion?.cotizacionVersionVigente ?? 0);
+    return Number.isFinite(version) && version > 1;
+  }
+
   descargarVersionPdf(version: CotizacionVersion): void {
     const versionId = version?.id;
     if (!versionId) {
@@ -781,11 +786,31 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   ): Cotizacion {
     const contacto = actualizada.contacto ?? base.contacto;
     const contactoResumen = actualizada.contactoResumen ?? base.contactoResumen;
+    const versionVigenteIdActualizada = Number(
+      actualizada.cotizacionVersionVigenteId ?? NaN,
+    );
+    const versionVigenteActualizada = Number(
+      actualizada.cotizacionVersionVigente ?? NaN,
+    );
+    const cotizacionVersionVigenteId =
+      Number.isFinite(versionVigenteIdActualizada) &&
+      versionVigenteIdActualizada > 0
+        ? actualizada.cotizacionVersionVigenteId
+        : base.cotizacionVersionVigenteId;
+    const cotizacionVersionVigente =
+      Number.isFinite(versionVigenteActualizada) && versionVigenteActualizada > 0
+        ? actualizada.cotizacionVersionVigente
+        : base.cotizacionVersionVigente;
+    const total = actualizada.total ?? base.total;
+
     return this.withClienteDisplay({
       ...base,
       ...actualizada,
       contacto,
       contactoResumen,
+      cotizacionVersionVigenteId,
+      cotizacionVersionVigente,
+      total,
     });
   }
 

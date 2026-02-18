@@ -1,163 +1,148 @@
 <div class="dashboard-content">
-  <app-list-toolbar
-    [title]="'Cotizaciones'"
-    [showSearch]="true"
-    [searchPlaceholder]="'Buscar: cliente, código, evento…'"
-    [searchValue]="searchTerm"
-    [showCreateButton]="true"
-    [createButtonLabel]="'Registrar cotización'"
-    (searchChange)="onToolbarSearch($event)"
+  <app-list-toolbar [title]="'Cotizaciones'" [showSearch]="true"
+    [searchPlaceholder]="'Buscar: cliente, código, evento…'" [searchValue]="searchTerm" [showCreateButton]="true"
+    [createButtonLabel]="'Registrar cotización'" (searchChange)="onToolbarSearch($event)"
     (createClick)="navigateToCreate()">
   </app-list-toolbar>
 
   @if (error) {
-    <div class="alert alert-danger" role="alert">{{ error }}</div>
+  <div class="alert alert-danger" role="alert">{{ error }}</div>
   }
 
   @if (!loadingList) {
-    <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10,25,50]" [pageSize]="10"
-      emptyText="Sin resultados" (rowClick)="ver($any($event))" (sortChange)="onSortChange($event)"
-      (pageChange)="onPageChange($event)" [showCreateButton]="false" [showSearch]="false"
-      [externalSearchTerm]="searchTerm">
-      <!-- código: muestra codigo o fallback COT-{id} -->
-      <ng-template appCell="codigo" let-row>
-        {{ row.codigo }}
-      </ng-template>
+  <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10,25,50]" [pageSize]="10"
+    emptyText="Sin resultados" (rowClick)="ver($any($event))" (sortChange)="onSortChange($event)"
+    (pageChange)="onPageChange($event)" [showCreateButton]="false" [showSearch]="false"
+    [externalSearchTerm]="searchTerm">
+    <!-- código: muestra codigo o fallback COT-{id} -->
+    <ng-template appCell="codigo" let-row>
+      {{ row.codigo }}
+    </ng-template>
 
-      <!-- cliente + contacto: cliente — contacto -->
-      <ng-template appCell="cliente" let-row>
-        <span>{{ row.cliente || '--' }}</span>
-        @if (row.contactoResumen) {
-          <small class="text-muted"> {{ row.contactoResumen }}</small>
+    <!-- cliente + contacto: cliente — contacto -->
+    <ng-template appCell="cliente" let-row>
+      <span>{{ row.cliente || '--' }}</span>
+      @if (row.contactoResumen) {
+      <small class="text-muted"> {{ row.contactoResumen }}</small>
+      }
+    </ng-template>
+
+    <!-- fecha del evento / horas -->
+    <ng-template appCell="fecha" let-row>
+      {{ row.fecha | date:'dd-MM-yyyy' }}
+      @if (row.horasEstimadas) {
+      <small class="text-muted"> — {{ row.horasEstimadas }}</small>
+      }
+    </ng-template>
+
+    <!-- fecha de creación -->
+    <ng-template appCell="createdAt" let-row>
+      {{ row.createdAt | date:'dd-MM-yyyy' }}
+    </ng-template>
+
+    <!-- estado como badge simple -->
+    <ng-template appCell="estado" let-row>
+      <app-estado-badge [estado]="row.estado || 'Borrador'"></app-estado-badge>
+    </ng-template>
+
+    <!-- acciones: puedes mantener Angular Material si prefieres -->
+    <ng-template appCell="acciones" let-row>
+      <div class="d-flex justify-content-center gap-1">
+        <button mat-icon-button color="primary" type="button" (click)="editCotizacion(row)" matTooltip="Editar"
+          [disabled]="row.estado === 'Aceptada' || row.estado === 'Rechazada' || row.estado === 'Expirada'">
+          <mat-icon>edit</mat-icon>
+        </button>
+        @if ((row.estado || 'Borrador') === 'Borrador') {
+        <button mat-icon-button color="accent" type="button" [disabled]="!row.total"
+          (click)="openEstadoModal(row, 'Enviada')" matTooltip="Marcar como enviada">
+          <mat-icon>send</mat-icon>
+        </button>
         }
-      </ng-template>
-
-      <!-- fecha del evento / horas -->
-      <ng-template appCell="fecha" let-row>
-        {{ row.fecha | date:'dd-MM-yyyy' }}
-        @if (row.horasEstimadas) {
-          <small class="text-muted"> — {{ row.horasEstimadas }}</small>
+        @if ((row.estado || 'Borrador') === 'Enviada') {
+        <button mat-icon-button color="primary" type="button" [disabled]="!row.total"
+          (click)="openEstadoModal(row, 'Aceptada')" matTooltip="Actualizar estado">
+          <mat-icon>how_to_vote</mat-icon>
+        </button>
         }
-      </ng-template>
-
-      <!-- fecha de creación -->
-      <ng-template appCell="createdAt" let-row>
-        {{ row.createdAt | date:'dd-MM-yyyy' }}
-      </ng-template>
-
-      <!-- estado como badge simple -->
-      <ng-template appCell="estado" let-row>
-        <app-estado-badge [estado]="row.estado || 'Borrador'"></app-estado-badge>
-      </ng-template>
-
-      <!-- acciones: puedes mantener Angular Material si prefieres -->
-      <ng-template appCell="acciones" let-row>
-        <div class="d-flex justify-content-center gap-1">
-          <button mat-icon-button color="primary" type="button" (click)="editCotizacion(row)" matTooltip="Editar"
-            [disabled]="row.estado === 'Aceptada' || row.estado === 'Rechazada' || row.estado === 'Expirada'">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="primary" type="button" (click)="openVersionesModal(row)"
-            matTooltip="Ver versiones">
-            <mat-icon>history</mat-icon>
-          </button>
-          @if ((row.estado || 'Borrador') === 'Borrador') {
-            <button mat-icon-button color="accent" type="button" [disabled]="!row.total"
-              (click)="openEstadoModal(row, 'Enviada')" matTooltip="Marcar como enviada">
-              <mat-icon>send</mat-icon>
-            </button>
+        <button mat-icon-button color="accent" type="button" (click)="downloadPdf(row)"
+          [disabled]="downloadingId === row.id || !row.total || !row.cotizacionVersionVigenteId"
+          [matTooltip]="row.cotizacionVersionVigenteId ? 'Descargar PDF (versión vigente)' : 'Sin versión vigente'">
+          @if (downloadingId !== row.id) {
+          <mat-icon>picture_as_pdf</mat-icon>
           }
-          @if ((row.estado || 'Borrador') === 'Enviada') {
-            <button mat-icon-button color="primary" type="button" [disabled]="!row.total"
-              (click)="openEstadoModal(row, 'Aceptada')" matTooltip="Actualizar estado">
-              <mat-icon>how_to_vote</mat-icon>
-            </button>
+          @if (downloadingId === row.id) {
+          <mat-icon class="spin">hourglass_top</mat-icon>
           }
-          <button mat-icon-button color="accent" type="button" (click)="downloadPdf(row)"
-            [disabled]="downloadingId === row.id || !row.total || !row.cotizacionVersionVigenteId"
-            [matTooltip]="row.cotizacionVersionVigenteId ? 'Descargar PDF (versión vigente)' : 'Sin versión vigente'">
-            @if (downloadingId !== row.id) {
-              <mat-icon>picture_as_pdf</mat-icon>
-            }
-            @if (downloadingId === row.id) {
-              <mat-icon class="spin">hourglass_top</mat-icon>
-            }
-          </button>
-        </div>
-      </ng-template>
-    </app-table-base>
+        </button>
+        @if (showHistorialButton(row)) {
+        <button mat-icon-button color="primary" type="button" (click)="openVersionesModal(row)"
+          matTooltip="Ver versiones">
+          <mat-icon>history</mat-icon>
+        </button>
+        }
+      </div>
+    </ng-template>
+  </app-table-base>
   } @else {
-    <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
-      <mat-spinner diameter="40"></mat-spinner>
-      <p class="mt-3 mb-0">Cargando cotizaciones…</p>
-    </div>
+  <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p class="mt-3 mb-0">Cargando cotizaciones…</p>
+  </div>
   }
 </div>
 
-<app-modal-base
-  [open]="versionesModalOpen"
+<app-modal-base [open]="versionesModalOpen"
   [title]="'Versiones de ' + (versionesTarget?.codigo || ('Cotización #' + (versionesTarget?.id || '')))"
-  [disableClose]="false"
-  [useDefaultFooter]="false"
-  size="lg"
-  (closed)="closeVersionesModal()">
+  [disableClose]="false" [useDefaultFooter]="false" size="lg" (closed)="closeVersionesModal()">
   @if (versionesModalLoading) {
-    <div class="d-flex align-items-center gap-2 text-muted">
-      <mat-spinner diameter="28"></mat-spinner>
-      <span>Cargando versiones...</span>
-    </div>
+  <div class="d-flex align-items-center gap-2 text-muted">
+    <mat-spinner diameter="28"></mat-spinner>
+    <span>Cargando versiones...</span>
+  </div>
   } @else {
-    @if (versionesModalError) {
-      <div class="alert alert-danger" role="alert">{{ versionesModalError }}</div>
-    } @else if (!versionesRows.length) {
-      <div class="text-muted">No hay versiones registradas para esta cotización.</div>
-    } @else {
-      <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Versión</th>
-              <th>Estado</th>
-              <th>Vigente</th>
-              <th>Fecha creación</th>
-              <th class="text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (version of versionesRows; track version.id) {
-              <tr>
-                <td>{{ version.id }}</td>
-                <td>v{{ version.version }}</td>
-                <td>{{ version.estado }}</td>
-                <td>{{ version.esVigente ? 'Sí' : 'No' }}</td>
-                <td>{{ version.fechaCreacion | date:'dd-MM-yyyy HH:mm' }}</td>
-                <td class="text-center">
-                  <div class="d-inline-flex gap-1">
-                    <button
-                      mat-icon-button
-                      type="button"
-                      (click)="verVersionPdf(version)"
-                      [disabled]="versionDownloadingId === version.id"
-                      matTooltip="Abrir PDF">
-                      <mat-icon>picture_as_pdf</mat-icon>
-                    </button>
-                    <button
-                      mat-icon-button
-                      type="button"
-                      (click)="descargarVersionPdf(version)"
-                      [disabled]="versionDownloadingId === version.id"
-                      matTooltip="Descargar PDF">
-                      <mat-icon>download</mat-icon>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
+  @if (versionesModalError) {
+  <div class="alert alert-danger" role="alert">{{ versionesModalError }}</div>
+  } @else if (!versionesRows.length) {
+  <div class="text-muted">No hay versiones registradas para esta cotización.</div>
+  } @else {
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Versión</th>
+          <th>Estado</th>
+          <th>Vigente</th>
+          <th>Fecha creación</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (version of versionesRows; track version.id) {
+        <tr>
+          <td>{{ version.id }}</td>
+          <td>v{{ version.version }}</td>
+          <td>{{ version.estado }}</td>
+          <td>{{ version.esVigente ? 'Sí' : 'No' }}</td>
+          <td>{{ version.fechaCreacion | date:'dd-MM-yyyy HH:mm' }}</td>
+          <td class="text-center">
+            <div class="d-inline-flex gap-1">
+              <button mat-icon-button type="button" (click)="verVersionPdf(version)"
+                [disabled]="versionDownloadingId === version.id" matTooltip="Abrir PDF">
+                <mat-icon>picture_as_pdf</mat-icon>
+              </button>
+              <button mat-icon-button type="button" (click)="descargarVersionPdf(version)"
+                [disabled]="versionDownloadingId === version.id" matTooltip="Descargar PDF">
+                <mat-icon>download</mat-icon>
+              </button>
+            </div>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
   }
 
   <div modal-footer class="d-flex justify-content-end">
@@ -167,107 +152,87 @@
   </div>
 </app-modal-base>
 
-<app-modal-base
-  [open]="estadoModalOpen"
-  [title]="estadoModalTitle"
-  [primaryLabel]="'Confirmar'"
-  [secondaryLabel]="'Cancelar'"
-  [disableClose]="false"
-  [showPrimary]="true"
-  [showSecondary]="true"
-  [primaryVariant]="estadoDestino === 'Rechazada' ? 'danger' : 'primary'"
-  (confirm)="confirmEstadoChange()"
-  (cancelled)="closeEstadoModal()"
-  (closed)="closeEstadoModal()">
+<app-modal-base [open]="estadoModalOpen" [title]="estadoModalTitle" [primaryLabel]="'Confirmar'"
+  [secondaryLabel]="'Cancelar'" [disableClose]="false" [showPrimary]="true" [showSecondary]="true"
+  [primaryVariant]="estadoDestino === 'Rechazada' ? 'danger' : 'primary'" (confirm)="confirmEstadoChange()"
+  (cancelled)="closeEstadoModal()" (closed)="closeEstadoModal()">
   <div class="d-flex flex-column gap-3">
     <p class="mb-0">{{ estadoModalMessage }}</p>
     @if (estadoTarget && (estadoTarget.estado ?? 'Borrador') === 'Enviada') {
-      <div class="d-flex flex-column gap-2">
-        <button type="button" class="btn btn-outline-primary" (click)="estadoDestino = 'Aceptada'"
-          [class.active]="estadoDestino === 'Aceptada'">
-          Aceptar cotización
-        </button>
-        <button type="button" class="btn btn-outline-danger" (click)="estadoDestino = 'Rechazada'"
-          [class.active]="estadoDestino === 'Rechazada'">
-          Rechazar cotización
-        </button>
-      </div>
+    <div class="d-flex flex-column gap-2">
+      <button type="button" class="btn btn-outline-primary" (click)="estadoDestino = 'Aceptada'"
+        [class.active]="estadoDestino === 'Aceptada'">
+        Aceptar cotización
+      </button>
+      <button type="button" class="btn btn-outline-danger" (click)="estadoDestino = 'Rechazada'"
+        [class.active]="estadoDestino === 'Rechazada'">
+        Rechazar cotización
+      </button>
+    </div>
     }
   </div>
 </app-modal-base>
 
-<app-modal-base
-  [open]="registroClienteModalOpen"
-  title="Registrar cliente"
-  [disableClose]="registroClienteLoading"
-  [loading]="registroClienteLoading"
-  [useDefaultFooter]="false"
-  (closed)="onLeadRegistroClosed()">
+<app-modal-base [open]="registroClienteModalOpen" title="Registrar cliente" [disableClose]="registroClienteLoading"
+  [loading]="registroClienteLoading" [useDefaultFooter]="false" (closed)="onLeadRegistroClosed()">
 
-  <app-formulario-base
-    [open]="registroClienteModalOpen"
-    [loading]="registroClienteLoading"
-    [loadingMessage]="'Preparando formulario…'"
-    [error]="registroClienteError">
+  <app-formulario-base [open]="registroClienteModalOpen" [loading]="registroClienteLoading"
+    [loadingMessage]="'Preparando formulario…'" [error]="registroClienteError">
 
     <form #createForm="ngForm" id="createClienteForm" (ngSubmit)="submitLeadRegistro(createForm)">
       <div class="row g-3">
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteTipoDocumento">Tipo de documento</label>
           <select id="clienteTipoDocumento" class="form-select" name="tipoDocumento" required
-            [(ngModel)]="selectedTipoDocumento" (ngModelChange)="onTipoDocumentoChange($event)"
-            #tipoDocumento="ngModel" [class.is-invalid]="tipoDocumento.invalid && tipoDocumento.touched"
+            [(ngModel)]="selectedTipoDocumento" (ngModelChange)="onTipoDocumentoChange($event)" #tipoDocumento="ngModel"
+            [class.is-invalid]="tipoDocumento.invalid && tipoDocumento.touched"
             [attr.title]="tipoDocumento.invalid && tipoDocumento.touched ? 'Campo requerido' : null">
             <option [ngValue]="null" disabled>Selecciona un tipo</option>
             @for (tipo of tiposDocumento; track tipo.id) {
-              <option [ngValue]="tipo">
-                {{ tipo.codigo }} - {{ tipo.nombre }}
-              </option>
+            <option [ngValue]="tipo">
+              {{ tipo.codigo }} - {{ tipo.nombre }}
+            </option>
             }
           </select>
           @if (tipoDocumento.invalid && (tipoDocumento.dirty || tipoDocumento.touched)) {
-            <div class="invalid-feedback d-block">
-              <span>Campo requerido</span>
-            </div>
+          <div class="invalid-feedback d-block">
+            <span>Campo requerido</span>
+          </div>
           }
         </div>
 
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteDoc">Número de documento</label>
           <input id="clienteDoc" type="text" class="form-control" name="doc" required [pattern]="registroDocPattern"
-            [(ngModel)]="registroClienteFormModel.doc"
-            #doc="ngModel" [attr.minlength]="registroDocMinLength || null" [attr.maxlength]="registroDocMaxLength || null"
-            [attr.inputmode]="registroDocInputMode"
-            [disabled]="!selectedTipoDocumento"
-            [class.is-invalid]="doc.invalid && doc.touched"
+            [(ngModel)]="registroClienteFormModel.doc" #doc="ngModel" [attr.minlength]="registroDocMinLength || null"
+            [attr.maxlength]="registroDocMaxLength || null" [attr.inputmode]="registroDocInputMode"
+            [disabled]="!selectedTipoDocumento" [class.is-invalid]="doc.invalid && doc.touched"
             [attr.title]="doc.invalid && doc.touched ? (doc.errors?.required ? 'Campo requerido' : registroDocPatternMessage) : null">
           @if (doc.invalid && (doc.dirty || doc.touched)) {
-            <div class="invalid-feedback d-block">
-              @if (doc.errors?.required) {
-                <span>Campo requerido</span>
-              }
-              @if (doc.errors?.pattern) {
-                <span>{{ registroDocPatternMessage }}</span>
-              }
-            </div>
+          <div class="invalid-feedback d-block">
+            @if (doc.errors?.required) {
+            <span>Campo requerido</span>
+            }
+            @if (doc.errors?.pattern) {
+            <span>{{ registroDocPatternMessage }}</span>
+            }
+          </div>
           }
         </div>
 
         @if (isRucSelected) {
-          <div class="col-12 col-md-6">
-            <label class="form-label" for="clienteRazonSocial">Razón social</label>
-            <input id="clienteRazonSocial" type="text" class="form-control" name="razonSocial"
-              [(ngModel)]="registroClienteFormModel.razonSocial"
-              [required]="isRucSelected" #razonSocial="ngModel"
-              [disabled]="!selectedTipoDocumento"
-              [class.is-invalid]="razonSocial.invalid && razonSocial.touched"
-              [attr.title]="razonSocial.invalid && razonSocial.touched ? 'Campo requerido' : null">
-            @if (razonSocial.invalid && (razonSocial.dirty || razonSocial.touched)) {
-              <div class="invalid-feedback d-block">
-                <span>Campo requerido</span>
-              </div>
-            }
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="clienteRazonSocial">Razón social</label>
+          <input id="clienteRazonSocial" type="text" class="form-control" name="razonSocial"
+            [(ngModel)]="registroClienteFormModel.razonSocial" [required]="isRucSelected" #razonSocial="ngModel"
+            [disabled]="!selectedTipoDocumento" [class.is-invalid]="razonSocial.invalid && razonSocial.touched"
+            [attr.title]="razonSocial.invalid && razonSocial.touched ? 'Campo requerido' : null">
+          @if (razonSocial.invalid && (razonSocial.dirty || razonSocial.touched)) {
+          <div class="invalid-feedback d-block">
+            <span>Campo requerido</span>
           </div>
+          }
+        </div>
         }
 
         <div class="col-12 col-md-6">
@@ -275,21 +240,18 @@
             {{ isRucSelected ? 'Nombre del contacto' : 'Nombre' }}
           </label>
           <input id="clienteNombre" type="text" class="form-control" name="nombre" required
-            [pattern]="registroNombrePattern"
-            [(ngModel)]="registroClienteFormModel.nombre"
-            #nombre="ngModel"
-            [disabled]="!selectedTipoDocumento"
-            [class.is-invalid]="nombre.invalid && nombre.touched"
+            [pattern]="registroNombrePattern" [(ngModel)]="registroClienteFormModel.nombre" #nombre="ngModel"
+            [disabled]="!selectedTipoDocumento" [class.is-invalid]="nombre.invalid && nombre.touched"
             [attr.title]="nombre.invalid && nombre.touched ? (nombre.errors?.required ? 'Campo requerido' : 'Solo letras (2-20)') : null">
           @if (nombre.invalid && (nombre.dirty || nombre.touched)) {
-            <div class="invalid-feedback d-block">
-              @if (nombre.errors?.required) {
-                <span>Campo requerido</span>
-              }
-              @if (nombre.errors?.pattern) {
-                <span>Sólo letras (2-20)</span>
-              }
-            </div>
+          <div class="invalid-feedback d-block">
+            @if (nombre.errors?.required) {
+            <span>Campo requerido</span>
+            }
+            @if (nombre.errors?.pattern) {
+            <span>Sólo letras (2-20)</span>
+            }
+          </div>
           }
         </div>
 
@@ -298,78 +260,67 @@
             {{ isRucSelected ? 'Apellido del contacto' : 'Apellido' }}
           </label>
           <input id="clienteApellido" type="text" class="form-control" name="apellido" required
-            [pattern]="registroApellidoPattern"
-            [(ngModel)]="registroClienteFormModel.apellido"
-            #apellido="ngModel"
-            [disabled]="!selectedTipoDocumento"
-            [class.is-invalid]="apellido.invalid && apellido.touched"
+            [pattern]="registroApellidoPattern" [(ngModel)]="registroClienteFormModel.apellido" #apellido="ngModel"
+            [disabled]="!selectedTipoDocumento" [class.is-invalid]="apellido.invalid && apellido.touched"
             [attr.title]="apellido.invalid && apellido.touched ? (apellido.errors?.required ? 'Campo requerido' : 'Solo letras (2-30)') : null">
           @if (apellido.invalid && (apellido.dirty || apellido.touched)) {
-            <div class="invalid-feedback d-block">
-              @if (apellido.errors?.required) {
-                <span>Campo requerido</span>
-              }
-              @if (apellido.errors?.pattern) {
-                <span>Sólo letras (2-30)</span>
-              }
-            </div>
+          <div class="invalid-feedback d-block">
+            @if (apellido.errors?.required) {
+            <span>Campo requerido</span>
+            }
+            @if (apellido.errors?.pattern) {
+            <span>Sólo letras (2-30)</span>
+            }
+          </div>
           }
         </div>
 
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteCorreo">Correo</label>
           <input id="clienteCorreo" type="email" class="form-control" name="correo" required
-            [pattern]="registroCorreoPattern"
-            [(ngModel)]="registroClienteFormModel.correo"
-            #correo="ngModel"
-            [disabled]="!selectedTipoDocumento"
-            [class.is-invalid]="correo.invalid && correo.touched"
+            [pattern]="registroCorreoPattern" [(ngModel)]="registroClienteFormModel.correo" #correo="ngModel"
+            [disabled]="!selectedTipoDocumento" [class.is-invalid]="correo.invalid && correo.touched"
             [attr.title]="correo.invalid && correo.touched ? (correo.errors?.required ? 'Campo requerido' : 'Ingrese un correo valido') : null">
           @if (correo.invalid && (correo.dirty || correo.touched)) {
-            <div class="invalid-feedback d-block">
-              @if (correo.errors?.required) {
-                <span>Campo requerido</span>
-              }
-              @if (correo.errors?.pattern) {
-                <span>Ingrese un correo válido</span>
-              }
-            </div>
+          <div class="invalid-feedback d-block">
+            @if (correo.errors?.required) {
+            <span>Campo requerido</span>
+            }
+            @if (correo.errors?.pattern) {
+            <span>Ingrese un correo válido</span>
+            }
+          </div>
           }
         </div>
 
         <div class="col-12 col-md-6">
           <label class="form-label" for="clienteCelular">Celular</label>
           <input id="clienteCelular" type="text" class="form-control" name="celular" required
-            [pattern]="registroCelularPattern"
-            [(ngModel)]="registroClienteFormModel.celular"
-            #celular="ngModel"
-            [disabled]="!selectedTipoDocumento"
-            [class.is-invalid]="celular.invalid && celular.touched"
+            [pattern]="registroCelularPattern" [(ngModel)]="registroClienteFormModel.celular" #celular="ngModel"
+            [disabled]="!selectedTipoDocumento" [class.is-invalid]="celular.invalid && celular.touched"
             [attr.title]="celular.invalid && celular.touched ? (celular.errors?.required ? 'Campo requerido' : 'Solo numeros (7-9 digitos)') : null">
           @if (celular.invalid && (celular.dirty || celular.touched)) {
-            <div class="invalid-feedback d-block">
-              @if (celular.errors?.required) {
-                <span>Campo requerido</span>
-              }
-              @if (celular.errors?.pattern) {
-                <span>Sólo números (7-9 dígitos)</span>
-              }
-            </div>
+          <div class="invalid-feedback d-block">
+            @if (celular.errors?.required) {
+            <span>Campo requerido</span>
+            }
+            @if (celular.errors?.pattern) {
+            <span>Sólo números (7-9 dígitos)</span>
+            }
+          </div>
           }
         </div>
 
         <div class="col-12">
           <label class="form-label" for="clienteDireccion">Dirección</label>
           <textarea id="clienteDireccion" class="form-control" name="direccion" required
-            [(ngModel)]="registroClienteFormModel.direccion"
-            #direccion="ngModel"
-            [disabled]="!selectedTipoDocumento"
+            [(ngModel)]="registroClienteFormModel.direccion" #direccion="ngModel" [disabled]="!selectedTipoDocumento"
             [class.is-invalid]="direccion.invalid && direccion.touched"
             [attr.title]="direccion.invalid && direccion.touched ? 'Campo requerido' : null"></textarea>
           @if (direccion.invalid && (direccion.dirty || direccion.touched)) {
-            <div class="invalid-feedback d-block">
-              <span>Campo requerido</span>
-            </div>
+          <div class="invalid-feedback d-block">
+            <span>Campo requerido</span>
+          </div>
           }
         </div>
       </div>
@@ -377,19 +328,13 @@
   </app-formulario-base>
 
   <div modal-footer class="d-flex justify-content-end gap-2">
-    <button
-      type="button"
-      class="btn btn-outline-secondary"
-      (click)="cancelLeadRegistroModal()"
+    <button type="button" class="btn btn-outline-secondary" (click)="cancelLeadRegistroModal()"
       [disabled]="registroClienteLoading">
       Cancelar
     </button>
-    <button
-      type="submit"
-      class="btn btn-primary"
-      form="createClienteForm">
+    <button type="submit" class="btn btn-primary" form="createClienteForm">
       @if (registroClienteLoading) {
-        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+      <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
       }
       Registrar
     </button>
