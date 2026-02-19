@@ -93,7 +93,7 @@
         <div class="d-flex justify-content-center gap-1">
           <button
             mat-icon-button
-            color="accent"
+            color="primary"
             type="button"
             (click)="$event.stopPropagation(); verPdf(row.contratoId)"
             [disabled]="downloadingContratoId === row.contratoId"
@@ -178,10 +178,10 @@
               <td>{{ (item.fechaCreacion || item.createdAt || item.fechaContrato) ? ((item.fechaCreacion || item.createdAt || item.fechaContrato) | date:'dd-MM-yyyy') : '--' }}</td>
               <td class="text-center">
                 <div class="d-inline-flex gap-1">
-                  <button mat-icon-button type="button" (click)="verPdf(item.id)" matTooltip="Abrir PDF">
+                  <button mat-icon-button color="primary" type="button" (click)="verPdf(item.id)" matTooltip="Abrir PDF">
                     <mat-icon>picture_as_pdf</mat-icon>
                   </button>
-                  <button mat-icon-button type="button" (click)="descargarPdf(item.id)" matTooltip="Descargar PDF">
+                  <button mat-icon-button color="primary" type="button" (click)="descargarPdf(item.id)" matTooltip="Descargar PDF">
                     <mat-icon>download</mat-icon>
                   </button>
                 </div>

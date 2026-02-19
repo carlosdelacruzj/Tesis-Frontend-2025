@@ -114,7 +114,7 @@
               <mat-icon>request_quote</mat-icon>
             </button>
           }
-          <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); verContratoPdf(row)"
+          <button mat-icon-button color="primary" type="button" (click)="$event.stopPropagation(); verContratoPdf(row)"
             [disabled]="!row.contratoVigenteId || downloadingId === row.contratoVigenteId"
             [matTooltip]="row.contratoVigenteId ? 'Ver contrato PDF' : 'Este pedido no tiene contrato vigente'"
           >

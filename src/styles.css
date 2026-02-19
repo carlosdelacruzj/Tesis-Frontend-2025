@@ -3055,6 +3055,7 @@ input[type="radio"] {
 .btn-primary:not(:disabled):not(.disabled):active:focus,
 .show > .btn-primary.dropdown-toggle:focus {
   box-shadow: var(--focus-ring);
+  background-color: var(--hover);
 }
 
 .btn-primary:not(:disabled):not(.disabled).active,
