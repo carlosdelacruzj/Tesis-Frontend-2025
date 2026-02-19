@@ -5,9 +5,9 @@
     [showSearch]="true" [searchPlaceholder]="'Buscar: título, servicio, categoría…'" [searchValue]="searchTerm"
     [showCreateButton]="false" (searchChange)="onToolbarSearch($event)">
     <div actions class="d-flex flex-wrap gap-2">
-      <button mat-button type="button" class="back-button" (click)="regresarAlListado()">
-        <mat-icon>arrow_back</mat-icon>
-        Volver al listado
+      <button type="button" class="btn btn-sm"  (click)="regresarAlListado()">
+         <i class="fa-solid fa-arrow-left-long"></i>
+          Volver al inventario
       </button>
       <button class="btn btn-primary btn-sm" type="button" (click)="abrirModalCrear()"
         [disabled]="loadingPaquetes || !evento">
@@ -45,7 +45,7 @@
         matTooltip="Ver detalle del paquete">
         <mat-icon>visibility</mat-icon>
       </button>
-      <button class="btn btn-primary btn-sm" type="button" (click)="abrirModalEditar(row); $event.stopPropagation()"
+      <button class="btn btn-secondary btn-sm" type="button" (click)="abrirModalEditar(row); $event.stopPropagation()"
         matTooltip="Editar paquete">
         <mat-icon>edit</mat-icon>
       </button>
@@ -164,7 +164,7 @@
     </app-formulario-base>
 
     <div modal-footer class="d-flex justify-content-end mt-3">
-      <button type="button" class="btn btn-outline-secondary" (click)="cerrarModalDetalle()">Cerrar</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="cerrarModalDetalle()">Cerrar</button>
     </div>
   </app-modal-base>
 
@@ -300,7 +300,7 @@
                 [attr.title]="staffGroup.get('cantidad')?.invalid && staffGroup.get('cantidad')?.touched ? 'Ingresa una cantidad válida (mínimo 1).' : null">
             </div>
             <div class="col-4 col-md-2 d-flex align-items-end">
-              <button type="button" class="btn btn-outline-danger w-100" (click)="eliminarStaff($index)"
+              <button type="button" class="btn btn-outline-danger btn-sm  w-100" (click)="eliminarStaff($index)"
                 [disabled]="staffArray.length <= 1">
                 <mat-icon>delete</mat-icon>
               </button>
@@ -343,7 +343,7 @@
               <input [attr.id]="'equipoNotas' + $index" type="text" class="form-control" formControlName="notas">
             </div>
             <div class="col-6 col-sm-4 col-md-1 d-flex align-items-end">
-              <button type="button" class="btn btn-outline-danger w-100" (click)="eliminarEquipo($index)"
+              <button type="button" class="btn btn-outline-danger btn-sm w-100" (click)="eliminarEquipo($index)"
                 [disabled]="equiposArray.length <= 1">
                 <mat-icon>delete</mat-icon>
               </button>
@@ -356,10 +356,10 @@
     </app-formulario-base>
 
     <div modal-footer class="d-flex justify-content-end gap-2">
-      <button type="button" class="btn btn-outline-secondary" (click)="cerrarModal()" [disabled]="modalSaving">
+      <button type="button" class="btn btn-outline-danger btn-sm" (click)="cerrarModal()" [disabled]="modalSaving">
         Cancelar
       </button>
-      <button type="button" class="btn btn-primary" (click)="guardarPaquete()" [disabled]="modalSaving">
+      <button type="button" class="btn btn-primary btn-sm" (click)="guardarPaquete()" [disabled]="modalSaving">
         @if (modalSaving) {
         <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
         }

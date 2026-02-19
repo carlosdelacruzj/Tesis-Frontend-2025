@@ -107,7 +107,7 @@
 }
 
 .calendar-cell.has-items {
-  border-color: #2563eb;
+  border-color: var(--tertiary);
   background: #f8fbff;
 }
 
@@ -127,8 +127,8 @@
   font-size: 0.72rem;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: rgba(var(--secondary-rgb), 0.15);
+  color: var(--secondary);
   width: fit-content;
 }
 

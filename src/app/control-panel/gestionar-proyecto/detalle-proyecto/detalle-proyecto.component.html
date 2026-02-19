@@ -116,7 +116,7 @@
 
         <div class="context-actions">
           @if (totalEquiposPendientesDevolucion > 0) {
-            <button mat-stroked-button color="warn" type="button" (click)="irASeccion('devoluciones-proyecto')">
+            <button class="btn btn-tertiary btn-sm" color="warn" type="button" (click)="irASeccion('devoluciones-proyecto')">
               Ir a devoluciones pendientes
             </button>
           }
@@ -346,7 +346,7 @@
       <section class="card section section--flow" id="asignaciones-proyecto">
         <details class="collapsible" open>
           <summary class="collapsible__summary">
-            <div class="section-heading">
+            <div class="section-heading pb-2">
               <span class="flow-step">Paso 2</span>
               <p class="eyebrow">Asignaciones</p>
               <h3>Personal y equipos</h3>
@@ -479,7 +479,7 @@
                     </div>
                     <div class="estado-dia-card__actions">
                       <button
-                        mat-stroked-button
+                        class="btn btn-tertiary btn-sm"
                         color="primary"
                         type="button"
                         (click)="$event.stopPropagation(); abrirModalDevolucion(dia.diaId)"
@@ -552,7 +552,7 @@
                 <span class="label">Fecha inicio</span>
                 <input class="form-control" type="date" [(ngModel)]="postproduccion.fechaInicioEdicion" [attr.min]="fechaMinInicioEdicion || null" [disabled]="guardandoPostproduccion || !puedeIniciarEdicionPost">
               </label>
-              <button mat-stroked-button color="primary" type="button" (click)="iniciarEdicionPost()" [disabled]="guardandoPostproduccion || !puedeIniciarEdicionPost">
+              <button class="btn btn-outline-primary btn-sm" color="primary" type="button" (click)="iniciarEdicionPost()" [disabled]="guardandoPostproduccion || !puedeIniciarEdicionPost">
                 Iniciar edición
               </button>
             </div>
@@ -577,7 +577,7 @@
                 <textarea class="form-control" rows="3" [(ngModel)]="postproduccion.preEntregaFeedback" placeholder="Aprobado, cambios solicitados o fotos elegidas..." [disabled]="guardandoPostproduccion || !puedeEditarPreEntregaPost"></textarea>
               </label>
               <div class="muted small">Fecha de envío: {{ postproduccion.preEntregaFecha || '—' }}</div>
-              <button mat-stroked-button type="button" (click)="enviarPreEntregaPost()" [disabled]="guardandoPostproduccion || !puedeEditarPreEntregaPost">
+              <button class="btn btn-secondary btn-sm" type="button" (click)="enviarPreEntregaPost()" [disabled]="guardandoPostproduccion || !puedeEditarPreEntregaPost">
                 Enviar pre-entrega
               </button>
             </div>
@@ -596,7 +596,7 @@
                 <span class="label">Notas de respaldo</span>
                 <textarea class="form-control" rows="2" [(ngModel)]="postproduccion.respaldoNotas" placeholder="Observaciones, claves, etc." [disabled]="guardandoPostproduccion || !puedeCerrarEdicionPost"></textarea>
               </label>
-              <button mat-stroked-button type="button" (click)="cerrarEdicionPost()" [disabled]="guardandoPostproduccion || !puedeCerrarEdicionPost">
+              <button class="btn btn-tertiary btn-sm" type="button" (click)="cerrarEdicionPost()" [disabled]="guardandoPostproduccion || !puedeCerrarEdicionPost">
                 Cerrar edición
               </button>
             </div>
@@ -637,7 +637,7 @@
                 </label>
               }
               <div class="muted small">Entrega solo con pago completo.</div>
-              <button mat-flat-button color="primary" type="button" (click)="marcarEntregaPost()"
+              <button class="btn btn-outline-success btn-sm" type="button" (click)="marcarEntregaPost()"
                 [disabled]="guardandoPostproduccion || !puedeEditarEntregaFinalPost || !tienePagoCompleto()">
                 Marcar entrega
               </button>
@@ -669,7 +669,7 @@
         <label class="form-field">
           <span class="label">Selecciona un día</span>
           <select
-            class="form-control"
+            class="form-select"
             [ngModel]="asignacionDiaId"
             (ngModelChange)="cambiarDiaAsignacion($event)"
             name="asignacionDiaId">
@@ -682,7 +682,7 @@
       } @else {
         <div class="form-field">
           <span class="label">Día</span>
-          <div class="form-control form-control--static">
+          <div class="form-control">
             {{ getAsignacionDiaLabel() }}
           </div>
         </div>
@@ -691,7 +691,7 @@
         <label class="form-field">
           <span class="label">Copiar desde</span>
           <select
-            class="form-control"
+            class="form-select"
             [(ngModel)]="copiarDesdeDiaId"
             name="copiarDesdeDiaId">
             <option [ngValue]="null">Selecciona un día</option>
@@ -703,18 +703,18 @@
           </select>
         </label>
         <div class="asignaciones-editor-actions">
-          <button mat-stroked-button color="primary" type="button" (click)="copiarAsignacionesDesde(copiarDesdeDiaId)"
+          <button class="btn btn-tertiary btn-sm"  type="button" (click)="copiarAsignacionesDesde(copiarDesdeDiaId)"
             [disabled]="!copiarDesdeDiaId || !asignacionDiaId || !hasRequerimientosDia(asignacionDiaId)">
-            Copiar
+            <i class="fa-regular fa-copy"></i> Copiar
           </button>
-          <button mat-stroked-button color="primary" type="button" (click)="limpiarAsignacionesDia()" [disabled]="!asignacionDiaId">
-            Limpiar día
+          <button class="btn btn-outline-secondary btn-sm"  type="button" (click)="limpiarAsignacionesDia()" [disabled]="!asignacionDiaId">
+           <i class="fa-solid fa-eraser"></i> Limpiar día
           </button>
-          <button mat-stroked-button type="button" (click)="descartarCambiosDia()" [disabled]="!isAsignacionDiaDirty(asignacionDiaId)">
-            Descartar cambios
+          <button class="btn btn-outline-danger btn-sm" type="button" (click)="descartarCambiosDia()" [disabled]="!isAsignacionDiaDirty(asignacionDiaId)">
+          <i class="fa-solid fa-ban"></i>  Descartar cambios
           </button>
           @if (hasFiltrosActivos()) {
-            <button mat-button type="button" (click)="limpiarFiltrosAsignacion()">Quitar filtros</button>
+            <button class="btn btn-outline-light btn-sm" type="button" (click)="limpiarFiltrosAsignacion()">Quitar filtros</button>
           }
         </div>
       }
@@ -1084,17 +1084,17 @@
   </div>
 
   <div class="modal-footer-actions">
-    <button mat-button type="button" (click)="cerrarModalAsignar()">Cerrar</button>
+    <button class="btn btn-outline-danger btn-sm" type="button" (click)="cerrarModalAsignar()">Cerrar</button>
     @if (!asignacionSoloLectura) {
-      <button mat-button type="button" (click)="asignacionesAnterior()"
+      <button class="btn btn-secondary btn-sm" type="button" (click)="asignacionesAnterior()"
         [disabled]="!canIrAnteriorAsignaciones()">
         Anterior
       </button>
-      <button mat-stroked-button type="button" (click)="asignacionesSiguiente()"
+      <button class="btn btn-secondary btn-sm" type="button" (click)="asignacionesSiguiente()"
         [disabled]="!canIrSiguienteAsignaciones()">
         Siguiente
       </button>
-      <button mat-flat-button color="primary" type="button" (click)="guardarAsignacionesDia()"
+      <button class="btn btn-primary btn-sm" type="button" (click)="guardarAsignacionesDia()"
         [disabled]="guardandoAsignaciones || !canGuardarAsignacionesFinal() || !esUltimoPasoAsignaciones()">
         {{ guardandoAsignaciones ? 'Guardando…' : 'Guardar asignaciones' }}
       </button>
@@ -1155,9 +1155,9 @@
   <div class="modal-footer-actions">
     <button mat-button type="button" (click)="cerrarModalIncidenciasDia()">Cerrar</button>
     @if (canCargarMasIncidenciasModal()) {
-      <button mat-stroked-button type="button" (click)="cargarMasIncidenciasModal()">Cargar más</button>
+      <button class="btn btn-tertiary btn-sm" type="button" (click)="cargarMasIncidenciasModal()">Cargar más</button>
     }
-    <button mat-flat-button color="primary" type="button" (click)="abrirModalIncidencia(incidenciaListaDiaId || undefined)" [disabled]="!isDiaEnCurso(incidenciaListaDiaId)">
+    <button class="btn btn-primary btn-sm" type="button" (click)="abrirModalIncidencia(incidenciaListaDiaId || undefined)" [disabled]="!isDiaEnCurso(incidenciaListaDiaId)">
       Nueva incidencia
     </button>
   </div>
@@ -1279,8 +1279,8 @@
   </div>
 
   <div class="modal-footer-actions">
-    <button mat-button type="button" (click)="cerrarModalIncidencia()">Cancelar</button>
-    <button mat-flat-button color="primary" type="button" (click)="guardarIncidencia()"
+    <button class="btn btn-outline-danger btn-sm" type="button" (click)="cerrarModalIncidencia()">Cancelar</button>
+    <button class="btn btn-primary btn-sm" type="button" (click)="guardarIncidencia()"
       [disabled]="guardandoIncidencia || !canGuardarIncidencia()">
       {{ guardandoIncidencia ? 'Guardando…' : 'Registrar incidencia' }}
     </button>
@@ -1298,7 +1298,7 @@
     <div class="asignaciones-editor">
       <label class="form-field">
         <span class="label">Día del proyecto</span>
-        <select class="form-control" [ngModel]="devolucionDiaId" (ngModelChange)="onDevolucionDiaChange($event)">
+        <select class="form-select" [ngModel]="devolucionDiaId" (ngModelChange)="onDevolucionDiaChange($event)">
           <option [ngValue]="null">Selecciona un día</option>
           @for (dia of getDiasDevolucionPendientes(); track dia.diaId) {
             <option [ngValue]="dia.diaId">{{ formatFechaLarga(dia.fecha) }}</option>
@@ -1355,7 +1355,7 @@
                 <div class="muted small">Equipos: {{ getResumenGrupoDevolucion(grupo.items).total }} · Excepciones: {{ getResumenGrupoDevolucion(grupo.items).excepciones }}</div>
               </div>
               <div class="devolucion-grupo__actions">
-                <button mat-stroked-button type="button" (click)="$event.stopPropagation(); marcarGrupoDevuelto(grupo.items)">
+                <button class="btn btn-tertiary btn-sm" type="button" (click)="$event.stopPropagation(); marcarGrupoDevuelto(grupo.items)">
                   Marcar grupo devuelto
                 </button>
               </div>
@@ -1416,11 +1416,11 @@
 
   <div class="modal-footer-actions">
     <button mat-button type="button" (click)="cerrarModalDevolucion()">Cerrar</button>
-    <button mat-stroked-button type="button" (click)="marcarTodosDevueltos()"
+    <button class="btn btn-tertiary btn-sm" type="button" (click)="marcarTodosDevueltos()"
       [disabled]="!isDiaFinalizado(devolucionDiaId) || !devolucionDiaId || !isDiaPendienteDevolucion(devolucionDiaId) || !getEquiposDevolucionDia(devolucionDiaId).length">
       Marcar todo devuelto
     </button>
-    <button mat-flat-button color="primary" type="button" (click)="guardarDevoluciones()"
+    <button class="btn btn-primary btn-sm" type="button" (click)="guardarDevoluciones()"
       [disabled]="guardandoDevolucion || !canGuardarDevoluciones()">
       {{ guardandoDevolucion ? 'Guardando…' : 'Guardar devoluciones' }}
     </button>

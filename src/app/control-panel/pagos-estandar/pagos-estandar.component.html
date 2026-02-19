@@ -14,7 +14,7 @@
       @for (tab of tabs; track tab.key) {
         <button
           type="button"
-          class="btn btn-primary"
+          class="btn btn-primary btn-sm"
           [class.active]="selectedTab === tab.key"
           (click)="onTabChange(tab.key)"
         >
@@ -107,8 +107,7 @@
       <div class="d-flex justify-content-center gap-1">
         @if (isPagado(row)) {
           <button
-            mat-icon-button
-            color="primary"
+            mat-icon-button color="primary"
             type="button"
             matTooltip="Ver pagos"
             (click)="abrirGestionPago(row)"
@@ -117,8 +116,7 @@
           </button>
         } @else {
           <button
-            mat-icon-button
-            color="accent"
+            mat-icon-button color="primary"
             type="button"
             matTooltip="Gestionar pago"
             (click)="abrirGestionPago(row)"

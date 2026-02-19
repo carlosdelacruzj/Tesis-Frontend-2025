@@ -1416,7 +1416,6 @@ Progress bar
   padding: 5px 15px;
   font-size: 14px;
   line-height: 2;
-  color: var(--text);
 }
 
 /* ------  top-search-bar --------  */
@@ -1692,7 +1691,7 @@ Progress bar
 
 .nav-user__name {
   font-size: 12px;
-  font-weight: 500;
+  /* font-weight: 500; */
 }
 
 .nav-user__caret {
@@ -3110,25 +3109,36 @@ input[type="radio"] {
 }
 
 .btn-tertiary:hover {
-  color: #fff;
+  color:var(--tertiary);
   background-color: transparent;
-  border-color: white;
+  border-color: var(--tertiary);
 }
 
 .btn-tertiary.focus,
 .btn-tertiary:focus {
-  color: #fff;
+  color: var(--tertiary);
   background-color: transparent;
-  border-color: white;
+  border-color: var(--tertiary);
   box-shadow: var(--focus-ring);
+}
+
+.btn-tertiary:disabled,
+.btn-tertiary.disabled {
+  background-color: var(--tertiary);
+  border-color: var(--tertiary);
+  color: #fff;
+  opacity: 0.75;
+  cursor: not-allowed;
 }
 
 .btn-tertiary:not(:disabled):not(.disabled).active,
 .btn-tertiary:not(:disabled):not(.disabled):active,
 .show > .btn-tertiary.dropdown-toggle {
+   background-color: var(--tertiary);
+  border-color: var(--tertiary);
   color: #fff;
-  background-color: transparent;
-  border-color: white;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /*--- btn success --*/
@@ -3322,14 +3332,14 @@ input[type="radio"] {
 /*--- btn outline primary --*/
 
 .btn-outline-primary {
-  color: var(--primary);
-  background-color: transparent;
+  color: #fff;
+  background-color: var(--primary);
   border-color: var(--primary);
 }
 
 .btn-outline-primary:hover {
-  color: #fff;
-  background-color: var(--primary);
+  color: var(--primary);
+  background-color: transparent;
   border-color: var(--primary);
 }
 
@@ -7551,3 +7561,26 @@ html .mat-mdc-slide-toggle.mat-accent {
   border-radius: 12px;
   padding: 12px 14px;
 }
+
+
+html {
+    --mat-stepper-header-selected-state-icon-background-color:var(--secondary);
+    --mat-stepper-header-done-state-icon-background-color:var(--secondary);
+    --mat-stepper-header-edit-state-icon-background-color:var(--secondary);
+    .mat-mdc-tab-group, .mat-mdc-tab-nav-bar{
+      --mdc-tab-indicator-active-indicator-color: var(--tertiary);
+      --mat-tab-header-active-label-text-color: var(--tertiary);
+      --mat-tab-header-active-ripple-color: var(--tertiary);
+      --mat-tab-header-inactive-ripple-color: var(--tertiary);
+      --mat-tab-header-active-focus-label-text-color: var(--tertiary);
+      --mat-tab-header-active-hover-label-text-color: var(--tertiary);
+      --mat-tab-header-active-focus-indicator-color: var(--tertiary);
+      --mat-tab-header-active-hover-indicator-color: var(--tertiary);
+    }
+}
+
+html .mat-mdc-icon-button.mat-accent {
+    --mdc-icon-button-icon-color: var(--secondary);
+    --mat-icon-button-state-layer-color: var(--secondary);
+}
+

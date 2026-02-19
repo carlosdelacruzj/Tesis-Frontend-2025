@@ -46,7 +46,7 @@
 .site-header__nav a {
   color: var(--text);
   text-decoration: none;
-  font-weight: 500;
+
   transition: color 0.2s ease;
 }
 
@@ -54,9 +54,6 @@
   color: #bcd0ff;
 }
 
-.site-header__nav button {
-  font-weight: 600;
-}
 
 .nav-user {
   position: relative;

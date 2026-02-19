@@ -64,8 +64,8 @@ section[id] {
   justify-content: center;
   font-weight: 700;
   font-size: 0.75rem;
-  color: #1d4ed8;
-  background: #dbeafe;
+  color: var(--secondary);
+  background: rgba(var(--secondary-rgb), 0.15);
 }
 
 .workflow-item__text {
@@ -175,7 +175,7 @@ section[id] {
 }
 
 .section--flow {
-  border-left: 4px solid #dbeafe;
+  border-left: 4px solid var(--secondary);
 }
 
 .locaciones-grid {
@@ -362,9 +362,9 @@ section[id] {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #2563eb;
+  background: var(--tertiary);
   margin-top: 6px;
-  box-shadow: 0 0 0 4px #dbeafe;
+  box-shadow: 0 0 0 4px var(--secondary);
 }
 
 .timeline-side {
@@ -376,7 +376,7 @@ section[id] {
 
 .timeline-expand {
   font-size: 0.72rem;
-  color: #2563eb;
+  color: var(--primary);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -530,7 +530,7 @@ section[id] {
 }
 
 .link {
-  color: #2563eb;
+  color: var(--primary);
   text-decoration: none;
   font-weight: 600;
 }
@@ -670,7 +670,7 @@ section[id] {
 }
 
 .timeline-item[open] {
-  border-color: #dbeafe;
+  border-color: var(--secondary);
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
 }
 
@@ -930,7 +930,7 @@ section[id] {
 .chip-info {
   border-color: #bfdbfe;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--secondary);
 }
 
 .status-pill {
@@ -1371,8 +1371,8 @@ section[id] {
 }
 
 .chip-toggle.is-active {
-  border-color: #2563eb;
-  color: #1d4ed8;
+  border-color: var(--primary);
+  color: var(--secondary);
   background: #eff6ff;
 }
 
@@ -1522,7 +1522,7 @@ section[id] {
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
   background: #fff;
-  color: #1d4ed8;
+  color: var(--secondary);
   font-weight: 600;
   font-size: 0.8rem;
   padding: 8px 10px;
@@ -1888,7 +1888,7 @@ section[id] {
   border-radius: 999px;
   border: 1px solid #bfdbfe;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--secondary);
   font-size: 0.72rem;
   font-weight: 700;
   padding: 3px 10px;

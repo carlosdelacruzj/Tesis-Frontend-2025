@@ -12,7 +12,7 @@
       </p>
       <div class="hero__cta">
         <button
-          class="btn btn-secondary"
+          class="btn btn-secondary btn-sm"
           (click)="
             scrollToSection('cotizacion');
             trackEvent('cta_click', { source: 'hero-primary' })
@@ -75,8 +75,7 @@
                 </ul>
               </div>
               <button
-                class="btn btn-primary"
-                color="primary"
+                class="btn btn-primary btn-sm"
                 (click)="prefillService(service)"
               >
                 Cotizar
@@ -124,8 +123,7 @@
             </div>
             <p class="package__note">{{ tier.recommendedFor }}</p>
             <button
-              mat-raised-button
-              color="primary"
+              class="btn btn-primary btn-sm"
               (click)="prefillPackage(tier)"
             >
               Cotizar este paquete
@@ -540,7 +538,7 @@
 
         <div class="quote__actions">
           <button
-            class="btn btn-primary"
+            class="btn btn-primary btn-sm"
             type="submit"
             [disabled]="isSubmitting || !eventCatalogReady"
           >
@@ -640,8 +638,7 @@
 
 <div class="floating-cta">
   <button
-    mat-raised-button
-    color="primary"
+    class="btn btn-primary btn-sm"
     (click)="
       scrollToSection('cotizacion');
       trackEvent('cta_click', { source: 'floating' })
