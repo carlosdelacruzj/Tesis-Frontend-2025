@@ -3104,8 +3104,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   getEstadosDiaPermitidos(dia: ProyectoDia): ProyectoDiaEstadoItem[] {
     const actual = (dia.estadoDiaNombre ?? '').toString().trim().toLowerCase();
     const allowByState: Record<string, string[]> = {
-      'pendiente': ['en curso', 'suspendido', 'cancelado'],
-      'en curso': ['terminado', 'suspendido', 'cancelado'],
+      'pendiente': ['en curso', 'cancelado'],
+      'en curso': ['terminado', 'cancelado'],
       'suspendido': ['en curso', 'cancelado'],
       'terminado': [],
       'cancelado': []
