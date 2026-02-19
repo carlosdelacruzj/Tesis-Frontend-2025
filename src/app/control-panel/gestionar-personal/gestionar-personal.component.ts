@@ -41,7 +41,7 @@ type ModalMode = 'view' | 'edit';
 })
 export class GestionarPersonalComponent implements OnInit, OnDestroy {
   columns: TableColumn<EmpleadoRow>[] = [
-    { key: 'codigo', header: 'CÃ³digo', sortable: true, width: '120px', class: 'text-center text-nowrap' },
+    { key: 'codigo', header: 'Código', sortable: true, width: '120px', class: 'text-center text-nowrap' },
     { key: 'nombreCompleto', header: 'Nombre', sortable: true },
     { key: 'documento', header: 'DNI', sortable: true, width: '130px', class: 'text-nowrap text-center' },
     { key: 'cargo', header: 'Cargo', sortable: true },
@@ -65,8 +65,8 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
 
   celularPattern = '^[1-9]{1}[0-9]{6,8}$';
   correoPattern = '^[\\w.+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$';
-  nombresPattern = '^[a-zA-ZÃÃ‰ÃÃ“ÃšÃœÃ‘Ã¡Ã©Ã­Ã³ÃºÃ¼Ã± ]{2,20}$';
-  apellidoPattern = '^[a-zA-ZÃÃ‰ÃÃ“ÃšÃœÃ‘Ã¡Ã©Ã­Ã³ÃºÃ¼Ã± ]{2,30}$';
+  nombresPattern = '^[a-zA-ZÃÃ‰ÃÃ“ÃšÃœÃ‘aÃ©Ã­Ã³ÃºÃ¼Ã± ]{2,20}$';
+  apellidoPattern = '^[a-zA-ZÃÃ‰ÃÃ“ÃšÃœÃ‘aÃ©Ã­Ã³ÃºÃ¼Ã± ]{2,30}$';
   docPattern = '^[0-9]{1}[0-9]{7}$';
   docMinLength = 8;
   docMaxLength = 8;
@@ -79,7 +79,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
     if (estado) return estado;
     if (idEstado === 1) return 'Activo';
     if (idEstado === 2) return 'Inactivo';
-    return 'â€”';
+    return '';
   }
 
   private readonly destroy$ = new Subject<void>();
@@ -152,12 +152,12 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
   }
 
   onSortChange(event: SortPayload): void {
-    // Hook disponible para telemetrÃ­a futura
+    // Hook disponible para telemetría futura
     void event;
   }
 
   onPageChange(event: PagePayload): void {
-    // Hook disponible para telemetrÃ­a futura
+    // Hook disponible para telemetría futura
     void event;
   }
 
@@ -502,7 +502,7 @@ export class GestionarPersonalComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('[personal] create', err);
           this.modalCrearSaving = false;
-          const msg = err?.error?.message || 'OcurriÃ³ un error, volver a intentar.';
+          const msg = err?.error?.message || 'Ocurrió un error, volver a intentar.';
           this.modalCrearError = msg;
         }
       });

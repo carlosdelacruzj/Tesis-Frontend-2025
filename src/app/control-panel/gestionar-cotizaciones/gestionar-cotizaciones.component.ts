@@ -1,4 +1,4 @@
-﻿import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgForm } from '@angular/forms';
 import { Subject, takeUntil, firstValueFrom, take } from 'rxjs';
@@ -86,7 +86,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   downloadingId: number | null = null;
   error: string | null = null;
 
-  estadoModalOpen = false;
   estadoTarget: Cotizacion | null = null;
   estadoDestino: 'Enviada' | 'Aceptada' | 'Rechazada' | '' = '';
 
@@ -127,8 +126,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   private clienteCreadoEnAceptacion = false;
 
   @ViewChild('createForm') registroClienteForm?: NgForm;
-  readonly estadoModalTitle = 'Confirmar cambio de estado';
-
   private readonly cotizacionService = inject(CotizacionService);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
@@ -208,10 +205,10 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     window.URL.revokeObjectURL(fileUrl);
   }
 
-  openEstadoModal(
+  async openEstadoModal(
     cotizacion: Cotizacion,
     destino: 'Enviada' | 'Aceptada' | 'Rechazada',
-  ): void {
+  ): Promise<void> {
     this.error = null;
     if (!cotizacion || !cotizacion.total || cotizacion.total <= 0) {
       this.error =
@@ -220,8 +217,79 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     }
 
     this.estadoTarget = cotizacion;
+    const estadoActual = (cotizacion.estado ?? 'Borrador').toString().trim();
+
+    if (estadoActual === 'Enviada') {
+      const selected = await this.seleccionarEstadoDesdeEnviada(cotizacion);
+      if (!selected) {
+        this.closeEstadoModal();
+        return;
+      }
+      this.estadoDestino = selected;
+      this.confirmEstadoChange();
+      return;
+    }
+
+    const confirm = await this.fireSwal({
+      icon: 'question',
+      title: 'Confirmar cambio de estado',
+      text: `Marcar ${cotizacion.codigo ?? `Cotización #${cotizacion.id}`} como enviada.`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, enviar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    });
+    if (!confirm.isConfirmed) {
+      this.closeEstadoModal();
+      return;
+    }
+
     this.estadoDestino = destino;
-    this.estadoModalOpen = true;
+    this.confirmEstadoChange();
+  }
+
+  private async seleccionarEstadoDesdeEnviada(
+    cotizacion: Cotizacion,
+  ): Promise<'Aceptada' | 'Rechazada' | null> {
+    let seleccionado: 'Aceptada' | 'Rechazada' | null = null;
+    await this.fireSwal({
+      icon: 'question',
+      title: 'Actualizar estado',
+      text: `Selecciona el nuevo estado para ${cotizacion.codigo ?? `Cotización #${cotizacion.id}`}.`,
+      html: `
+        <div style="display:flex;justify-content:center;gap:10px;margin-top:8px;">
+          <button id="swal-estado-aceptar" type="button" class="btn btn-primary">Aceptar cotización</button>
+          <button id="swal-estado-rechazar" type="button" class="btn btn-danger">Rechazar cotización</button>
+        </div>
+      `,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: 'Cancelar',
+      buttonsStyling: false,
+      customClass: {
+        actions: 'd-flex justify-content-center',
+        cancelButton: 'btn btn-outline-secondary',
+      },
+      didOpen: () => {
+        const popup = Swal.getPopup();
+        const aceptarBtn = popup?.querySelector(
+          '#swal-estado-aceptar',
+        ) as HTMLButtonElement | null;
+        const rechazarBtn = popup?.querySelector(
+          '#swal-estado-rechazar',
+        ) as HTMLButtonElement | null;
+
+        aceptarBtn?.addEventListener('click', () => {
+          seleccionado = 'Aceptada';
+          Swal.close();
+        });
+        rechazarBtn?.addEventListener('click', () => {
+          seleccionado = 'Rechazada';
+          Swal.close();
+        });
+      },
+    });
+    return seleccionado;
   }
 
   openVersionesModal(cotizacion: Cotizacion): void {
@@ -321,7 +389,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
   }
 
   closeEstadoModal(): void {
-    this.estadoModalOpen = false;
     this.estadoDestino = '';
     this.estadoTarget = null;
   }
@@ -345,7 +412,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       !this.leadConversionPending
     ) {
       this.leadConversionPending = true;
-      this.estadoModalOpen = false;
       this.openLeadRegistroModal(this.estadoTarget);
       return;
     }
@@ -420,7 +486,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                     const texto = this.clienteCreadoEnAceptacion
                       ? `Nuevo cliente registrado y Cotización aceptada. ${baseTexto}`
                       : `Cotización aceptada. ${baseTexto}`;
-                    Swal.fire({
+                    this.fireSwal({
                       icon: 'success',
                       title: 'Proceso completado',
                       text: texto,
@@ -429,7 +495,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                   },
                   error: (err) => {
                     console.error('[cotizaciones] migrar a pedido falló', err);
-                    Swal.fire({
+                    this.fireSwal({
                       icon: 'error',
                       title: 'No pudimos crear el pedido',
                       text: err?.message ?? 'Intenta nuevamente más tarde.',
@@ -450,7 +516,7 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
                   text = 'La Cotización se marcó como rechazada correctamente.';
                   break;
               }
-              Swal.fire({ icon: 'success', title, text });
+              this.fireSwal({ icon: 'success', title, text });
             }
           } else {
             this.clienteCreadoEnAceptacion = false;
@@ -488,15 +554,6 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
           this.leadConversionDestino = '';
         },
       });
-  }
-
-  get estadoModalMessage(): string {
-    if (!this.estadoTarget) return '';
-    const nombre =
-      this.estadoTarget.codigo ?? `Cotización #${this.estadoTarget.id}`;
-    const estadoActual = this.estadoTarget.estado ?? 'Borrador';
-    if (estadoActual === 'Borrador') return `Marcar ${nombre} como enviada.`;
-    return `Selecciona el nuevo estado para ${nombre}. Estado actual: ${estadoActual}`;
   }
 
   onSortChange(evt: { key: string; direction: 'asc' | 'desc' | '' }): void {
@@ -583,8 +640,9 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.leadConversionDestino = '';
     this.closeLeadRegistroModal(false);
     if (this.estadoTarget) {
+      const target = this.estadoTarget;
       this.estadoDestino = '';
-      this.estadoModalOpen = true;
+      void this.openEstadoModal(target, 'Aceptada');
     } else {
       this.closeEstadoModal();
     }
@@ -620,8 +678,9 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
     this.leadConversionDestino = '';
     this.closeLeadRegistroModal(false, false);
     if (this.estadoTarget) {
+      const target = this.estadoTarget;
       this.estadoDestino = '';
-      this.estadoModalOpen = true;
+      void this.openEstadoModal(target, 'Aceptada');
     } else {
       this.closeEstadoModal();
     }
@@ -865,6 +924,27 @@ export class GestionarCotizacionesComponent implements OnInit, OnDestroy {
       return String(value);
     }
     return undefined;
+  }
+
+  private fireSwal(options: Parameters<typeof Swal.fire>[0]): ReturnType<typeof Swal.fire> {
+    const customClass = (options as { customClass?: Record<string, string> })?.customClass ?? {};
+    const confirmColor = (options as { confirmButtonColor?: unknown })?.confirmButtonColor;
+    const confirmColorText = (confirmColor ?? '').toString().toLowerCase();
+    const isDangerConfirm =
+      confirmColorText.includes('dc3545') ||
+      confirmColorText.includes('b42318') ||
+      confirmColorText.includes('danger');
+
+    return Swal.fire({
+      ...options,
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: customClass.confirmButton ?? (isDangerConfirm ? 'btn btn-danger' : 'btn btn-primary'),
+        cancelButton: customClass.cancelButton ?? 'btn btn-outline-secondary',
+        denyButton: customClass.denyButton ?? 'btn btn-danger',
+        ...customClass,
+      },
+    });
   }
 }
 

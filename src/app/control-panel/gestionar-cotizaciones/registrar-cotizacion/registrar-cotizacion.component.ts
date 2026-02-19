@@ -445,7 +445,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.syncFechaEventoDesdeFechasTrabajo();
       return;
     }
-    void Swal.fire({
+    void this.fireSwal({
       icon: 'warning',
       title: 'Cambiar fecha de trabajo',
       html: `
@@ -453,7 +453,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         <p class="mb-0">¿Seguro que deseas cambiar <b>${this.formatFechaConDia(fechaAnterior)}</b> por <b>${this.formatFechaConDia(fecha)}</b>?</p>
       `,
       showCancelButton: true,
-      confirmButtonText: 'Sí, cambiar',
+      confirmButtonText: 'SÍ, cambiar',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (!result.isConfirmed) {
@@ -493,7 +493,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // ✅ NO autollenar el nombre
+    // … NO autollenar el nombre
     const nuevoGrupo = this.createProgramacionItem({
       nombre: '', // <-- vacío para que se vea el placeholder
       fecha: fechaConfig,
@@ -608,14 +608,14 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const grupo = this.programacion.at(index) as UntypedFormGroup | null;
     const nombre =
       (grupo?.get('nombre')?.value ?? '').toString().trim() ||
-      `Locación ${index + 1}`;
+      `locación ${index + 1}`;
 
-    void Swal.fire({
+    void this.fireSwal({
       icon: 'warning',
       title: 'Eliminar locación',
       text: `¿Quieres eliminar "${nombre}" de la programación?`,
       showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
+      confirmButtonText: 'SÍ, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#dc3545',
     }).then((result) => {
@@ -627,7 +627,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.syncProgramacionFechas();
       this.showToast(
         'success',
-        'Locación eliminada',
+        'locación eliminada',
         'Se eliminó la locación seleccionada.',
       );
     });
@@ -687,12 +687,12 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     };
 
     if (indicesDestino.length) {
-      void Swal.fire({
+      void this.fireSwal({
         icon: 'warning',
         title: 'Reemplazar locaciones del día',
-        text: 'Se reemplazarán las locaciones actuales de este día con las del día anterior.',
+        text: 'Se reemplazaran las locaciones actuales de este día con las del día anterior.',
         showCancelButton: true,
-        confirmButtonText: 'Sí, reemplazar',
+        confirmButtonText: 'SÍ, reemplazar',
         cancelButtonText: 'Cancelar',
       }).then((result) => {
         if (result.isConfirmed) {
@@ -792,10 +792,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.selectedPaquetes.length &&
       nextEventoId !== this.selectedEventoId
     ) {
-      void Swal.fire({
+      void this.fireSwal({
         icon: 'warning',
         title: 'Cambiar tipo de evento',
-        text: 'Cambiar el tipo de evento eliminará toda la selección de paquetes.',
+        text: 'Cambiar el tipo de evento eliminara toda la selección de paquetes.',
         confirmButtonText: 'Cambiar',
         cancelButtonText: 'Cancelar',
         showCancelButton: true,
@@ -1069,7 +1069,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     paquete: PaqueteDetalle | null | undefined,
   ): string | number {
     if (!paquete) {
-      return '—';
+      return '';
     }
     const staff = paquete.staff;
     if (typeof staff === 'number') {
@@ -1079,7 +1079,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     const eventoTotal =
       typeof eventoStaff === 'number' ? eventoStaff : eventoStaff?.total;
     const total = staff?.total ?? eventoTotal ?? paquete.personal;
-    return total ?? '—';
+    return total ?? '';
   }
 
   onClienteSelected(cliente: ClienteBusquedaResultado): void {
@@ -1416,7 +1416,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       this.showAlert(
         'warning',
         'Agrega paquetes',
-        'Selecciona al menos un paquete para la cotización.',
+        'Selecciona al menos un paquete para la Cotización.',
       );
       return;
     }
@@ -1649,10 +1649,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          void Swal.fire({
+          void this.fireSwal({
             icon: 'success',
             title: 'Cotización registrada',
-            text: 'La cotización se registró correctamente.',
+            text: 'La Cotización se registró correctamente.',
           }).then(() => this.router.navigate(['/home/gestionar-cotizaciones']));
         },
         error: (err) => {
@@ -1660,7 +1660,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           this.showAlert(
             'error',
             'Error al registrar',
-            'No pudimos registrar la cotización. Inténtalo nuevamente.',
+            'No pudimos registrar la Cotización. Inténtalo nuevamente.',
           );
         },
       });
@@ -1672,10 +1672,10 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       return;
     }
 
-    void Swal.fire({
+    void this.fireSwal({
       icon: 'warning',
       title: 'Descartar cambios',
-      text: 'Tienes cambios sin guardar en la cotización. Si sales ahora, se perderán.',
+      text: 'Tienes cambios sin guardar en la Cotización. Si sales ahora, se perderan.',
       showCancelButton: true,
       confirmButtonText: 'Salir sin guardar',
       cancelButtonText: 'Seguir editando',
@@ -1841,7 +1841,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
         const fechasTexto = fechasPermitidas.slice(0, maxDias);
         if (!fechaAnterior) {
           fechaControl.setValue(lastValid ?? '', { emitEvent: false });
-          void Swal.fire({
+          void this.fireSwal({
             icon: 'warning',
             title: 'Días ya definidos',
             html: `
@@ -1854,7 +1854,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
           });
           return;
         }
-        void Swal.fire({
+        void this.fireSwal({
           icon: 'warning',
           title: 'Cambiar fechas',
           html: `
@@ -1865,7 +1865,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
             <p class="mb-0">¿Quieres cambiar todas las locaciones del día <b>${this.formatFechaConDia(fechaAnterior)}</b> al día <b>${this.formatFechaConDia(fecha)}</b>?</p>
           `,
           showCancelButton: true,
-          confirmButtonText: 'Sí, cambiar todas',
+          confirmButtonText: 'SÍ, cambiar todas',
           cancelButtonText: 'Cancelar',
         }).then((result) => {
           if (!result.isConfirmed) {
@@ -2062,7 +2062,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       `;
       })
       .join('');
-    const result = await Swal.fire({
+    const result = await this.fireSwal({
       icon: 'question',
       title: 'Elige los dias a eliminar',
       width: 760,
@@ -2699,7 +2699,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       ? `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"? ${avisoMonto}`
       : `¿Seguro que deseas cambiar el departamento de "${prev}" a "${next}"?`;
 
-    void Swal.fire({
+    void this.fireSwal({
       icon: 'warning',
       title: 'Cambiar departamento',
       text: texto,
@@ -2832,7 +2832,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private showAlert(icon: AlertIcon, title: string, text?: string): void {
-    void Swal.fire({
+    void this.fireSwal({
       icon,
       title,
       text,
@@ -2841,7 +2841,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
   }
 
   private showAlertHtml(icon: AlertIcon, title: string, html: string): void {
-    void Swal.fire({
+    void this.fireSwal({
       icon,
       title,
       html,
@@ -2875,7 +2875,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     );
     if (desordenadas) {
       errores.push(
-        'Ordena las fechas de trabajo cronológicamente (de la más próxima a la más lejana).',
+        'Ordena las fechas de trabajo cronológicamente (de la mas próxima a la mas lejana).',
       );
     }
 
@@ -2931,7 +2931,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     text?: string,
     timer = 2200,
   ): void {
-    void Swal.fire({
+    void this.fireSwal({
       icon,
       title,
       text,
@@ -3331,7 +3331,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     if (control.hasError('required')) {
       return 'Este campo es obligatorio.';
     }
-    return 'Valor inválido.';
+    return 'Valor invalido.';
   }
 
   private buildDatosEventoPayload(): Record<string, unknown> {
@@ -3622,6 +3622,27 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
     this.programacionExpandida = new WeakMap<UntypedFormGroup, boolean>();
     this.syncDatosEventoControls();
     this.syncTotalEstimado();
+  }
+
+  private fireSwal(options: Parameters<typeof Swal.fire>[0]): ReturnType<typeof Swal.fire> {
+    const customClass = (options as { customClass?: Record<string, string> })?.customClass ?? {};
+    const confirmColor = (options as { confirmButtonColor?: unknown })?.confirmButtonColor;
+    const confirmColorText = (confirmColor ?? '').toString().toLowerCase();
+    const isDangerConfirm =
+      confirmColorText.includes('dc3545') ||
+      confirmColorText.includes('b42318') ||
+      confirmColorText.includes('danger');
+
+    return Swal.fire({
+      ...options,
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: customClass.confirmButton ?? (isDangerConfirm ? 'btn btn-danger' : 'btn btn-primary'),
+        cancelButton: customClass.cancelButton ?? 'btn btn-outline-secondary',
+        denyButton: customClass.denyButton ?? 'btn btn-danger',
+        ...customClass,
+      },
+    });
   }
 }
 

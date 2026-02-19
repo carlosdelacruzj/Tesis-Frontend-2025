@@ -152,27 +152,6 @@
   </div>
 </app-modal-base>
 
-<app-modal-base [open]="estadoModalOpen" [title]="estadoModalTitle" [primaryLabel]="'Confirmar'"
-  [secondaryLabel]="'Cancelar'" [disableClose]="false" [showPrimary]="true" [showSecondary]="true"
-  [primaryVariant]="estadoDestino === 'Rechazada' ? 'danger' : 'primary'" (confirm)="confirmEstadoChange()"
-  (cancelled)="closeEstadoModal()" (closed)="closeEstadoModal()">
-  <div class="d-flex flex-column gap-3">
-    <p class="mb-0">{{ estadoModalMessage }}</p>
-    @if (estadoTarget && (estadoTarget.estado ?? 'Borrador') === 'Enviada') {
-    <div class="d-flex flex-column gap-2">
-      <button type="button" class="btn btn-outline-primary" (click)="estadoDestino = 'Aceptada'"
-        [class.active]="estadoDestino === 'Aceptada'">
-        Aceptar cotización
-      </button>
-      <button type="button" class="btn btn-outline-danger" (click)="estadoDestino = 'Rechazada'"
-        [class.active]="estadoDestino === 'Rechazada'">
-        Rechazar cotización
-      </button>
-    </div>
-    }
-  </div>
-</app-modal-base>
-
 <app-modal-base [open]="registroClienteModalOpen" title="Registrar cliente" [disableClose]="registroClienteLoading"
   [loading]="registroClienteLoading" [useDefaultFooter]="false" (closed)="onLeadRegistroClosed()">
 
