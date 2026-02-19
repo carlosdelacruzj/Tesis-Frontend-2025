@@ -41,6 +41,10 @@
             accept="image/*"
             (change)="onIconSelected($event)"
           />
+          <div class="form-text text-muted mt-1">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Imagen: máximo 5MB.
+          </div>
           @if (iconFile) {
             <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
               <span class="small text-muted text-truncate">{{

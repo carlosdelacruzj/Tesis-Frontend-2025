@@ -362,6 +362,10 @@
           [attr.multiple]="!modal.editId ? '' : null"
           (change)="onFileChange($event)"
         />
+        <div class="form-text text-muted mt-1">
+          <i class="fa-solid fa-circle-info me-1"></i>
+          Imagen: máximo 5MB por archivo.
+        </div>
         @if (modal.fileNames.length) {
           <div class="text-muted small mt-1 d-flex align-items-center gap-2">
             <mat-icon class="text-muted">attach_file</mat-icon>
