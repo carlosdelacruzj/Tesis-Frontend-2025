@@ -153,9 +153,12 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   servicios: AnyRecord[] = [];
   evento: AnyRecord[] = [];
   servicioSeleccionado = 1;
-  eventoSeleccionado = 1;
+  eventoSeleccionado: number | null = null;
+  private pedidoTipoEventoId: number | null = null;
+  private itemsTipoEventoId: number | null = null;
   selectedEventoDetalle: AnyRecord | null = null;
   private lastEventoDetalleId: number | null = null;
+  private loadingEventoDetalleId: number | null = null;
   eventoSelectTouched = false;
 
   dataSource: MatTableDataSource<UbicacionRow> =
@@ -466,7 +469,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   }
 
   getEventos() {
-    const obs = this.pedidoService.getEventos?.();
+    const obs = this.pedidoService.getEventos?.(true);
     if (!obs || typeof obs.subscribe !== 'function') {
       console.warn('[getEventos] devolvio undefined o no-Observable');
       this.evento = [];
@@ -485,6 +488,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
               .map((item) => this.normalizeEventoCatalogo(item))
               .filter((item): item is AnyRecord => item != null)
           : [];
+        this.sincronizarEventoSeleccionadoConCatalogo();
       });
   }
 
@@ -2186,9 +2190,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         this.CodigoEmpleado = pedido.empleadoId ?? this.CodigoEmpleado;
         this.estadoPedidoId = pedido.estadoPedidoId ?? null;
         this.estadoPagoId = pedido.estadoPagoId ?? null;
-        if (pedido.idTipoEvento != null) {
-          this.eventoSeleccionado = pedido.idTipoEvento;
-          this.cargarEventoSeleccionado(this.eventoSeleccionado);
+        this.pedidoTipoEventoId = this.parseNumber(pedido.idTipoEvento);
+        if (this.pedidoTipoEventoId != null) {
+          this.eventoSeleccionado = this.pedidoTipoEventoId;
         }
         if (pedido.cotizacionId != null) {
           this.cotizacionId = pedido.cotizacionId;
@@ -2354,10 +2358,11 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         const eventoDesdeItems =
           this.selectedPaquetes.find((item) => item.eventoId != null)
             ?.eventoId ?? null;
-        if (eventoDesdeItems != null) {
+        this.itemsTipoEventoId = this.parseNumber(eventoDesdeItems);
+        if (eventoDesdeItems != null && this.pedidoTipoEventoId == null) {
           this.eventoSeleccionado = eventoDesdeItems;
-          this.cargarEventoSeleccionado(this.eventoSeleccionado);
         }
+        this.sincronizarEventoSeleccionadoConCatalogo();
 
         const tmpIdMap = new Map<number, string>();
         this.selectedPaquetes.forEach((item) => {
@@ -3644,6 +3649,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
     if (eventoId == null || eventoId <= 0) {
       this.selectedEventoDetalle = null;
       this.lastEventoDetalleId = null;
+      this.loadingEventoDetalleId = null;
+      return;
+    }
+    if (this.loadingEventoDetalleId === eventoId) {
       return;
     }
     if (
@@ -3653,6 +3662,7 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    this.loadingEventoDetalleId = eventoId;
     this.lastEventoDetalleId = eventoId;
     this.visualizarService
       .getEventoById(eventoId)
@@ -3660,6 +3670,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         take(1),
         catchError((err: unknown) => {
           console.error('[getEventoById] error', err);
+          if (this.loadingEventoDetalleId === eventoId) {
+            this.loadingEventoDetalleId = null;
+          }
           if (this.lastEventoDetalleId === eventoId) {
             this.selectedEventoDetalle = null;
           }
@@ -3667,6 +3680,9 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
         }),
       )
       .subscribe((evento) => {
+        if (this.loadingEventoDetalleId === eventoId) {
+          this.loadingEventoDetalleId = null;
+        }
         const record = this.asRecord(evento);
         if (!Object.keys(record).length) {
           return;
@@ -3678,10 +3694,10 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
   private normalizeEventoCatalogo(item: unknown): AnyRecord | null {
     const record = this.asRecord(item);
     const id = this.parseNumber(
-      record['id'] ??
+      record['idTipoEvento'] ??
         record['PK_E_Cod'] ??
         record['idEvento'] ??
-        record['idTipoEvento'] ??
+        record['id'] ??
         record['ID'],
     );
     if (id == null || id <= 0) {
@@ -3700,6 +3716,30 @@ export class ActualizarPedidoComponent implements OnInit, AfterViewInit {
       .trim();
 
     return { ...record, id, nombre };
+  }
+
+  private sincronizarEventoSeleccionadoConCatalogo(): void {
+    if (!this.evento.length) {
+      return;
+    }
+    const candidatos = [
+      this.pedidoTipoEventoId,
+      this.itemsTipoEventoId,
+      this.eventoSeleccionado,
+    ].filter((value): value is number => value != null && value > 0);
+    for (const candidato of candidatos) {
+      const existe = this.evento.some(
+        (item) => this.parseNumber(item['id']) === candidato,
+      );
+      if (!existe) {
+        continue;
+      }
+      if (this.eventoSeleccionado !== candidato) {
+        this.eventoSeleccionado = candidato;
+      }
+      this.cargarEventoSeleccionado(this.eventoSeleccionado);
+      return;
+    }
   }
 }
 

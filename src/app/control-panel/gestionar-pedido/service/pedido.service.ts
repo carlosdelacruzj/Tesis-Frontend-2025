@@ -83,7 +83,10 @@ export class PedidoService {
   public getServicios(): Observable<unknown> {
     return this.catalogos.getServicios();
   }
-  public getEventos(): Observable<unknown> {
+  public getEventos(forceRefresh = false): Observable<unknown> {
+    if (forceRefresh) {
+      this.catalogos.invalidate('eventos');
+    }
     return this.catalogos.getEventos();
   }
   public getContratoPdf(contratoId: number, regenerate = false): Observable<Blob> {

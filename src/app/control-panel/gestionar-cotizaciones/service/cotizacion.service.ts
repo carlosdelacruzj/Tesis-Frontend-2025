@@ -313,8 +313,8 @@ downloadPdfByVersionId(
     );
   }
 
-  getEventos(): Observable<Record<string, unknown>[]> {
-    return this.pedidoService.getEventos().pipe(
+  getEventos(forceRefresh = false): Observable<Record<string, unknown>[]> {
+    return this.pedidoService.getEventos(forceRefresh).pipe(
       map(items => this.toRecordArray(items)),
       catchError(err => {
         console.error('[cotizaciones] getEventos', err);

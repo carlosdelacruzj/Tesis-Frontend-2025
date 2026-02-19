@@ -2980,7 +2980,7 @@ export class RegistrarCotizacionComponent implements OnInit, OnDestroy {
       });
 
     this.cotizacionService
-      .getEventos()
+      .getEventos(true)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (eventos) => {
