@@ -2,15 +2,8 @@
   <div class="menu-list">
     <nav class="navbar navbar-expand-lg navbar-light pading-n">
       <a class="d-xl-none d-lg-none" routerLink="dashboard">Dashboard</a>
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-toggle="collapse"
-        data-target="#navbarNav"
-        aria-controls="navbarNav"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
@@ -23,68 +16,69 @@
             </a>
           </li>
           @if (puedeVerVentas) {
-            <li class="nav-item">
-              <a class="nav-link" routerLink="gestionar-cliente">
-                <i class="fas fa-fw fa-users"></i>Clientes
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="gestionar-cotizaciones">
-                <i class="fas fa-fw fa-file-invoice-dollar"></i>Cotizaciones
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="gestionar-pedido">
-                <i class="fas fa-fw fa-clipboard-list"></i>Pedidos
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="gestionar-contratos">
-                <i class="fas fa-fw fa-file-contract"></i>Contratos
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="gestionar-proyecto">
-                <i class="fas fa-fw fa-project-diagram"></i>Proyectos
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="pagos-estandar">
-                <i class="fas fa-fw fa-money-bill-wave"></i>Pagos
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="calendario-operaciones">
-                <i class="fas fa-fw fa-calendar-alt"></i>Calendario operativo
-              </a>
-            </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="calendario-operaciones">
+              <i class="fas fa-fw fa-calendar-alt"></i>Calendario operativo
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="gestionar-cliente">
+              <i class="fas fa-fw fa-users"></i>Clientes
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="gestionar-cotizaciones">
+              <i class="fas fa-fw fa-file-invoice-dollar"></i>Cotizaciones
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="gestionar-pedido">
+              <i class="fas fa-fw fa-clipboard-list"></i>Pedidos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="gestionar-contratos">
+              <i class="fas fa-fw fa-file-contract"></i>Contratos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="gestionar-proyecto">
+              <i class="fas fa-fw fa-project-diagram"></i>Proyectos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="pagos-estandar">
+              <i class="fas fa-fw fa-money-bill-wave"></i>Pagos
+            </a>
+          </li>
+
           }
           @if (puedeVerAdmin) {
-            <li class="nav-item">
-              <a class="nav-link" routerLink="gestionar-personal">
-                <i class="fas fa-fw fa-user-tie"></i>Personal
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="administrar-equipos">
-                <i class="fas fa-fw fa-tools"></i>Equipos
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="gestionar-perfiles">
-                <i class="fas fa-fw fa-user-shield"></i>Perfiles
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="administrar-paquete-servicio">
-                <i class="fas fa-fw fa-box-open"></i>Paquetes de servicio
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="gestionar-portafolio">
-                <i class="fas fa-fw fa-images"></i>Portafolio
-              </a>
-            </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="gestionar-personal">
+              <i class="fas fa-fw fa-user-tie"></i>Personal
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="administrar-equipos">
+              <i class="fas fa-fw fa-tools"></i>Equipos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="gestionar-perfiles">
+              <i class="fas fa-fw fa-user-shield"></i>Perfiles
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="administrar-paquete-servicio">
+              <i class="fas fa-fw fa-box-open"></i>Paquetes de servicio
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="gestionar-portafolio">
+              <i class="fas fa-fw fa-images"></i>Portafolio
+            </a>
+          </li>
           }
         </ul>
       </div>

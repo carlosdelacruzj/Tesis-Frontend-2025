@@ -378,8 +378,8 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     this.setAsignacionDia(selected);
   }
 
-  cerrarModalAsignar(): void {
-    if (!this.confirmCerrarAsignaciones()) return;
+  async cerrarModalAsignar(): Promise<void> {
+    if (!(await this.confirmCerrarAsignaciones())) return;
     this.saveAsignacionDraft();
     this.saveFiltrosDraft();
     this.modalAsignarAbierto = false;
@@ -1239,11 +1239,20 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
     });
   }
 
-  private confirmCerrarAsignaciones(): boolean {
+  private async confirmCerrarAsignaciones(): Promise<boolean> {
     if (this.asignacionSoloLectura) return true;
     if (!this.asignacionDiaId) return true;
     if (!this.isAsignacionDiaDirty(this.asignacionDiaId)) return true;
-    return window.confirm('Tienes cambios sin guardar. ¿Seguro que deseas cerrar?');
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Descartar cambios',
+      text: 'Tienes cambios sin guardar. Si cierras, se perderán.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cerrar',
+      cancelButtonText: 'Seguir editando',
+      reverseButtons: true
+    });
+    return result.isConfirmed;
   }
 
 
