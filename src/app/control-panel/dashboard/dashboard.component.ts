@@ -96,10 +96,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  goToPedido(pedidoId: number): void {
-    this.router.navigate(['/home/gestionar-pedido/detalle', pedidoId]);
-  }
-
   getEstadoListaTotal(lista: DashboardEstadoConteo[] | undefined): number {
     return (lista ?? []).reduce((acc, row) => acc + (row.total ?? 0), 0);
   }
@@ -201,8 +197,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.dashboardHome?.agendaHoy?.items ?? [];
   }
 
+  get agendaHoyItemsVisibles(): DashboardOperacionDiaAgendaItem[] {
+    return this.agendaHoyItems.filter(item => !this.isEstadoDiaCancelado(item.estadoDia));
+  }
+
   get colaPendientesHoy(): DashboardOperativoDiaColaPendienteItem[] {
     return this.dashboardHome?.colaPendientesHoy?.items ?? [];
+  }
+
+  get colaPendientesHoyVisibles(): DashboardOperativoDiaColaPendienteItem[] {
+    const diaIdsCancelados = new Set(
+      this.agendaHoyItems
+        .filter(item => this.isEstadoDiaCancelado(item.estadoDia))
+        .map(item => item.diaId)
+    );
+    return this.colaPendientesHoy.filter(item => !item.diaId || !diaIdsCancelados.has(item.diaId));
   }
 
   get totalProyectosHoy(): number {
@@ -258,6 +267,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return Array.from(map.entries())
       .map(([nombre, total], index) => ({ id: index + 1, nombre, total }))
       .sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre));
+  }
+
+  private isEstadoDiaCancelado(estadoDia: string | null | undefined): boolean {
+    const value = (estadoDia ?? '').toString().trim().toLowerCase();
+    return value.startsWith('cancelad');
   }
 
   private normalizeYmd(value: string | null | undefined): string | null {

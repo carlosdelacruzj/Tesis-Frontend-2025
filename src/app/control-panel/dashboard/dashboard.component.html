@@ -96,14 +96,13 @@
                 <tr>
                   <th>Hora</th>
                   <th>Proyecto</th>
-                  <th>Pedido</th>
                   <th>Estado</th>
                   <th>Pago</th>
                   <th>Riesgo</th>
                 </tr>
               </thead>
               <tbody>
-                @for (item of agendaHoyItems; track item.diaId) {
+                @for (item of agendaHoyItemsVisibles; track item.diaId) {
                   <tr>
                     <td>{{ formatHora(item.horaInicio) }}</td>
                     <td>
@@ -115,16 +114,7 @@
                         {{ item.proyecto }}
                       </button>
                     </td>
-                    <td>
-                      <button
-                        type="button"
-                        class="link-inline"
-                        (click)="goToPedido(item.pedidoId)"
-                      >
-                        {{ item.pedido }}
-                      </button>
-                    </td>
-                    <td>{{ item.estadoDia }} / {{ item.estadoProyecto }}</td>
+                    <td>{{ item.estadoDia }}</td>
                     <td>{{ item.estadoPago || "-" }}</td>
                     <td>
                       <span
@@ -137,7 +127,7 @@
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="6" class="empty-cell">
+                    <td colspan="5" class="empty-cell">
                       Sin agenda registrada para hoy.
                     </td>
                   </tr>
@@ -164,7 +154,7 @@
           </div>
 
           <div class="pending-list">
-            @for (item of colaPendientesHoy; track $index) {
+            @for (item of colaPendientesHoyVisibles; track $index) {
               <div class="pending-item">
                 <div>
                   <p class="pending-item__title">{{ item.tipo }}</p>
