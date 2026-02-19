@@ -309,12 +309,6 @@
   box-shadow: 0 12px 20px -24px rgba(36, 49, 66, 0.55);
 }
 
-.kpi-card__icon--warning {
-  background: rgba(var(--warning-rgb), 0.1);
-  color: var(--warning);
-  box-shadow: 0 12px 20px -24px rgba(36, 49, 66, 0.55);
-}
-
 @keyframes pulse {
   0% {
     background-position: 200% 0;

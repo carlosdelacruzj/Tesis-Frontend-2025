@@ -7,7 +7,8 @@
     [showCreateButton]="true"
     [createButtonLabel]="'Nuevo perfil'"
     (searchChange)="onToolbarSearch($event)"
-    (createClick)="openCreatePerfilForm()">
+    (createClick)="openCreatePerfilForm()"
+  >
   </app-list-toolbar>
 
   @if (error) {
@@ -15,53 +16,76 @@
   }
 
   @if (!loadingList) {
-    <app-table-base [columns]="columns" [data]="rows" [pageSizeOptions]="[10, 25, 50]" [pageSize]="25"
-      emptyText="Sin perfiles registrados" (rowClick)="openAsignarPerfilModal($any($event))" (sortChange)="onSortChange($event)"
-      (pageChange)="onPageChange($event)" [showCreateButton]="false" [showSearch]="false"
-      [externalSearchTerm]="searchTerm">
-
+    <app-table-base
+      [columns]="columns"
+      [data]="rows"
+      [pageSizeOptions]="[10, 25, 50]"
+      [pageSize]="25"
+      emptyText="Sin perfiles registrados"
+      (rowClick)="openAsignarPerfilModal($any($event))"
+      (sortChange)="onSortChange($event)"
+      (pageChange)="onPageChange($event)"
+      [showCreateButton]="false"
+      [showSearch]="false"
+      [externalSearchTerm]="searchTerm"
+    >
       <ng-template appCell="idPerfil" let-row>
-        {{ row.idPerfil || '-' }}
+        {{ row.idPerfil || "-" }}
       </ng-template>
 
       <ng-template appCell="codigo" let-row>
-        {{ row.codigo || '-' }}
+        {{ row.codigo || "-" }}
       </ng-template>
 
       <ng-template appCell="nombre" let-row>
-        {{ row.nombre || '-' }}
+        {{ row.nombre || "-" }}
       </ng-template>
 
       <ng-template appCell="descripcion" let-row>
-        {{ row.descripcion || '-' }}
+        {{ row.descripcion || "-" }}
       </ng-template>
 
       <ng-template appCell="activo" let-row>
-        {{ row.activo ? 'Activo' : 'Inactivo' }}
+        {{ row.activo ? "Activo" : "Inactivo" }}
       </ng-template>
 
       <ng-template appCell="acciones" let-row>
         <div class="d-flex justify-content-center gap-1">
-          <button mat-icon-button color="primary" type="button" (click)="$event.stopPropagation(); openAsignarPerfilModal(row)"
-            matTooltip="Asignar este perfil">
+          <button
+            mat-icon-button
+            color="primary"
+            type="button"
+            (click)="$event.stopPropagation(); openAsignarPerfilModal(row)"
+            matTooltip="Asignar este perfil"
+          >
             <mat-icon>person_add</mat-icon>
           </button>
-          <button mat-icon-button color="accent" type="button" (click)="$event.stopPropagation(); openEditPerfilForm(row)"
-            matTooltip="Editar perfil">
+          <button
+            mat-icon-button
+            class="tertiary-icon"
+            type="button"
+            (click)="$event.stopPropagation(); openEditPerfilForm(row)"
+            matTooltip="Editar perfil"
+          >
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button [color]="row.activo ? 'warn' : 'primary'" type="button"
+          <button
+            mat-icon-button
+            [color]="row.activo ? 'primary' : 'accent'"
+            type="button"
             (click)="$event.stopPropagation(); togglePerfilEstado(row)"
             [matTooltip]="row.activo ? 'Desactivar perfil' : 'Activar perfil'"
-            [disabled]="changingState">
-            <mat-icon>{{ row.activo ? 'toggle_off' : 'toggle_on' }}</mat-icon>
+            [disabled]="changingState"
+          >
+            <mat-icon>{{ row.activo ? "toggle_off" : "toggle_on" }}</mat-icon>
           </button>
         </div>
       </ng-template>
-
     </app-table-base>
   } @else {
-    <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+    <div
+      class="d-flex flex-column align-items-center justify-content-center py-5 text-muted"
+    >
       <mat-spinner diameter="40"></mat-spinner>
       <p class="mt-3 mb-0">Cargando perfiles...</p>
     </div>
@@ -76,14 +100,19 @@
     [closeOnEsc]="!asignandoPerfil"
     [disableClose]="asignandoPerfil"
     [useDefaultFooter]="false"
-    (closed)="onAsignarModalClosed()">
-
+    (closed)="onAsignarModalClosed()"
+  >
     <div modal-body>
       @if (asignacionError) {
         <div class="alert alert-danger" role="alert">{{ asignacionError }}</div>
       }
 
-      <form #asignacionForm="ngForm" id="asignacionPerfilForm" novalidate (ngSubmit)="submitAsignacionPerfil(asignacionForm)">
+      <form
+        #asignacionForm="ngForm"
+        id="asignacionPerfilForm"
+        novalidate
+        (ngSubmit)="submitAsignacionPerfil(asignacionForm)"
+      >
         <div class="row g-3">
           <div class="col-md-12">
             <label class="form-label">Perfil seleccionado</label>
@@ -91,11 +120,14 @@
               type="text"
               class="form-control"
               [value]="asignacionFormData.perfilCodigo"
-              readonly>
+              readonly
+            />
           </div>
 
           <div class="col-md-5">
-            <label class="form-label" for="asignacionBuscarEmpleado">Buscar empleado</label>
+            <label class="form-label" for="asignacionBuscarEmpleado"
+              >Buscar empleado</label
+            >
             <input
               id="asignacionBuscarEmpleado"
               type="text"
@@ -104,7 +136,8 @@
               [(ngModel)]="asignacionFormData.empleadoBusqueda"
               (ngModelChange)="filtrarEmpleados()"
               placeholder="Nombre, rol o empleadoId"
-              [disabled]="loadingEmpleados || asignandoPerfil">
+              [disabled]="loadingEmpleados || asignandoPerfil"
+            />
           </div>
 
           <div class="col-md-7">
@@ -116,18 +149,24 @@
               [(ngModel)]="asignacionFormData.empleadoId"
               (ngModelChange)="onEmpleadoChange($event)"
               [disabled]="loadingEmpleados || asignandoPerfil"
-              required>
+              required
+            >
               <option [ngValue]="null">Selecciona un empleado</option>
               @for (empleado of empleadosFiltrados; track empleado.idEmpleado) {
                 <option [ngValue]="empleado.idEmpleado">
-                  {{ empleado.nombreCompleto }} - {{ empleado.cargo || 'Sin rol' }}
+                  {{ empleado.nombreCompleto }} -
+                  {{ empleado.cargo || "Sin rol" }}
                 </option>
               }
             </select>
           </div>
 
           <div class="col-md-7 d-flex align-items-center">
-            <mat-checkbox name="principal" [(ngModel)]="asignacionFormData.principal" [disabled]="asignandoPerfil">
+            <mat-checkbox
+              name="principal"
+              [(ngModel)]="asignacionFormData.principal"
+              [disabled]="asignandoPerfil"
+            >
               Perfil principal
             </mat-checkbox>
           </div>
@@ -136,16 +175,26 @@
     </div>
 
     <div modal-footer>
-      <button class="btn btn-outline-secondary" type="button" (click)="closeAsignarPerfilModal()" [disabled]="asignandoPerfil">
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        (click)="closeAsignarPerfilModal()"
+        [disabled]="asignandoPerfil"
+      >
         Cancelar
       </button>
       <button
         class="btn btn-primary"
         type="submit"
         form="asignacionPerfilForm"
-        [disabled]="asignandoPerfil || loadingEmpleados">
+        [disabled]="asignandoPerfil || loadingEmpleados"
+      >
         @if (asignandoPerfil) {
-          <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+          <span
+            class="spinner-border spinner-border-sm me-1"
+            role="status"
+            aria-hidden="true"
+          ></span>
         }
         Asignar
       </button>
@@ -154,54 +203,97 @@
 
   <app-modal-base
     [open]="perfilModalOpen"
-    [title]="perfilFormMode === 'create' ? 'Crear perfil' : 'Editar perfil'"
+    [title]="perfilFormMode === 'create' ? 'Guardar perfil' : 'Editar perfil'"
     [size]="'lg'"
     [showCloseButton]="!savingPerfil"
     [closeOnBackdrop]="!savingPerfil"
     [closeOnEsc]="!savingPerfil"
     [disableClose]="savingPerfil"
     [useDefaultFooter]="false"
-    (closed)="onPerfilModalClosed()">
+    (closed)="onPerfilModalClosed()"
+  >
     <div modal-body>
       @if (error) {
         <div class="alert alert-danger" role="alert">{{ error }}</div>
       }
 
-      <form #perfilFormNg="ngForm" id="perfilFormModal" novalidate (ngSubmit)="submitPerfilForm()">
+      <form
+        #perfilFormNg="ngForm"
+        id="perfilFormModal"
+        novalidate
+        (ngSubmit)="submitPerfilForm()"
+      >
         <div class="row g-3">
           <div class="col-md-3">
             <label class="form-label" for="perfilCodigo">Codigo</label>
-            <input id="perfilCodigo" type="text" class="form-control" name="codigo" [(ngModel)]="perfilForm.codigo"
-              [readonly]="perfilFormMode === 'edit'" required>
+            <input
+              id="perfilCodigo"
+              type="text"
+              class="form-control"
+              name="codigo"
+              [(ngModel)]="perfilForm.codigo"
+              [readonly]="perfilFormMode === 'edit'"
+              required
+            />
           </div>
           <div class="col-md-4">
             <label class="form-label" for="perfilNombre">Nombre</label>
-            <input id="perfilNombre" type="text" class="form-control" name="nombre" [(ngModel)]="perfilForm.nombre" required>
+            <input
+              id="perfilNombre"
+              type="text"
+              class="form-control"
+              name="nombre"
+              [(ngModel)]="perfilForm.nombre"
+              required
+            />
           </div>
           <div class="col-md-5">
-            <label class="form-label" for="perfilDescripcion">Descripcion</label>
-            <input id="perfilDescripcion" type="text" class="form-control" name="descripcion"
-              [(ngModel)]="perfilForm.descripcion" required>
+            <label class="form-label" for="perfilDescripcion"
+              >Descripcion</label
+            >
+            <input
+              id="perfilDescripcion"
+              type="text"
+              class="form-control"
+              name="descripcion"
+              [(ngModel)]="perfilForm.descripcion"
+              required
+            />
           </div>
-          @if (perfilFormMode === 'create') {
+          @if (perfilFormMode === "create") {
             <div class="col-md-3">
-              <mat-checkbox name="activo" [(ngModel)]="perfilForm.activo">Activo</mat-checkbox>
+              <mat-checkbox name="activo" [(ngModel)]="perfilForm.activo"
+                >Activo</mat-checkbox
+              >
             </div>
           }
         </div>
       </form>
     </div>
     <div modal-footer>
-      <button class="btn btn-outline-secondary" type="button" (click)="closePerfilForm()" [disabled]="savingPerfil">
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        (click)="closePerfilForm()"
+        [disabled]="savingPerfil"
+      >
         Cancelar
       </button>
-      <button class="btn btn-primary" type="submit" form="perfilFormModal" [disabled]="savingPerfil">
+      <button
+        class="btn btn-primary"
+        type="submit"
+        form="perfilFormModal"
+        [disabled]="savingPerfil"
+      >
         @if (savingPerfil) {
-          <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+          <span
+            class="spinner-border spinner-border-sm me-1"
+            role="status"
+            aria-hidden="true"
+          ></span>
         }
-        {{ perfilFormMode === 'create' ? 'Crear' : 'Actualizar' }}
+        {{ perfilFormMode === "create" ? "Guardar" : "Actualizar" }}
       </button>
     </div>
   </app-modal-base>
-
 </div>

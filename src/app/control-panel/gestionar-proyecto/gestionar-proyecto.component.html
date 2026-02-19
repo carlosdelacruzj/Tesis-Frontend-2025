@@ -10,29 +10,25 @@
   </app-list-toolbar>
 
   <div class="project-kpis">
-    <div class="kpi-card">
+    <div class="kpi-card kpi-card__icon--secondary">
       <div class="kpi-label">Total</div>
       <div class="kpi-value">{{ totalProyectos }}</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card kpi-card__icon--success">
       <div class="kpi-label">En ejecución</div>
       <div class="kpi-value">{{ totalEnEjecucion }}</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card kpi-card__icon--tertiary">
       <div class="kpi-label">Planificados</div>
       <div class="kpi-value">{{ totalPlanificados }}</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card kpi-card__icon--warning">
       <div class="kpi-label">Entregados</div>
       <div class="kpi-value">{{ totalEntregados }}</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card kpi-card__icon--danger">
       <div class="kpi-label">Pendientes pago</div>
       <div class="kpi-value">{{ totalPendientesPago }}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Devoluciones</div>
-      <div class="kpi-value">{{ totalPendientesDevolucion }}</div>
     </div>
   </div>
 

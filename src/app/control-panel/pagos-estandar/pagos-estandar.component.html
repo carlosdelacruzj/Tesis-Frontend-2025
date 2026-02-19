@@ -22,13 +22,17 @@
         </button>
       }
     </div>
-    <button type="button" class="btn btn-link btn-sm text-decoration-none" (click)="onRefresh()">
-      <mat-icon class="align-middle">refresh</mat-icon> Actualizar
+    <button
+      type="button"
+      class="btn btn-link btn-sm text-decoration-none"
+      (click)="onRefresh()"
+    >
+      <i class="fa-solid fa-arrow-rotate-right"></i> Actualizar
     </button>
-    <button type="button" class="btn btn-link btn-sm text-decoration-none" (click)="toggleEstadoLegend()">
+    <!-- <button type="button" class="btn btn-link btn-sm text-decoration-none" (click)="toggleEstadoLegend()">
       <mat-icon class="align-middle">help_outline</mat-icon>
       {{ showEstadoLegend ? 'Ocultar estados' : 'Que significa cada estado' }}
-    </button>
+    </button> -->
   </div>
   @if (showEstadoLegend) {
   <div class="alert alert-light border mb-3 py-2 px-3" role="note">
@@ -68,18 +72,18 @@
     emptyText="Sin resultados"
     [showCreateButton]="false"
     [showSearch]="false"
-    (sortChange)="null"
-    (pageChange)="null"
+    (sortChange)="(null)"
+    (pageChange)="(null)"
   >
     <ng-template appCell="cliente" let-row>
       <div class="d-flex flex-column">
-        <span class="fw-semibold">{{ row.cliente || '--' }}</span>
+        <span class="fw-semibold">{{ row.cliente || "--" }}</span>
         <small class="text-muted">Código: {{ row.codigo }}</small>
       </div>
     </ng-template>
 
     <ng-template appCell="fecha" let-row>
-      <span>{{ row.fecha ? (row.fecha | date:'dd-MM-yyyy') : '--' }}</span>
+      <span>{{ row.fecha ? (row.fecha | date: "dd-MM-yyyy") : "--" }}</span>
     </ng-template>
 
     <ng-template appCell="estado" let-row>
@@ -87,24 +91,38 @@
         [matTooltip]="getEstadoPagoTooltip(row)"
         [matTooltipDisabled]="!isEstadoPagoCerrado(row)"
       >
-        <app-estado-badge [estado]="getEstadoPagoLabel(row)"
-        [mapaColores]="{
-              'Pendiente': 'info',
-              'Parcial': 'warning',
-              'Pagado': 'success-light',
-              'Cerrado': 'success'
-            }"></app-estado-badge>
+        <app-estado-badge
+          [estado]="getEstadoPagoLabel(row)"
+          [mapaColores]="{
+            Pendiente: 'info',
+            Parcial: 'warning',
+            Pagado: 'success-light',
+            Cerrado: 'success',
+          }"
+        ></app-estado-badge>
       </span>
     </ng-template>
 
     <ng-template appCell="acciones" let-row>
       <div class="d-flex justify-content-center gap-1">
         @if (isPagado(row)) {
-          <button mat-icon-button color="primary" type="button" matTooltip="Ver pagos" (click)="abrirGestionPago(row)">
+          <button
+            mat-icon-button
+            color="primary"
+            type="button"
+            matTooltip="Ver pagos"
+            (click)="abrirGestionPago(row)"
+          >
             <mat-icon>receipt_long</mat-icon>
           </button>
         } @else {
-          <button mat-icon-button color="accent" type="button" matTooltip="Gestionar pago" (click)="abrirGestionPago(row)">
+          <button
+            mat-icon-button
+            color="accent"
+            type="button"
+            matTooltip="Gestionar pago"
+            (click)="abrirGestionPago(row)"
+          >
             <mat-icon>request_quote</mat-icon>
           </button>
         }
@@ -286,7 +304,9 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label" for="metodoPagoSelect">Metodo de pago</label>
+          <label class="form-label" for="metodoPagoSelect"
+            >Método de pago</label
+          >
           <select
             id="metodoPagoSelect"
             name="metodoPagoSelect"
@@ -318,7 +338,9 @@
 
         @if (esTransferenciaSeleccionada()) {
           <div class="col-12">
-            <label class="form-label" for="voucherPago">Comprobante (obligatorio)</label>
+            <label class="form-label" for="voucherPago"
+              >Comprobante (obligatorio)</label
+            >
             <input
               id="voucherPago"
               type="file"
@@ -331,12 +353,17 @@
               <div class="mt-2 d-flex align-items-center gap-2">
                 <mat-icon class="text-muted">attach_file</mat-icon>
                 <span class="text-truncate">{{ modal.fileName }}</span>
-                <button type="button" class="btn btn-link btn-sm p-0" (click)="limpiarArchivo()">Quitar</button>
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm text-danger p-0"
+                  (click)="limpiarArchivo()"
+                >
+                  Quitar
+                </button>
               </div>
             }
           </div>
         }
-
       </form>
     }
 
@@ -372,11 +399,16 @@
 
   <div modal-footer class="d-flex justify-content-end gap-2">
     @if (modal.allowRegistro) {
-      <button class="btn btn-outline-secondary" type="button" (click)="cerrarGestionPago()" [disabled]="modal.guardando">
+      <button
+        class="btn btn-outline-danger btn-sm"
+        type="button"
+        (click)="cerrarGestionPago()"
+        [disabled]="modal.guardando"
+      >
         Cancelar
       </button>
       <button
-        class="btn btn-primary"
+        class="btn btn-primary btn-sm"
         type="submit"
         form="registrarPagoForm"
         [disabled]="!puedeRegistrar"
@@ -384,7 +416,12 @@
         Registrar pago
       </button>
     } @else {
-      <button class="btn btn-outline-secondary" type="button" (click)="cerrarGestionPago()" [disabled]="modal.guardando">
+      <button
+        class="btn btn-outline-secondary btn-sm"
+        type="button"
+        (click)="cerrarGestionPago()"
+        [disabled]="modal.guardando"
+      >
         Cerrar
       </button>
     }

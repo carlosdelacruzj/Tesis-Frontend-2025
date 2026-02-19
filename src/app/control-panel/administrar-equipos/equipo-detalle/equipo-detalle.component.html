@@ -10,12 +10,12 @@
     (searchChange)="onBuscar($event)"
   >
     <div actions class="toolbar-actions">
-      <button mat-button type="button" class="back-button" (click)="volver()">
-        <mat-icon>arrow_back</mat-icon>
-        Volver al inventario
-      </button>
-      <button mat-stroked-button color="primary" type="button" (click)="abrirModalEquipo()">
-        <mat-icon>add</mat-icon>
+       <button  type="button" class="btn   btn-sm" (click)="volver()">
+         <i class="fa-solid fa-arrow-left-long"></i>
+          Volver al inventario
+        </button>
+      <button type="button" class="btn btn-primary btn-sm" type="button" (click)="abrirModalEquipo()">
+      <i class="fa-solid fa-plus"></i>
         Registrar equipo
       </button>
     </div>
@@ -201,11 +201,11 @@
       </form>
     </app-formulario-base>
     <div modal-footer class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary" type="button" (click)="onModalEquipoClosed()" [disabled]="formEquipo.cargando">
+      <button class="btn btn-outline-danger btn-sm" type="button" (click)="onModalEquipoClosed()" [disabled]="formEquipo.cargando">
         Cancelar
       </button>
       <button
-        class="btn btn-primary d-inline-flex align-items-center gap-2"
+        class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
         type="submit"
         form="crearEquipoForm"
         [disabled]="crearEquipoForm.invalid || formEquipo.cargando"
@@ -267,11 +267,11 @@
       </form>
     </app-formulario-base>
     <div modal-footer class="d-flex justify-content-end gap-2">
-      <button class="btn btn-outline-secondary" type="button" (click)="cerrarModalEstado()" [disabled]="estadoModal.cargando">
+      <button class="btn btn-outline-danger btn-sm" type="button" (click)="cerrarModalEstado()" [disabled]="estadoModal.cargando">
         Cancelar
       </button>
       <button
-        class="btn btn-primary"
+        class="btn btn-primary btn-sm"
         type="submit"
         form="cambiarEstadoForm"
         [disabled]="estadoModal.cargando || !estadoModal.idEstado || equipoEnBaja"

@@ -14,6 +14,7 @@
           (click)="refreshNow()"
           [disabled]="isRefreshing"
         >
+          <i class="fa-solid fa-arrow-rotate-right"></i>
           {{ isRefreshing ? "Actualizando..." : "Actualizar ahora" }}
         </button>
 
@@ -81,7 +82,7 @@
             class="btn btn-primary btn-sm"
             (click)="goToProyectos()"
           >
-            Ver proyectos
+            <i class="fas fa-fw fa-project-diagram"></i> Ver proyectos
           </button>
         </div>
 

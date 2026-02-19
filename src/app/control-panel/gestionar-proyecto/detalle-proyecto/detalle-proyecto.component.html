@@ -127,7 +127,7 @@
             <div class="control-kpi__value">{{ avanceAsignacionGeneral }}%</div>
             <p class="control-kpi__meta">{{ totalDiasConPendientes }} día(s) con pendientes · {{ totalDias }} día(s) totales</p>
           </article>
-          <article class="control-kpi" [ngClass]="getRiesgoGeneralClass()">
+          <article class="control-kpi control-kpi--warning" >
             <p class="control-kpi__label">Pendientes activos</p>
             <div class="control-kpi__value">{{ pendientesTotales.personal + pendientesTotales.equipos }}</div>
             <p class="control-kpi__meta">Personal: {{ pendientesTotales.personal }} · Equipos: {{ pendientesTotales.equipos }} · Riesgo alto: {{ totalDiasRiesgoAlto }}</p>
@@ -179,8 +179,8 @@
                 Pendientes: personal {{ getPendientesDia(openDiaId).personal }} · equipos {{ getPendientesDia(openDiaId).equipos }}
               </div>
             </div>
-            <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar(openDiaId)">
-              @if (isDiaPendienteEstado(openDiaId)) { Asignar ahora } @else { Ver asignaciones }
+            <button class="btn btn-primary btn-sm" type="button" (click)="abrirModalAsignar(openDiaId)">
+              @if (isDiaPendienteEstado(openDiaId)) { <i class="fa-solid fa-user-plus"></i> Asignar ahora } @else { <i class="fa-solid fa-users"></i> Ver asignaciones }
             </button>
           </div>
         }
@@ -362,15 +362,15 @@
                 <div class="asignaciones-resumen__header">
                   <div>
                     <div class="asignaciones-resumen__title">{{ formatFechaLarga(dia.fecha) }}</div>
-                    <div class="asignaciones-resumen__meta">
+                    <div class="asignaciones-resumen__meta pb-3">
                       Personal: {{ getAsignadosPersonalDia(dia.diaId) }}/{{ getReqPersonalCountDia(dia.diaId) }}
                       · Equipos: {{ getAsignadosEquiposDia(dia.diaId) }}/{{ getReqEquiposCountDia(dia.diaId) }}
                     </div>
                   </div>
                   <div class="asignaciones-resumen__right">
-                    <div class="asignaciones-resumen__actions">
-                      <button mat-stroked-button color="primary" type="button" (click)="abrirModalAsignar(dia.diaId)">
-                        @if (isDiaPendienteEstado(dia.diaId)) { Asignar } @else { Ver }
+                    <div class="asignaciones-resumen__actions pb-2">
+                      <button class="btn btn-primary btn-sm" type="button" (click)="abrirModalAsignar(dia.diaId)">
+                        @if (isDiaPendienteEstado(dia.diaId)) { <i class="fa-solid fa-user-plus"></i> Asignar } @else {<i class="fa-regular fa-eye"></i> Ver }
                       </button>
                     </div>
                     <app-estado-badge
@@ -393,7 +393,7 @@
       <section class="card section section--flow" id="incidencias-proyecto">
         <details class="collapsible" open>
           <summary class="collapsible__summary">
-            <div class="section-heading">
+            <div class="section-heading pb-3">
               <span class="flow-step">Paso 3</span>
               <p class="eyebrow">Incidencias</p>
               <h3>Registro del día</h3>
@@ -452,7 +452,7 @@
       <section class="card section section--flow" id="devoluciones-proyecto">
         <details class="collapsible" open>
           <summary class="collapsible__summary">
-            <div class="section-heading">
+            <div class="section-heading pb-3">
               <span class="flow-step">Paso 4</span>
               <p class="eyebrow">Devoluciones</p>
               <h3>Estado de equipos</h3>

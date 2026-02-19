@@ -10,18 +10,17 @@
       (searchChange)="onBuscar($event)"
     >
       <div actions class="toolbar-actions">
-        <button mat-button type="button" class="back-button" (click)="volver()">
-          <mat-icon>arrow_back</mat-icon>
+        <button  type="button" class="btn btn-sm" (click)="volver()">
+         <i class="fa-solid fa-arrow-left-long"></i>
           Volver al inventario
         </button>
         <button
-          mat-stroked-button
-          color="primary"
+         class="btn btn-sm text-secondary"
           type="button"
           (click)="verDetalleGeneral()"
           [disabled]="!resumenModelos.length"
         >
-          <mat-icon>table_rows</mat-icon>
+        <i class="fa-solid fa-list"></i>
           Ver lista completa
         </button>
       </div>
@@ -54,7 +53,7 @@
         >
           <ng-template appCell="acciones" let-row>
             <button
-              class="btn btn-primary btn-sm"
+              class="btn btn-outline-secondary btn-sm"
               type="button"
               (click)="verDetalleModelo(row)"
             >

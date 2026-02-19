@@ -1,24 +1,40 @@
 <div class="dashboard-content calendario-page">
-  <div class="calendar-header card shell">
+  <div class="calendar-header">
     <div>
       <h1>Calendario operativo</h1>
       <p>Vista mensual de proyectos programados y detalle por fecha.</p>
     </div>
     <div class="calendar-controls">
-      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goToPreviousMonth()">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+        (click)="goToPreviousMonth()"
+      >
         <i class="fas fa-chevron-left"></i>
       </button>
-      <select class="form-select form-select-sm" [ngModel]="month" (ngModelChange)="onMonthChange($event)">
+      <select
+        class="form-select form-select-sm"
+        [ngModel]="month"
+        (ngModelChange)="onMonthChange($event)"
+      >
         @for (monthName of monthNames; track monthName; let index = $index) {
           <option [value]="index + 1">{{ monthName }}</option>
         }
       </select>
-      <select class="form-select form-select-sm" [ngModel]="year" (ngModelChange)="onYearChange($event)">
+      <select
+        class="form-select form-select-sm"
+        [ngModel]="year"
+        (ngModelChange)="onYearChange($event)"
+      >
         @for (item of years; track item) {
           <option [value]="item">{{ item }}</option>
         }
       </select>
-      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goToNextMonth()">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+        (click)="goToNextMonth()"
+      >
         <i class="fas fa-chevron-right"></i>
       </button>
     </div>
@@ -31,15 +47,15 @@
   @if (!monthError) {
     <div class="calendar-kpis">
       <div class="kpi-card">
-        <span>Proyecto-dia</span>
+        <span>Proyecto-día</span>
         <strong>{{ resumenTotalProyectoDiasMes }}</strong>
       </div>
       <div class="kpi-card">
-        <span>Proyectos unicos</span>
+        <span>Proyectos únicos</span>
         <strong>{{ resumenTotalProyectosUnicosMes }}</strong>
       </div>
       <div class="kpi-card">
-        <span>Dias con actividad</span>
+        <span>Días con actividad</span>
         <strong>{{ resumenDiasConActividad }}</strong>
       </div>
       <div class="kpi-card">
