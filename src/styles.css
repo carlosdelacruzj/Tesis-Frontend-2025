@@ -3011,11 +3011,21 @@ input[type="radio"] {
 
 /*--- btn primary --*/
 
-/*.btn-primary {
+.btn-primary {
   color: var(--primary);
   background-color: transparent;
   border-color: var(--primary);
   border-radius: 20px;
+
+  --bs-btn-hover-bg: var(--hover);
+  --bs-btn-hover-border-color: var(--hover);
+  --bs-btn-hover-color: #fff;
+
+  --bs-btn-active-bg: var(--hover);
+  --bs-btn-active-border-color: var(--hover);
+  --bs-btn-active-color: #fff;
+
+  --bs-btn-focus-shadow-rgb: 0,0,0; 
 }
 
 .btn-primary:hover,
@@ -3063,24 +3073,6 @@ input[type="radio"] {
   color: #fff;
   background-color: var(--hover);
   border-color: var(--hover);
-}*/
-.btn-primary{
-  /* tus estilos */
-  color: var(--primary);
-  background-color: transparent;
-  border-color: var(--primary);
-  border-radius: 20px;
-
-  /* override Bootstrap (ACTIVE/CHECKED/HOVER/FOCUS) */
-  --bs-btn-hover-bg: var(--hover);
-  --bs-btn-hover-border-color: var(--hover);
-  --bs-btn-hover-color: #fff;
-
-  --bs-btn-active-bg: var(--hover);
-  --bs-btn-active-border-color: var(--hover);
-  --bs-btn-active-color: #fff;
-
-  --bs-btn-focus-shadow-rgb: 0,0,0; /* opcional si tu focus-ring ya manda */
 }
 
 
