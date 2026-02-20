@@ -1987,10 +1987,13 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   iniciarEdicionPost(): void {
     if (!this.puedeIniciarEdicionPost) {
+      const estadoNoPostproduccion = !this.esEstadoProyectoEnPostproduccion();
       void Swal.fire({
         icon: 'warning',
         title: 'Fase bloqueada',
-        text: this.postproduccionSoloLecturaPorEstado
+        text: estadoNoPostproduccion
+          ? 'Solo puedes iniciar edición cuando el proyecto esté en postproducción.'
+          : this.postproduccionSoloLecturaPorEstado
           ? 'El proyecto ya fue entregado/cerrado y no permite más edición.'
           : 'La fecha de inicio ya está registrada.'
       });
@@ -2296,7 +2299,9 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
   }
 
   get puedeIniciarEdicionPost(): boolean {
-    return !this.postproduccionSoloLecturaPorEstado && !this.postproduccionOriginal.fechaInicioEdicion;
+    return this.esEstadoProyectoEnPostproduccion()
+      && !this.postproduccionSoloLecturaPorEstado
+      && !this.postproduccionOriginal.fechaInicioEdicion;
   }
 
   get postproduccionSoloLecturaPorEstado(): boolean {
@@ -3667,6 +3672,11 @@ export class DetalleProyectoComponent implements OnInit, OnDestroy {
 
   private getEstadoProyectoNormalizado(): string {
     return (this.proyecto?.estadoNombre ?? '').toString().trim().toLowerCase();
+  }
+
+  private esEstadoProyectoEnPostproduccion(): boolean {
+    const estado = this.getEstadoProyectoNormalizado();
+    return estado === 'en postproduccion' || estado === 'en postproducción';
   }
 
   private toIsoDateOnly(value: string | Date | null | undefined): string | null {
