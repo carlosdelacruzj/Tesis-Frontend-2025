@@ -156,9 +156,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const cards = this.dashboardHome?.cards;
     const cobros = this.dashboardHome?.resumenHoy?.cobrosHoy;
     const capacidad = this.dashboardHome?.capacidadHoy?.equipo;
+    const agendaNoCancelada = this.agendaHoyItemsVisibles;
     if (!cards) {
       return {
-        serviciosProgramadosHoy: 0,
+        serviciosProgramadosHoy: agendaNoCancelada.length,
         eventosHoy: 0,
         proyectosEnCursoHoy: 0,
         proyectosPendientesInicioHoy: 0,
@@ -167,7 +168,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       };
     }
     return {
-      serviciosProgramadosHoy: cards.serviciosProgramadosHoy ?? 0,
+      // Resumen del día: excluir días cancelados.
+      serviciosProgramadosHoy: agendaNoCancelada.length,
       eventosHoy: cards.eventosHoy ?? 0,
       proyectosEnCursoHoy: cards.eventosEnCursoHoy ?? 0,
       proyectosPendientesInicioHoy: cards.eventosPendientesInicioHoy ?? 0,
@@ -215,11 +217,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get totalProyectosHoy(): number {
-    return this.dashboardHome?.resumenHoy?.totalProyectosConDiaHoy ?? 0;
+    return new Set(this.agendaHoyItemsVisibles.map(item => item.proyectoId)).size;
   }
 
   get totalPedidosHoy(): number {
-    return new Set(this.agendaHoyItems.map(item => item.pedidoId)).size;
+    return new Set(this.agendaHoyItemsVisibles.map(item => item.pedidoId)).size;
   }
 
   get estadosProyectoHoy(): DashboardEstadoConteo[] {
